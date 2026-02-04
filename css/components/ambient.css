@@ -1,0 +1,251 @@
+/* ===========================================
+   AMBIENT EFFECTS
+   Das gewisse Extra - Atmosphäre & Feeling
+   =========================================== */
+
+/* --- FLOATING PARTICLES (Subtil im Hintergrund) --- */
+.ambient-particles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-base);
+  overflow: hidden;
+}
+
+.ambient-particles__dot {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--color-accent);
+  border-radius: 50%;
+  opacity: 0;
+  animation: float-up 15s linear infinite;
+}
+
+.ambient-particles__dot:nth-child(1) {
+  left: 10%;
+  animation-delay: 0s;
+}
+.ambient-particles__dot:nth-child(2) {
+  left: 25%;
+  animation-delay: 3s;
+}
+.ambient-particles__dot:nth-child(3) {
+  left: 50%;
+  animation-delay: 6s;
+}
+.ambient-particles__dot:nth-child(4) {
+  left: 75%;
+  animation-delay: 9s;
+}
+.ambient-particles__dot:nth-child(5) {
+  left: 90%;
+  animation-delay: 12s;
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(100vh) scale(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.4;
+    transform: translateY(90vh) scale(1);
+  }
+  90% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-10vh) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* --- CURSOR TRAIL (Subtiler Glow der Maus folgt) --- */
+.cursor-glow {
+  position: fixed;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 107, 53, 0.03) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: var(--z-base);
+  transform: translate(-50%, -50%);
+  transition: opacity 0.3s ease;
+  opacity: 0;
+}
+
+.cursor-glow--active {
+  opacity: 1;
+}
+
+/* --- AMBIENT LIGHT SWEEP --- */
+.ambient-sweep {
+  position: fixed;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 107, 53, 0.02),
+    transparent
+  );
+  pointer-events: none;
+  z-index: var(--z-base);
+  animation: light-sweep 20s linear infinite;
+}
+
+@keyframes light-sweep {
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 150%;
+  }
+}
+
+/* --- BREATHING BORDER EFFECT --- */
+.breathing-border {
+  position: relative;
+}
+
+.breathing-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(
+    45deg,
+    var(--color-accent),
+    transparent,
+    var(--color-secondary),
+    transparent,
+    var(--color-accent)
+  );
+  background-size: 400% 400%;
+  z-index: -1;
+  opacity: 0;
+  animation: gradient-shift 8s ease infinite;
+  transition: opacity var(--duration-slow) ease;
+}
+
+.breathing-border:hover::before {
+  opacity: 0.5;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* --- GLITCH TEXT EFFECT (Subtil, bei Hover) --- */
+.glitch-text {
+  position: relative;
+}
+
+.glitch-text:hover {
+  animation: glitch-skew 0.5s ease;
+}
+
+@keyframes glitch-skew {
+  0%, 100% {
+    transform: skew(0deg);
+  }
+  20% {
+    transform: skew(-1deg);
+  }
+  40% {
+    transform: skew(1deg);
+  }
+  60% {
+    transform: skew(-0.5deg);
+  }
+  80% {
+    transform: skew(0.5deg);
+  }
+}
+
+/* --- CODE RAIN BACKGROUND (Optional, sehr subtil) --- */
+.code-rain {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  pointer-events: none;
+  z-index: var(--z-background);
+  opacity: 0.015;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-accent);
+  overflow: hidden;
+}
+
+/* --- FOCUS VIGNETTE --- */
+.focus-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-overlay);
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(5, 5, 7, 0.3) 100%
+  );
+  opacity: 0;
+  transition: opacity var(--duration-slower) ease;
+}
+
+.focus-vignette--active {
+  opacity: 1;
+}
+
+/* --- TYPEWRITER CURSOR --- */
+.typewriter {
+  display: inline;
+}
+
+.typewriter__cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: var(--color-accent);
+  margin-left: 2px;
+  animation: cursor-blink 1s step-end infinite;
+  vertical-align: text-bottom;
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* --- SCROLL PROGRESS BAR --- */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-bright));
+  z-index: var(--z-modal);
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.1s linear;
+}
+
+/* --- MAGNETIC BUTTON EFFECT --- */
+.magnetic {
+  transition: transform var(--duration-normal) var(--ease-out-expo);
+}
+
+.magnetic:hover {
+  /* Transform wird via JS gesetzt */
+}

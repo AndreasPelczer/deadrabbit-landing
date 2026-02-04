@@ -1,0 +1,377 @@
+/* ===========================================
+   HERO COMPONENT
+   Der erste Eindruck - mit Feeling
+   =========================================== */
+
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* --- HERO VISUAL (Banner mit Parallax) --- */
+.hero__visual {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  z-index: var(--z-background);
+  will-change: transform, opacity;
+}
+
+.hero__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+  transform: scale(1.1);
+  transition: filter 0.3s ease;
+  will-change: transform, filter;
+}
+
+/* Sanfter Gradient-Übergang statt hartem Schnitt */
+.hero__gradient {
+  position: absolute;
+  inset: 0;
+  background:
+    /* Oben: Subtiler Schatten */
+    linear-gradient(to bottom,
+      rgba(5, 5, 7, 0.3) 0%,
+      transparent 20%
+    ),
+    /* Mitte: Vignette für Fokus */
+    radial-gradient(ellipse 80% 60% at 50% 40%,
+      transparent 0%,
+      rgba(5, 5, 7, 0.2) 50%,
+      rgba(5, 5, 7, 0.5) 100%
+    ),
+    /* Unten: Der entscheidende weiche Übergang */
+    linear-gradient(to bottom,
+      transparent 0%,
+      transparent 50%,
+      rgba(10, 10, 14, 0.4) 65%,
+      rgba(10, 10, 14, 0.7) 75%,
+      rgba(10, 10, 14, 0.9) 85%,
+      var(--color-bg) 95%
+    );
+  pointer-events: none;
+}
+
+/* Scanlines für retro-technisches Feeling */
+.hero__scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.015) 2px,
+    rgba(0, 0, 0, 0.015) 4px
+  );
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Glühender Akzent am unteren Rand */
+.hero__glow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 300px;
+  background: radial-gradient(
+    ellipse 60% 100% at 50% 100%,
+    rgba(255, 107, 53, 0.08) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-slower) ease;
+}
+
+.hero--scrolled .hero__glow {
+  opacity: 1;
+}
+
+/* --- PARALLAX LAYERS für Tiefe --- */
+.hero__parallax-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero__parallax-layer--back {
+  background: radial-gradient(
+    circle at 30% 70%,
+    rgba(255, 107, 53, 0.03) 0%,
+    transparent 50%
+  );
+}
+
+.hero__parallax-layer--mid {
+  background: radial-gradient(
+    circle at 70% 30%,
+    rgba(58, 143, 255, 0.02) 0%,
+    transparent 40%
+  );
+}
+
+/* --- HERO CONTENT --- */
+.hero__content {
+  position: relative;
+  z-index: var(--z-content);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: var(--space-4xl) 0;
+  min-height: 100vh;
+  will-change: transform, opacity;
+}
+
+/* Badge */
+.hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.65rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  padding: var(--space-xs) var(--space-md);
+  margin-bottom: var(--space-lg);
+  background: var(--color-accent-subtle);
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fade-up 0.8s var(--ease-out-expo) 0.2s forwards;
+}
+
+.hero__badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 107, 53, 0.2),
+    transparent
+  );
+  animation: shimmer 4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { left: -100%; }
+  50% { left: 100%; }
+}
+
+.hero__badge-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--color-accent);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 rgba(255, 107, 53, 0);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 12px rgba(255, 107, 53, 0.6);
+  }
+}
+
+/* Hero Title */
+.hero__title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 400;
+  color: var(--color-text-bright);
+  line-height: 1.1;
+  margin-bottom: var(--space-lg);
+  text-shadow: 0 0 80px rgba(255, 107, 53, 0.1);
+}
+
+.hero__title-line {
+  display: block;
+  opacity: 0;
+  transform: translateY(30px);
+  animation: line-reveal 0.8s var(--ease-out-expo) forwards;
+}
+
+.hero__title-line:nth-child(1) { animation-delay: 0.3s; }
+.hero__title-line:nth-child(2) { animation-delay: 0.4s; }
+
+@keyframes line-reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero__title em {
+  font-style: italic;
+  color: var(--color-accent);
+  position: relative;
+}
+
+.hero__title em::after {
+  content: '';
+  position: absolute;
+  bottom: 0.1em;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-accent);
+  opacity: 0.3;
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: underline-grow 0.6s var(--ease-out-expo) 0.8s forwards;
+}
+
+@keyframes underline-grow {
+  to { transform: scaleX(1); }
+}
+
+/* Hero Subtitle */
+.hero__subtitle {
+  font-size: 0.95rem;
+  color: var(--color-text-dim);
+  max-width: 560px;
+  font-weight: 300;
+  line-height: 1.6;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fade-up 0.8s var(--ease-out-expo) 0.5s forwards;
+}
+
+@keyframes fade-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scroll-Indikator */
+.hero__scroll-hint {
+  position: absolute;
+  bottom: var(--space-xl);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  opacity: 0;
+  animation: fade-up 0.8s var(--ease-out-expo) 1s forwards, breathe 3s ease-in-out 1.8s infinite;
+  will-change: transform, opacity;
+}
+
+.hero__scroll-hint span {
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.hero__scroll-chevron {
+  width: 20px;
+  height: 20px;
+  border-right: 1px solid var(--color-accent);
+  border-bottom: 1px solid var(--color-accent);
+  transform: rotate(45deg);
+  animation: bounce-down 2s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes bounce-down {
+  0%, 100% { transform: rotate(45deg) translate(0, 0); }
+  50% { transform: rotate(45deg) translate(3px, 3px); }
+}
+
+/* --- FLOATING TEXT ELEMENTS (Das gewisse Extra) --- */
+.hero__floating-text {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  color: var(--color-accent);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity var(--duration-slower) var(--ease-out-expo);
+  text-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+  z-index: var(--z-content);
+  will-change: transform, opacity;
+}
+
+.hero__floating-text--visible {
+  opacity: 0.8;
+}
+
+.hero__floating-text--top {
+  top: 20%;
+  left: 10%;
+}
+
+.hero__floating-text--bottom {
+  bottom: 25%;
+  right: 8%;
+}
+
+/* Typing Cursor Effekt */
+.hero__floating-text::after {
+  content: '_';
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  .hero__content {
+    padding: var(--space-3xl) 0;
+    justify-content: flex-end;
+    padding-bottom: var(--space-4xl);
+  }
+
+  .hero__title {
+    font-size: clamp(2rem, 8vw, 3rem);
+  }
+
+  .hero__subtitle {
+    font-size: 0.85rem;
+  }
+
+  .hero__floating-text {
+    font-size: 0.7rem;
+  }
+
+  .hero__floating-text--top {
+    top: 15%;
+    left: 5%;
+  }
+
+  .hero__floating-text--bottom {
+    bottom: 20%;
+    right: 5%;
+  }
+}

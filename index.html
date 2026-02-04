@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Andreas Pelczer — Dead Rabbit Productions</title>
+  <meta name="description" content="36 Jahre Produktion. Jetzt Systeme. iOS-Entwickler, Autor, Gründer Dead Rabbit Productions.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,700;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+  <!-- ============================================
+       HERO SECTION
+       ============================================ -->
+  <section class="hero">
+    <!-- Background Visual mit Parallax -->
+    <div class="hero__visual">
+      <img
+        src="assets/images/hero-banner.png"
+        alt="iMOPS - System Engine for Human Workflows"
+        class="hero__image"
+        loading="eager"
+      >
+      <div class="hero__scanlines"></div>
+      <div class="hero__gradient"></div>
+      <div class="hero__glow"></div>
+    </div>
+
+    <!-- Parallax Layer für Tiefe -->
+    <div class="hero__parallax-layer hero__parallax-layer--back" aria-hidden="true"></div>
+    <div class="hero__parallax-layer hero__parallax-layer--mid" aria-hidden="true"></div>
+
+    <!-- Floating Terminal Text (Das gewisse Extra) -->
+    <div class="hero__floating-text hero__floating-text--top">
+      ^bin da ;=)
+    </div>
+    <div class="hero__floating-text hero__floating-text--bottom">
+      > Energie.
+    </div>
+
+    <!-- Hero Content mit Badge -->
+    <div class="hero__content">
+      <div class="container">
+        <!-- Badge -->
+        <div class="hero__badge">
+          <span class="hero__badge-dot"></span>
+          <span>DEAD RABBIT PRODUCTIONS</span>
+        </div>
+
+        <!-- Headline -->
+        <h1 class="hero__title">
+          <span class="hero__title-line">36 Jahre Produktion.</span>
+          <span class="hero__title-line">Jetzt <em>Systeme</em>.</span>
+        </h1>
+
+        <!-- Subtext -->
+        <p class="hero__subtitle">
+          Andreas Pelczer — Gardemanger, Souschef, Küchenchef. Irgendwann gemerkt, dass das eigentliche Problem nie die Sauce war, sondern das System drumherum. Heute baue ich Software für Menschen, die unter Druck arbeiten.
+        </p>
+
+        <!-- Scroll Hint -->
+        <div class="hero__scroll-hint">
+          <span>Scroll</span>
+          <div class="hero__scroll-chevron"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       PAGE CONTENT
+       ============================================ -->
+  <main class="page-content">
+    <div class="container">
+
+      <!-- Projekte Section -->
+      <section class="section section--reveal" id="projekte">
+        <h2 class="section__label">Software</h2>
+        <p class="section__sublabel">Open Source · iOS</p>
+
+        <div class="card-grid">
+          <!-- iMOPS -->
+          <a class="card" href="https://github.com/AndreasPelczer/iMOPS_OS_CORE" target="_blank" rel="noopener">
+            <span class="card__type">Open Source · iOS</span>
+            <h3 class="card__title">iMOPS</h3>
+            <p class="card__description">
+              In-Memory Kernel für Produktionssteuerung. HACCP-konform, offline, deterministisch. MUMPS-inspiriert. Für Küchen, die kein WLAN haben und keine Zeit für Abstürze.
+            </p>
+            <div class="card__meta">
+              <span class="badge badge--live">TESTFLIGHT</span>
+              <span class="badge">MIT LIZENZ</span>
+            </div>
+            <span class="card__arrow">→</span>
+          </a>
+
+          <!-- Seubert-Assistent -->
+          <a class="card" href="https://github.com/AndreasPelczer/Seubert-Assistent" target="_blank" rel="noopener">
+            <span class="card__type">iOS App</span>
+            <h3 class="card__title">Seubert-Assistent</h3>
+            <p class="card__description">
+              Produktinfos am Regal, ohne Suchen. Native iOS-App die Informationen unmittelbar dort verfügbar macht, wo sie gebraucht werden: am Produkt.
+            </p>
+            <div class="card__meta">
+              <span class="badge">→ iOS App</span>
+            </div>
+            <span class="card__arrow">→</span>
+          </a>
+
+          <!-- ChefIQ -->
+          <a class="card" href="https://github.com/AndreasPelczer/ChefIQ-Clinical-Culinary-Intelligence" target="_blank" rel="noopener">
+            <span class="card__type">iOS App</span>
+            <h3 class="card__title">ChefIQ</h3>
+            <p class="card__description">
+              Nährwerte + Allergene + KI. Hybrides Assistenzsystem für Gastronomie, Gemeinschaftsverpflegung und klinische Diätetik.
+            </p>
+            <div class="card__meta">
+              <span class="badge">→ iOS App</span>
+            </div>
+            <span class="card__arrow">→</span>
+          </a>
+
+          <!-- Kantina -->
+          <div class="card">
+            <span class="card__type">iOS App</span>
+            <h3 class="card__title">Kantina</h3>
+            <p class="card__description">
+              Speisepläne. Weniger Müll, mehr System. Produktion steuern statt improvisieren.
+            </p>
+            <div class="card__meta">
+              <span class="badge">→ iOS App</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Tech Stack -->
+      <section class="section section--reveal" id="tech">
+        <h2 class="section__label">Stack</h2>
+
+        <div class="tech-strip">
+          <span class="tech-item">
+            <span class="tech-item__dot"></span>
+            Swift
+          </span>
+          <span class="tech-item">
+            <span class="tech-item__dot"></span>
+            SwiftUI
+          </span>
+          <span class="tech-item">
+            <span class="tech-item__dot"></span>
+            SwiftData
+          </span>
+          <span class="tech-item">
+            <span class="tech-item__dot"></span>
+            Xcode
+          </span>
+          <span class="tech-item">
+            <span class="tech-item__dot"></span>
+            Offline-First
+          </span>
+          <span class="tech-item">
+            <span class="tech-item__dot"></span>
+            HACCP
+          </span>
+          <span class="tech-item">
+            <span class="tech-item__dot"></span>
+            ISO 9001
+          </span>
+        </div>
+        <p style="font-size: 0.78rem; color: var(--color-text-dim); font-weight: 300; margin-top: var(--space-md);">Kein Schnickschnack.</p>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Publikationen -->
+      <section class="section section--reveal" id="publikationen">
+        <h2 class="section__label">Publikationen</h2>
+
+        <div class="card-grid">
+          <!-- Thermodynamik der Arbeit -->
+          <a class="card" href="https://www.amazon.de/Thermodynamik-Arbeit-warum-Systeme-kollabieren/dp/B0GK95MWB5" target="_blank" rel="noopener">
+            <span class="card__type">Fachbuch · 2025</span>
+            <h3 class="card__title">Thermodynamik der Arbeit</h3>
+            <p class="card__description">
+              Warum Systeme kollabieren. Keine Motivation, keine Moral — nur Struktur. Die theoretische Grundlage hinter iMOPS.
+            </p>
+            <div class="card__meta">
+              <span class="badge badge--live">Erhältlich</span>
+              <span class="badge">Amazon KDP →</span>
+            </div>
+            <span class="card__arrow">→</span>
+          </a>
+
+          <!-- Der Küchencode -->
+          <div class="card">
+            <span class="card__type">Memoir · In Arbeit</span>
+            <h3 class="card__title">Der Küchencode</h3>
+            <p class="card__description">
+              36 Jahre. Von der Bundeswehr-Brigade bis zur Sterneküche. Vom Gardemanger zum System Architect. Die Geschichte dahinter.
+            </p>
+            <div class="card__meta">
+              <span class="badge">2026</span>
+              <span class="badge">~70% fertig</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quote -->
+      <blockquote class="quote">
+        <p class="quote__text">
+          Das eigentliche Problem war nie die Sauce, sondern das System drumherum.
+        </p>
+        <cite class="quote__attribution">— README.md</cite>
+      </blockquote>
+
+      <div class="divider"></div>
+
+      <!-- Hintergrund -->
+      <section class="section section--reveal" id="hintergrund">
+        <h2 class="section__label">Hintergrund</h2>
+
+        <div class="timeline">
+          <div class="timeline__entry">
+            <span class="timeline__year">2024 — HEUTE</span>
+            <h4 class="timeline__title">Dead Rabbit Productions</h4>
+            <p class="timeline__description">
+              Gründer. iOS-Entwicklung, Fachbuch-Autor, System-Architektur für Produktionsumgebungen.
+            </p>
+          </div>
+
+          <div class="timeline__entry">
+            <span class="timeline__year">2023 — 2024</span>
+            <h4 class="timeline__title">Syntax Institut</h4>
+            <p class="timeline__description">
+              iOS-Entwicklung. Swift, SwiftUI, Xcode. Von der Pfanne zum Compiler.
+            </p>
+          </div>
+
+          <div class="timeline__entry">
+            <span class="timeline__year">1994 — 1998</span>
+            <h4 class="timeline__title">Bundeswehr — Küchenchef</h4>
+            <p class="timeline__description">
+              600-Mann-Brigade. Teamaufbau in mehrsprachigen Einheiten. HACCP. ISO 9001.
+            </p>
+          </div>
+
+          <div class="timeline__entry">
+            <span class="timeline__year">1988 — HEUTE</span>
+            <h4 class="timeline__title">36 Jahre Professionelle Gastronomie</h4>
+            <p class="timeline__description">
+              Gardemanger → Souschef → Küchenchef → Betriebsleiter. Großverpflegung, Sterneküche, Kliniken, Europa-Park.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Prinzipien -->
+      <section class="section section--reveal" id="prinzipien">
+        <h2 class="section__label">Prinzipien</h2>
+
+        <div class="card-grid">
+          <div class="card">
+            <h3 class="card__title">Offline zuerst</h3>
+            <p class="card__description">
+              Im Keller gibt's kein WLAN. Um 20:30 wartet niemand auf einen Server. Die Software muss laufen — immer.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3 class="card__title">Menschen über Profit</h3>
+            <p class="card__description">
+              Systeme die funktionieren, entlasten Menschen. Systeme die „motivieren", belasten sie.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3 class="card__title">Korrektes Verhalten,<br>einfach gemacht</h3>
+            <p class="card__description">
+              Wenn das Richtige schwerer ist als das Falsche, ist das System schuld — nicht der Mensch.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3 class="card__title">Kein Schnickschnack</h3>
+            <p class="card__description">
+              Wenn du ein Handbuch brauchst, ist es zu komplex. SET / GET / KILL. Fertig.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <div class="footer__inner">
+          <div class="footer__brand">
+            <img
+              src="assets/images/dead-rabbit-logo.jpg"
+              alt="Dead Rabbit Productions"
+              class="footer__logo"
+            >
+            <div class="footer__brand-text">
+              <h2 class="footer__brand-name">Andreas Pelczer</h2>
+              <p class="footer__brand-tagline">System Architect · Production Systems · Author</p>
+            </div>
+          </div>
+
+          <nav class="footer__links">
+            <a href="https://github.com/AndreasPelczer" class="footer__link" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://www.linkedin.com/in/andreas-pelczer-5b5050160/" class="footer__link" target="_blank" rel="noopener">LinkedIn</a>
+            <a href="https://www.amazon.de/Thermodynamik-Arbeit-warum-Systeme-kollabieren/dp/B0GK95MWB5" class="footer__link" target="_blank" rel="noopener">Amazon</a>
+          </nav>
+        </div>
+
+        <div class="footer__bottom">
+          <span class="footer__copy">© 2026 Dead Rabbit Productions · <span style="color: var(--color-accent); letter-spacing: 2px;">MEMENTO MORI</span></span>
+          <span class="footer__made-with">Frankfurt am Main / Wertheim</span>
+        </div>
+      </footer>
+
+    </div>
+  </main>
+
+  <!-- Ambient Particles -->
+  <div class="ambient-particles" aria-hidden="true">
+    <div class="ambient-particles__dot"></div>
+    <div class="ambient-particles__dot"></div>
+    <div class="ambient-particles__dot"></div>
+    <div class="ambient-particles__dot"></div>
+    <div class="ambient-particles__dot"></div>
+  </div>
+
+  <!-- Ambient Light Sweep -->
+  <div class="ambient-sweep" aria-hidden="true"></div>
+
+  <!-- Scripts (Inline für file:// Kompatibilität) -->
+  <script>
+    // ============================================
+    // DEAD RABBIT PRODUCTIONS - Enhanced Parallax
+    // ============================================
+
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🐰 Dead Rabbit Productions');
+
+      // --- HERO ELEMENTS ---
+      const heroVisual = document.querySelector('.hero__visual');
+      const heroImage = document.querySelector('.hero__image');
+      const heroGlow = document.querySelector('.hero__glow');
+      const scrollHint = document.querySelector('.hero__scroll-hint');
+      const floatingTexts = document.querySelectorAll('.hero__floating-text');
+      const heroContent = document.querySelector('.hero__content');
+      const heroBadge = document.querySelector('.hero__badge');
+      const heroTitle = document.querySelector('.hero__title');
+      const heroSubtitle = document.querySelector('.hero__subtitle');
+
+      // Floating Texts einblenden
+      floatingTexts.forEach((text, i) => {
+        setTimeout(() => {
+          text.classList.add('hero__floating-text--visible');
+        }, 1500 + i * 500);
+      });
+
+      // --- SMOOTH SCROLL HANDLING mit Lerp ---
+      let currentScroll = 0;
+      let targetScroll = 0;
+      const lerp = (start, end, factor) => start + (end - start) * factor;
+
+      // RAF Loop für butterweichen Parallax
+      function smoothScroll() {
+        targetScroll = window.scrollY;
+        currentScroll = lerp(currentScroll, targetScroll, 0.1);
+
+        const vh = window.innerHeight;
+        const scrollProgress = Math.min(currentScroll / vh, 1);
+
+        // Hero Image Parallax - langsamer als Scroll
+        if (heroImage) {
+          const parallaxY = currentScroll * 0.5;
+          const scale = 1.1 - scrollProgress * 0.15;
+          const blur = scrollProgress * 2;
+          heroImage.style.transform = `translateY(${parallaxY}px) scale(${scale})`;
+          heroImage.style.filter = `blur(${blur}px)`;
+        }
+
+        // Visual fade out mit easing
+        if (heroVisual) {
+          const opacity = 1 - Math.pow(scrollProgress, 0.7);
+          heroVisual.style.opacity = Math.max(opacity, 0);
+        }
+
+        // Hero Content Parallax (schneller als Bild)
+        if (heroContent) {
+          const contentY = currentScroll * 0.3;
+          const contentOpacity = 1 - Math.pow(scrollProgress * 1.5, 2);
+          heroContent.style.transform = `translateY(${contentY}px)`;
+          heroContent.style.opacity = Math.max(contentOpacity, 0);
+        }
+
+        // Floating texts Parallax
+        floatingTexts.forEach((text, i) => {
+          const direction = i % 2 === 0 ? 1 : -1;
+          const floatY = currentScroll * (0.2 + i * 0.1) * direction;
+          const floatOpacity = 0.8 - scrollProgress * 1.2;
+          text.style.transform = `translateY(${floatY}px)`;
+          text.style.opacity = Math.max(floatOpacity, 0);
+        });
+
+        // Glow einblenden
+        if (heroGlow) {
+          heroGlow.style.opacity = scrollProgress > 0.2 ? scrollProgress : '0';
+        }
+
+        // Scroll hint sanft ausfaden
+        if (scrollHint) {
+          const hintOpacity = 1 - Math.pow(scrollProgress * 3, 1.5);
+          scrollHint.style.opacity = Math.max(hintOpacity, 0);
+          scrollHint.style.transform = `translateX(-50%) translateY(${currentScroll * 0.5}px)`;
+        }
+
+        requestAnimationFrame(smoothScroll);
+      }
+
+      smoothScroll();
+
+      // --- SECTION REVEAL mit IntersectionObserver ---
+      const sections = document.querySelectorAll('.section--reveal');
+      const sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('section--visible');
+            // Staggered reveal für Kinder
+            const children = entry.target.querySelectorAll('.card, .timeline__entry, .tech-item');
+            children.forEach((child, i) => {
+              child.style.transitionDelay = `${i * 0.1}s`;
+              child.classList.add('reveal--visible');
+            });
+          }
+        });
+      }, {
+        threshold: 0.1,
+        rootMargin: '-50px'
+      });
+
+      sections.forEach(section => sectionObserver.observe(section));
+
+      // --- CARDS MOUSE TRACKING ---
+      document.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+          const rect = card.getBoundingClientRect();
+          const x = ((e.clientX - rect.left) / rect.width) * 100;
+          const y = ((e.clientY - rect.top) / rect.height) * 100;
+          card.style.setProperty('--mx', x + '%');
+          card.style.setProperty('--my', y + '%');
+        });
+
+        card.addEventListener('mouseleave', () => {
+          card.style.setProperty('--mx', '50%');
+          card.style.setProperty('--my', '50%');
+        });
+      });
+
+      // --- DIVIDER REVEAL ---
+      const dividers = document.querySelectorAll('.divider');
+      const dividerObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('divider--visible');
+          }
+        });
+      }, { threshold: 0.5 });
+
+      dividers.forEach(d => dividerObserver.observe(d));
+
+      // --- CURSOR GLOW ---
+      if (window.innerWidth > 768) {
+        const glow = document.createElement('div');
+        glow.className = 'cursor-glow';
+        document.body.appendChild(glow);
+
+        setTimeout(() => glow.classList.add('cursor-glow--active'), 1000);
+
+        let mouseX = 0, mouseY = 0;
+        let glowX = 0, glowY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+          mouseX = e.clientX;
+          mouseY = e.clientY;
+        }, { passive: true });
+
+        function updateGlow() {
+          glowX = lerp(glowX, mouseX, 0.15);
+          glowY = lerp(glowY, mouseY, 0.15);
+          glow.style.left = glowX + 'px';
+          glow.style.top = glowY + 'px';
+          requestAnimationFrame(updateGlow);
+        }
+        updateGlow();
+      }
+
+      // --- SCROLL PROGRESS ---
+      const progress = document.createElement('div');
+      progress.className = 'scroll-progress';
+      document.body.appendChild(progress);
+
+      window.addEventListener('scroll', () => {
+        const scrolled = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
+        progress.style.transform = `scaleX(${scrolled})`;
+      }, { passive: true });
+
+      console.log('✅ Ready');
+    });
+  </script>
+
+</body>
+</html>
