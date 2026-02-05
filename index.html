@@ -383,15 +383,27 @@
       <p class="conway-subtitle">4 Regeln. Keine Steuerung. Emergenz.</p>
       <button class="conway-close" onclick="closeConway()" title="Schließen">×</button>
     </div>
+    <div class="conway-patterns">
+      <button onclick="conwayLoadPattern('glider')">Glider</button>
+      <button onclick="conwayLoadPattern('blinker')">Blinker</button>
+      <button onclick="conwayLoadPattern('pulsar')">Pulsar</button>
+      <button onclick="conwayLoadPattern('glidergun')">Glider Gun</button>
+      <button onclick="conwayLoadPattern('acorn')">Acorn</button>
+      <button onclick="conwayLoadPattern('rpentomino')">R-Pentomino</button>
+      <button onclick="conwayRandom()">Zufall</button>
+    </div>
     <div class="conway-controls">
       <button onclick="conwayTogglePlay()" id="conway-play">▶ Start</button>
       <button onclick="conwayStep()">→ Schritt</button>
       <button onclick="conwayClear()">✕ Reset</button>
-      <button onclick="conwayRandom()">⚄ Zufall</button>
       <span class="conway-stats">Gen: <span id="conway-gen">0</span> · Pop: <span id="conway-pop">0</span></span>
     </div>
     <canvas id="conway-canvas"></canvas>
-    <p class="conway-hint">Klick = Zelle setzen · Ziehen = Malen · Die Regeln des Lebens.</p>
+    <p class="conway-hint">
+      <em>Klick</em> = Zelle setzen/löschen · <em>Ziehen</em> = Malen ·
+      Die 4 Regeln: Einsamkeit (&lt;2 Nachbarn → Tod) · Überleben (2-3 → lebt) ·
+      Überbevölkerung (&gt;3 → Tod) · Geburt (genau 3 → lebt)
+    </p>
   </div>
 
   <style>
@@ -494,11 +506,39 @@
       image-rendering: pixelated;
       max-width: 100%;
     }
+    .conway-patterns {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .conway-patterns button {
+      background: transparent;
+      color: #666;
+      border: 1px solid #222;
+      padding: 4px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      border-radius: 3px;
+    }
+    .conway-patterns button:hover {
+      color: var(--color-accent, #ff6b35);
+      border-color: var(--color-accent, #ff6b35);
+    }
     .conway-hint {
       font-size: 0.65rem;
-      color: #444;
-      margin-top: 12px;
+      color: #555;
+      margin-top: 14px;
       text-align: center;
+      max-width: 500px;
+      line-height: 1.6;
+    }
+    .conway-hint em {
+      color: var(--color-accent, #ff6b35);
+      font-style: normal;
     }
     #memento-trigger:hover {
       text-shadow: 0 0 10px var(--color-accent, #ff6b35);
@@ -869,14 +909,46 @@
       conwayClear();
       const cx = Math.floor(CONWAY_COLS / 2);
       const cy = Math.floor(CONWAY_ROWS / 2);
+
       const patterns = {
         glider: [[0,1],[1,2],[2,0],[2,1],[2,2]],
+        blinker: [[0,0],[0,1],[0,2]],
+        pulsar: (() => {
+          const p = [];
+          const offsets = [
+            [-6,-4],[-6,-3],[-6,-2],[-6,2],[-6,3],[-6,4],
+            [-4,-6],[-3,-6],[-2,-6],[-4,-1],[-3,-1],[-2,-1],
+            [-4,1],[-3,1],[-2,1],[-4,6],[-3,6],[-2,6],
+            [-1,-4],[-1,-3],[-1,-2],[-1,2],[-1,3],[-1,4],
+          ];
+          offsets.forEach(([r,c]) => {
+            p.push([r,c]); p.push([-r,c]); p.push([r,-c]); p.push([-r,-c]);
+          });
+          const seen = new Set();
+          return p.filter(([r,c]) => {
+            const key = `${r},${c}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+        })(),
+        glidergun: [
+          [0,24],[1,22],[1,24],[2,12],[2,13],[2,20],[2,21],[2,34],[2,35],
+          [3,11],[3,15],[3,20],[3,21],[3,34],[3,35],[4,0],[4,1],[4,10],[4,16],[4,20],[4,21],
+          [5,0],[5,1],[5,10],[5,14],[5,16],[5,17],[5,22],[5,24],[6,10],[6,16],[6,24],
+          [7,11],[7,15],[8,12],[8,13]
+        ],
+        acorn: [[0,1],[1,3],[2,0],[2,1],[2,4],[2,5],[2,6]],
+        rpentomino: [[0,1],[0,2],[1,0],[1,1],[2,1]],
       };
+
       const pat = patterns[name];
       if (pat) {
+        const ox = name === 'glidergun' ? 5 : cx;
+        const oy = name === 'glidergun' ? 5 : cy;
         pat.forEach(([r, c]) => {
-          const row = cy + r;
-          const col = cx + c;
+          const row = oy + r;
+          const col = ox + c;
           if (row >= 0 && row < CONWAY_ROWS && col >= 0 && col < CONWAY_COLS) {
             conwayGrid[row][col] = 1;
           }
