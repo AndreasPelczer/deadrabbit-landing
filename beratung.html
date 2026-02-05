@@ -191,6 +191,113 @@
       transform: translateX(-4px);
     }
 
+    /* HACCP Teaser Box */
+    .haccp-teaser {
+      background: linear-gradient(135deg, var(--color-bg-card) 0%, rgba(255, 107, 53, 0.03) 100%);
+      border: 1px solid var(--color-border);
+      padding: var(--space-xl);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .haccp-teaser::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--color-accent), var(--color-accent-dark));
+    }
+
+    .haccp-teaser__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      font-size: 0.55rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: var(--space-md);
+    }
+
+    .haccp-teaser__badge-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--color-accent);
+      border-radius: 50%;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 rgba(255, 107, 53, 0); }
+      50% { opacity: 0.7; box-shadow: 0 0 12px rgba(255, 107, 53, 0.5); }
+    }
+
+    .haccp-teaser__title {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      color: var(--color-text-bright);
+      margin-bottom: var(--space-sm);
+    }
+
+    .haccp-teaser__description {
+      font-size: 0.82rem;
+      color: var(--color-text-dim);
+      font-weight: 300;
+      line-height: 1.7;
+      margin-bottom: var(--space-lg);
+    }
+
+    .haccp-teaser__features {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-sm);
+    }
+
+    @media (max-width: 500px) {
+      .haccp-teaser__features {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .haccp-feature {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-size: 0.72rem;
+      color: var(--color-text);
+      font-weight: 300;
+    }
+
+    .haccp-feature__icon {
+      color: var(--color-accent);
+      font-size: 0.9rem;
+    }
+
+    .haccp-teaser__code {
+      margin-top: var(--space-lg);
+      padding: var(--space-md);
+      background: var(--color-bg-deep);
+      border: 1px solid var(--color-border-subtle);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--color-text-dim);
+      overflow-x: auto;
+    }
+
+    .haccp-teaser__code .comment {
+      color: var(--color-text-muted);
+    }
+
+    .haccp-teaser__code .keyword {
+      color: var(--color-accent);
+    }
+
+    .haccp-teaser__code .string {
+      color: var(--color-secondary);
+    }
+
     @media (max-width: 640px) {
       .beratung-hero {
         padding: var(--space-2xl) 0;
@@ -290,6 +397,60 @@
             <p class="angebot-item__description">"Warum Systeme kollabieren" – für Teams, Führungskräfte, oder alle die verstehen wollen warum es so ist wie es ist.</p>
           </li>
         </ul>
+      </section>
+
+      <div class="divider divider--visible"></div>
+
+      <!-- HACCP Teaser -->
+      <section class="section">
+        <h2 class="section__label">Das echte Problem</h2>
+        <p class="section__sublabel">HACCP · Dokumentation · Zeitprotokolle</p>
+
+        <div class="haccp-teaser">
+          <div class="haccp-teaser__badge">
+            <span class="haccp-teaser__badge-dot"></span>
+            <span>In Entwicklung: TimeProtocol</span>
+          </div>
+
+          <h3 class="haccp-teaser__title">HACCP-Dokumentation, die niemand hasst</h3>
+
+          <p class="haccp-teaser__description">
+            Sie kennen das: Zettelwirtschaft, unleserliche Protokolle, gestresste Mitarbeiter die um 6 Uhr morgens Temperaturen eintragen sollen. Bei der Kontrolle fehlt dann genau das eine Blatt. Das System arbeitet gegen die Menschen – nicht für sie.
+          </p>
+
+          <div class="haccp-teaser__features">
+            <div class="haccp-feature">
+              <span class="haccp-feature__icon">⏱</span>
+              <span>Automatische Zeitstempel</span>
+            </div>
+            <div class="haccp-feature">
+              <span class="haccp-feature__icon">🌡</span>
+              <span>Temperatur-Protokollierung</span>
+            </div>
+            <div class="haccp-feature">
+              <span class="haccp-feature__icon">📴</span>
+              <span>Offline-first – kein WLAN nötig</span>
+            </div>
+            <div class="haccp-feature">
+              <span class="haccp-feature__icon">✓</span>
+              <span>Revisionssicher & auditfähig</span>
+            </div>
+          </div>
+
+          <div class="haccp-teaser__code">
+            <span class="comment">// TimeProtocol.swift – So simpel wie möglich</span><br>
+            <span class="keyword">func</span> logTemperature(zone: <span class="string">"Kühlhaus"</span>, temp: 4.2)<br>
+            <span class="comment">// → Timestamp, User, Zone, Wert – fertig.</span><br>
+            <span class="comment">// Kein Klicken durch 5 Menüs. Keine Cloud.</span>
+          </div>
+        </div>
+
+        <!-- Quote -->
+        <blockquote class="quote" style="margin-top: var(--space-xl);">
+          <p class="quote__text" style="font-size: 1rem;">
+            Wenn HACCP-Dokumentation mehr Zeit kostet als das eigentliche Kochen, ist das System kaputt – nicht Ihre Leute.
+          </p>
+        </blockquote>
       </section>
 
       <div class="divider divider--visible"></div>
