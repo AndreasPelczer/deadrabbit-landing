@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beratung — Andreas Pelczer | Dead Rabbit Productions</title>
+  <meta name="description" content="Systemanalyse, Digitalisierung und Implementierungsbegleitung für Produktionsbetriebe. 36 Jahre Erfahrung.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,700;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css">
+
+  <style>
+    /* Beratungs-spezifische Styles */
+    .beratung-hero {
+      padding: var(--space-4xl) 0 var(--space-3xl);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .beratung-hero__title {
+      font-family: var(--font-serif);
+      font-size: 2rem;
+      font-weight: 400;
+      color: var(--color-text-bright);
+      line-height: 1.3;
+      margin-bottom: var(--space-lg);
+    }
+
+    .beratung-hero__title em {
+      color: var(--color-accent);
+      font-style: italic;
+    }
+
+    .beratung-hero__subtitle {
+      font-size: 0.9rem;
+      color: var(--color-text-dim);
+      max-width: 600px;
+      font-weight: 300;
+      line-height: 1.7;
+    }
+
+    /* Credentials Grid */
+    .credentials-grid {
+      display: grid;
+      gap: var(--space-lg);
+    }
+
+    .credential {
+      display: flex;
+      gap: var(--space-md);
+      align-items: flex-start;
+      padding: var(--space-md);
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      transition: all var(--duration-normal) var(--ease-out-expo);
+    }
+
+    .credential:hover {
+      border-color: var(--color-accent);
+      transform: translateX(8px);
+    }
+
+    .credential__icon {
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+
+    .credential__title {
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      color: var(--color-text-bright);
+      margin-bottom: 4px;
+    }
+
+    .credential__description {
+      font-size: 0.78rem;
+      color: var(--color-text-dim);
+      font-weight: 300;
+    }
+
+    /* Angebot Liste */
+    .angebot-list {
+      list-style: none;
+    }
+
+    .angebot-item {
+      padding: var(--space-lg) 0;
+      border-bottom: 1px solid var(--color-border-subtle);
+      transition: all var(--duration-normal) ease;
+    }
+
+    .angebot-item:last-child {
+      border-bottom: none;
+    }
+
+    .angebot-item:hover {
+      padding-left: var(--space-md);
+      border-color: var(--color-accent);
+    }
+
+    .angebot-item__title {
+      font-family: var(--font-serif);
+      font-size: 1.1rem;
+      color: var(--color-text-bright);
+      margin-bottom: 4px;
+      transition: color var(--duration-fast) ease;
+    }
+
+    .angebot-item:hover .angebot-item__title {
+      color: var(--color-accent);
+    }
+
+    .angebot-item__description {
+      font-size: 0.78rem;
+      color: var(--color-text-dim);
+      font-weight: 300;
+      line-height: 1.6;
+    }
+
+    /* Kontakt Box */
+    .kontakt-box {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      padding: var(--space-xl);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kontakt-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--color-accent), var(--color-accent-bright));
+    }
+
+    .kontakt-box__text {
+      font-size: 0.875rem;
+      color: var(--color-text);
+      margin-bottom: var(--space-lg);
+      font-weight: 300;
+    }
+
+    .kontakt-link {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      background: var(--color-accent);
+      color: var(--color-bg);
+      padding: 0.875rem 1.75rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all var(--duration-normal) var(--ease-out-expo);
+    }
+
+    .kontakt-link:hover {
+      background: var(--color-accent-bright);
+      color: var(--color-bg);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-glow);
+    }
+
+    /* Back Link */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-size: 0.75rem;
+      color: var(--color-text-dim);
+      margin-bottom: var(--space-xl);
+      transition: color var(--duration-fast) ease;
+    }
+
+    .back-link:hover {
+      color: var(--color-accent);
+    }
+
+    .back-link__arrow {
+      transition: transform var(--duration-normal) var(--ease-out-expo);
+    }
+
+    .back-link:hover .back-link__arrow {
+      transform: translateX(-4px);
+    }
+
+    @media (max-width: 640px) {
+      .beratung-hero {
+        padding: var(--space-2xl) 0;
+      }
+
+      .beratung-hero__title {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="page-content">
+    <div class="container">
+
+      <!-- Back Navigation -->
+      <a href="index.html" class="back-link">
+        <span class="back-link__arrow">←</span>
+        <span>Zurück zur Übersicht</span>
+      </a>
+
+      <!-- Hero -->
+      <header class="beratung-hero">
+        <h1 class="beratung-hero__title">
+          Ihr System funktioniert nur, weil Ihr Team das Chaos <em>kompensiert</em>. Das lässt sich ändern.
+        </h1>
+        <p class="beratung-hero__subtitle">
+          Ich helfe Produktionsbetrieben, ihre Abläufe so zu strukturieren, dass gute Arbeit nicht von Helden abhängt – sondern vom System selbst.
+        </p>
+      </header>
+
+      <div class="divider divider--visible"></div>
+
+      <!-- Wer ich bin -->
+      <section class="section">
+        <h2 class="section__label">Wer ich bin</h2>
+
+        <div class="credentials-grid">
+          <div class="credential">
+            <span class="credential__icon">⚙️</span>
+            <div>
+              <h3 class="credential__title">36 Jahre Produktionserfahrung</h3>
+              <p class="credential__description">Küchen, Großbetriebe, Systemgastronomie – vom Lehrling bis zum Küchenchef</p>
+            </div>
+          </div>
+
+          <div class="credential">
+            <span class="credential__icon">📖</span>
+            <div>
+              <h3 class="credential__title">Autor: Thermodynamik der Arbeit</h3>
+              <p class="credential__description">Warum Systeme kollabieren, bevor sie sichtbar scheitern</p>
+            </div>
+          </div>
+
+          <div class="credential">
+            <span class="credential__icon">📱</span>
+            <div>
+              <h3 class="credential__title">Entwickler: iMOPS</h3>
+              <p class="credential__description">In-Memory Operating Production System – die App, die ich selbst gebraucht hätte</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quote -->
+        <blockquote class="quote" style="margin-top: var(--space-xl);">
+          <p class="quote__text" style="font-size: 1.1rem;">
+            Ich habe das System gebaut, das ich Ihnen anbiete.
+          </p>
+        </blockquote>
+      </section>
+
+      <div class="divider divider--visible"></div>
+
+      <!-- Was ich anbiete -->
+      <section class="section">
+        <h2 class="section__label">Was ich anbiete</h2>
+
+        <ul class="angebot-list">
+          <li class="angebot-item">
+            <h3 class="angebot-item__title">Systemanalyse</h3>
+            <p class="angebot-item__description">Halber Tag vor Ort. Ich beobachte, frage, dokumentiere – und zeige Ihnen, wo Ihr System gegen Ihre Leute arbeitet.</p>
+          </li>
+
+          <li class="angebot-item">
+            <h3 class="angebot-item__title">Digitalisierungskonzept</h3>
+            <p class="angebot-item__description">Auf Basis von iMOPS oder angepasst an Ihre bestehende Infrastruktur. Offline-first, HACCP-konform, praxistauglich.</p>
+          </li>
+
+          <li class="angebot-item">
+            <h3 class="angebot-item__title">Implementierungsbegleitung</h3>
+            <p class="angebot-item__description">Ich lasse Sie nicht mit einem PDF allein. Einführung, Schulung, Anpassung – bis es läuft.</p>
+          </li>
+
+          <li class="angebot-item">
+            <h3 class="angebot-item__title">Workshops</h3>
+            <p class="angebot-item__description">"Warum Systeme kollabieren" – für Teams, Führungskräfte, oder alle die verstehen wollen warum es so ist wie es ist.</p>
+          </li>
+        </ul>
+      </section>
+
+      <div class="divider divider--visible"></div>
+
+      <!-- Kontakt -->
+      <section class="section">
+        <h2 class="section__label">Kontakt</h2>
+
+        <div class="kontakt-box">
+          <p class="kontakt-box__text">
+            Kein Verkaufsgespräch. Kein Pitch. Nur ein Gespräch darüber, wo Sie stehen und ob ich helfen kann.
+          </p>
+          <a href="mailto:a.pelczer@gmail.com?subject=Anfrage%20Beratung" class="kontakt-link">
+            Gespräch anfragen
+            <span>→</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <div class="footer__inner">
+          <div class="footer__brand">
+            <img
+              src="assets/images/dead-rabbit-logo.jpg"
+              alt="Dead Rabbit Productions"
+              class="footer__logo"
+            >
+            <div class="footer__brand-text">
+              <h2 class="footer__brand-name">Andreas Pelczer</h2>
+              <p class="footer__brand-tagline">System Architect · Production Systems · Author</p>
+            </div>
+          </div>
+
+          <nav class="footer__links">
+            <a href="https://github.com/AndreasPelczer" class="footer__link" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://www.linkedin.com/in/andreas-pelczer-5b5050160/" class="footer__link" target="_blank" rel="noopener">LinkedIn</a>
+            <a href="https://www.amazon.de/Thermodynamik-Arbeit-warum-Systeme-kollabieren/dp/B0GK95MWB5" class="footer__link" target="_blank" rel="noopener">Amazon</a>
+          </nav>
+        </div>
+
+        <div class="footer__bottom">
+          <span class="footer__copy">© 2026 Dead Rabbit Productions · <span style="color: var(--color-accent); letter-spacing: 2px;">MEMENTO MORI</span></span>
+          <span class="footer__made-with">Frankfurt am Main / Wertheim</span>
+        </div>
+      </footer>
+
+    </div>
+  </main>
+
+  <!-- Ambient Particles -->
+  <div class="ambient-particles" aria-hidden="true">
+    <div class="ambient-particles__dot"></div>
+    <div class="ambient-particles__dot"></div>
+    <div class="ambient-particles__dot"></div>
+  </div>
+
+</body>
+</html>
