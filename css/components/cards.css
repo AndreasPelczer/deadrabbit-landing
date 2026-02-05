@@ -182,3 +182,43 @@
     transform: translateY(0);
   }
 }
+
+/* --- CARD ACTIONS (Buttons) --- */
+.card__actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 10;
+}
+
+.card__btn {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-dim);
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+}
+
+.card__btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+.card__btn--primary {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.card__btn--primary:hover {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
