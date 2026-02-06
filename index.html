@@ -16,6 +16,16 @@
 </head>
 <body>
 
+  <!-- ============================================
+       SENTINEL: iMOPS Floating Logo
+       ============================================ -->
+  <a href="imops.html" class="sentinel" id="sentinel" title="iMOPS – Mehr erfahren">
+    <svg class="sentinel__logo" viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" aria-label="iMOPS">
+      <path d="M60 0 L100 0 L100 50 L170 50 L170 80 L142 80 L170 220 L130 220 L108 105 L100 80 L90 80 L82 105 L60 220 L20 220 L48 80 L20 80 L20 50 L60 50 Z" fill="#ff6b35"/>
+    </svg>
+    <span class="sentinel__label">iMOPS</span>
+  </a>
+
   <!-- Language Switcher -->
   <nav class="lang-switcher" aria-label="Sprache wählen">
     <a href="index.html" class="lang-switcher__link lang-switcher__link--active" title="Deutsch">DE</a>
@@ -95,8 +105,8 @@
 
         <div class="card-grid">
           <!-- iMOPS -->
-          <a class="card" href="https://github.com/AndreasPelczer/iMOPS_OS_CORE" target="_blank" rel="noopener">
-            <span class="card__type">Open Source · iOS</span>
+          <a class="card" href="imops.html">
+            <span class="card__type">Open Source · iOS · Kernel</span>
             <h3 class="card__title">iMOPS</h3>
             <p class="card__description">
               In-Memory Kernel für Produktionssteuerung. HACCP-konform, offline, deterministisch. MUMPS-inspiriert. Für Küchen, die kein WLAN haben und keine Zeit für Abstürze.
@@ -105,7 +115,7 @@
               <span class="badge badge--live">TESTFLIGHT</span>
               <span class="badge">MIT LIZENZ</span>
             </div>
-            <span class="card__arrow">→</span>
+            <span class="card__arrow">→ MEHR ERFAHREN</span>
           </a>
 
           <!-- Seubert-Assistent -->
@@ -723,6 +733,35 @@
         const scrolled = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
         progress.style.transform = `scaleX(${scrolled})`;
       }, { passive: true });
+
+      // --- SENTINEL: iMOPS Logo Scroll Behavior ---
+      const sentinel = document.getElementById('sentinel');
+      const sentinelLogo = sentinel ? sentinel.querySelector('.sentinel__logo') : null;
+      const projekteSection = document.getElementById('projekte');
+
+      if (sentinel && sentinelLogo) {
+        // Scroll-linked subtle rotation
+        window.addEventListener('scroll', () => {
+          const scrollProgress = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
+          const rotation = scrollProgress * 8; // 0° to 8° over full page
+          sentinelLogo.style.transform = `rotate(${rotation}deg)`;
+        }, { passive: true });
+
+        // Glow burst when software section is in view
+        if (projekteSection) {
+          const sentinelObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                sentinel.classList.add('sentinel--active');
+              } else {
+                sentinel.classList.remove('sentinel--active');
+              }
+            });
+          }, { threshold: 0.2 });
+
+          sentinelObserver.observe(projekteSection);
+        }
+      }
 
       console.log('✅ Ready');
 
