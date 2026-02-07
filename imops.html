@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>iMOPS 2.0 — HACCP-Dokumentation mit System</title>
-  <meta name="description" content="iMOPS 2.0: Ereignisbasiertes Dokumentationssystem für HACCP-relevante Maßnahmen. Revisionssicher, manipulationssicher, behördentauglich – mit klar definiertem Geltungsbereich.">
+  <title>iMOPS — Systembeschreibung, Prüfrelevanz und Geltungsbereich</title>
+  <meta name="description" content="iMOPS: Ereignisbasiertes System zur digitalen Dokumentation operativer Maßnahmen. Branchenneutral, prüfbar, nachvollziehbar – mit klar definiertem Geltungsbereich.">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -69,8 +69,8 @@
 
     .imops-hero__tagline {
       font-family: var(--font-mono);
-      font-size: 0.7rem;
-      letter-spacing: 0.2em;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
       color: var(--color-accent);
       margin-top: var(--space-sm);
       opacity: 0;
@@ -151,113 +151,52 @@
       font-weight: 700;
     }
 
-    /* ── PROMISE CARDS ── */
+    /* ── STRUCTURED LIST ── */
 
-    .promise-grid {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-xl);
-      margin-top: var(--space-lg);
-    }
-
-    .promise-card {
-      border-left: 2px solid #44cc66;
-      padding: var(--space-md) var(--space-lg);
-      background: rgba(68, 204, 102, 0.02);
-      transition: background var(--duration-normal) ease;
-    }
-
-    .promise-card:hover {
-      background: rgba(68, 204, 102, 0.04);
-    }
-
-    .promise-card__title {
-      font-family: var(--font-mono);
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--color-text-bright);
-      letter-spacing: 0.05em;
-      margin-bottom: var(--space-sm);
-      display: flex;
-      align-items: center;
-      gap: var(--space-sm);
-    }
-
-    .promise-card__check {
-      color: #44cc66;
-      font-size: 0.7rem;
-    }
-
-    .promise-card__body {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      line-height: 1.75;
-      color: var(--color-text);
-    }
-
-    .promise-card__body strong {
-      color: var(--color-text-bright);
-      font-weight: 700;
-    }
-
-    .promise-card__list {
-      list-style: none;
-      padding: 0;
-      margin: var(--space-sm) 0 0 0;
-    }
-
-    .promise-card__list li {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--color-text-dim);
-      padding: 3px 0 3px 18px;
-      position: relative;
-    }
-
-    .promise-card__list li::before {
-      content: '·';
-      position: absolute;
-      left: 4px;
-      color: var(--color-accent);
-    }
-
-    .promise-card__quote {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--color-text-muted);
-      border-left: 1px solid var(--color-border);
-      padding-left: var(--space-md);
-      margin-top: var(--space-md);
-      font-style: italic;
-      letter-spacing: 0.02em;
-    }
-
-    /* ── TRANSPARENCY LIST ── */
-
-    .transparency-list {
+    .imops-list {
       list-style: none;
       padding: 0;
       margin: var(--space-md) 0 0 0;
     }
 
-    .transparency-list li {
+    .imops-list li {
       font-family: var(--font-mono);
       font-size: 0.8rem;
       color: var(--color-text);
-      padding: 6px 0 6px 22px;
+      padding: 5px 0 5px 22px;
       position: relative;
-      line-height: 1.6;
+      line-height: 1.7;
     }
 
-    .transparency-list li::before {
-      content: '>';
+    .imops-list li::before {
+      content: '·';
       position: absolute;
-      left: 0;
+      left: 6px;
       color: var(--color-accent);
+    }
+
+    /* Variant: chevron prefix for transparency/system state lists */
+    .imops-list--chevron li::before {
+      content: '>';
+      left: 0;
       opacity: 0.6;
     }
 
-    /* ── TARGET / EXCLUSION GRID ── */
+    /* Variant: dash prefix for exclusion/negation lists */
+    .imops-list--dash li::before {
+      content: '—';
+      left: 0;
+      color: var(--color-text-muted);
+    }
+
+    /* Variant: plus prefix for positive/target lists */
+    .imops-list--plus li::before {
+      content: '+';
+      left: 2px;
+      color: #44cc66;
+    }
+
+    /* ── INFO GRID (side-by-side blocks) ── */
 
     .info-grid {
       display: grid;
@@ -288,68 +227,12 @@
       margin-bottom: var(--space-sm);
     }
 
-    .info-block__list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .info-block__list li {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--color-text-dim);
-      padding: 4px 0 4px 18px;
-      position: relative;
-      line-height: 1.6;
-    }
-
-    .info-block--target .info-block__list li::before {
-      content: '+';
-      position: absolute;
-      left: 0;
-      color: #44cc66;
-    }
-
-    .info-block--exclusion .info-block__list li::before {
-      content: '—';
-      position: absolute;
-      left: 0;
-      color: var(--color-text-muted);
-    }
-
     .info-block__note {
       font-family: var(--font-mono);
       font-size: 0.65rem;
       color: var(--color-text-muted);
       margin-top: var(--space-sm);
       font-style: italic;
-    }
-
-    /* ── FAZIT ── */
-
-    .imops-fazit {
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      line-height: 1.8;
-      color: var(--color-text);
-      max-width: 680px;
-      margin-top: var(--space-md);
-    }
-
-    .imops-fazit strong {
-      color: var(--color-text-bright);
-      font-weight: 700;
-    }
-
-    /* ── VERSION TAG ── */
-
-    .imops-version-tag {
-      font-family: var(--font-mono);
-      font-size: 0.6rem;
-      color: var(--color-text-muted);
-      text-align: center;
-      padding: var(--space-lg) 0;
-      letter-spacing: 0.1em;
     }
 
     /* ── CTA SECTION ── */
@@ -411,6 +294,11 @@
         letter-spacing: 0.1em;
       }
 
+      .imops-hero__tagline {
+        font-size: 0.55rem;
+        letter-spacing: 0.1em;
+      }
+
       .imops-btn + .imops-btn {
         margin-left: 0;
         margin-top: var(--space-sm);
@@ -451,203 +339,241 @@
       <path d="M60 0 L100 0 L100 50 L170 50 L170 80 L142 80 L170 220 L130 220 L108 105 L100 80 L90 80 L82 105 L60 220 L20 220 L48 80 L20 80 L20 50 L60 50 Z" fill="#ff6b35"/>
     </svg>
 
-    <h1 class="imops-hero__title">iMOPS 2.0</h1>
-    <p class="imops-hero__tagline">HACCP-DOKUMENTATION MIT SYSTEM</p>
-    <p class="imops-hero__version">── HACCP Edition · fd3eabe ──</p>
+    <h1 class="imops-hero__title">iMOPS</h1>
+    <p class="imops-hero__tagline">SYSTEMBESCHREIBUNG, PRÜFRELEVANZ UND GELTUNGSBEREICH</p>
+    <p class="imops-hero__version">── Ereignisbasierte Dokumentation operativer Maßnahmen ──</p>
   </section>
 
   <div class="imops-content">
 
-    <!-- ════ INTRO ════ -->
-    <section class="imops-section" id="intro">
-      <h2 class="imops-section__header">DIGITALE DOKUMENTATION, DIE HÄLT, WAS SIE ZEIGT</h2>
+    <!-- ════ ZWECK DIESER SEITE ════ -->
+    <section class="imops-section" id="zweck">
+      <h2 class="imops-section__header">ZWECK DIESER SEITE</h2>
 
       <p class="imops-text">
-        iMOPS ist ein ereignisbasiertes Dokumentationssystem für HACCP-relevante
-        Maßnahmen im laufenden Betrieb.
+        Diese Seite beschreibt den fachlichen Geltungsbereich, die Funktionsweise
+        sowie die bewussten Grenzen des Systems iMOPS.
       </p>
       <p class="imops-text">
-        Es unterstützt Lebensmittelbetriebe bei der <strong>nachvollziehbaren,
-        manipulationssicheren und behördentauglichen Dokumentation</strong> –
-        mit klar definiertem Geltungsbereich.
+        Sie richtet sich an <strong>Prüfer, Auditoren, Qualitätsverantwortliche</strong>
+        und Organisationen mit Dokumentations- und Nachweispflichten.
+      </p>
+      <p class="imops-text">
+        Ziel ist eine transparente Einordnung der im System erzeugten Daten und Nachweise.
       </p>
     </section>
 
-    <!-- ════ KERNVERSPRECHEN ════ -->
-    <section class="imops-section" id="kernversprechen">
-      <h2 class="imops-section__header">DIE SECHS KERNVERSPRECHEN</h2>
-
-      <div class="promise-grid">
-
-        <!-- 1: Revisionssicher -->
-        <div class="promise-card">
-          <div class="promise-card__title">
-            <span class="promise-card__check">&#10003;</span>
-            REVISIONSSICHER FÜR ABGESCHLOSSENE ZEITRÄUME
-          </div>
-          <div class="promise-card__body">
-            iMOPS ermöglicht den formalen <strong>Tagesabschluss</strong> von Dokumentationszeiträumen.
-            Abgeschlossene Tage werden sichtbar <strong>versiegelt</strong> und sind nachträglich nicht mehr veränderbar.
-          </div>
-          <div class="promise-card__quote">
-            Revisionssicherheit gilt für abgeschlossene Zeiträume.
-          </div>
-        </div>
-
-        <!-- 2: HACCP-konform -->
-        <div class="promise-card">
-          <div class="promise-card__title">
-            <span class="promise-card__check">&#10003;</span>
-            HACCP-KONFORM DOKUMENTIERT
-          </div>
-          <div class="promise-card__body">
-            HACCP-relevante Maßnahmen können mit fachlichen Referenzen versehen werden
-            (z.&nbsp;B. CCP, SOP oder Grenzwert). Diese Referenzen werden:
-            <ul class="promise-card__list">
-              <li>im laufenden Betrieb angezeigt</li>
-              <li>bei Abschluss mitversiegelt</li>
-              <li>im Archiv und Export mitgeführt</li>
-            </ul>
-          </div>
-          <div class="promise-card__quote">
-            iMOPS ersetzt kein HACCP-Konzept, sondern dokumentiert dessen Umsetzung.
-          </div>
-        </div>
-
-        <!-- 3: Unveränderbar -->
-        <div class="promise-card">
-          <div class="promise-card__title">
-            <span class="promise-card__check">&#10003;</span>
-            NACHTRÄGLICH NICHT VERÄNDERBAR INNERHALB DER BESTEHENDEN HISTORIE
-          </div>
-          <div class="promise-card__body">
-            Alle manuellen und automatisierten Aktionen werden protokolliert.
-            Nachträgliche Änderungen an bestehenden Einträgen sind technisch erkennbar.
-            <br><br>
-            Systemstarts, Wiederherstellungen und Initialisierungen werden <strong>transparent dokumentiert</strong>.
-          </div>
-          <div class="promise-card__quote">
-            Unveränderbarkeit gilt innerhalb der jeweils ausgewiesenen Historie.
-          </div>
-        </div>
-
-        <!-- 4: Lückenlos -->
-        <div class="promise-card">
-          <div class="promise-card__title">
-            <span class="promise-card__check">&#10003;</span>
-            LÜCKENLOSE DOKUMENTATION IM AKTIVEN DOKUMENTATIONSMODUS
-          </div>
-          <div class="promise-card__body">
-            Im aktiven Dokumentationsmodus werden <strong>alle relevanten Aktionen journalisiert</strong>.
-            Der aktuelle Modus ist jederzeit sichtbar.
-          </div>
-          <div class="promise-card__quote">
-            Lückenlosigkeit ist ein expliziter Systemzustand – kein stilles Versprechen.
-          </div>
-        </div>
-
-        <!-- 5: Verantwortlichkeit -->
-        <div class="promise-card">
-          <div class="promise-card__title">
-            <span class="promise-card__check">&#10003;</span>
-            EINDEUTIGE VERANTWORTLICHKEIT
-          </div>
-          <div class="promise-card__body">
-            Manuelle Aktionen erfordern einen Benutzerkontext und werden eindeutig zugeordnet.
-            Automatisierte Systemaktionen sind gesondert gekennzeichnet (<code>SYS auto</code>).
-          </div>
-          <div class="promise-card__quote">
-            Verantwortlichkeit ist klar zwischen Mensch und System getrennt.
-          </div>
-        </div>
-
-        <!-- 6: Behördentauglich -->
-        <div class="promise-card">
-          <div class="promise-card__title">
-            <span class="promise-card__check">&#10003;</span>
-            BEHÖRDENTAUGLICH UND VOLLSTÄNDIG EXPORTIERBAR
-          </div>
-          <div class="promise-card__body">
-            Alle relevanten Daten können für definierte Zeiträume exportiert werden
-            (z.&nbsp;B. Tagesbericht, CSV, JSON). Jeder Export enthält:
-            <ul class="promise-card__list">
-              <li>Betrieb</li>
-              <li>Zeitraum</li>
-              <li>Erstellungszeitpunkt</li>
-              <li>Dokumentationsmodus</li>
-              <li>Integritätsstatus</li>
-            </ul>
-          </div>
-          <div class="promise-card__quote">
-            Exporte sind selbsterklärend und für Behörden geeignet.
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ════ TRANSPARENZ ════ -->
-    <section class="imops-section" id="transparenz">
-      <h2 class="imops-section__header">TRANSPARENZ STATT BLACKBOX</h2>
+    <!-- ════ WAS IST iMOPS? ════ -->
+    <section class="imops-section" id="definition">
+      <h2 class="imops-section__header">WAS IST iMOPS?</h2>
 
       <p class="imops-text">
-        iMOPS macht Systemzustände sichtbar:
+        iMOPS ist ein ereignisbasiertes System zur <strong>digitalen Dokumentation
+        operativer Maßnahmen</strong> im laufenden Betrieb.
+      </p>
+      <p class="imops-text">
+        Das System erfasst fachliche Aktionen als zeitlich geordnete Ereignisse,
+        speichert diese nachvollziehbar und stellt sie strukturiert zur Auswertung,
+        Prüfung und Weitergabe bereit.
+      </p>
+      <p class="imops-text">
+        iMOPS ist <strong>branchenneutral</strong> konzipiert und eignet sich überall dort,
+        wo Maßnahmen dokumentiert, Verantwortlichkeiten nachvollzogen und Abläufe
+        prüfbar gemacht werden müssen.
+      </p>
+    </section>
+
+    <!-- ════ TYPISCHE EINSATZBEREICHE ════ -->
+    <section class="imops-section" id="einsatz">
+      <h2 class="imops-section__header">TYPISCHE EINSATZBEREICHE</h2>
+
+      <p class="imops-text">
+        iMOPS kann unter anderem eingesetzt werden in:
       </p>
 
-      <ul class="transparency-list">
-        <li>Beginn der aktuellen Dokumentationshistorie</li>
-        <li>Abgeschlossene Zeiträume</li>
-        <li>Aktiver Dokumentationsmodus</li>
-        <li>Integritätsstatus der Daten</li>
+      <ul class="imops-list imops-list--plus">
+        <li>Lebensmittelbetrieben (z.&nbsp;B. HACCP-relevante Maßnahmen)</li>
+        <li>Produktion und Fertigung</li>
+        <li>Handwerk und technische Dienstleistungen</li>
+        <li>Logistik und Lagerhaltung</li>
+        <li>Pflege- und Gesundheitsumfeld</li>
+        <li>Interne Qualitäts- und Sicherheitsprozesse</li>
+        <li>Organisationen mit Audit- oder Nachweispflichten</li>
       </ul>
 
       <p class="imops-text" style="margin-top: var(--space-lg);">
-        Interne Betriebskennzahlen werden klar als solche gekennzeichnet
-        und sind <strong>keine gesetzlichen Grenzwerte</strong>.
+        Die fachliche Bewertung der Maßnahmen verbleibt stets bei der jeweiligen Organisation.
       </p>
     </section>
 
-    <!-- ════ ZIELGRUPPE & ABGRENZUNG ════ -->
-    <section class="imops-section" id="zielgruppe">
-      <h2 class="imops-section__header">FÜR WEN &amp; WAS NICHT</h2>
+    <!-- ════ WAS iMOPS BEWUSST NICHT IST ════ -->
+    <section class="imops-section" id="abgrenzung">
+      <h2 class="imops-section__header">WAS iMOPS BEWUSST NICHT IST</h2>
 
-      <div class="info-grid">
-        <div class="info-block info-block--target">
-          <div class="info-block__title">FÜR WEN IST iMOPS GEEIGNET?</div>
-          <ul class="info-block__list">
-            <li>Lebensmittelbetriebe mit HACCP-Pflicht</li>
-            <li>Küchen, Manufakturen und Produktionsbetriebe</li>
-            <li>Betriebe, die Dokumentation ernsthaft nachweisen müssen</li>
-          </ul>
-        </div>
+      <p class="imops-text">
+        iMOPS ist <strong>kein Entscheidungs- oder Bewertungssystem</strong>.
+      </p>
+      <p class="imops-text">
+        Das System:
+      </p>
 
-        <div class="info-block info-block--exclusion">
-          <div class="info-block__title">WAS iMOPS BEWUSST NICHT IST</div>
-          <ul class="info-block__list">
-            <li>Kein Ersatz für ein betriebliches HACCP-Konzept</li>
-            <li>Kein juristisches Archivsystem im Sinne der GoBD</li>
-            <li>Kein Überwachungssystem für Mitarbeiter</li>
-          </ul>
-          <div class="info-block__note">Diese Abgrenzung ist dokumentiert und transparent.</div>
-        </div>
-      </div>
-    </section>
+      <ul class="imops-list imops-list--dash">
+        <li>ersetzt keine fachlichen Konzepte, Normen oder gesetzlichen Vorgaben</li>
+        <li>definiert keine Grenzwerte oder Maßnahmen</li>
+        <li>trifft keine eigenständigen Entscheidungen über Richtigkeit oder Angemessenheit</li>
+      </ul>
 
-    <!-- ════ FAZIT ════ -->
-    <section class="imops-section" id="fazit">
-      <h2 class="imops-section__header">FAZIT</h2>
-
-      <p class="imops-fazit">
-        iMOPS bietet eine <strong>ehrliche, belastbare und prüferfeste Lösung</strong>
-        zur digitalen HACCP-Dokumentation –
-        ohne Überversprechen, ohne Grauzonen, ohne Show.
+      <p class="imops-text" style="margin-top: var(--space-lg);">
+        Verantwortung für Inhalte, Verfahren und Bewertungen liegt beim
+        jeweiligen Betrieb bzw. der Organisation.
       </p>
     </section>
 
-    <!-- ════ VERSION TAG ════ -->
-    <div class="imops-version-tag">
-      STAND DER AUSSAGEN: iMOPS 2.0 – HACCP EDITION (fd3eabe)
-    </div>
+    <!-- ════ DOKUMENTATIONSLOGIK ════ -->
+    <section class="imops-section" id="dokumentationslogik">
+      <h2 class="imops-section__header">DOKUMENTATIONSLOGIK</h2>
+
+      <p class="imops-text">
+        Alle im System ausgeführten manuellen Aktionen werden als Ereignisse
+        journalisiert und zusätzlich in einem <strong>Audit-Trail</strong> gespeichert.
+      </p>
+      <p class="imops-text">
+        Automatisierte Systemaktionen (z.&nbsp;B. Systemstart, Wiederherstellung,
+        Archivierung) werden gesondert gekennzeichnet.
+      </p>
+      <p class="imops-text">
+        Der aktive Dokumentationsmodus ist im System sichtbar ausgewiesen.
+      </p>
+    </section>
+
+    <!-- ════ ZEITLICHE GÜLTIGKEIT ════ -->
+    <section class="imops-section" id="zeitraeume">
+      <h2 class="imops-section__header">ZEITLICHE GÜLTIGKEIT UND ABSCHLUSS VON ZEITRÄUMEN</h2>
+
+      <p class="imops-text">
+        Die Nachvollziehbarkeit der Dokumentation gilt ab dem Beginn der
+        jeweils ausgewiesenen Systemhistorie.
+      </p>
+      <p class="imops-text">
+        Dokumentationszeiträume können durch einen <strong>formalen Abschluss</strong>
+        abgeschlossen und versiegelt werden. Abgeschlossene Zeiträume gelten als
+        final und sind nachträglich nicht mehr veränderbar.
+      </p>
+      <p class="imops-text">
+        Nicht abgeschlossene Zeiträume stellen den aktuellen Arbeitsstand dar.
+      </p>
+    </section>
+
+    <!-- ════ INTEGRITÄT ════ -->
+    <section class="imops-section" id="integritaet">
+      <h2 class="imops-section__header">INTEGRITÄT UND NACHVOLLZIEHBARKEIT</h2>
+
+      <p class="imops-text">
+        Innerhalb der bestehenden Historie sind gespeicherte Einträge nachträglich
+        <strong>nicht veränderbar</strong>, ohne dass dies technisch erkennbar wird.
+      </p>
+      <p class="imops-text">
+        Die Integrität der gespeicherten Daten kann jederzeit durch eine integrierte
+        <strong>Integritätsprüfung</strong> überprüft werden.
+      </p>
+      <p class="imops-text">
+        Systemstarts, Wiederherstellungen und Initialisierungen werden transparent dokumentiert.
+      </p>
+    </section>
+
+    <!-- ════ VERANTWORTLICHKEITEN ════ -->
+    <section class="imops-section" id="verantwortlichkeiten">
+      <h2 class="imops-section__header">VERANTWORTLICHKEITEN</h2>
+
+      <p class="imops-text">
+        Manuelle Aktionen erfordern einen Benutzerkontext und werden
+        <strong>eindeutig einer Person zugeordnet</strong>.
+      </p>
+      <p class="imops-text">
+        Automatisierte Systemaktionen erfolgen ohne Benutzerinteraktion
+        und sind entsprechend gekennzeichnet.
+      </p>
+      <p class="imops-text">
+        Damit ist jederzeit nachvollziehbar, welche Aktionen durch Menschen
+        und welche durch das System selbst ausgeführt wurden.
+      </p>
+    </section>
+
+    <!-- ════ FACHLICHE REFERENZEN ════ -->
+    <section class="imops-section" id="referenzen">
+      <h2 class="imops-section__header">FACHLICHE REFERENZEN (OPTIONAL)</h2>
+
+      <p class="imops-text">
+        Maßnahmen können optional mit fachlichen Referenzen versehen werden, zum Beispiel:
+      </p>
+
+      <ul class="imops-list">
+        <li>interne Prozess- oder Arbeitsanweisungen</li>
+        <li>Norm- oder Regelwerksbezüge</li>
+        <li>Kontroll- oder Prüfstellen</li>
+        <li>branchenspezifische Vorgaben (z.&nbsp;B. HACCP, ISO, interne SOPs)</li>
+      </ul>
+
+      <p class="imops-text" style="margin-top: var(--space-lg);">
+        Diese Referenzen dienen der Einordnung der Maßnahme, nicht ihrer Bewertung.
+      </p>
+    </section>
+
+    <!-- ════ EXPORT UND WEITERGABE ════ -->
+    <section class="imops-section" id="export">
+      <h2 class="imops-section__header">EXPORT UND WEITERGABE</h2>
+
+      <p class="imops-text">
+        Die im System gespeicherten Daten können für definierte Zeiträume
+        exportiert werden, zum Beispiel als:
+      </p>
+
+      <ul class="imops-list">
+        <li>strukturierte Textberichte</li>
+        <li>tabellarische Formate</li>
+        <li>maschinenlesbare Datenformate</li>
+      </ul>
+
+      <p class="imops-text" style="margin-top: var(--space-lg);">
+        Exporte enthalten Metadaten zum Zeitraum, Dokumentationsmodus und
+        Integritätsstatus und sind für <strong>Prüf- und Nachweiszwecke</strong> geeignet.
+      </p>
+    </section>
+
+    <!-- ════ TRANSPARENZ UND ABGRENZUNG ════ -->
+    <section class="imops-section" id="transparenz">
+      <h2 class="imops-section__header">TRANSPARENZ UND ABGRENZUNG</h2>
+
+      <p class="imops-text">
+        iMOPS macht Systemzustände sichtbar, darunter:
+      </p>
+
+      <ul class="imops-list imops-list--chevron">
+        <li>Beginn der aktuellen Dokumentationshistorie</li>
+        <li>abgeschlossene und offene Zeiträume</li>
+        <li>aktiver Dokumentationsmodus</li>
+        <li>Integritätsstatus der gespeicherten Daten</li>
+      </ul>
+
+      <p class="imops-text" style="margin-top: var(--space-lg);">
+        Interne Kennzahlen dienen ausschließlich der operativen Orientierung
+        und stellen <strong>keine gesetzlichen Grenzwerte</strong> dar.
+      </p>
+    </section>
+
+    <!-- ════ ZUSAMMENFASSUNG ════ -->
+    <section class="imops-section" id="zusammenfassung">
+      <h2 class="imops-section__header">ZUSAMMENFASSUNG</h2>
+
+      <p class="imops-text">
+        iMOPS stellt eine <strong>transparente, nachvollziehbare und prüfbare</strong>
+        Form der digitalen Dokumentation operativer Maßnahmen bereit.
+      </p>
+      <p class="imops-text">
+        Leistungsumfang, Einsatzbereich und Grenzen des Systems sind bewusst
+        klar definiert und dokumentiert.
+      </p>
+    </section>
 
     <!-- ════ CTA ════ -->
     <div class="imops-cta">
@@ -661,7 +587,7 @@
 
     <!-- ════ FOOTER ════ -->
     <div class="imops-footer">
-      <p class="imops-footer__text">iMOPS 2.0 · HACCP EDITION · iOS · SWIFT · MIT LIZENZ</p>
+      <p class="imops-footer__text">iMOPS · EREIGNISBASIERTE DOKUMENTATION · iOS · SWIFT · MIT LIZENZ</p>
     </div>
 
   </div>
