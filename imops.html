@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>iMOPS — In-Memory Operating Production System</title>
-  <meta name="description" content="iMOPS: Open-Source iOS-Prototyp mit MUMPS-inspiriertem In-Memory-Store für operative Aufgabensteuerung in der Küche. Swift, SwiftUI, MIT-Lizenz.">
+  <title>iMOPS 2.0 — HACCP-Dokumentation mit System</title>
+  <meta name="description" content="iMOPS 2.0: Ereignisbasiertes Dokumentationssystem für HACCP-relevante Maßnahmen. Revisionssicher, manipulationssicher, behördentauglich – mit klar definiertem Geltungsbereich.">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -151,110 +151,205 @@
       font-weight: 700;
     }
 
-    /* ── CODE BLOCK ── */
+    /* ── PROMISE CARDS ── */
 
-    .imops-code {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--color-border);
-      padding: var(--space-md);
-      overflow-x: auto;
-      margin-top: var(--space-md);
+    .promise-grid {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xl);
+      margin-top: var(--space-lg);
     }
 
-    .imops-code pre {
+    .promise-card {
+      border-left: 2px solid #44cc66;
+      padding: var(--space-md) var(--space-lg);
+      background: rgba(68, 204, 102, 0.02);
+      transition: background var(--duration-normal) ease;
+    }
+
+    .promise-card:hover {
+      background: rgba(68, 204, 102, 0.04);
+    }
+
+    .promise-card__title {
       font-family: var(--font-mono);
-      font-size: 0.72rem;
-      line-height: 1.7;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--color-text-bright);
+      letter-spacing: 0.05em;
+      margin-bottom: var(--space-sm);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .promise-card__check {
+      color: #44cc66;
+      font-size: 0.7rem;
+    }
+
+    .promise-card__body {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.75;
+      color: var(--color-text);
+    }
+
+    .promise-card__body strong {
+      color: var(--color-text-bright);
+      font-weight: 700;
+    }
+
+    .promise-card__list {
+      list-style: none;
+      padding: 0;
+      margin: var(--space-sm) 0 0 0;
+    }
+
+    .promise-card__list li {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
       color: var(--color-text-dim);
-      margin: 0;
-      white-space: pre;
+      padding: 3px 0 3px 18px;
+      position: relative;
     }
 
-    .imops-code .code-comment {
-      color: var(--color-text-muted);
-    }
-
-    .imops-code .code-keyword {
+    .promise-card__list li::before {
+      content: '·';
+      position: absolute;
+      left: 4px;
       color: var(--color-accent);
     }
 
-    .imops-code .code-string {
-      color: var(--color-secondary, #44cc66);
+    .promise-card__quote {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      border-left: 1px solid var(--color-border);
+      padding-left: var(--space-md);
+      margin-top: var(--space-md);
+      font-style: italic;
+      letter-spacing: 0.02em;
     }
 
-    .imops-code .code-type {
-      color: #aa66ff;
-    }
+    /* ── TRANSPARENCY LIST ── */
 
-    /* ── FILE TREE ── */
-
-    .file-tree {
+    .transparency-list {
       list-style: none;
       padding: 0;
       margin: var(--space-md) 0 0 0;
     }
 
-    .file-tree li {
+    .transparency-list li {
       font-family: var(--font-mono);
-      font-size: 0.72rem;
-      color: var(--color-text-dim);
-      padding: 4px 0 4px 22px;
+      font-size: 0.8rem;
+      color: var(--color-text);
+      padding: 6px 0 6px 22px;
       position: relative;
+      line-height: 1.6;
     }
 
-    .file-tree li::before {
-      content: '├─';
+    .transparency-list li::before {
+      content: '>';
       position: absolute;
       left: 0;
-      color: var(--color-border);
+      color: var(--color-accent);
+      opacity: 0.6;
     }
 
-    .file-tree li:last-child::before {
-      content: '└─';
-    }
+    /* ── TARGET / EXCLUSION GRID ── */
 
-    .file-tree .file-desc {
-      color: var(--color-text-muted);
-    }
-
-    /* ── STATUS GRID ── */
-
-    .status-grid {
+    .info-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: var(--space-md);
-      margin-top: var(--space-md);
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-xl);
+      margin-top: var(--space-lg);
     }
 
-    .status-item {
+    .info-block {
       padding: var(--space-md);
       border-left: 2px solid var(--color-border);
     }
 
-    .status-item--done {
+    .info-block--target {
       border-left-color: #44cc66;
     }
 
-    .status-item--wip {
-      border-left-color: var(--color-accent);
-    }
-
-    .status-item--missing {
+    .info-block--exclusion {
       border-left-color: var(--color-text-muted);
     }
 
-    .status-item__label {
+    .info-block__title {
       font-family: var(--font-mono);
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 700;
       color: var(--color-text-bright);
+      letter-spacing: 0.1em;
+      margin-bottom: var(--space-sm);
     }
 
-    .status-item__desc {
+    .info-block__list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .info-block__list li {
       font-family: var(--font-mono);
-      font-size: 0.62rem;
+      font-size: 0.75rem;
+      color: var(--color-text-dim);
+      padding: 4px 0 4px 18px;
+      position: relative;
+      line-height: 1.6;
+    }
+
+    .info-block--target .info-block__list li::before {
+      content: '+';
+      position: absolute;
+      left: 0;
+      color: #44cc66;
+    }
+
+    .info-block--exclusion .info-block__list li::before {
+      content: '—';
+      position: absolute;
+      left: 0;
       color: var(--color-text-muted);
-      margin-top: 2px;
+    }
+
+    .info-block__note {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--color-text-muted);
+      margin-top: var(--space-sm);
+      font-style: italic;
+    }
+
+    /* ── FAZIT ── */
+
+    .imops-fazit {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      line-height: 1.8;
+      color: var(--color-text);
+      max-width: 680px;
+      margin-top: var(--space-md);
+    }
+
+    .imops-fazit strong {
+      color: var(--color-text-bright);
+      font-weight: 700;
+    }
+
+    /* ── VERSION TAG ── */
+
+    .imops-version-tag {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      color: var(--color-text-muted);
+      text-align: center;
+      padding: var(--space-lg) 0;
+      letter-spacing: 0.1em;
     }
 
     /* ── CTA SECTION ── */
@@ -307,8 +402,7 @@
     /* ── RESPONSIVE ── */
 
     @media (max-width: 640px) {
-      .usecase-grid,
-      .principles-grid {
+      .info-grid {
         grid-template-columns: 1fr;
       }
 
@@ -357,234 +451,203 @@
       <path d="M60 0 L100 0 L100 50 L170 50 L170 80 L142 80 L170 220 L130 220 L108 105 L100 80 L90 80 L82 105 L60 220 L20 220 L48 80 L20 80 L20 50 L60 50 Z" fill="#ff6b35"/>
     </svg>
 
-    <h1 class="imops-hero__title">iMOPS</h1>
-    <p class="imops-hero__tagline">IN-MEMORY OPERATING PRODUCTION SYSTEM</p>
-    <p class="imops-hero__version">── iOS Prototyp · Swift · MIT Lizenz ──</p>
+    <h1 class="imops-hero__title">iMOPS 2.0</h1>
+    <p class="imops-hero__tagline">HACCP-DOKUMENTATION MIT SYSTEM</p>
+    <p class="imops-hero__version">── HACCP Edition · fd3eabe ──</p>
   </section>
 
   <div class="imops-content">
 
-    <!-- ════ WAS IST iMOPS? ════ -->
-    <section class="imops-section" id="about">
-      <h2 class="imops-section__header">WAS IST DAS?</h2>
+    <!-- ════ INTRO ════ -->
+    <section class="imops-section" id="intro">
+      <h2 class="imops-section__header">DIGITALE DOKUMENTATION, DIE HÄLT, WAS SIE ZEIGT</h2>
 
       <p class="imops-text">
-        iMOPS ist eine <strong>iOS-App</strong> (Swift/SwiftUI, ab iOS 17) mit einem
-        MUMPS-inspirierten In-Memory Key-Value Store als Kern. Die Idee:
-        Aufgaben in einer Profiküche so steuern, wie alte Krankenhaussysteme
-        Patientendaten verwaltet haben — schnell, hierarchisch, ohne Overhead.
+        iMOPS ist ein ereignisbasiertes Dokumentationssystem für HACCP-relevante
+        Maßnahmen im laufenden Betrieb.
       </p>
       <p class="imops-text">
-        Der Kern ist ein <strong>Dictionary</strong> (<code>[String: Any]</code>) mit
-        hierarchischen Keys wie <code>^TASK.001.TITLE</code> und drei Basis-Operationen:
-        SET, GET, KILL. Thread-safe über eine Serial DispatchQueue.
-      </p>
-      <p class="imops-text">
-        Das Projekt ist ein <strong>funktionierender Prototyp</strong>. Es hat keine
-        Persistenz, keine Datenbank, keine Cloud-Anbindung. Die Daten leben nur
-        im RAM und sind nach App-Neustart weg. Es ist ein Experiment — kein
-        fertiges Produkt.
+        Es unterstützt Lebensmittelbetriebe bei der <strong>nachvollziehbaren,
+        manipulationssicheren und behördentauglichen Dokumentation</strong> –
+        mit klar definiertem Geltungsbereich.
       </p>
     </section>
 
-    <!-- ════ ARCHITEKTUR ════ -->
-    <section class="imops-section" id="architektur">
-      <h2 class="imops-section__header">ARCHITEKTUR</h2>
+    <!-- ════ KERNVERSPRECHEN ════ -->
+    <section class="imops-section" id="kernversprechen">
+      <h2 class="imops-section__header">DIE SECHS KERNVERSPRECHEN</h2>
+
+      <div class="promise-grid">
+
+        <!-- 1: Revisionssicher -->
+        <div class="promise-card">
+          <div class="promise-card__title">
+            <span class="promise-card__check">&#10003;</span>
+            REVISIONSSICHER FÜR ABGESCHLOSSENE ZEITRÄUME
+          </div>
+          <div class="promise-card__body">
+            iMOPS ermöglicht den formalen <strong>Tagesabschluss</strong> von Dokumentationszeiträumen.
+            Abgeschlossene Tage werden sichtbar <strong>versiegelt</strong> und sind nachträglich nicht mehr veränderbar.
+          </div>
+          <div class="promise-card__quote">
+            Revisionssicherheit gilt für abgeschlossene Zeiträume.
+          </div>
+        </div>
+
+        <!-- 2: HACCP-konform -->
+        <div class="promise-card">
+          <div class="promise-card__title">
+            <span class="promise-card__check">&#10003;</span>
+            HACCP-KONFORM DOKUMENTIERT
+          </div>
+          <div class="promise-card__body">
+            HACCP-relevante Maßnahmen können mit fachlichen Referenzen versehen werden
+            (z.&nbsp;B. CCP, SOP oder Grenzwert). Diese Referenzen werden:
+            <ul class="promise-card__list">
+              <li>im laufenden Betrieb angezeigt</li>
+              <li>bei Abschluss mitversiegelt</li>
+              <li>im Archiv und Export mitgeführt</li>
+            </ul>
+          </div>
+          <div class="promise-card__quote">
+            iMOPS ersetzt kein HACCP-Konzept, sondern dokumentiert dessen Umsetzung.
+          </div>
+        </div>
+
+        <!-- 3: Unveränderbar -->
+        <div class="promise-card">
+          <div class="promise-card__title">
+            <span class="promise-card__check">&#10003;</span>
+            NACHTRÄGLICH NICHT VERÄNDERBAR INNERHALB DER BESTEHENDEN HISTORIE
+          </div>
+          <div class="promise-card__body">
+            Alle manuellen und automatisierten Aktionen werden protokolliert.
+            Nachträgliche Änderungen an bestehenden Einträgen sind technisch erkennbar.
+            <br><br>
+            Systemstarts, Wiederherstellungen und Initialisierungen werden <strong>transparent dokumentiert</strong>.
+          </div>
+          <div class="promise-card__quote">
+            Unveränderbarkeit gilt innerhalb der jeweils ausgewiesenen Historie.
+          </div>
+        </div>
+
+        <!-- 4: Lückenlos -->
+        <div class="promise-card">
+          <div class="promise-card__title">
+            <span class="promise-card__check">&#10003;</span>
+            LÜCKENLOSE DOKUMENTATION IM AKTIVEN DOKUMENTATIONSMODUS
+          </div>
+          <div class="promise-card__body">
+            Im aktiven Dokumentationsmodus werden <strong>alle relevanten Aktionen journalisiert</strong>.
+            Der aktuelle Modus ist jederzeit sichtbar.
+          </div>
+          <div class="promise-card__quote">
+            Lückenlosigkeit ist ein expliziter Systemzustand – kein stilles Versprechen.
+          </div>
+        </div>
+
+        <!-- 5: Verantwortlichkeit -->
+        <div class="promise-card">
+          <div class="promise-card__title">
+            <span class="promise-card__check">&#10003;</span>
+            EINDEUTIGE VERANTWORTLICHKEIT
+          </div>
+          <div class="promise-card__body">
+            Manuelle Aktionen erfordern einen Benutzerkontext und werden eindeutig zugeordnet.
+            Automatisierte Systemaktionen sind gesondert gekennzeichnet (<code>SYS auto</code>).
+          </div>
+          <div class="promise-card__quote">
+            Verantwortlichkeit ist klar zwischen Mensch und System getrennt.
+          </div>
+        </div>
+
+        <!-- 6: Behördentauglich -->
+        <div class="promise-card">
+          <div class="promise-card__title">
+            <span class="promise-card__check">&#10003;</span>
+            BEHÖRDENTAUGLICH UND VOLLSTÄNDIG EXPORTIERBAR
+          </div>
+          <div class="promise-card__body">
+            Alle relevanten Daten können für definierte Zeiträume exportiert werden
+            (z.&nbsp;B. Tagesbericht, CSV, JSON). Jeder Export enthält:
+            <ul class="promise-card__list">
+              <li>Betrieb</li>
+              <li>Zeitraum</li>
+              <li>Erstellungszeitpunkt</li>
+              <li>Dokumentationsmodus</li>
+              <li>Integritätsstatus</li>
+            </ul>
+          </div>
+          <div class="promise-card__quote">
+            Exporte sind selbsterklärend und für Behörden geeignet.
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ════ TRANSPARENZ ════ -->
+    <section class="imops-section" id="transparenz">
+      <h2 class="imops-section__header">TRANSPARENZ STATT BLACKBOX</h2>
 
       <p class="imops-text">
-        Die App besteht aus 9 Swift-Dateien. Kein Framework, keine Dependencies,
-        kein CocoaPods. Alles in einem Xcode-Projekt:
+        iMOPS macht Systemzustände sichtbar:
       </p>
 
-      <ul class="file-tree">
-        <li><strong>Kernel/TheBrain.swift</strong> <span class="file-desc">— Singleton, [String: Any] Store, DispatchQueue, Score-Berechnung</span></li>
-        <li><strong>Kernel/Syntax.swift</strong> <span class="file-desc">— Typisierte Key-Pfade (BrainPath), DSL-Wrapper (iMOPS.SET/GET/KILL)</span></li>
-        <li><strong>Kernel/TaskRepository.swift</strong> <span class="file-desc">— Task anlegen, quittieren, ins Archiv verschieben</span></li>
-        <li><strong>Kernel/ProductionTaskView.swift</strong> <span class="file-desc">— SwiftUI: Offene Aufgaben + Quittierung</span></li>
-        <li><strong>Kernel/RootTerminalView.swift</strong> <span class="file-desc">— Router: liest ^NAV.LOCATION, rendert passende View</span></li>
-        <li><strong>TerminalViews/HomeMenuView.swift</strong> <span class="file-desc">— Hauptmenü mit Live-Score</span></li>
-        <li><strong>TerminalViews/CommanderView.swift</strong> <span class="file-desc">— Archiv-Einsicht, HACCP-Export als Text</span></li>
-        <li><strong>TerminalViews/StaffGridView.swift</strong> <span class="file-desc">— Zero-Waste: Überproduktion → Kantine</span></li>
-        <li><strong>Kernel/iMOPS_OS_COREApp.swift</strong> <span class="file-desc">— @main, ruft seed() auf</span></li>
+      <ul class="transparency-list">
+        <li>Beginn der aktuellen Dokumentationshistorie</li>
+        <li>Abgeschlossene Zeiträume</li>
+        <li>Aktiver Dokumentationsmodus</li>
+        <li>Integritätsstatus der Daten</li>
       </ul>
-    </section>
 
-    <!-- ════ DER KERN ════ -->
-    <section class="imops-section" id="kern">
-      <h2 class="imops-section__header">DER KERN: TheBrain.swift</h2>
-
-      <p class="imops-text">
-        Das Herzstück ist ein <strong>Singleton mit einem Dictionary</strong>.
-        Keys beginnen mit <code>^</code> (wie MUMPS Globals) und sind hierarchisch
-        aufgebaut. Der Zugriff ist per Serial Queue thread-safe.
-      </p>
-
-      <div class="imops-code"><pre><span class="code-keyword">@Observable</span>
-<span class="code-keyword">final class</span> <span class="code-type">TheBrain</span> {
-    <span class="code-keyword">static let</span> shared = TheBrain()
-
-    <span class="code-keyword">private var</span> storage: [<span class="code-type">String</span>: <span class="code-type">Any</span>] = [:]
-    <span class="code-keyword">private let</span> kernelQueue = DispatchQueue(label: <span class="code-string">"imops.kernel.queue"</span>)
-
-    <span class="code-keyword">func</span> set(_ path: <span class="code-type">String</span>, _ value: <span class="code-type">Any</span>) {
-        kernelQueue.sync { storage[path] = value }
-    }
-
-    <span class="code-keyword">func</span> get&lt;T&gt;(_ path: <span class="code-type">String</span>) -> T? {
-        kernelQueue.sync { storage[path] <span class="code-keyword">as</span>? T }
-    }
-
-    <span class="code-keyword">func</span> kill(_ path: <span class="code-type">String</span>) {
-        kernelQueue.sync { storage.removeValue(forKey: path) }
-    }
-}</pre></div>
-
-      <p class="imops-text">
-        Die DSL-Schicht (<code>Syntax.swift</code>) macht die Nutzung lesbarer:
-      </p>
-
-      <div class="imops-code"><pre><span class="code-comment">// Task anlegen</span>
-iMOPS.SET(.task(<span class="code-string">"001"</span>, <span class="code-string">"TITLE"</span>), <span class="code-string">"MATJES WÄSSERN"</span>)
-iMOPS.SET(.task(<span class="code-string">"001"</span>, <span class="code-string">"STATUS"</span>), <span class="code-string">"OPEN"</span>)
-
-<span class="code-comment">// Task abfragen</span>
-<span class="code-keyword">let</span> title: <span class="code-type">String</span>? = iMOPS.GET(.task(<span class="code-string">"001"</span>, <span class="code-string">"TITLE"</span>))
-
-<span class="code-comment">// Navigation (statt UIKit-Router)</span>
-iMOPS.GOTO(<span class="code-string">"PRODUCTION"</span>)  <span class="code-comment">// → setzt ^NAV.LOCATION</span></pre></div>
-    </section>
-
-    <!-- ════ WORKLOAD-SCORE ════ -->
-    <section class="imops-section" id="score">
-      <h2 class="imops-section__header">WORKLOAD-SCORE</h2>
-
-      <p class="imops-text">
-        Der "Meier-Score" berechnet die aktuelle Belastung der Brigade.
-        Die Formel zählt offene Tasks, gewichtet sie, und berücksichtigt
-        Standzeit (wie lange die älteste Aufgabe offen ist) und Personal.
-      </p>
-
-      <div class="imops-code"><pre><span class="code-comment">// Vereinfachte Formel:</span>
-totalLoad   = Summe aller offenen Task-Gewichte
-fatigue     = 1.0 + (Stunden seit ältestem Task / 10)
-capacity    = Anzahl Brigade-Mitglieder * 20
-
-<span class="code-keyword">score</span> = (totalLoad / capacity) * fatigue * 100
-<span class="code-comment">// Ergebnis: 0–100, wird live in der UI angezeigt</span>
-<span class="code-comment">// > 40 = orange, > 70 = rot, Hintergrund glüht</span></pre></div>
-
-      <p class="imops-text">
-        Die UI reagiert auf den Score: Terminal-Titel wird rot, Hintergrund
-        färbt sich ein, Zitate wechseln. Ein "Rush Hour"-Simulator injiziert
-        10 hochgewichtete Tasks zum Testen.
+      <p class="imops-text" style="margin-top: var(--space-lg);">
+        Interne Betriebskennzahlen werden klar als solche gekennzeichnet
+        und sind <strong>keine gesetzlichen Grenzwerte</strong>.
       </p>
     </section>
 
-    <!-- ════ STATUS ════ -->
-    <section class="imops-section" id="status">
-      <h2 class="imops-section__header">AKTUELLER STATUS</h2>
+    <!-- ════ ZIELGRUPPE & ABGRENZUNG ════ -->
+    <section class="imops-section" id="zielgruppe">
+      <h2 class="imops-section__header">FÜR WEN &amp; WAS NICHT</h2>
 
-      <p class="imops-text">
-        Ehrlicher Überblick — was existiert und was fehlt:
-      </p>
+      <div class="info-grid">
+        <div class="info-block info-block--target">
+          <div class="info-block__title">FÜR WEN IST iMOPS GEEIGNET?</div>
+          <ul class="info-block__list">
+            <li>Lebensmittelbetriebe mit HACCP-Pflicht</li>
+            <li>Küchen, Manufakturen und Produktionsbetriebe</li>
+            <li>Betriebe, die Dokumentation ernsthaft nachweisen müssen</li>
+          </ul>
+        </div>
 
-      <div class="status-grid">
-        <div class="status-item status-item--done">
-          <div class="status-item__label">In-Memory Store</div>
-          <div class="status-item__desc">SET/GET/KILL/KILLTREE, thread-safe, hierarchische Keys</div>
-        </div>
-        <div class="status-item status-item--done">
-          <div class="status-item__label">Task-Management</div>
-          <div class="status-item__desc">Anlegen, quittieren, archivieren mit Zeitstempel</div>
-        </div>
-        <div class="status-item status-item--done">
-          <div class="status-item__label">Workload-Scoring</div>
-          <div class="status-item__desc">Live-Berechnung, UI-Reaktion, Score-Historie (50 Punkte)</div>
-        </div>
-        <div class="status-item status-item--done">
-          <div class="status-item__label">HACCP-Export</div>
-          <div class="status-item__desc">Archiv-Daten als Text exportierbar (Share Sheet)</div>
-        </div>
-        <div class="status-item status-item--done">
-          <div class="status-item__label">Terminal-UI</div>
-          <div class="status-item__desc">SwiftUI, monospace, Routing über Kernel-State</div>
-        </div>
-        <div class="status-item status-item--done">
-          <div class="status-item__label">Brigade-Login</div>
-          <div class="status-item__desc">User-Auswahl, Aktionen werden dem User zugeordnet</div>
-        </div>
-        <div class="status-item status-item--missing">
-          <div class="status-item__label">Persistenz</div>
-          <div class="status-item__desc">Fehlt. Daten gehen bei App-Neustart verloren</div>
-        </div>
-        <div class="status-item status-item--missing">
-          <div class="status-item__label">Echte HACCP-Konformität</div>
-          <div class="status-item__desc">Zeitstempel ja, zertifizierte Revisionssicherheit nein</div>
-        </div>
-        <div class="status-item status-item--missing">
-          <div class="status-item__label">Multi-User / Netzwerk</div>
-          <div class="status-item__desc">Fehlt. Aktuell nur ein Gerät, keine Synchronisation</div>
-        </div>
-        <div class="status-item status-item--missing">
-          <div class="status-item__label">Dynamische Tasks</div>
-          <div class="status-item__desc">Demo-Daten sind hardcoded (seed). Kein freies Anlegen</div>
+        <div class="info-block info-block--exclusion">
+          <div class="info-block__title">WAS iMOPS BEWUSST NICHT IST</div>
+          <ul class="info-block__list">
+            <li>Kein Ersatz für ein betriebliches HACCP-Konzept</li>
+            <li>Kein juristisches Archivsystem im Sinne der GoBD</li>
+            <li>Kein Überwachungssystem für Mitarbeiter</li>
+          </ul>
+          <div class="info-block__note">Diese Abgrenzung ist dokumentiert und transparent.</div>
         </div>
       </div>
     </section>
 
-    <!-- ════ DENKBARE EINSATZGEBIETE ════ -->
-    <section class="imops-section" id="einsatz">
-      <h2 class="imops-section__header">DENKBARE EINSATZGEBIETE</h2>
+    <!-- ════ FAZIT ════ -->
+    <section class="imops-section" id="fazit">
+      <h2 class="imops-section__header">FAZIT</h2>
 
-      <p class="imops-text">
-        Der Kern von iMOPS — hierarchischer Store, atomare Operationen,
-        Quittierung mit Zeitstempel — ist nicht auf Küchen beschränkt.
-        Überall wo unter Druck dokumentiert, quittiert und koordiniert
-        werden muss, wäre das Prinzip anwendbar. Aktuell ist nur
-        Gastronomie implementiert. Der Rest ist Zukunftsmusik.
-      </p>
-
-      <div class="status-grid">
-        <div class="status-item status-item--done">
-          <div class="status-item__label">GASTRONOMIE & HOTELLERIE</div>
-          <div class="status-item__desc">Produktionssteuerung, HACCP-Dokumentation, Brigade-Management. Fast fertig — primärer Fokus des Prototyps</div>
-        </div>
-        <div class="status-item status-item--missing">
-          <div class="status-item__label">KLINIK & PFLEGE</div>
-          <div class="status-item__desc">Denkbar: Schichtübergabe, Medikamenten-Tracking. Noch keine Zeile Code dafür</div>
-        </div>
-        <div class="status-item status-item--missing">
-          <div class="status-item__label">INDUSTRIE & FERTIGUNG</div>
-          <div class="status-item__desc">Denkbar: Schichtplanung, Qualitätskontrolle. Noch keine Zeile Code dafür</div>
-        </div>
-        <div class="status-item status-item--missing">
-          <div class="status-item__label">EINSATZLEITUNG & KRISE</div>
-          <div class="status-item__desc">Denkbar: Lagebildführung, Ressourcen-Dispatching. Noch keine Zeile Code dafür</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ════ WARUM MUMPS? ════ -->
-    <section class="imops-section" id="mumps">
-      <h2 class="imops-section__header">WARUM MUMPS?</h2>
-
-      <p class="imops-text">
-        MUMPS (Massachusetts General Hospital Utility Multi-Programming System)
-        läuft seit den 1960ern in Krankenhäusern und Banken. Das US-amerikanische
-        VA-Gesundheitssystem (VistA) nutzt es bis heute für Millionen Patientenakten.
-      </p>
-      <p class="imops-text">
-        Die Idee hinter iMOPS: wenn ein 60 Jahre altes System unter Hochlast in
-        Krankenhäusern funktioniert, kann das Prinzip — <strong>hierarchische Keys,
-        globaler Speicher, atomare Operationen</strong> — auch in einer Küche funktionieren,
-        wo Bons verloren gehen und niemand weiß, wer was quittiert hat.
-      </p>
-      <p class="imops-text">
-        iMOPS ist keine MUMPS-Implementierung. Es borgt sich das Datenmodell
-        (<code>^GLOBAL.KEY.SUBKEY</code>) und die Philosophie (alles im RAM, kein ORM,
-        kein Schema), implementiert aber nur SET/GET/KILL in Swift.
+      <p class="imops-fazit">
+        iMOPS bietet eine <strong>ehrliche, belastbare und prüferfeste Lösung</strong>
+        zur digitalen HACCP-Dokumentation –
+        ohne Überversprechen, ohne Grauzonen, ohne Show.
       </p>
     </section>
+
+    <!-- ════ VERSION TAG ════ -->
+    <div class="imops-version-tag">
+      STAND DER AUSSAGEN: iMOPS 2.0 – HACCP EDITION (fd3eabe)
+    </div>
 
     <!-- ════ CTA ════ -->
     <div class="imops-cta">
@@ -598,7 +661,7 @@ capacity    = Anzahl Brigade-Mitglieder * 20
 
     <!-- ════ FOOTER ════ -->
     <div class="imops-footer">
-      <p class="imops-footer__text">iOS 17+ · SWIFT · SWIFTUI · MIT LIZENZ · 9 DATEIEN · 0 DEPENDENCIES</p>
+      <p class="imops-footer__text">iMOPS 2.0 · HACCP EDITION · iOS · SWIFT · MIT LIZENZ</p>
     </div>
 
   </div>
