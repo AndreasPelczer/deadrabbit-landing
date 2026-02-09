@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iMOPS v3 - Rollen-Ansichten (Chef / Koch / Leihkoch)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0a; color: #fff; font-size: 13px; }
+
+    .header { background: linear-gradient(180deg, #1a1a1a 0%, #111 100%); padding: 12px 16px; border-bottom: 1px solid #333; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .header h1 { font-size: 20px; display: flex; align-items: center; gap: 8px; }
+    .header .time { font-size: 36px; color: #fbbf24; font-weight: bold; font-variant-numeric: tabular-nums; }
+    .header .date { font-size: 12px; color: #9ca3af; }
+    .schicht-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 10px; }
+    .schicht-frueh { background: #1e40af; color: #93c5fd; }
+    .schicht-spaet { background: #7c2d12; color: #fdba74; }
+    .rolle-banner { padding: 8px 16px; font-weight: 600; font-size: 12px; text-align: center; }
+    .rolle-banner.chef { background: linear-gradient(90deg, #1e40af, #2563eb); }
+    .rolle-banner.fest { background: linear-gradient(90deg, #166534, #16a34a); }
+    .rolle-banner.leih { background: linear-gradient(90deg, #c2410c, #ea580c); }
+
+    .stats-bar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 10px; }
+    .stats-bar.minimal { grid-template-columns: repeat(3, 1fr); }
+    .stat-box { background: #1f1f1f; border-radius: 8px; padding: 10px; text-align: center; border: 1px solid #333; }
+    .stat-box.warning { border-color: #f59e0b; background: rgba(245,158,11,0.1); }
+    .stat-box.success { border-color: #22c55e; background: rgba(34,197,94,0.1); }
+    .stat-box.critical { border-color: #ef4444; background: rgba(239,68,68,0.1); }
+    .stat-value { font-size: 22px; font-weight: bold; }
+    .stat-label { font-size: 9px; color: #9ca3af; text-transform: uppercase; margin-top: 2px; }
+
+    .controls { background: #1a1a1a; padding: 10px 16px; border-bottom: 1px solid #333; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.15s; }
+    .btn:hover { transform: scale(1.03); filter: brightness(1.1); }
+    .btn-green { background: #16a34a; color: white; }
+    .btn-red { background: #dc2626; color: white; }
+    .btn-blue { background: #2563eb; color: white; }
+    .btn-orange { background: #ea580c; color: white; }
+    .btn-purple { background: #7c3aed; color: white; }
+    .btn-gray { background: #4b5563; color: white; }
+
+    .role-tabs { display: flex; background: #1f1f1f; border-radius: 6px; padding: 3px; }
+    .role-tab { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; background: transparent; color: #9ca3af; }
+    .role-tab.active { background: #2563eb; color: #fff; }
+    .role-tab.fest.active { background: #16a34a; }
+    .role-tab.leih.active { background: #ea580c; }
+
+    .view-tabs { display: flex; gap: 4px; margin-left: auto; }
+    .view-tab { padding: 8px 14px; background: #374151; border: none; border-radius: 4px; color: #fff; cursor: pointer; font-size: 11px; }
+    .view-tab.active { background: #2563eb; }
+    .view-tab.alert { background: #7f1d1d; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+    .main { display: flex; height: calc(100vh - 220px); }
+    .panel-left { flex: 2; overflow-y: auto; padding: 16px; }
+    .panel-right { flex: 1; background: #1a1a1a; overflow-y: auto; padding: 16px; border-left: 1px solid #333; min-width: 320px; }
+    .panel-full { flex: 1; overflow-y: auto; padding: 16px; }
+
+    .event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+
+    .event-card { background: #1f1f1f; border: 1px solid #333; border-radius: 10px; padding: 16px; transition: all 0.2s; }
+    .event-card:hover { border-color: #555; }
+    .event-card.warning { border-color: #f59e0b; background: rgba(245,158,11,0.05); }
+    .event-card.success { border-color: #22c55e; background: rgba(34,197,94,0.05); }
+    .event-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .event-title { font-weight: 600; font-size: 15px; }
+    .event-location { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+    .event-info { font-size: 12px; color: #d1d5db; margin: 8px 0; }
+    .event-badge { font-size: 10px; padding: 4px 10px; border-radius: 4px; font-weight: 600; }
+    .badge-green { background: #166534; color: #86efac; }
+    .badge-yellow { background: #854d0e; color: #fde047; }
+    .badge-blue { background: #1e40af; color: #93c5fd; }
+
+    .progress-bar { height: 8px; background: #374151; border-radius: 4px; overflow: hidden; margin: 10px 0; }
+    .progress-fill { height: 100%; transition: width 0.3s; border-radius: 4px; }
+    .progress-fill.yellow { background: linear-gradient(90deg, #ca8a04, #fbbf24); }
+    .progress-fill.green { background: linear-gradient(90deg, #16a34a, #22c55e); }
+    .progress-fill.red { background: linear-gradient(90deg, #b91c1c, #ef4444); }
+
+    .uebergabe-flow { display: flex; align-items: center; background: #2d2d2d; border-radius: 8px; padding: 12px; margin-top: 10px; }
+    .uebergabe-step { flex: 1; text-align: center; padding: 8px; border-radius: 6px; background: #374151; }
+    .uebergabe-step.done { background: #166534; }
+    .uebergabe-step.active { background: #854d0e; animation: pulse 2s infinite; }
+    .uebergabe-step.pending { opacity: 0.4; }
+    .uebergabe-icon { font-size: 20px; }
+    .uebergabe-label { font-size: 10px; font-weight: 600; margin-top: 4px; }
+    .uebergabe-time { font-size: 9px; color: #9ca3af; }
+    .uebergabe-arrow { color: #6b7280; font-size: 16px; margin: 0 6px; }
+
+    .action-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+    .log-panel h3 { font-size: 12px; color: #9ca3af; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .log-item { padding: 8px 10px; border-left: 3px solid #333; margin-bottom: 4px; border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.02); font-size: 11px; }
+    .log-item.success { border-color: #22c55e; background: rgba(34,197,94,0.08); }
+    .log-item.warning { border-color: #f59e0b; background: rgba(245,158,11,0.08); }
+    .log-item.critical { border-color: #ef4444; background: rgba(239,68,68,0.08); }
+    .log-item.ma { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+    .log-item.briefing { border-color: #06b6d4; background: rgba(6,182,212,0.1); font-weight: 500; }
+    .log-item.vtp { border-color: #7c3aed; background: rgba(124,58,237,0.08); }
+    .log-time { color: #6b7280; margin-right: 8px; font-variant-numeric: tabular-nums; }
+    .log-actor { color: #fbbf24; font-weight: 500; }
+
+    .tagesabschluss { background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%); border: 2px solid #22c55e; border-radius: 12px; padding: 24px; }
+    .tagesabschluss h2 { color: #22c55e; margin-bottom: 20px; font-size: 18px; }
+    .abschluss-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .abschluss-stat { background: #1f1f1f; padding: 16px; border-radius: 8px; text-align: center; }
+    .abschluss-value { font-size: 28px; font-weight: bold; }
+    .abschluss-label { font-size: 10px; color: #9ca3af; margin-top: 4px; }
+    .reibungspunkte { background: #1f1f1f; padding: 16px; border-radius: 8px; }
+    .reibungspunkte h3 { color: #f59e0b; font-size: 12px; margin-bottom: 12px; }
+    .reibungspunkt { font-size: 11px; padding: 6px 0; border-bottom: 1px solid #333; display: flex; gap: 10px; }
+    .reibungspunkt:last-child { border: none; }
+
+    .footer { background: #050505; padding: 12px; text-align: center; color: #4b5563; font-size: 11px; border-top: 1px solid #222; }
+
+    .sep { width: 1px; height: 28px; background: #333; margin: 0 8px; }
+
+    /* Koch-View specific */
+    .task-card { background: #1f1f1f; border: 1px solid #333; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+    .task-card.urgent { border-color: #ef4444; }
+    .task-card.active { border-color: #fbbf24; background: rgba(251,191,36,0.05); }
+    .task-card.done { border-color: #22c55e; opacity: 0.7; }
+    .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .task-title { font-weight: 600; font-size: 14px; }
+    .task-status { font-size: 10px; padding: 4px 8px; border-radius: 4px; }
+    .task-checklist { margin-top: 10px; }
+    .task-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #2a2a2a; font-size: 12px; }
+    .task-item:last-child { border: none; }
+    .task-checkbox { width: 18px; height: 18px; border: 2px solid #4b5563; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .task-checkbox.checked { background: #16a34a; border-color: #16a34a; }
+    .task-checkbox.checked::after { content: '✓'; color: white; font-size: 12px; }
+
+    .recipe-card { background: #1f1f1f; border: 1px solid #333; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+    .recipe-card:hover { border-color: #555; cursor: pointer; }
+    .recipe-header { display: flex; align-items: center; gap: 10px; }
+    .recipe-icon { font-size: 28px; }
+    .recipe-title { font-weight: 600; }
+    .recipe-meta { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+    .recipe-tags { display: flex; gap: 6px; margin-top: 8px; }
+    .recipe-tag { font-size: 9px; padding: 3px 8px; background: #374151; border-radius: 4px; }
+    .recipe-tag.allergen { background: #7f1d1d; color: #fca5a5; }
+
+    /* Leihkoch-View specific */
+    .instruction-card { background: linear-gradient(135deg, #1f1f1f 0%, #252525 100%); border: 2px solid #ea580c; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .instruction-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .instruction-icon { font-size: 32px; }
+    .instruction-title { font-size: 18px; font-weight: 600; }
+    .instruction-subtitle { font-size: 11px; color: #9ca3af; }
+    .instruction-step { display: flex; gap: 12px; padding: 12px; background: #2d2d2d; border-radius: 8px; margin-bottom: 8px; }
+    .step-number { width: 28px; height: 28px; background: #ea580c; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+    .step-content { flex: 1; }
+    .step-title { font-weight: 600; margin-bottom: 4px; }
+    .step-detail { font-size: 11px; color: #9ca3af; }
+
+    .briefing-box { background: #1e3a5f; border: 1px solid #2563eb; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+    .briefing-box h3 { color: #93c5fd; margin-bottom: 12px; font-size: 14px; }
+    .briefing-item { font-size: 12px; padding: 6px 0; display: flex; gap: 8px; }
+    .briefing-icon { width: 20px; text-align: center; }
+
+    .directions-box { background: #1f1f1f; border: 1px solid #333; border-radius: 10px; padding: 16px; }
+    .directions-box h3 { color: #9ca3af; margin-bottom: 12px; font-size: 14px; }
+    .direction-step { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #2a2a2a; }
+    .direction-step:last-child { border: none; }
+    .direction-icon { font-size: 18px; }
+    .direction-text { font-size: 12px; }
+    .direction-note { font-size: 10px; color: #f59e0b; margin-top: 2px; }
+
+    .wissen-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .wissen-card { background: #1f1f1f; border: 1px solid #333; border-radius: 8px; padding: 12px; cursor: pointer; }
+    .wissen-card:hover { border-color: #555; }
+    .wissen-icon { font-size: 24px; margin-bottom: 8px; }
+    .wissen-title { font-weight: 600; font-size: 12px; }
+    .wissen-desc { font-size: 10px; color: #9ca3af; margin-top: 4px; }
+
+    .privacy-notice { background: rgba(22,163,74,0.1); border: 1px solid #16a34a; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 11px; }
+    .privacy-notice strong { color: #22c55e; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    // Vanilla JS - kein React dependency Problem
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => document.querySelectorAll(sel);
+
+    // State
+    let zeit = new Date(2025, 2, 18, 5, 58, 0);
+    let running = false;
+    let speed = 1;
+    let rolle = 'chef';
+    let view = 'events';
+    let logs = [];
+    let eventIndex = 0;
+    let reibungspunkte = [];
+    let tagBeendet = false;
+    let intervalId = null;
+
+    // Task Checkboxes State (for Koch view)
+    let taskChecks = {};
+
+    // Events
+    const events = [
+      { id: 6833, name: 'Morgenkonferenz', halle: 'Halle 6', ebene: 'Ebene 1', raum: 'Studio', schicken: '07:00', beginn: '08:00', personen: 24, status: 'geplant', fortschritt: 0, uebergabe: {} },
+      { id: 7962, name: 'Board Meeting', halle: 'Halle 9', ebene: 'Ebene 2', raum: 'Executive', schicken: '08:30', beginn: '09:00', personen: 11, status: 'geplant', fortschritt: 0, uebergabe: {} },
+      { id: 7631, name: 'Viega Crew', halle: 'Halle 4', ebene: 'Ebene C', raum: 'Consens', schicken: '09:30', beginn: '11:00', personen: 11, status: 'geplant', fortschritt: 0, uebergabe: {} },
+      { id: 7403, name: 'Forum Messe', halle: 'Halle 1', ebene: 'Ebene 2', raum: 'Saal Areal', schicken: '10:00', beginn: '12:00', personen: 150, status: 'geplant', fortschritt: 0, uebergabe: {} },
+      { id: 7651, name: 'Tech Summit', halle: 'Halle 11', ebene: 'Ebene 0', raum: 'Spektrum', schicken: '11:30', beginn: '12:00', personen: 43, status: 'geplant', fortschritt: 0, uebergabe: {} },
+      { id: 7387, name: 'Festhalle Gala', halle: 'Festhalle', ebene: 'EG', raum: 'Hauptsaal', schicken: '15:00', beginn: '18:00', personen: 300, status: 'geplant', fortschritt: 0, uebergabe: {} },
+      { id: 7417, name: 'VIP Dinner', halle: 'Halle 9', ebene: 'Ebene 2', raum: 'Penthouse', schicken: '17:00', beginn: '19:00', personen: 24, status: 'geplant', fortschritt: 0, uebergabe: {} },
+      { id: 7450, name: 'Workshop Catering', halle: 'Halle 5', ebene: 'Ebene 1', raum: 'Seminar', schicken: '14:30', beginn: '16:00', personen: 35, status: 'geplant', fortschritt: 0, uebergabe: {} },
+      { id: 7382, name: 'Kaffeepause', halle: 'Halle 3', ebene: 'Foyer', raum: 'Ost', schicken: '14:00', beginn: '15:00', personen: 80, status: 'geplant', fortschritt: 0, uebergabe: {} },
+    ];
+
+    // Tagesplan
+    const tagesplan = [
+      { zeit: '06:00', typ: 'briefing', msg: '🔓 Küche aufgeschlossen - Tag beginnt' },
+      { zeit: '06:05', typ: 'briefing', msg: '📋 BRIEFING FRÜHSCHICHT: 5 Events, 239 Gäste heute Vormittag' },
+      { zeit: '06:10', typ: 'ma', msg: '⏰ Horst (Chef), Anna (Souschef) eingestempelt' },
+      { zeit: '06:15', typ: 'ma', msg: '⏰ Peter, Marco, Sandra, Tim (Leihkoch) eingestempelt' },
+      { zeit: '07:00', typ: 'success', msg: '📦 Warenlieferung eingetroffen - Lachs, Gemüse ✓' },
+      { zeit: '07:30', typ: 'critical', msg: '⚠️ MHD-Kontrolle: Putensteak ABGELAUFEN! → Entsorgt + Foto' },
+      { zeit: '08:15', typ: 'warning', msg: '😤 Horst: "Tim, wie hast du das denn eingeräumt?!"' },
+      { zeit: '10:45', typ: 'critical', msg: '🚨 Marco muss gehen - Familiennotfall!' },
+      { zeit: '10:50', typ: 'ma', msg: '⏰ Marco ausgestempelt (Notfall) - Aufgaben umverteilt' },
+      { zeit: '13:45', typ: 'briefing', msg: '📋 SCHICHTÜBERGABE: Frühschicht → Spätschicht' },
+      { zeit: '13:50', typ: 'ma', msg: '⏰ Thomas, Julia, Klaus, Lena, Lisa eingestempelt (Spät)' },
+      { zeit: '14:00', typ: 'ma', msg: '⏰ Peter, Sandra, Tim ausgestempelt' },
+      { zeit: '14:00', typ: 'briefing', msg: '📋 BRIEFING SPÄTSCHICHT: Gala um 18:00 mit 300 Gästen!' },
+      { zeit: '14:05', typ: 'warning', msg: '⏰ Anna bleibt - ÜBERSTUNDEN für Gala-Vorbereitung' },
+      { zeit: '16:00', typ: 'ma', msg: '⏰ Anna ausgestempelt (Überstunden Ende) - "Viel Erfolg!"' },
+      { zeit: '17:30', typ: 'vtp', msg: '📸 VTP: Gala Buffet-Aufbau Foto an Chef' },
+      { zeit: '17:35', typ: 'success', msg: '✅ Chef: Gala Buffet FREIGEGEBEN!' },
+      { zeit: '21:00', typ: 'vtp', msg: '📸 VTP: Abend-Dokumentation - alle Buffets fotografiert' },
+      { zeit: '21:30', typ: 'ma', msg: '⏰ Spätschicht ausgestempelt' },
+      { zeit: '21:45', typ: 'success', msg: '🧹 Küche gereinigt, alle Geräte aus' },
+      { zeit: '22:00', typ: 'briefing', msg: '📊 TAGESABSCHLUSS: 9 Events, 678 Gäste, Tag erfolgreich!' },
+      { zeit: '22:05', typ: 'briefing', msg: '🔒 Küche abgeschlossen. Gute Nacht!' },
+    ];
+
+    // Koch Tasks (eigene Aufgabenliste - Chef sieht das NICHT)
+    const kochTasks = [
+      { id: 1, title: 'Morgenkonferenz (24 PAX)', zeit: '07:00', items: ['Kaffeestation aufbauen', 'Croissants aufbacken', 'Obstplatte vorbereiten', 'Orangensaft pressen'], priority: 'normal' },
+      { id: 2, title: 'Board Meeting (11 PAX)', zeit: '08:30', items: ['Fingerfood vorbereiten', 'Lachs-Canapés garnieren', 'Getränke kühlen'], priority: 'normal' },
+      { id: 3, title: 'Forum Messe - GROSS (150 PAX)', zeit: '10:00', items: ['Hauptspeisen vorbereiten', 'Beilagen kochen', 'Saucen fertig machen', 'Desserts portionieren', 'Warmhaltebehälter vorbereiten'], priority: 'high' },
+      { id: 4, title: 'MHD-Kontrolle', zeit: 'täglich', items: ['TK-Lager prüfen', 'Kühlhaus prüfen', 'Kritisches dokumentieren'], priority: 'normal' },
+    ];
+
+    // Rezepte (Fachwissen)
+    const rezepte = [
+      { id: 1, name: 'Lachs auf Blattspinat', icon: '🐟', zeit: '25 min', portionen: '10 PAX', allergene: ['Fisch', 'Laktose'], pins: true },
+      { id: 2, name: 'Rinderfilet Wellington', icon: '🥩', zeit: '45 min', portionen: '8 PAX', allergene: ['Gluten', 'Ei'], pins: false },
+      { id: 3, name: 'Veganes Thai-Curry', icon: '🍛', zeit: '30 min', portionen: '15 PAX', allergene: ['Soja'], pins: true },
+      { id: 4, name: 'Dessert-Variation', icon: '🍰', zeit: '20 min', portionen: '25 PAX', allergene: ['Gluten', 'Laktose', 'Ei', 'Nüsse'], pins: true },
+      { id: 5, name: 'Frühstücksbuffet Setup', icon: '🥐', zeit: '40 min', portionen: '50 PAX', allergene: ['Gluten', 'Laktose', 'Ei'], pins: false },
+    ];
+
+    // Fachwissen (Pins)
+    const wissenPins = [
+      { icon: '🌡️', title: 'Kerntemperaturen', desc: 'Fleisch, Fisch, Geflügel' },
+      { icon: '⚠️', title: 'Allergene-Matrix', desc: '14 Hauptallergene' },
+      { icon: '📦', title: 'FIFO-Prinzip', desc: 'First In, First Out' },
+      { icon: '🧊', title: 'Kühlkette', desc: 'Max. 2h bei >7°C' },
+      { icon: '🧹', title: 'Reinigungsplan', desc: 'Tägliche Checkliste' },
+      { icon: '📋', title: 'HACCP-Grundlagen', desc: '7 Prinzipien' },
+    ];
+
+    // Leihkoch Briefing
+    const leihkochBriefing = {
+      name: 'Tim',
+      position: 'Leihkoch (Früh)',
+      events: ['Morgenkonferenz', 'Board Meeting', 'Forum Messe'],
+      ansprechpartner: 'Anna (Souschef)',
+      startzeit: '06:15',
+      endzeit: '14:00'
+    };
+
+    function getZeitStr(d) {
+      return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function addLog(msg, typ) {
+      logs.unshift({ zeit: getZeitStr(zeit), msg, typ });
+      if (logs.length > 50) logs.pop();
+    }
+
+    function toggleTaskCheck(taskId, itemIdx) {
+      const key = `${taskId}-${itemIdx}`;
+      taskChecks[key] = !taskChecks[key];
+      render();
+    }
+
+    function tick() {
+      zeit = new Date(zeit.getTime() + 60000 * speed);
+      const zeitStr = getZeitStr(zeit);
+      const h = zeit.getHours();
+      const m = zeit.getMinutes();
+
+      // Tagesplan Events
+      while (eventIndex < tagesplan.length && zeitStr >= tagesplan[eventIndex].zeit) {
+        const te = tagesplan[eventIndex];
+        addLog(te.msg, te.typ);
+        if (te.typ === 'critical') {
+          reibungspunkte.push({ zeit: te.zeit, text: te.msg });
+        }
+        eventIndex++;
+      }
+
+      // Events starten und fortschreiten
+      events.forEach(ev => {
+        const [sh, sm] = ev.schicken.split(':').map(Number);
+        const [bh, bm] = ev.beginn.split(':').map(Number);
+
+        if (ev.status === 'geplant' && (h > sh || (h === sh && m >= sm))) {
+          ev.status = 'vorbereitung';
+          ev.fortschritt = 5;
+          ev.uebergabe = { kueche: null, logistik: null, aussen: null };
+          addLog(`🚀 Event ${ev.id} (${ev.name}) - Vorbereitung startet`, 'success');
+        }
+
+        if (ev.status === 'vorbereitung') {
+          ev.fortschritt = Math.min(50, ev.fortschritt + Math.random() * 4);
+          if (ev.fortschritt >= 50 && !ev.uebergabe.kueche) {
+            ev.uebergabe.kueche = zeitStr;
+            addLog(`📦 Event ${ev.id} - Übergabe Küche → Logistik`, 'success');
+          }
+          if (ev.fortschritt >= 50) {
+            ev.status = 'transport';
+          }
+        }
+
+        if (ev.status === 'transport') {
+          ev.fortschritt = Math.min(80, ev.fortschritt + Math.random() * 5);
+          if (ev.fortschritt >= 70 && !ev.uebergabe.logistik) {
+            ev.uebergabe.logistik = zeitStr;
+          }
+          if (ev.fortschritt >= 80) {
+            ev.uebergabe.aussen = zeitStr;
+            addLog(`🏢 Event ${ev.id} - Übergabe an Außenstelle`, 'success');
+            ev.status = 'ausgabe';
+          }
+        }
+
+        if (ev.status === 'ausgabe') {
+          ev.fortschritt = Math.min(100, ev.fortschritt + Math.random() * 3);
+          if (ev.fortschritt >= 100) {
+            ev.status = 'fertig';
+            addLog(`✅ Event ${ev.id} (${ev.name}) - ABGESCHLOSSEN! ${ev.personen} Gäste versorgt`, 'success');
+          }
+        }
+      });
+
+      // Tag beenden
+      if (h >= 22 && m >= 5 && !tagBeendet) {
+        tagBeendet = true;
+        view = 'abschluss';
+        stopSim();
+      }
+
+      render();
+    }
+
+    function startSim() {
+      running = true;
+      intervalId = setInterval(tick, 1000);
+      render();
+    }
+
+    function stopSim() {
+      running = false;
+      if (intervalId) clearInterval(intervalId);
+      render();
+    }
+
+    function toggleSim() {
+      if (running) stopSim();
+      else startSim();
+    }
+
+    function cycleSpeed() {
+      speed = speed === 1 ? 5 : speed === 5 ? 15 : speed === 15 ? 30 : 1;
+      render();
+    }
+
+    function setRolle(r) {
+      rolle = r;
+      // Set appropriate default view for each role
+      if (r === 'chef') view = 'events';
+      else if (r === 'fest') view = 'tasks';
+      else if (r === 'leih') view = 'anweisungen';
+      render();
+    }
+
+    function setView(v) {
+      view = v;
+      render();
+    }
+
+    function render() {
+      const h = zeit.getHours();
+      const schicht = h < 14 ? 'frueh' : 'spaet';
+      const laufend = events.filter(ev => ['vorbereitung', 'transport', 'ausgabe'].includes(ev.status)).length;
+      const fertig = events.filter(ev => ev.status === 'fertig').length;
+      const gaeste = events.reduce((s, ev) => s + ev.personen, 0);
+
+      const rolleNames = { chef: '👨‍🍳 Küchenchef', fest: '👨‍🍳 Festangestellt', leih: '🆕 Leihkoch' };
+      const rolleColors = { chef: 'chef', fest: 'fest', leih: 'leih' };
+
+      let html = `
+        <div class="rolle-banner ${rolleColors[rolle]}">
+          ${rolleNames[rolle]} ${rolle === 'leih' ? '- Tim (Einweisung aktiv)' : rolle === 'fest' ? '- Peter (Dein Bereich, deine Verantwortung)' : '- Horst (Volle Übersicht)'}
+        </div>
+        <div class="header">
+          <div class="header-top">
+            <div>
+              <h1>🐕 iMOPS v3 <span class="schicht-badge ${schicht === 'frueh' ? 'schicht-frueh' : 'schicht-spaet'}">${schicht === 'frueh' ? '☀️ Frühschicht' : '🌙 Spätschicht'}</span></h1>
+              <div style="font-size:11px;color:#9ca3af;margin-top:4px;">accente Gastronomie | Messe Frankfurt</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="time">${getZeitStr(zeit)}</div>
+              <div class="date">Dienstag, 18. März 2025</div>
+            </div>
+          </div>
+          ${renderStatsBar(rolle, laufend, fertig, gaeste, schicht)}
+        </div>
+
+        <div class="controls">
+          <button class="btn ${running ? 'btn-red' : 'btn-green'}" onclick="toggleSim()">${running ? '⏸️ Pause' : '▶️ Start'}</button>
+          <button class="btn btn-blue" onclick="cycleSpeed()">${speed}x</button>
+          <button class="btn btn-gray" onclick="location.reload()">🔄 Reset</button>
+          <div class="sep"></div>
+          <div class="role-tabs">
+            <button class="role-tab ${rolle === 'chef' ? 'active' : ''}" onclick="setRolle('chef')">👨‍🍳 Chef</button>
+            <button class="role-tab fest ${rolle === 'fest' ? 'active' : ''}" onclick="setRolle('fest')">👨‍🍳 Koch</button>
+            <button class="role-tab leih ${rolle === 'leih' ? 'active' : ''}" onclick="setRolle('leih')">🆕 Leihkoch</button>
+          </div>
+          ${renderViewTabs(rolle)}
+        </div>
+
+        <div class="main">
+          ${renderMainContent(rolle, schicht)}
+        </div>
+
+        <div class="footer">${rolle === 'chef' ? 'Chef-Ansicht: Volle Übersicht, keine Einsicht in individuelle Arbeitsweise' : rolle === 'fest' ? 'Koch-Ansicht: Dein Bereich, deine Kreativität - dokumentiert = erlaubt' : 'Leihkoch-Ansicht: Klare Anweisungen, Schritt für Schritt'}</div>
+      `;
+
+      document.getElementById('app').innerHTML = html;
+    }
+
+    function renderStatsBar(rolle, laufend, fertig, gaeste, schicht) {
+      if (rolle === 'leih') {
+        // Minimal stats for Leihkoch
+        return `
+          <div class="stats-bar minimal">
+            <div class="stat-box"><div class="stat-value">3</div><div class="stat-label">Deine Events</div></div>
+            <div class="stat-box"><div class="stat-value">${getZeitStr(zeit) < '14:00' ? '14:00' : '22:00'}</div><div class="stat-label">Schichtende</div></div>
+            <div class="stat-box ${laufend > 0 ? 'warning' : ''}"><div class="stat-value" style="color:#fbbf24">Anna</div><div class="stat-label">Ansprechpartner</div></div>
+          </div>
+        `;
+      } else if (rolle === 'fest') {
+        // Koch sees his tasks
+        const openTasks = kochTasks.reduce((sum, t) => sum + t.items.filter((_, i) => !taskChecks[`${t.id}-${i}`]).length, 0);
+        return `
+          <div class="stats-bar" style="grid-template-columns: repeat(5, 1fr);">
+            <div class="stat-box"><div class="stat-value">${kochTasks.length}</div><div class="stat-label">Deine Events</div></div>
+            <div class="stat-box ${openTasks > 5 ? 'warning' : 'success'}"><div class="stat-value" style="color:${openTasks > 5 ? '#fbbf24' : '#22c55e'}">${openTasks}</div><div class="stat-label">Offene Tasks</div></div>
+            <div class="stat-box"><div class="stat-value">${rezepte.filter(r => r.pins).length}</div><div class="stat-label">Gepinnte Rezepte</div></div>
+            <div class="stat-box"><div class="stat-value">${wissenPins.length}</div><div class="stat-label">Wissen (Pins)</div></div>
+            <div class="stat-box"><div class="stat-value">${getZeitStr(zeit) < '14:00' ? '14:00' : '22:00'}</div><div class="stat-label">Schichtende</div></div>
+          </div>
+        `;
+      } else {
+        // Chef sees everything
+        return `
+          <div class="stats-bar">
+            <div class="stat-box"><div class="stat-value">${events.length}</div><div class="stat-label">Events</div></div>
+            <div class="stat-box ${laufend > 0 ? 'warning' : ''}"><div class="stat-value" style="color:${laufend > 0 ? '#fbbf24' : '#fff'}">${laufend}</div><div class="stat-label">Laufend</div></div>
+            <div class="stat-box ${fertig > 0 ? 'success' : ''}"><div class="stat-value" style="color:${fertig > 0 ? '#22c55e' : '#fff'}">${fertig}</div><div class="stat-label">Fertig</div></div>
+            <div class="stat-box"><div class="stat-value">${gaeste}</div><div class="stat-label">Gäste</div></div>
+            <div class="stat-box"><div class="stat-value">${schicht === 'frueh' ? '6' : '5'}</div><div class="stat-label">Personal</div></div>
+            <div class="stat-box"><div class="stat-value">${events.filter(ev => ev.uebergabe.kueche && !ev.uebergabe.aussen).length}</div><div class="stat-label">Übergaben</div></div>
+            <div class="stat-box ${reibungspunkte.length > 0 ? 'critical' : ''}"><div class="stat-value" style="color:${reibungspunkte.length > 0 ? '#ef4444' : '#fff'}">${reibungspunkte.length}</div><div class="stat-label">Reibung</div></div>
+          </div>
+        `;
+      }
+    }
+
+    function renderViewTabs(rolle) {
+      if (rolle === 'leih') {
+        return `
+          <div class="view-tabs">
+            <button class="view-tab ${view === 'anweisungen' ? 'active' : ''}" onclick="setView('anweisungen')">📋 Anweisungen</button>
+            <button class="view-tab ${view === 'briefing' ? 'active' : ''}" onclick="setView('briefing')">📝 Briefing</button>
+            <button class="view-tab ${view === 'weg' ? 'active' : ''}" onclick="setView('weg')">🗺️ Wegbeschreibung</button>
+          </div>
+        `;
+      } else if (rolle === 'fest') {
+        return `
+          <div class="view-tabs">
+            <button class="view-tab ${view === 'tasks' ? 'active' : ''}" onclick="setView('tasks')">✅ Tagesaufgaben</button>
+            <button class="view-tab ${view === 'rezepte' ? 'active' : ''}" onclick="setView('rezepte')">📖 Rezepte</button>
+            <button class="view-tab ${view === 'wissen' ? 'active' : ''}" onclick="setView('wissen')">🧠 Fachwissen</button>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="view-tabs">
+            <button class="view-tab ${view === 'events' ? 'active' : ''}" onclick="setView('events')">📋 Events</button>
+            <button class="view-tab ${view === 'personal' ? 'active' : ''}" onclick="setView('personal')">👥 Personal</button>
+            <button class="view-tab ${view === 'vtp' ? 'active' : ''}" onclick="setView('vtp')">📸 VTP</button>
+            ${tagBeendet ? `<button class="view-tab ${view === 'abschluss' ? 'active' : ''}" onclick="setView('abschluss')">📊 Abschluss</button>` : ''}
+          </div>
+        `;
+      }
+    }
+
+    function renderMainContent(rolle, schicht) {
+      if (rolle === 'leih') {
+        return renderLeihkochContent();
+      } else if (rolle === 'fest') {
+        return renderKochContent();
+      } else {
+        return renderChefContent(schicht);
+      }
+    }
+
+    // ========== CHEF VIEW ==========
+    function renderChefContent(schicht) {
+      return `
+        <div class="panel-left">
+          ${view === 'abschluss' ? renderAbschluss() : ''}
+          ${view === 'events' ? renderEvents() : ''}
+          ${view === 'personal' ? renderPersonal(schicht) : ''}
+          ${view === 'vtp' ? renderVTP() : ''}
+        </div>
+        <div class="panel-right">
+          <div class="log-panel">
+            <h3>📜 TAGESLOG</h3>
+            ${logs.length === 0 ? '<div style="color:#6b7280;text-align:center;padding:20px;">▶️ Start drücken</div>' : ''}
+            ${logs.map(l => `<div class="log-item ${l.typ}"><span class="log-time">${l.zeit}</span>${l.msg}</div>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderEvents() {
+      return `<div class="event-grid">${events.map(ev => {
+        const statusClass = ev.status === 'fertig' ? 'success' : ['vorbereitung', 'transport', 'ausgabe'].includes(ev.status) ? 'warning' : '';
+        const badgeClass = ev.status === 'fertig' ? 'badge-green' : ev.status === 'geplant' ? 'badge-blue' : 'badge-yellow';
+        const badgeText = ev.status === 'fertig' ? '✓ Fertig' : ev.status === 'geplant' ? ev.schicken : ev.status.charAt(0).toUpperCase() + ev.status.slice(1);
+        const progressClass = ev.fortschritt >= 80 ? 'green' : ev.fortschritt >= 30 ? 'yellow' : 'red';
+
+        return `
+          <div class="event-card ${statusClass}">
+            <div class="event-header">
+              <div>
+                <div class="event-title">${ev.id} - ${ev.name}</div>
+                <div class="event-location">${ev.halle}, ${ev.ebene}, ${ev.raum}</div>
+              </div>
+              <span class="event-badge ${badgeClass}">${badgeText}</span>
+            </div>
+            <div class="event-info">${ev.personen} Gäste | Schicken: ${ev.schicken} | Beginn: ${ev.beginn}</div>
+            ${ev.status !== 'geplant' ? `
+              <div class="progress-bar"><div class="progress-fill ${progressClass}" style="width:${ev.fortschritt}%"></div></div>
+            ` : ''}
+            ${ev.status !== 'geplant' && ev.status !== 'fertig' ? `
+              <div class="uebergabe-flow">
+                <div class="uebergabe-step ${ev.uebergabe.kueche ? 'done' : 'active'}">
+                  <div class="uebergabe-icon">👨‍🍳</div>
+                  <div class="uebergabe-label">Küche</div>
+                  <div class="uebergabe-time">${ev.uebergabe.kueche || '...'}</div>
+                </div>
+                <div class="uebergabe-arrow">→</div>
+                <div class="uebergabe-step ${ev.uebergabe.logistik ? 'done' : ev.uebergabe.kueche ? 'active' : 'pending'}">
+                  <div class="uebergabe-icon">🚚</div>
+                  <div class="uebergabe-label">Logistik</div>
+                  <div class="uebergabe-time">${ev.uebergabe.logistik || '...'}</div>
+                </div>
+                <div class="uebergabe-arrow">→</div>
+                <div class="uebergabe-step ${ev.uebergabe.aussen ? 'done' : 'pending'}">
+                  <div class="uebergabe-icon">🏢</div>
+                  <div class="uebergabe-label">Außenstelle</div>
+                  <div class="uebergabe-time">${ev.uebergabe.aussen || '...'}</div>
+                </div>
+              </div>
+            ` : ''}
+            ${ev.status === 'fertig' ? `
+              <div class="uebergabe-flow">
+                <div class="uebergabe-step done"><div class="uebergabe-icon">👨‍🍳</div><div class="uebergabe-label">Küche</div><div class="uebergabe-time">${ev.uebergabe.kueche}</div></div>
+                <div class="uebergabe-arrow">→</div>
+                <div class="uebergabe-step done"><div class="uebergabe-icon">🚚</div><div class="uebergabe-label">Logistik</div><div class="uebergabe-time">${ev.uebergabe.logistik}</div></div>
+                <div class="uebergabe-arrow">→</div>
+                <div class="uebergabe-step done"><div class="uebergabe-icon">🏢</div><div class="uebergabe-label">Außenstelle</div><div class="uebergabe-time">${ev.uebergabe.aussen}</div></div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('')}</div>`;
+    }
+
+    function renderPersonal(schicht) {
+      const frueh = [
+        { name: 'Horst', rolle: 'Küchenchef', status: 'aktiv' },
+        { name: 'Anna', rolle: 'Souschef', status: 'ueberstunden' },
+        { name: 'Peter', rolle: 'Koch', status: 'aktiv' },
+        { name: 'Marco', rolle: 'Koch', status: 'notfall' },
+        { name: 'Sandra', rolle: 'Commis', status: 'aktiv' },
+        { name: 'Tim', rolle: 'Leihkoch', status: 'aktiv' },
+      ];
+      const spaet = [
+        { name: 'Thomas', rolle: 'Souschef', status: 'aktiv' },
+        { name: 'Julia', rolle: 'Koch', status: 'aktiv' },
+        { name: 'Klaus', rolle: 'Koch', status: 'aktiv' },
+        { name: 'Lena', rolle: 'Commis', status: 'aktiv' },
+        { name: 'Lisa', rolle: 'Leihkoch', status: 'aktiv' },
+      ];
+      const personal = schicht === 'frueh' ? frueh : spaet;
+
+      return `
+        <div style="background:#1f1f1f;border-radius:10px;padding:16px;">
+          <div class="privacy-notice">
+            <strong>🔒 Autonomie-Prinzip:</strong> Chef sieht WER arbeitet, aber NICHT WIE sie arbeiten.<br>
+            Koch kann kreativ sein, solange dokumentiert. "Github mit Menschen."
+          </div>
+          <h3 style="margin-bottom:16px;color:#9ca3af;">👥 Personal ${schicht === 'frueh' ? 'Frühschicht (06:00-14:00)' : 'Spätschicht (14:00-22:00)'}</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
+            ${personal.map(p => `
+              <div style="background:#2d2d2d;border-radius:8px;padding:12px;text-align:center;border:1px solid ${p.status === 'notfall' ? '#ef4444' : p.status === 'ueberstunden' ? '#f59e0b' : '#333'}">
+                <div style="font-size:24px;margin-bottom:4px;">👨‍🍳</div>
+                <div style="font-weight:600;">${p.name}</div>
+                <div style="font-size:10px;color:#9ca3af;">${p.rolle}</div>
+                ${p.status === 'notfall' ? '<div style="font-size:9px;color:#ef4444;margin-top:4px;">⚠️ Notfall (gegangen)</div>' : ''}
+                ${p.status === 'ueberstunden' ? '<div style="font-size:9px;color:#f59e0b;margin-top:4px;">⏰ Überstunden</div>' : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderVTP() {
+      return `
+        <div style="background:#1f1f1f;border-radius:10px;padding:16px;">
+          <h3 style="margin-bottom:16px;color:#7c3aed;">📸 VTP - Virtueller Trust Pilot</h3>
+          <div class="privacy-notice" style="background:rgba(124,58,237,0.1);border-color:#7c3aed;">
+            <strong>📸 VTP-Prinzip:</strong> Koch schickt Foto → Chef sieht & zeichnet Korrektur → Koch sieht sofort
+          </div>
+          <div style="display:grid;gap:12px;margin-top:16px;">
+            <div style="background:#2d2d2d;border-radius:8px;padding:16px;border-left:4px solid #22c55e;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                  <div style="font-weight:600;">Gala Buffet-Aufbau</div>
+                  <div style="font-size:11px;color:#9ca3af;">17:30 - von Julia</div>
+                </div>
+                <span style="background:#166534;color:#86efac;padding:4px 10px;border-radius:4px;font-size:10px;">✓ Freigegeben</span>
+              </div>
+            </div>
+            <div style="background:#2d2d2d;border-radius:8px;padding:16px;border-left:4px solid #f59e0b;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                  <div style="font-weight:600;">Dessert-Station</div>
+                  <div style="font-size:11px;color:#9ca3af;">17:45 - von Klaus</div>
+                </div>
+                <span style="background:#854d0e;color:#fde047;padding:4px 10px;border-radius:4px;font-size:10px;">⏳ Wartet</span>
+              </div>
+              <div style="margin-top:10px;font-size:11px;color:#9ca3af;">
+                📝 Dein Feedback: <em>(Kreis zeichnen oder Text eingeben)</em>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAbschluss() {
+      const fertig = events.filter(ev => ev.status === 'fertig').length;
+      const gaeste = events.reduce((s, ev) => s + ev.personen, 0);
+
+      return `
+        <div class="tagesabschluss">
+          <h2>📊 Tagesabschluss - 22:00 Uhr</h2>
+          <div class="abschluss-grid">
+            <div class="abschluss-stat"><div class="abschluss-value" style="color:#22c55e">${fertig}</div><div class="abschluss-label">Events abgeschlossen</div></div>
+            <div class="abschluss-stat"><div class="abschluss-value">${gaeste}</div><div class="abschluss-label">Gäste versorgt</div></div>
+            <div class="abschluss-stat"><div class="abschluss-value">16h</div><div class="abschluss-label">Betriebszeit</div></div>
+            <div class="abschluss-stat"><div class="abschluss-value" style="color:#f59e0b">${reibungspunkte.length}</div><div class="abschluss-label">Reibungspunkte</div></div>
+          </div>
+          <div class="reibungspunkte">
+            <h3>⚠️ Reibungspunkte-Analyse (keine Fehler!)</h3>
+            ${reibungspunkte.length === 0 ? '<div style="color:#6b7280;">Keine Reibungspunkte dokumentiert.</div>' : ''}
+            ${reibungspunkte.map(rp => `<div class="reibungspunkt"><span style="color:#6b7280;min-width:50px;">${rp.zeit}</span><span>${rp.text}</span></div>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // ========== KOCH VIEW ==========
+    function renderKochContent() {
+      return `
+        <div class="panel-left">
+          <div class="privacy-notice">
+            <strong>🔒 Dein Bereich, deine Verantwortung:</strong> Du entscheidest WIE du arbeitest. Chef sieht nur DASS es erledigt ist.<br>
+            Änderungen dokumentieren = Änderungen erlaubt. Das System lernt von dir.
+          </div>
+          ${view === 'tasks' ? renderKochTasks() : ''}
+          ${view === 'rezepte' ? renderKochRezepte() : ''}
+          ${view === 'wissen' ? renderKochWissen() : ''}
+        </div>
+        <div class="panel-right">
+          <div class="log-panel">
+            <h3>📋 Deine Aktivitäten</h3>
+            ${logs.filter(l => !l.msg.includes('Chef') && !l.msg.includes('Horst')).slice(0, 15).map(l => `<div class="log-item ${l.typ}"><span class="log-time">${l.zeit}</span>${l.msg}</div>`).join('')}
+            ${logs.length === 0 ? '<div style="color:#6b7280;text-align:center;padding:20px;">▶️ Start drücken</div>' : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderKochTasks() {
+      return `
+        <div>
+          <h3 style="margin-bottom:16px;color:#16a34a;">✅ Deine Tagesaufgaben</h3>
+          ${kochTasks.map(task => {
+            const checkedCount = task.items.filter((_, i) => taskChecks[`${task.id}-${i}`]).length;
+            const allDone = checkedCount === task.items.length;
+            const cardClass = allDone ? 'done' : checkedCount > 0 ? 'active' : (task.priority === 'high' ? 'urgent' : '');
+
+            return `
+              <div class="task-card ${cardClass}">
+                <div class="task-header">
+                  <div>
+                    <div class="task-title">${task.title}</div>
+                    <div style="font-size:11px;color:#9ca3af;">Schicken: ${task.zeit}</div>
+                  </div>
+                  <span class="task-status" style="background:${allDone ? '#166534' : '#374151'};color:${allDone ? '#86efac' : '#9ca3af'}">
+                    ${checkedCount}/${task.items.length} ${allDone ? '✓' : ''}
+                  </span>
+                </div>
+                <div class="task-checklist">
+                  ${task.items.map((item, i) => {
+                    const checked = taskChecks[`${task.id}-${i}`];
+                    return `
+                      <div class="task-item" onclick="toggleTaskCheck(${task.id}, ${i})" style="cursor:pointer;${checked ? 'opacity:0.5;text-decoration:line-through;' : ''}">
+                        <div class="task-checkbox ${checked ? 'checked' : ''}"></div>
+                        <span>${item}</span>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function renderKochRezepte() {
+      return `
+        <div>
+          <h3 style="margin-bottom:16px;color:#16a34a;">📖 Rezepte & Anleitungen</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+            ${rezepte.map(r => `
+              <div class="recipe-card">
+                <div class="recipe-header">
+                  <div class="recipe-icon">${r.icon}</div>
+                  <div>
+                    <div class="recipe-title">${r.name} ${r.pins ? '📌' : ''}</div>
+                    <div class="recipe-meta">${r.zeit} | ${r.portionen}</div>
+                  </div>
+                </div>
+                <div class="recipe-tags">
+                  ${r.allergene.map(a => `<span class="recipe-tag allergen">⚠️ ${a}</span>`).join('')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderKochWissen() {
+      return `
+        <div>
+          <h3 style="margin-bottom:16px;color:#16a34a;">🧠 Fachwissen (Pins)</h3>
+          <div class="wissen-grid">
+            ${wissenPins.map(w => `
+              <div class="wissen-card">
+                <div class="wissen-icon">${w.icon}</div>
+                <div class="wissen-title">${w.title}</div>
+                <div class="wissen-desc">${w.desc}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // ========== LEIHKOCH VIEW ==========
+    function renderLeihkochContent() {
+      return `
+        <div class="panel-full">
+          ${view === 'anweisungen' ? renderLeihAnweisungen() : ''}
+          ${view === 'briefing' ? renderLeihBriefing() : ''}
+          ${view === 'weg' ? renderLeihWeg() : ''}
+        </div>
+      `;
+    }
+
+    function renderLeihAnweisungen() {
+      return `
+        <div>
+          <div class="instruction-card">
+            <div class="instruction-header">
+              <div class="instruction-icon">📋</div>
+              <div>
+                <div class="instruction-title">Deine Aufgaben heute</div>
+                <div class="instruction-subtitle">Schritt für Schritt - frag Anna bei Unklarheiten</div>
+              </div>
+            </div>
+
+            <div class="instruction-step">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <div class="step-title">Morgenkonferenz vorbereiten (07:00)</div>
+                <div class="step-detail">Kaffeestation in Halle 6, Studio aufbauen. Croissants aus dem TK (Regal 3) aufbacken.</div>
+              </div>
+            </div>
+
+            <div class="instruction-step">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <div class="step-title">Board Meeting unterstützen (08:30)</div>
+                <div class="step-detail">Anna zeigt dir die Fingerfood-Vorbereitung. Lachs-Canapés nach Anleitung garnieren.</div>
+              </div>
+            </div>
+
+            <div class="instruction-step">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <div class="step-title">Forum Messe - Großevent (10:00)</div>
+                <div class="step-detail">150 Gäste! Beilagen kochen nach Peter's Anweisung. Warmhaltebehälter vorbereiten.</div>
+              </div>
+            </div>
+
+            <div class="instruction-step">
+              <div class="step-number">4</div>
+              <div class="step-content">
+                <div class="step-title">Aufräumen & Schichtende (13:30)</div>
+                <div class="step-detail">Arbeitsplatz reinigen, Übergabe an Spätschicht. Ausstempeln um 14:00.</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#1f1f1f;border:1px solid #ef4444;border-radius:10px;padding:16px;">
+            <h3 style="color:#ef4444;margin-bottom:12px;">⚠️ Wichtige Regeln</h3>
+            <div style="font-size:12px;line-height:1.8;">
+              • <strong>Allergene:</strong> IMMER Anna fragen bei Unklarheiten<br>
+              • <strong>MHD:</strong> Abgelaufenes NICHT verwenden → sofort melden<br>
+              • <strong>Fotos:</strong> Vor dem Schicken fotografieren (VTP)<br>
+              • <strong>Fragen:</strong> Lieber einmal mehr fragen als falsch machen
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLeihBriefing() {
+      return `
+        <div>
+          <div class="briefing-box">
+            <h3>📝 Dein Briefing - ${leihkochBriefing.name}</h3>
+            <div class="briefing-item"><div class="briefing-icon">👤</div><strong>Position:</strong> ${leihkochBriefing.position}</div>
+            <div class="briefing-item"><div class="briefing-icon">⏰</div><strong>Arbeitszeit:</strong> ${leihkochBriefing.startzeit} - ${leihkochBriefing.endzeit}</div>
+            <div class="briefing-item"><div class="briefing-icon">👩‍🍳</div><strong>Ansprechpartner:</strong> ${leihkochBriefing.ansprechpartner}</div>
+            <div class="briefing-item"><div class="briefing-icon">📋</div><strong>Deine Events:</strong> ${leihkochBriefing.events.join(', ')}</div>
+          </div>
+
+          <div style="background:#1f1f1f;border:1px solid #333;border-radius:10px;padding:16px;margin-bottom:16px;">
+            <h3 style="color:#9ca3af;margin-bottom:12px;">🏢 Über accente</h3>
+            <div style="font-size:12px;line-height:1.8;color:#d1d5db;">
+              accente Gastronomie Service GmbH ist der offizielle Caterer der Messe Frankfurt.<br>
+              Wir versorgen täglich tausende Gäste auf dem größten Messegelände Deutschlands.
+            </div>
+          </div>
+
+          <div style="background:#1f1f1f;border:1px solid #333;border-radius:10px;padding:16px;">
+            <h3 style="color:#9ca3af;margin-bottom:12px;">📞 Notfallkontakte</h3>
+            <div style="font-size:12px;line-height:1.8;">
+              <div>👩‍🍳 Anna (Souschef): Direkt in der Küche</div>
+              <div>🏥 Sanitäter: Halle 1, Eingang West</div>
+              <div>🚨 Sicherheit: 069 / 7575-0</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLeihWeg() {
+      return `
+        <div>
+          <div class="directions-box" style="margin-bottom:16px;">
+            <h3>🗺️ Wegbeschreibung zur Küche</h3>
+
+            <div class="direction-step">
+              <div class="direction-icon">🚗</div>
+              <div>
+                <div class="direction-text"><strong>Anfahrt:</strong> Tor Ost (Ludwig-Erhard-Anlage 1)</div>
+                <div class="direction-note">Mitarbeiter-Parkplatz P9 nutzen</div>
+              </div>
+            </div>
+
+            <div class="direction-step">
+              <div class="direction-icon">🚶</div>
+              <div>
+                <div class="direction-text"><strong>Eingang:</strong> Via Mobile (Halle 9/10 Verbindung)</div>
+                <div class="direction-note">Mitarbeiterausweis am Drehkreuz</div>
+              </div>
+            </div>
+
+            <div class="direction-step">
+              <div class="direction-icon">⬇️</div>
+              <div>
+                <div class="direction-text"><strong>Untergeschoss:</strong> Treppe links nach dem Eingang</div>
+                <div class="direction-note">Aufzug auch möglich (Taste UG)</div>
+              </div>
+            </div>
+
+            <div class="direction-step">
+              <div class="direction-icon">👨‍🍳</div>
+              <div>
+                <div class="direction-text"><strong>Küche:</strong> Geradeaus, dann rechts</div>
+                <div class="direction-note">Umkleide direkt vor der Küche</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#2d2d2d;border-radius:10px;padding:16px;text-align:center;">
+            <div style="font-size:48px;margin-bottom:12px;">🗺️</div>
+            <div style="color:#9ca3af;font-size:12px;">Interaktive Karte</div>
+            <div style="color:#6b7280;font-size:11px;margin-top:4px;">(In der App: Live-Navigation)</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
