@@ -4,180 +4,268 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>iMOPS v3 - Rollen-Ansichten (Chef / Koch / Leihkoch)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0a; color: #fff; font-size: 13px; }
+    :root {
+      --primary: #1A1A2E;
+      --accent: #0F3460;
+      --highlight: #E94560;
+      --bg: #FAFBFC;
+      --card-bg: #FFFFFF;
+      --text: #2D3748;
+      --text-light: #718096;
+      --border: #E2E8F0;
+      --success: #38A169;
+      --warning: #DD6B20;
+      --hover-bg: #F7FAFC;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg); color: var(--text); font-size: 13px;
+      -webkit-font-smoothing: antialiased; line-height: 1.5;
+    }
 
-    .header { background: linear-gradient(180deg, #1a1a1a 0%, #111 100%); padding: 12px 16px; border-bottom: 1px solid #333; }
+    /* NAV - matching imops.html */
+    .site-nav {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      background: rgba(26, 26, 46, 0.95); backdrop-filter: blur(10px);
+      padding: 0.8rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .site-nav .logo { color: #fff; font-weight: 800; font-size: 1.1rem; text-decoration: none; letter-spacing: -0.5px; }
+    .site-nav .logo span { color: var(--highlight); }
+    .site-nav .nav-link { color: #CBD5E0; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.2s; }
+    .site-nav .nav-link:hover { color: #fff; }
+
+    #app { padding-top: 52px; }
+
+    .header {
+      background: var(--card-bg); padding: 12px 16px; border-bottom: 1px solid var(--border);
+    }
     .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .header h1 { font-size: 20px; display: flex; align-items: center; gap: 8px; }
-    .header .time { font-size: 36px; color: #fbbf24; font-weight: bold; font-variant-numeric: tabular-nums; }
-    .header .date { font-size: 12px; color: #9ca3af; }
-    .schicht-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 10px; }
-    .schicht-frueh { background: #1e40af; color: #93c5fd; }
-    .schicht-spaet { background: #7c2d12; color: #fdba74; }
-    .rolle-banner { padding: 8px 16px; font-weight: 600; font-size: 12px; text-align: center; }
-    .rolle-banner.chef { background: linear-gradient(90deg, #1e40af, #2563eb); }
-    .rolle-banner.fest { background: linear-gradient(90deg, #166534, #16a34a); }
-    .rolle-banner.leih { background: linear-gradient(90deg, #c2410c, #ea580c); }
+    .header h1 { font-size: 20px; display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--primary); }
+    .header .time { font-size: 36px; color: var(--highlight); font-weight: 800; font-variant-numeric: tabular-nums; }
+    .header .date { font-size: 12px; color: var(--text-light); }
+
+    .schicht-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 10px; }
+    .schicht-frueh { background: rgba(15,52,96,0.1); color: var(--accent); border: 1px solid rgba(15,52,96,0.2); }
+    .schicht-spaet { background: rgba(221,107,32,0.1); color: var(--warning); border: 1px solid rgba(221,107,32,0.2); }
+
+    .rolle-banner { padding: 8px 16px; font-weight: 600; font-size: 12px; text-align: center; color: #fff; }
+    .rolle-banner.chef { background: linear-gradient(90deg, var(--primary), var(--accent)); }
+    .rolle-banner.fest { background: linear-gradient(90deg, #276749, var(--success)); }
+    .rolle-banner.leih { background: linear-gradient(90deg, #C05621, var(--warning)); }
 
     .stats-bar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 10px; }
     .stats-bar.minimal { grid-template-columns: repeat(3, 1fr); }
-    .stat-box { background: #1f1f1f; border-radius: 8px; padding: 10px; text-align: center; border: 1px solid #333; }
-    .stat-box.warning { border-color: #f59e0b; background: rgba(245,158,11,0.1); }
-    .stat-box.success { border-color: #22c55e; background: rgba(34,197,94,0.1); }
-    .stat-box.critical { border-color: #ef4444; background: rgba(239,68,68,0.1); }
-    .stat-value { font-size: 22px; font-weight: bold; }
-    .stat-label { font-size: 9px; color: #9ca3af; text-transform: uppercase; margin-top: 2px; }
+    .stat-box {
+      background: var(--card-bg); border-radius: 12px; padding: 10px; text-align: center;
+      border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-box:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
+    .stat-box.warning { border-color: var(--warning); background: rgba(221,107,32,0.05); }
+    .stat-box.success { border-color: var(--success); background: rgba(56,161,105,0.05); }
+    .stat-box.critical { border-color: var(--highlight); background: rgba(233,69,96,0.05); }
+    .stat-value { font-size: 22px; font-weight: 800; color: var(--primary); }
+    .stat-label { font-size: 9px; color: var(--text-light); text-transform: uppercase; margin-top: 2px; font-weight: 600; letter-spacing: 0.5px; }
 
-    .controls { background: #1a1a1a; padding: 10px 16px; border-bottom: 1px solid #333; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.15s; }
-    .btn:hover { transform: scale(1.03); filter: brightness(1.1); }
-    .btn-green { background: #16a34a; color: white; }
-    .btn-red { background: #dc2626; color: white; }
-    .btn-blue { background: #2563eb; color: white; }
-    .btn-orange { background: #ea580c; color: white; }
-    .btn-purple { background: #7c3aed; color: white; }
-    .btn-gray { background: #4b5563; color: white; }
+    .controls {
+      background: var(--card-bg); padding: 10px 16px; border-bottom: 1px solid var(--border);
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    }
+    .btn {
+      padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer;
+      font-size: 12px; font-weight: 700; transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .btn-green { background: var(--success); color: white; }
+    .btn-red { background: var(--highlight); color: white; }
+    .btn-blue { background: var(--accent); color: white; }
+    .btn-orange { background: var(--warning); color: white; }
+    .btn-purple { background: var(--accent); color: white; }
+    .btn-gray { background: var(--text-light); color: white; }
 
-    .role-tabs { display: flex; background: #1f1f1f; border-radius: 6px; padding: 3px; }
-    .role-tab { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; background: transparent; color: #9ca3af; }
-    .role-tab.active { background: #2563eb; color: #fff; }
-    .role-tab.fest.active { background: #16a34a; }
-    .role-tab.leih.active { background: #ea580c; }
+    .role-tabs { display: flex; background: #EDF2F7; border-radius: 8px; padding: 3px; }
+    .role-tab {
+      padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
+      font-size: 11px; background: transparent; color: var(--text-light);
+      font-family: 'Inter', sans-serif; font-weight: 600; transition: all 0.2s;
+    }
+    .role-tab.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(15,52,96,0.3); }
+    .role-tab.fest.active { background: var(--success); box-shadow: 0 2px 8px rgba(56,161,105,0.3); }
+    .role-tab.leih.active { background: var(--warning); box-shadow: 0 2px 8px rgba(221,107,32,0.3); }
 
     .view-tabs { display: flex; gap: 4px; margin-left: auto; }
-    .view-tab { padding: 8px 14px; background: #374151; border: none; border-radius: 4px; color: #fff; cursor: pointer; font-size: 11px; }
-    .view-tab.active { background: #2563eb; }
-    .view-tab.alert { background: #7f1d1d; animation: pulse 1.5s infinite; }
+    .view-tab {
+      padding: 8px 14px; background: #EDF2F7; border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); cursor: pointer; font-size: 11px;
+      font-family: 'Inter', sans-serif; font-weight: 600; transition: all 0.2s;
+    }
+    .view-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .view-tab.alert { background: rgba(233,69,96,0.1); color: var(--highlight); border-color: var(--highlight); animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-    .main { display: flex; height: calc(100vh - 220px); }
+    .main { display: flex; height: calc(100vh - 270px); }
     .panel-left { flex: 2; overflow-y: auto; padding: 16px; }
-    .panel-right { flex: 1; background: #1a1a1a; overflow-y: auto; padding: 16px; border-left: 1px solid #333; min-width: 320px; }
+    .panel-right { flex: 1; background: var(--hover-bg); overflow-y: auto; padding: 16px; border-left: 1px solid var(--border); min-width: 320px; }
     .panel-full { flex: 1; overflow-y: auto; padding: 16px; }
 
     .event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
 
-    .event-card { background: #1f1f1f; border: 1px solid #333; border-radius: 10px; padding: 16px; transition: all 0.2s; }
-    .event-card:hover { border-color: #555; }
-    .event-card.warning { border-color: #f59e0b; background: rgba(245,158,11,0.05); }
-    .event-card.success { border-color: #22c55e; background: rgba(34,197,94,0.05); }
+    .event-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px; transition: all 0.2s;
+    }
+    .event-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.06); border-color: #CBD5E0; }
+    .event-card.warning { border-color: var(--warning); background: rgba(221,107,32,0.03); }
+    .event-card.success { border-color: var(--success); background: rgba(56,161,105,0.03); }
     .event-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-    .event-title { font-weight: 600; font-size: 15px; }
-    .event-location { font-size: 11px; color: #9ca3af; margin-top: 2px; }
-    .event-info { font-size: 12px; color: #d1d5db; margin: 8px 0; }
-    .event-badge { font-size: 10px; padding: 4px 10px; border-radius: 4px; font-weight: 600; }
-    .badge-green { background: #166534; color: #86efac; }
-    .badge-yellow { background: #854d0e; color: #fde047; }
-    .badge-blue { background: #1e40af; color: #93c5fd; }
+    .event-title { font-weight: 700; font-size: 15px; color: var(--primary); }
+    .event-location { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+    .event-info { font-size: 12px; color: var(--text-light); margin: 8px 0; }
+    .event-badge { font-size: 10px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+    .badge-green { background: rgba(56,161,105,0.1); color: var(--success); border: 1px solid rgba(56,161,105,0.2); }
+    .badge-yellow { background: rgba(221,107,32,0.1); color: var(--warning); border: 1px solid rgba(221,107,32,0.2); }
+    .badge-blue { background: rgba(15,52,96,0.1); color: var(--accent); border: 1px solid rgba(15,52,96,0.2); }
 
-    .progress-bar { height: 8px; background: #374151; border-radius: 4px; overflow: hidden; margin: 10px 0; }
+    .progress-bar { height: 8px; background: #EDF2F7; border-radius: 4px; overflow: hidden; margin: 10px 0; }
     .progress-fill { height: 100%; transition: width 0.3s; border-radius: 4px; }
-    .progress-fill.yellow { background: linear-gradient(90deg, #ca8a04, #fbbf24); }
-    .progress-fill.green { background: linear-gradient(90deg, #16a34a, #22c55e); }
-    .progress-fill.red { background: linear-gradient(90deg, #b91c1c, #ef4444); }
+    .progress-fill.yellow { background: linear-gradient(90deg, #C05621, var(--warning)); }
+    .progress-fill.green { background: linear-gradient(90deg, #276749, var(--success)); }
+    .progress-fill.red { background: linear-gradient(90deg, #C53030, var(--highlight)); }
 
-    .uebergabe-flow { display: flex; align-items: center; background: #2d2d2d; border-radius: 8px; padding: 12px; margin-top: 10px; }
-    .uebergabe-step { flex: 1; text-align: center; padding: 8px; border-radius: 6px; background: #374151; }
-    .uebergabe-step.done { background: #166534; }
-    .uebergabe-step.active { background: #854d0e; animation: pulse 2s infinite; }
+    .uebergabe-flow { display: flex; align-items: center; background: var(--hover-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 10px; }
+    .uebergabe-step { flex: 1; text-align: center; padding: 8px; border-radius: 6px; background: #EDF2F7; }
+    .uebergabe-step.done { background: rgba(56,161,105,0.15); }
+    .uebergabe-step.active { background: rgba(221,107,32,0.15); animation: pulse 2s infinite; }
     .uebergabe-step.pending { opacity: 0.4; }
     .uebergabe-icon { font-size: 20px; }
-    .uebergabe-label { font-size: 10px; font-weight: 600; margin-top: 4px; }
-    .uebergabe-time { font-size: 9px; color: #9ca3af; }
-    .uebergabe-arrow { color: #6b7280; font-size: 16px; margin: 0 6px; }
+    .uebergabe-label { font-size: 10px; font-weight: 700; margin-top: 4px; color: var(--text); }
+    .uebergabe-time { font-size: 9px; color: var(--text-light); }
+    .uebergabe-arrow { color: var(--text-light); font-size: 16px; margin: 0 6px; }
 
     .action-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 
-    .log-panel h3 { font-size: 12px; color: #9ca3af; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
-    .log-item { padding: 8px 10px; border-left: 3px solid #333; margin-bottom: 4px; border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.02); font-size: 11px; }
-    .log-item.success { border-color: #22c55e; background: rgba(34,197,94,0.08); }
-    .log-item.warning { border-color: #f59e0b; background: rgba(245,158,11,0.08); }
-    .log-item.critical { border-color: #ef4444; background: rgba(239,68,68,0.08); }
-    .log-item.ma { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
-    .log-item.briefing { border-color: #06b6d4; background: rgba(6,182,212,0.1); font-weight: 500; }
-    .log-item.vtp { border-color: #7c3aed; background: rgba(124,58,237,0.08); }
-    .log-time { color: #6b7280; margin-right: 8px; font-variant-numeric: tabular-nums; }
-    .log-actor { color: #fbbf24; font-weight: 500; }
+    .log-panel h3 {
+      font-size: 12px; color: var(--text-light); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 6px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .log-item {
+      padding: 8px 10px; border-left: 3px solid var(--border); margin-bottom: 4px;
+      border-radius: 0 8px 8px 0; background: var(--card-bg); font-size: 11px;
+    }
+    .log-item.success { border-left-color: var(--success); background: rgba(56,161,105,0.05); }
+    .log-item.warning { border-left-color: var(--warning); background: rgba(221,107,32,0.05); }
+    .log-item.critical { border-left-color: var(--highlight); background: rgba(233,69,96,0.05); }
+    .log-item.ma { border-left-color: var(--accent); background: rgba(15,52,96,0.05); }
+    .log-item.briefing { border-left-color: #2B6CB0; background: rgba(43,108,176,0.05); font-weight: 500; }
+    .log-item.vtp { border-left-color: var(--accent); background: rgba(15,52,96,0.05); }
+    .log-time { color: var(--text-light); margin-right: 8px; font-variant-numeric: tabular-nums; }
+    .log-actor { color: var(--highlight); font-weight: 600; }
 
-    .tagesabschluss { background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%); border: 2px solid #22c55e; border-radius: 12px; padding: 24px; }
-    .tagesabschluss h2 { color: #22c55e; margin-bottom: 20px; font-size: 18px; }
+    .tagesabschluss { background: var(--card-bg); border: 2px solid var(--success); border-radius: 12px; padding: 24px; }
+    .tagesabschluss h2 { color: var(--success); margin-bottom: 20px; font-size: 18px; font-weight: 800; }
     .abschluss-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-    .abschluss-stat { background: #1f1f1f; padding: 16px; border-radius: 8px; text-align: center; }
-    .abschluss-value { font-size: 28px; font-weight: bold; }
-    .abschluss-label { font-size: 10px; color: #9ca3af; margin-top: 4px; }
-    .reibungspunkte { background: #1f1f1f; padding: 16px; border-radius: 8px; }
-    .reibungspunkte h3 { color: #f59e0b; font-size: 12px; margin-bottom: 12px; }
-    .reibungspunkt { font-size: 11px; padding: 6px 0; border-bottom: 1px solid #333; display: flex; gap: 10px; }
+    .abschluss-stat { background: var(--hover-bg); padding: 16px; border-radius: 12px; text-align: center; border: 1px solid var(--border); }
+    .abschluss-value { font-size: 28px; font-weight: 800; color: var(--primary); }
+    .abschluss-label { font-size: 10px; color: var(--text-light); margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .reibungspunkte { background: var(--hover-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); }
+    .reibungspunkte h3 { color: var(--warning); font-size: 12px; margin-bottom: 12px; }
+    .reibungspunkt { font-size: 11px; padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; gap: 10px; }
     .reibungspunkt:last-child { border: none; }
 
-    .footer { background: #050505; padding: 12px; text-align: center; color: #4b5563; font-size: 11px; border-top: 1px solid #222; }
+    .footer {
+      background: var(--primary); padding: 12px; text-align: center;
+      color: #A0AEC0; font-size: 11px;
+    }
 
-    .sep { width: 1px; height: 28px; background: #333; margin: 0 8px; }
+    .sep { width: 1px; height: 28px; background: var(--border); margin: 0 8px; }
 
-    /* Koch-View specific */
-    .task-card { background: #1f1f1f; border: 1px solid #333; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
-    .task-card.urgent { border-color: #ef4444; }
-    .task-card.active { border-color: #fbbf24; background: rgba(251,191,36,0.05); }
-    .task-card.done { border-color: #22c55e; opacity: 0.7; }
+    /* Koch-View */
+    .task-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; transition: all 0.2s; }
+    .task-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
+    .task-card.urgent { border-color: var(--highlight); }
+    .task-card.active { border-color: var(--warning); background: rgba(221,107,32,0.02); }
+    .task-card.done { border-color: var(--success); opacity: 0.7; }
     .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .task-title { font-weight: 600; font-size: 14px; }
-    .task-status { font-size: 10px; padding: 4px 8px; border-radius: 4px; }
+    .task-title { font-weight: 700; font-size: 14px; color: var(--primary); }
+    .task-status { font-size: 10px; padding: 4px 8px; border-radius: 20px; font-weight: 600; }
     .task-checklist { margin-top: 10px; }
-    .task-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #2a2a2a; font-size: 12px; }
+    .task-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #EDF2F7; font-size: 12px; }
     .task-item:last-child { border: none; }
-    .task-checkbox { width: 18px; height: 18px; border: 2px solid #4b5563; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .task-checkbox.checked { background: #16a34a; border-color: #16a34a; }
+    .task-checkbox { width: 18px; height: 18px; border: 2px solid #CBD5E0; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .task-checkbox.checked { background: var(--success); border-color: var(--success); }
     .task-checkbox.checked::after { content: '✓'; color: white; font-size: 12px; }
 
-    .recipe-card { background: #1f1f1f; border: 1px solid #333; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
-    .recipe-card:hover { border-color: #555; cursor: pointer; }
+    .recipe-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; transition: all 0.2s; }
+    .recipe-card:hover { border-color: #CBD5E0; cursor: pointer; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.06); }
     .recipe-header { display: flex; align-items: center; gap: 10px; }
     .recipe-icon { font-size: 28px; }
-    .recipe-title { font-weight: 600; }
-    .recipe-meta { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+    .recipe-title { font-weight: 700; color: var(--primary); }
+    .recipe-meta { font-size: 11px; color: var(--text-light); margin-top: 2px; }
     .recipe-tags { display: flex; gap: 6px; margin-top: 8px; }
-    .recipe-tag { font-size: 9px; padding: 3px 8px; background: #374151; border-radius: 4px; }
-    .recipe-tag.allergen { background: #7f1d1d; color: #fca5a5; }
+    .recipe-tag { font-size: 9px; padding: 3px 8px; background: #EDF2F7; border-radius: 20px; color: var(--text-light); font-weight: 600; }
+    .recipe-tag.allergen { background: rgba(233,69,96,0.1); color: var(--highlight); border: 1px solid rgba(233,69,96,0.15); }
 
-    /* Leihkoch-View specific */
-    .instruction-card { background: linear-gradient(135deg, #1f1f1f 0%, #252525 100%); border: 2px solid #ea580c; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    /* Leihkoch-View */
+    .instruction-card { background: var(--card-bg); border: 2px solid var(--warning); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
     .instruction-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
     .instruction-icon { font-size: 32px; }
-    .instruction-title { font-size: 18px; font-weight: 600; }
-    .instruction-subtitle { font-size: 11px; color: #9ca3af; }
-    .instruction-step { display: flex; gap: 12px; padding: 12px; background: #2d2d2d; border-radius: 8px; margin-bottom: 8px; }
-    .step-number { width: 28px; height: 28px; background: #ea580c; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+    .instruction-title { font-size: 18px; font-weight: 800; color: var(--primary); }
+    .instruction-subtitle { font-size: 11px; color: var(--text-light); }
+    .instruction-step { display: flex; gap: 12px; padding: 12px; background: var(--hover-bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; transition: all 0.15s; }
+    .instruction-step:hover { background: #EDF2F7; }
+    .step-number { width: 28px; height: 28px; background: var(--warning); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; color: #fff; }
     .step-content { flex: 1; }
-    .step-title { font-weight: 600; margin-bottom: 4px; }
-    .step-detail { font-size: 11px; color: #9ca3af; }
+    .step-title { font-weight: 700; margin-bottom: 4px; color: var(--primary); }
+    .step-detail { font-size: 11px; color: var(--text-light); }
 
-    .briefing-box { background: #1e3a5f; border: 1px solid #2563eb; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
-    .briefing-box h3 { color: #93c5fd; margin-bottom: 12px; font-size: 14px; }
+    .briefing-box { background: rgba(15,52,96,0.05); border: 1px solid rgba(15,52,96,0.2); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .briefing-box h3 { color: var(--accent); margin-bottom: 12px; font-size: 14px; font-weight: 700; }
     .briefing-item { font-size: 12px; padding: 6px 0; display: flex; gap: 8px; }
     .briefing-icon { width: 20px; text-align: center; }
 
-    .directions-box { background: #1f1f1f; border: 1px solid #333; border-radius: 10px; padding: 16px; }
-    .directions-box h3 { color: #9ca3af; margin-bottom: 12px; font-size: 14px; }
-    .direction-step { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #2a2a2a; }
+    .directions-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .directions-box h3 { color: var(--text-light); margin-bottom: 12px; font-size: 14px; font-weight: 700; }
+    .direction-step { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #EDF2F7; }
     .direction-step:last-child { border: none; }
     .direction-icon { font-size: 18px; }
-    .direction-text { font-size: 12px; }
-    .direction-note { font-size: 10px; color: #f59e0b; margin-top: 2px; }
+    .direction-text { font-size: 12px; color: var(--text); }
+    .direction-note { font-size: 10px; color: var(--warning); margin-top: 2px; }
 
     .wissen-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-    .wissen-card { background: #1f1f1f; border: 1px solid #333; border-radius: 8px; padding: 12px; cursor: pointer; }
-    .wissen-card:hover { border-color: #555; }
+    .wissen-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px; cursor: pointer; transition: all 0.2s; }
+    .wissen-card:hover { border-color: #CBD5E0; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.06); }
     .wissen-icon { font-size: 24px; margin-bottom: 8px; }
-    .wissen-title { font-weight: 600; font-size: 12px; }
-    .wissen-desc { font-size: 10px; color: #9ca3af; margin-top: 4px; }
+    .wissen-title { font-weight: 700; font-size: 12px; color: var(--primary); }
+    .wissen-desc { font-size: 10px; color: var(--text-light); margin-top: 4px; }
 
-    .privacy-notice { background: rgba(22,163,74,0.1); border: 1px solid #16a34a; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 11px; }
-    .privacy-notice strong { color: #22c55e; }
+    .privacy-notice { background: rgba(56,161,105,0.05); border: 1px solid rgba(56,161,105,0.2); border-radius: 12px; padding: 12px; margin-bottom: 16px; font-size: 11px; color: var(--text); }
+    .privacy-notice strong { color: var(--success); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--hover-bg); }
+    ::-webkit-scrollbar-thumb { background: #CBD5E0; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #A0AEC0; }
+
+    @media (max-width: 768px) {
+      .site-nav { padding: 0.8rem 1rem; }
+      .main { flex-direction: column; height: auto; }
+      .panel-right { border-left: none; border-top: 1px solid var(--border); min-width: unset; }
+      .stats-bar { grid-template-columns: repeat(3, 1fr) !important; }
+      .abschluss-grid { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 <body>
+  <nav class="site-nav">
+    <a href="imops.html" class="logo">i<span>MOPS</span> Gastro Grid</a>
+    <a href="imops.html" class="nav-link">&larr; Zurück zur Produktseite</a>
+  </nav>
   <div id="app"></div>
   <script>
     // Vanilla JS - kein React dependency Problem
@@ -414,7 +502,7 @@
           <div class="header-top">
             <div>
               <h1>🐕 iMOPS v3 <span class="schicht-badge ${schicht === 'frueh' ? 'schicht-frueh' : 'schicht-spaet'}">${schicht === 'frueh' ? '☀️ Frühschicht' : '🌙 Spätschicht'}</span></h1>
-              <div style="font-size:11px;color:#9ca3af;margin-top:4px;">accente Gastronomie | Messe Frankfurt</div>
+              <div style="font-size:11px;color:var(--text-light);margin-top:4px;">accente Gastronomie | Messe Frankfurt</div>
             </div>
             <div style="text-align:right;">
               <div class="time">${getZeitStr(zeit)}</div>
@@ -454,7 +542,7 @@
           <div class="stats-bar minimal">
             <div class="stat-box"><div class="stat-value">3</div><div class="stat-label">Deine Events</div></div>
             <div class="stat-box"><div class="stat-value">${getZeitStr(zeit) < '14:00' ? '14:00' : '22:00'}</div><div class="stat-label">Schichtende</div></div>
-            <div class="stat-box ${laufend > 0 ? 'warning' : ''}"><div class="stat-value" style="color:#fbbf24">Anna</div><div class="stat-label">Ansprechpartner</div></div>
+            <div class="stat-box ${laufend > 0 ? 'warning' : ''}"><div class="stat-value" style="color:var(--warning)">Anna</div><div class="stat-label">Ansprechpartner</div></div>
           </div>
         `;
       } else if (rolle === 'fest') {
@@ -463,7 +551,7 @@
         return `
           <div class="stats-bar" style="grid-template-columns: repeat(5, 1fr);">
             <div class="stat-box"><div class="stat-value">${kochTasks.length}</div><div class="stat-label">Deine Events</div></div>
-            <div class="stat-box ${openTasks > 5 ? 'warning' : 'success'}"><div class="stat-value" style="color:${openTasks > 5 ? '#fbbf24' : '#22c55e'}">${openTasks}</div><div class="stat-label">Offene Tasks</div></div>
+            <div class="stat-box ${openTasks > 5 ? 'warning' : 'success'}"><div class="stat-value" style="color:${openTasks > 5 ? 'var(--warning)' : 'var(--success)'}">${openTasks}</div><div class="stat-label">Offene Tasks</div></div>
             <div class="stat-box"><div class="stat-value">${rezepte.filter(r => r.pins).length}</div><div class="stat-label">Gepinnte Rezepte</div></div>
             <div class="stat-box"><div class="stat-value">${wissenPins.length}</div><div class="stat-label">Wissen (Pins)</div></div>
             <div class="stat-box"><div class="stat-value">${getZeitStr(zeit) < '14:00' ? '14:00' : '22:00'}</div><div class="stat-label">Schichtende</div></div>
@@ -474,12 +562,12 @@
         return `
           <div class="stats-bar">
             <div class="stat-box"><div class="stat-value">${events.length}</div><div class="stat-label">Events</div></div>
-            <div class="stat-box ${laufend > 0 ? 'warning' : ''}"><div class="stat-value" style="color:${laufend > 0 ? '#fbbf24' : '#fff'}">${laufend}</div><div class="stat-label">Laufend</div></div>
-            <div class="stat-box ${fertig > 0 ? 'success' : ''}"><div class="stat-value" style="color:${fertig > 0 ? '#22c55e' : '#fff'}">${fertig}</div><div class="stat-label">Fertig</div></div>
+            <div class="stat-box ${laufend > 0 ? 'warning' : ''}"><div class="stat-value" style="color:${laufend > 0 ? 'var(--warning)' : 'var(--primary)'}">${laufend}</div><div class="stat-label">Laufend</div></div>
+            <div class="stat-box ${fertig > 0 ? 'success' : ''}"><div class="stat-value" style="color:${fertig > 0 ? 'var(--success)' : 'var(--primary)'}">${fertig}</div><div class="stat-label">Fertig</div></div>
             <div class="stat-box"><div class="stat-value">${gaeste}</div><div class="stat-label">Gäste</div></div>
             <div class="stat-box"><div class="stat-value">${schicht === 'frueh' ? '6' : '5'}</div><div class="stat-label">Personal</div></div>
             <div class="stat-box"><div class="stat-value">${events.filter(ev => ev.uebergabe.kueche && !ev.uebergabe.aussen).length}</div><div class="stat-label">Übergaben</div></div>
-            <div class="stat-box ${reibungspunkte.length > 0 ? 'critical' : ''}"><div class="stat-value" style="color:${reibungspunkte.length > 0 ? '#ef4444' : '#fff'}">${reibungspunkte.length}</div><div class="stat-label">Reibung</div></div>
+            <div class="stat-box ${reibungspunkte.length > 0 ? 'critical' : ''}"><div class="stat-value" style="color:${reibungspunkte.length > 0 ? 'var(--highlight)' : 'var(--primary)'}">${reibungspunkte.length}</div><div class="stat-label">Reibung</div></div>
           </div>
         `;
       }
@@ -536,7 +624,7 @@
         <div class="panel-right">
           <div class="log-panel">
             <h3>📜 TAGESLOG</h3>
-            ${logs.length === 0 ? '<div style="color:#6b7280;text-align:center;padding:20px;">▶️ Start drücken</div>' : ''}
+            ${logs.length === 0 ? '<div style="color:var(--text-light);text-align:center;padding:20px;">▶️ Start drücken</div>' : ''}
             ${logs.map(l => `<div class="log-item ${l.typ}"><span class="log-time">${l.zeit}</span>${l.msg}</div>`).join('')}
           </div>
         </div>
@@ -617,20 +705,20 @@
       const personal = schicht === 'frueh' ? frueh : spaet;
 
       return `
-        <div style="background:#1f1f1f;border-radius:10px;padding:16px;">
+        <div style="background:var(--card-bg);border-radius:12px;padding:16px;border:1px solid var(--border);">
           <div class="privacy-notice">
             <strong>🔒 Autonomie-Prinzip:</strong> Chef sieht WER arbeitet, aber NICHT WIE sie arbeiten.<br>
             Koch kann kreativ sein, solange dokumentiert. "Github mit Menschen."
           </div>
-          <h3 style="margin-bottom:16px;color:#9ca3af;">👥 Personal ${schicht === 'frueh' ? 'Frühschicht (06:00-14:00)' : 'Spätschicht (14:00-22:00)'}</h3>
+          <h3 style="margin-bottom:16px;color:var(--text-light);font-weight:700;">👥 Personal ${schicht === 'frueh' ? 'Frühschicht (06:00-14:00)' : 'Spätschicht (14:00-22:00)'}</h3>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
             ${personal.map(p => `
-              <div style="background:#2d2d2d;border-radius:8px;padding:12px;text-align:center;border:1px solid ${p.status === 'notfall' ? '#ef4444' : p.status === 'ueberstunden' ? '#f59e0b' : '#333'}">
+              <div style="background:var(--hover-bg);border-radius:12px;padding:12px;text-align:center;border:1px solid ${p.status === 'notfall' ? 'var(--highlight)' : p.status === 'ueberstunden' ? 'var(--warning)' : 'var(--border)'};">
                 <div style="font-size:24px;margin-bottom:4px;">👨‍🍳</div>
-                <div style="font-weight:600;">${p.name}</div>
-                <div style="font-size:10px;color:#9ca3af;">${p.rolle}</div>
-                ${p.status === 'notfall' ? '<div style="font-size:9px;color:#ef4444;margin-top:4px;">⚠️ Notfall (gegangen)</div>' : ''}
-                ${p.status === 'ueberstunden' ? '<div style="font-size:9px;color:#f59e0b;margin-top:4px;">⏰ Überstunden</div>' : ''}
+                <div style="font-weight:700;color:var(--primary);">${p.name}</div>
+                <div style="font-size:10px;color:var(--text-light);">${p.rolle}</div>
+                ${p.status === 'notfall' ? '<div style="font-size:9px;color:var(--highlight);margin-top:4px;">⚠️ Notfall (gegangen)</div>' : ''}
+                ${p.status === 'ueberstunden' ? '<div style="font-size:9px;color:var(--warning);margin-top:4px;">⏰ Überstunden</div>' : ''}
               </div>
             `).join('')}
           </div>
@@ -640,30 +728,30 @@
 
     function renderVTP() {
       return `
-        <div style="background:#1f1f1f;border-radius:10px;padding:16px;">
-          <h3 style="margin-bottom:16px;color:#7c3aed;">📸 VTP - Virtueller Trust Pilot</h3>
-          <div class="privacy-notice" style="background:rgba(124,58,237,0.1);border-color:#7c3aed;">
-            <strong>📸 VTP-Prinzip:</strong> Koch schickt Foto → Chef sieht & zeichnet Korrektur → Koch sieht sofort
+        <div style="background:var(--card-bg);border-radius:12px;padding:16px;border:1px solid var(--border);">
+          <h3 style="margin-bottom:16px;color:var(--accent);font-weight:700;">📸 VTP - Virtueller Trust Pilot</h3>
+          <div class="privacy-notice" style="background:rgba(15,52,96,0.05);border-color:rgba(15,52,96,0.2);">
+            <strong style="color:var(--accent);">📸 VTP-Prinzip:</strong> Koch schickt Foto → Chef sieht & zeichnet Korrektur → Koch sieht sofort
           </div>
           <div style="display:grid;gap:12px;margin-top:16px;">
-            <div style="background:#2d2d2d;border-radius:8px;padding:16px;border-left:4px solid #22c55e;">
+            <div style="background:var(--hover-bg);border-radius:12px;padding:16px;border-left:4px solid var(--success);border:1px solid var(--border);border-left:4px solid var(--success);">
               <div style="display:flex;justify-content:space-between;align-items:center;">
                 <div>
-                  <div style="font-weight:600;">Gala Buffet-Aufbau</div>
-                  <div style="font-size:11px;color:#9ca3af;">17:30 - von Julia</div>
+                  <div style="font-weight:700;color:var(--primary);">Gala Buffet-Aufbau</div>
+                  <div style="font-size:11px;color:var(--text-light);">17:30 - von Julia</div>
                 </div>
-                <span style="background:#166534;color:#86efac;padding:4px 10px;border-radius:4px;font-size:10px;">✓ Freigegeben</span>
+                <span class="badge-green" style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;">✓ Freigegeben</span>
               </div>
             </div>
-            <div style="background:#2d2d2d;border-radius:8px;padding:16px;border-left:4px solid #f59e0b;">
+            <div style="background:var(--hover-bg);border-radius:12px;padding:16px;border:1px solid var(--border);border-left:4px solid var(--warning);">
               <div style="display:flex;justify-content:space-between;align-items:center;">
                 <div>
-                  <div style="font-weight:600;">Dessert-Station</div>
-                  <div style="font-size:11px;color:#9ca3af;">17:45 - von Klaus</div>
+                  <div style="font-weight:700;color:var(--primary);">Dessert-Station</div>
+                  <div style="font-size:11px;color:var(--text-light);">17:45 - von Klaus</div>
                 </div>
-                <span style="background:#854d0e;color:#fde047;padding:4px 10px;border-radius:4px;font-size:10px;">⏳ Wartet</span>
+                <span class="badge-yellow" style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;">⏳ Wartet</span>
               </div>
-              <div style="margin-top:10px;font-size:11px;color:#9ca3af;">
+              <div style="margin-top:10px;font-size:11px;color:var(--text-light);">
                 📝 Dein Feedback: <em>(Kreis zeichnen oder Text eingeben)</em>
               </div>
             </div>
@@ -680,15 +768,15 @@
         <div class="tagesabschluss">
           <h2>📊 Tagesabschluss - 22:00 Uhr</h2>
           <div class="abschluss-grid">
-            <div class="abschluss-stat"><div class="abschluss-value" style="color:#22c55e">${fertig}</div><div class="abschluss-label">Events abgeschlossen</div></div>
+            <div class="abschluss-stat"><div class="abschluss-value" style="color:var(--success)">${fertig}</div><div class="abschluss-label">Events abgeschlossen</div></div>
             <div class="abschluss-stat"><div class="abschluss-value">${gaeste}</div><div class="abschluss-label">Gäste versorgt</div></div>
             <div class="abschluss-stat"><div class="abschluss-value">16h</div><div class="abschluss-label">Betriebszeit</div></div>
-            <div class="abschluss-stat"><div class="abschluss-value" style="color:#f59e0b">${reibungspunkte.length}</div><div class="abschluss-label">Reibungspunkte</div></div>
+            <div class="abschluss-stat"><div class="abschluss-value" style="color:var(--warning)">${reibungspunkte.length}</div><div class="abschluss-label">Reibungspunkte</div></div>
           </div>
           <div class="reibungspunkte">
             <h3>⚠️ Reibungspunkte-Analyse (keine Fehler!)</h3>
-            ${reibungspunkte.length === 0 ? '<div style="color:#6b7280;">Keine Reibungspunkte dokumentiert.</div>' : ''}
-            ${reibungspunkte.map(rp => `<div class="reibungspunkt"><span style="color:#6b7280;min-width:50px;">${rp.zeit}</span><span>${rp.text}</span></div>`).join('')}
+            ${reibungspunkte.length === 0 ? '<div style="color:var(--text-light);">Keine Reibungspunkte dokumentiert.</div>' : ''}
+            ${reibungspunkte.map(rp => `<div class="reibungspunkt"><span style="color:var(--text-light);min-width:50px;">${rp.zeit}</span><span>${rp.text}</span></div>`).join('')}
           </div>
         </div>
       `;
@@ -710,7 +798,7 @@
           <div class="log-panel">
             <h3>📋 Deine Aktivitäten</h3>
             ${logs.filter(l => !l.msg.includes('Chef') && !l.msg.includes('Horst')).slice(0, 15).map(l => `<div class="log-item ${l.typ}"><span class="log-time">${l.zeit}</span>${l.msg}</div>`).join('')}
-            ${logs.length === 0 ? '<div style="color:#6b7280;text-align:center;padding:20px;">▶️ Start drücken</div>' : ''}
+            ${logs.length === 0 ? '<div style="color:var(--text-light);text-align:center;padding:20px;">▶️ Start drücken</div>' : ''}
           </div>
         </div>
       `;
@@ -719,7 +807,7 @@
     function renderKochTasks() {
       return `
         <div>
-          <h3 style="margin-bottom:16px;color:#16a34a;">✅ Deine Tagesaufgaben</h3>
+          <h3 style="margin-bottom:16px;color:var(--success);font-weight:700;">✅ Deine Tagesaufgaben</h3>
           ${kochTasks.map(task => {
             const checkedCount = task.items.filter((_, i) => taskChecks[`${task.id}-${i}`]).length;
             const allDone = checkedCount === task.items.length;
@@ -730,9 +818,9 @@
                 <div class="task-header">
                   <div>
                     <div class="task-title">${task.title}</div>
-                    <div style="font-size:11px;color:#9ca3af;">Schicken: ${task.zeit}</div>
+                    <div style="font-size:11px;color:var(--text-light);">Schicken: ${task.zeit}</div>
                   </div>
-                  <span class="task-status" style="background:${allDone ? '#166534' : '#374151'};color:${allDone ? '#86efac' : '#9ca3af'}">
+                  <span class="task-status" style="background:${allDone ? 'rgba(56,161,105,0.1)' : '#EDF2F7'};color:${allDone ? 'var(--success)' : 'var(--text-light)'};border:1px solid ${allDone ? 'rgba(56,161,105,0.2)' : 'var(--border)'}">
                     ${checkedCount}/${task.items.length} ${allDone ? '✓' : ''}
                   </span>
                 </div>
@@ -757,7 +845,7 @@
     function renderKochRezepte() {
       return `
         <div>
-          <h3 style="margin-bottom:16px;color:#16a34a;">📖 Rezepte & Anleitungen</h3>
+          <h3 style="margin-bottom:16px;color:var(--success);font-weight:700;">📖 Rezepte & Anleitungen</h3>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
             ${rezepte.map(r => `
               <div class="recipe-card">
@@ -781,7 +869,7 @@
     function renderKochWissen() {
       return `
         <div>
-          <h3 style="margin-bottom:16px;color:#16a34a;">🧠 Fachwissen (Pins)</h3>
+          <h3 style="margin-bottom:16px;color:var(--success);font-weight:700;">🧠 Fachwissen (Pins)</h3>
           <div class="wissen-grid">
             ${wissenPins.map(w => `
               <div class="wissen-card">
@@ -851,9 +939,9 @@
             </div>
           </div>
 
-          <div style="background:#1f1f1f;border:1px solid #ef4444;border-radius:10px;padding:16px;">
-            <h3 style="color:#ef4444;margin-bottom:12px;">⚠️ Wichtige Regeln</h3>
-            <div style="font-size:12px;line-height:1.8;">
+          <div style="background:var(--card-bg);border:1px solid var(--highlight);border-radius:12px;padding:16px;">
+            <h3 style="color:var(--highlight);margin-bottom:12px;font-weight:700;">⚠️ Wichtige Regeln</h3>
+            <div style="font-size:12px;line-height:1.8;color:var(--text);">
               • <strong>Allergene:</strong> IMMER Anna fragen bei Unklarheiten<br>
               • <strong>MHD:</strong> Abgelaufenes NICHT verwenden → sofort melden<br>
               • <strong>Fotos:</strong> Vor dem Schicken fotografieren (VTP)<br>
@@ -875,17 +963,17 @@
             <div class="briefing-item"><div class="briefing-icon">📋</div><strong>Deine Events:</strong> ${leihkochBriefing.events.join(', ')}</div>
           </div>
 
-          <div style="background:#1f1f1f;border:1px solid #333;border-radius:10px;padding:16px;margin-bottom:16px;">
-            <h3 style="color:#9ca3af;margin-bottom:12px;">🏢 Über accente</h3>
-            <div style="font-size:12px;line-height:1.8;color:#d1d5db;">
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;">
+            <h3 style="color:var(--text-light);margin-bottom:12px;font-weight:700;">🏢 Über accente</h3>
+            <div style="font-size:12px;line-height:1.8;color:var(--text);">
               accente Gastronomie Service GmbH ist der offizielle Caterer der Messe Frankfurt.<br>
               Wir versorgen täglich tausende Gäste auf dem größten Messegelände Deutschlands.
             </div>
           </div>
 
-          <div style="background:#1f1f1f;border:1px solid #333;border-radius:10px;padding:16px;">
-            <h3 style="color:#9ca3af;margin-bottom:12px;">📞 Notfallkontakte</h3>
-            <div style="font-size:12px;line-height:1.8;">
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:16px;">
+            <h3 style="color:var(--text-light);margin-bottom:12px;font-weight:700;">📞 Notfallkontakte</h3>
+            <div style="font-size:12px;line-height:1.8;color:var(--text);">
               <div>👩‍🍳 Anna (Souschef): Direkt in der Küche</div>
               <div>🏥 Sanitäter: Halle 1, Eingang West</div>
               <div>🚨 Sicherheit: 069 / 7575-0</div>
@@ -934,10 +1022,10 @@
             </div>
           </div>
 
-          <div style="background:#2d2d2d;border-radius:10px;padding:16px;text-align:center;">
+          <div style="background:var(--hover-bg);border-radius:12px;padding:16px;text-align:center;border:1px solid var(--border);">
             <div style="font-size:48px;margin-bottom:12px;">🗺️</div>
-            <div style="color:#9ca3af;font-size:12px;">Interaktive Karte</div>
-            <div style="color:#6b7280;font-size:11px;margin-top:4px;">(In der App: Live-Navigation)</div>
+            <div style="color:var(--text-light);font-size:12px;font-weight:600;">Interaktive Karte</div>
+            <div style="color:var(--text-light);font-size:11px;margin-top:4px;">(In der App: Live-Navigation)</div>
           </div>
         </div>
       `;
