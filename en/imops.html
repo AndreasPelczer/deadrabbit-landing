@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iMOPS — Reference Kernel for Operational Documentation</title>
+  <meta name="description" content="iMOPS OS_CORE v1.0.0 — Deterministic In-Memory Kernel with integrated Guard Stack. MIT License. Zero Dependencies.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── RESET + ROOT ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --color-bg: #0a0a0e;
+      --color-surface: #0f0f16;
+      --color-accent: #ff6b35;
+      --color-accent-dim: rgba(255, 107, 53, 0.15);
+      --color-text: #b0b0bc;
+      --color-text-bright: #e0e0ea;
+      --color-text-dim: #606070;
+      --color-text-muted: #404050;
+      --color-border: #1a1a24;
+      --color-green: #44cc66;
+      --color-red: #cc4444;
+      --color-yellow: #ccaa44;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+      --space-4xl: 96px;
+      --container-padding: 24px;
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body {
+      font-family: var(--font-mono);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    a { color: var(--color-accent); text-decoration: none; transition: opacity 0.2s; }
+    a:hover { opacity: 0.8; }
+    strong { color: var(--color-text-bright); font-weight: 700; }
+
+    /* ── NAV ── */
+    .imops-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: var(--space-md) var(--container-padding);
+      z-index: 100;
+      background: rgba(10, 10, 14, 0.9);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .imops-nav__link {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--color-text-dim);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── HERO ── */
+    .imops-hero {
+      padding: var(--space-4xl) var(--container-padding) var(--space-3xl);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .imops-hero::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(255,107,53,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .imops-hero__logo {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto var(--space-lg);
+      opacity: 0;
+      animation: imops-logo-enter 1s var(--ease-out-expo) 0.3s forwards;
+      filter: drop-shadow(0 0 30px rgba(255, 107, 53, 0.3));
+    }
+
+    @keyframes imops-logo-enter {
+      from { opacity: 0; transform: scale(0.8) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .imops-hero__title {
+      font-family: var(--font-mono);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      color: var(--color-text-bright);
+      letter-spacing: 0.15em;
+      margin-bottom: var(--space-sm);
+    }
+
+    .imops-hero__tagline {
+      font-family: var(--font-mono);
+      font-size: clamp(0.65rem, 1.2vw, 0.8rem);
+      color: var(--color-text-dim);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    .imops-hero__version {
+      display: inline-block;
+      margin-top: var(--space-lg);
+      padding: 4px 14px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--color-accent);
+      border: 1px solid var(--color-accent);
+      border-radius: 3px;
+      letter-spacing: 0.1em;
+      opacity: 0;
+      animation: imops-logo-enter 0.8s var(--ease-out-expo) 0.8s forwards;
+    }
+
+    /* ── CONTENT ── */
+    .imops-content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 var(--container-padding) var(--space-4xl);
+    }
+
+    /* ── SECTIONS ── */
+    .imops-section {
+      margin-bottom: var(--space-3xl);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s var(--ease-out-expo), transform 0.6s var(--ease-out-expo);
+    }
+
+    .imops-section--visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .imops-section__header {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--color-accent);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: var(--space-lg);
+      padding-bottom: var(--space-sm);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .imops-section__header::before {
+      content: '> ';
+      opacity: 0.5;
+    }
+
+    .imops-text {
+      font-size: 0.82rem;
+      color: var(--color-text);
+      margin-bottom: var(--space-md);
+      line-height: 1.8;
+    }
+
+    .imops-text--dim {
+      color: var(--color-text-dim);
+      font-size: 0.75rem;
+    }
+
+    .imops-text--bright {
+      color: var(--color-text-bright);
+    }
+
+    /* ── LISTS ── */
+    .imops-list {
+      list-style: none;
+      padding: 0;
+      margin: var(--space-md) 0;
+    }
+
+    .imops-list li {
+      font-size: 0.8rem;
+      color: var(--color-text);
+      padding: 6px 0 6px 22px;
+      position: relative;
+      line-height: 1.7;
+    }
+
+    .imops-list li::before {
+      content: '+';
+      position: absolute;
+      left: 0;
+      color: var(--color-accent);
+      opacity: 0.6;
+      font-weight: 700;
+    }
+
+    .imops-list--negative li::before {
+      content: '—';
+      color: var(--color-text-dim);
+    }
+
+    .imops-list--check li::before {
+      content: '✓';
+      color: var(--color-green);
+    }
+
+    .imops-list--lock li::before {
+      content: '■';
+      color: var(--color-red);
+      opacity: 0.7;
+    }
+
+    /* ── GUARD BLOCK ── */
+    .guard-block {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-left: 3px solid var(--color-accent);
+      padding: var(--space-lg);
+      margin: var(--space-lg) 0;
+      border-radius: 2px;
+    }
+
+    .guard-block__name {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--color-accent);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: var(--space-sm);
+    }
+
+    .guard-block__desc {
+      font-size: 0.78rem;
+      color: var(--color-text);
+      line-height: 1.7;
+    }
+
+    .guard-block__detail {
+      font-size: 0.72rem;
+      color: var(--color-text-dim);
+      margin-top: var(--space-sm);
+      padding-top: var(--space-sm);
+      border-top: 1px solid var(--color-border);
+      line-height: 1.7;
+    }
+
+    /* ── INFO GRID ── */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-xl);
+      margin-top: var(--space-lg);
+    }
+
+    @media (max-width: 600px) {
+      .info-grid { grid-template-columns: 1fr; }
+    }
+
+    .info-block {
+      padding: var(--space-md);
+      border-left: 2px solid var(--color-border);
+    }
+
+    .info-block--positive { border-left-color: var(--color-green); }
+    .info-block--accent { border-left-color: var(--color-accent); }
+    .info-block--warning { border-left-color: var(--color-yellow); }
+
+    .info-block__title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--color-text-bright);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: var(--space-sm);
+    }
+
+    /* ── STABILITY TABLE ── */
+    .stability-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: var(--space-lg) 0;
+      font-size: 0.72rem;
+    }
+
+    .stability-table th,
+    .stability-table td {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .stability-table th {
+      color: var(--color-text-dim);
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.65rem;
+    }
+
+    .stability-table td {
+      color: var(--color-text);
+    }
+
+    .stability-table td:last-child {
+      color: var(--color-green);
+      font-weight: 500;
+    }
+
+    /* ── QUOTE / CALLOUT ── */
+    .imops-callout {
+      padding: var(--space-lg);
+      border-left: 3px solid var(--color-accent);
+      background: var(--color-surface);
+      margin: var(--space-2xl) 0;
+      font-style: italic;
+      font-size: 0.82rem;
+      color: var(--color-text-dim);
+      line-height: 1.8;
+    }
+
+    .imops-callout strong {
+      color: var(--color-accent);
+      font-style: normal;
+    }
+
+    /* ── SELFCHECK STEPS ── */
+    .selfcheck-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px var(--space-md);
+      margin: var(--space-lg) 0;
+      font-size: 0.72rem;
+    }
+
+    .selfcheck-grid__num {
+      color: var(--color-accent);
+      font-weight: 700;
+      opacity: 0.6;
+    }
+
+    .selfcheck-grid__step {
+      color: var(--color-text-dim);
+    }
+
+    /* ── CTA ── */
+    .imops-cta {
+      text-align: center;
+      padding: var(--space-3xl) 0;
+      border-top: 1px solid var(--color-border);
+      margin-top: var(--space-2xl);
+    }
+
+    .imops-cta__diamond {
+      color: var(--color-accent);
+      font-size: 1rem;
+      margin-bottom: var(--space-lg);
+    }
+
+    .imops-cta__link {
+      display: inline-block;
+      padding: 10px 28px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-accent);
+      border: 1px solid var(--color-accent);
+      letter-spacing: 0.1em;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .imops-cta__link:hover {
+      background: var(--color-accent);
+      color: var(--color-bg);
+      opacity: 1;
+    }
+
+    /* ── FOOTER ── */
+    .imops-footer {
+      text-align: center;
+      padding: var(--space-2xl) var(--container-padding);
+      border-top: 1px solid var(--color-border);
+    }
+
+    .imops-footer__text {
+      font-size: 0.65rem;
+      color: var(--color-text-muted);
+      letter-spacing: 0.15em;
+    }
+
+    /* ── CURSOR GLOW ── */
+    .cursor-glow {
+      position: fixed;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,107,53,0.03) 0%, transparent 70%);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 0;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+
+    .cursor-glow--active { opacity: 1; }
+
+    /* ── DIVIDER ── */
+    .imops-divider {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: var(--space-3xl) 0;
+    }
+
+    /* ── PHASE MARKER ── */
+    .phase-marker {
+      display: inline-block;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: var(--color-bg);
+      background: var(--color-accent);
+      padding: 2px 8px;
+      letter-spacing: 0.1em;
+      border-radius: 2px;
+      margin-bottom: var(--space-md);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="imops-nav" aria-label="Navigation">
+    <a href="index.html" class="imops-nav__link" title="Back">&larr; BACK</a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="imops-hero">
+    <svg class="imops-hero__logo" viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" aria-label="iMOPS Logo">
+      <path d="M60 0 L100 0 L100 50 L170 50 L170 80 L142 80 L170 220 L130 220 L108 105 L100 80 L90 80 L82 105 L60 220 L20 220 L48 80 L20 80 L20 50 L60 50 Z" fill="#ff6b35"/>
+    </svg>
+    <h1 class="imops-hero__title">iMOPS</h1>
+    <p class="imops-hero__tagline">Reference Kernel for Operational Documentation</p>
+    <span class="imops-hero__version">OS_CORE v1.0.0</span>
+  </section>
+
+  <!-- CONTENT -->
+  <main class="imops-content">
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: WHAT IS iMOPS -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="was">
+      <h2 class="imops-section__header">What iMOPS Is</h2>
+      <p class="imops-text">
+        iMOPS is a deterministic in-memory kernel for the digital documentation
+        of operational measures in high-pressure environments. Born from 36 years of experience
+        in professional kitchens and production management.
+      </p>
+      <p class="imops-text">
+        The system captures professional actions as chronologically ordered events,
+        stores them traceably in a MUMPS-inspired storage model,
+        and makes them available in a structured way for evaluation, auditing, and sharing.
+      </p>
+      <p class="imops-text">
+        iMOPS is not a framework. Not a library. It is a complete,
+        self-contained system kernel with an integrated protection stack
+        that travels with every fork.
+      </p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: WHAT IT IS NOT -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="nicht">
+      <h2 class="imops-section__header">What iMOPS Deliberately Is Not</h2>
+      <p class="imops-text">
+        iMOPS is not a decision-making system. It does not make evaluations,
+        does not define thresholds, and does not replace professional concepts.
+        Responsibility for content and procedures lies with the respective organization.
+      </p>
+      <ul class="imops-list imops-list--negative">
+        <li>No cloud sync, no network layer, no login system</li>
+        <li>No CoreData, no CloudKit, no external database</li>
+        <li>No analytics, no tracking, no telemetry</li>
+        <li>No substitute for HACCP concepts, standards, or legal requirements</li>
+      </ul>
+      <p class="imops-text imops-text--dim">
+        These are not missing features. These are design decisions.
+      </p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: DESIGN PRINCIPLES -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="prinzipien">
+      <h2 class="imops-section__header">Design Principles</h2>
+      <div class="info-grid">
+        <div class="info-block info-block--positive">
+          <div class="info-block__title">Zero Dependencies</div>
+          <p class="imops-text imops-text--dim">
+            No Pods. No Packages. No external frameworks.
+            Everything iMOPS needs lives within the kernel.
+          </p>
+        </div>
+        <div class="info-block info-block--positive">
+          <div class="info-block__title">Offline-First</div>
+          <p class="imops-text imops-text--dim">
+            In-memory storage on Serial Queue. No server,
+            no account, no connection required.
+          </p>
+        </div>
+        <div class="info-block info-block--accent">
+          <div class="info-block__title">Deterministic Where It Matters</div>
+          <p class="imops-text imops-text--dim">
+            Storage, lifecycle, and export are deterministic.
+            Where it protects people, deliberate noise is built in.
+          </p>
+        </div>
+        <div class="info-block info-block--accent">
+          <div class="info-block__title">Guard Stack Travels With Fork</div>
+          <p class="imops-text imops-text--dim">
+            Whoever forks iMOPS inherits the complete protection stack.
+            The kernel is only complete with its guards.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <hr class="imops-divider">
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: THE GUARD STACK -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="guards">
+      <h2 class="imops-section__header">The Guard Stack (Gen 3)</h2>
+      <p class="imops-text">
+        iMOPS contains an integrated protection stack that shields people from
+        micro-tracking, fatigue, and management abuse.
+        The guards are not features — they are the ethical foundation of the system.
+      </p>
+
+      <!-- SecurityLevel -->
+      <div class="guard-block">
+        <div class="guard-block__name">SecurityLevel</div>
+        <p class="guard-block__desc">
+          Exactly two states: <strong>standard</strong> and <strong>deEscalation</strong>.
+          In de-escalation mode, all personal data is anonymized.
+          There is no third level. Codable. CaseIterable. Tested.
+        </p>
+        <p class="guard-block__detail">
+          A test explicitly prohibits adding a third level.
+          Any change to SecurityLevel = v2.0.
+        </p>
+      </div>
+
+      <!-- MenschMeierModus -->
+      <div class="guard-block">
+        <div class="guard-block__name">MenschMeierModus</div>
+        <p class="guard-block__desc">
+          Anti-tracking protection via <strong>Rio Reiser Jitter</strong>: every aggregated
+          stress value is offset with ±5% random noise. No value is exactly reproducible.
+          Employees become patterns, not data points.
+        </p>
+        <p class="guard-block__detail">
+          <strong>Anonymization:</strong> In deEscalation mode, every name is replaced by "Brigade" (Poison Pill).<br>
+          <strong>Privacy Shield:</strong> After more than 50 admin queries, automatic escalation occurs.<br>
+          <strong>Allergen Transparency:</strong> Allergen tasks are always visible, even when Privacy Shield is active.
+          Obscuring data must never endanger human lives.
+        </p>
+      </div>
+
+      <!-- BourdainGuard -->
+      <div class="guard-block">
+        <div class="guard-block__name">BourdainGuard</div>
+        <p class="guard-block__desc">
+          Fatigue protection with two fixed thresholds:
+          <strong>8 hours</strong> (warning with whisper message) and
+          <strong>10 hours</strong> (forced training mode).
+          After 8h the jitter factor increases progressively (0.05 → 0.10 → 0.15),
+          so that data becomes deliberately fuzzier during overtiredness.
+        </p>
+        <p class="guard-block__detail">
+          Whisper messages are human sentences, not system alerts.
+          "You've been here for 8 hours. Your team can manage without you."
+          The 8h/10h thresholds are immutable — any change = v2.0.
+        </p>
+      </div>
+
+      <!-- KernelGuards -->
+      <div class="guard-block">
+        <div class="guard-block__name">KernelGuards</div>
+        <p class="guard-block__desc">
+          Single entry point for all guards. Combines SecurityLevel,
+          MenschMeierModus, and BourdainGuard into a single
+          <strong>GuardReport</strong> with jitterApplied, privacyShieldActive,
+          fatigueLevel, anonymizedTasks, and whisperMessage.
+        </p>
+        <p class="guard-block__detail">
+          One function: evaluate(). One report. No guard runs in isolation.
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: GDPR -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="dsgvo">
+      <h2 class="imops-section__header">GDPR Art. 25 — Privacy by Design</h2>
+      <p class="imops-text">
+        Data protection is not an afterthought filter. It is built into every layer of the kernel.
+      </p>
+      <ul class="imops-list imops-list--check">
+        <li>HACCP archive stores <strong>roles</strong>, not names</li>
+        <li>Timestamps in <strong>hour windows</strong>, not milliseconds</li>
+        <li>Jitter prevents exact reconstruction of individual performance data</li>
+        <li>Privacy Shield escalates automatically on suspicious admin behavior</li>
+        <li>Export functions apply guards <strong>before</strong> data leaves the system</li>
+        <li>Anonymization takes effect system-wide — not just in the UI</li>
+      </ul>
+      <p class="imops-text imops-text--dim">
+        prepareExport() checks SecurityLevel and Privacy Shield.
+        No data record leaves the kernel without guard verification.
+      </p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: SELF-CHECK -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="selfcheck">
+      <h2 class="imops-section__header">Self-Check &amp; Integrity</h2>
+      <p class="imops-text">
+        On every system startup, the kernel performs a 13-step self-check.
+        The result is immutably sealed in the HACCP archive.
+      </p>
+      <div class="selfcheck-grid">
+        <span class="selfcheck-grid__num">01</span><span class="selfcheck-grid__step">Validate namespace structure</span>
+        <span class="selfcheck-grid__num">02</span><span class="selfcheck-grid__step">Check TheBrain Serial Queue</span>
+        <span class="selfcheck-grid__num">03</span><span class="selfcheck-grid__step">SecurityLevel integrity (exactly 2 cases)</span>
+        <span class="selfcheck-grid__num">04</span><span class="selfcheck-grid__step">MenschMeierModus jitter function active</span>
+        <span class="selfcheck-grid__num">05</span><span class="selfcheck-grid__step">Privacy Shield threshold correct (50)</span>
+        <span class="selfcheck-grid__num">06</span><span class="selfcheck-grid__step">Validate BourdainGuard 8h/10h thresholds</span>
+        <span class="selfcheck-grid__num">07</span><span class="selfcheck-grid__step">Check allergen transparency</span>
+        <span class="selfcheck-grid__num">08</span><span class="selfcheck-grid__step">KernelGuards orchestrator reachable</span>
+        <span class="selfcheck-grid__num">09</span><span class="selfcheck-grid__step">Export guards active (prepareExport)</span>
+        <span class="selfcheck-grid__num">10</span><span class="selfcheck-grid__step">Check archive format (role, not name)</span>
+        <span class="selfcheck-grid__num">11</span><span class="selfcheck-grid__step">Time window granularity (hours, not ms)</span>
+        <span class="selfcheck-grid__num">12</span><span class="selfcheck-grid__step">Task lifecycle integrity (4 stages)</span>
+        <span class="selfcheck-grid__num">13</span><span class="selfcheck-grid__step">Seal boot result in archive</span>
+      </div>
+      <p class="imops-text imops-text--dim">
+        22 integrity tests additionally secure the guard stack.
+        Including tamper detection tests that deliberately attempt to bypass guards.
+      </p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: EXPORT -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="export">
+      <h2 class="imops-section__header">Export &amp; Audit</h2>
+      <p class="imops-text">
+        Three formats. All SHA-256 sealed. All guard-verified.
+      </p>
+      <div class="info-grid">
+        <div class="info-block info-block--accent">
+          <div class="info-block__title">Daily Report</div>
+          <p class="imops-text imops-text--dim">
+            Structured text report with time period,
+            documentation mode, and integrity status.
+          </p>
+        </div>
+        <div class="info-block info-block--accent">
+          <div class="info-block__title">Audit CSV</div>
+          <p class="imops-text imops-text--dim">
+            Tabular format for inspectors and auditors.
+            Roles instead of names. Hour windows instead of timestamps.
+          </p>
+        </div>
+        <div class="info-block info-block--accent">
+          <div class="info-block__title">Journal JSON</div>
+          <p class="imops-text imops-text--dim">
+            Machine-readable for integration into
+            external systems and archiving.
+          </p>
+        </div>
+        <div class="info-block info-block--positive">
+          <div class="info-block__title">Integrity</div>
+          <p class="imops-text imops-text--dim">
+            SHA-256 hash via CryptoKit.
+            Every export is retroactively verifiable.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <hr class="imops-divider">
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: USE CASES -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="branchen">
+      <h2 class="imops-section__header">Use Cases</h2>
+      <p class="imops-text">
+        iMOPS is designed to be industry-neutral. Four industry seeds are included:
+      </p>
+      <div class="info-grid">
+        <div class="info-block">
+          <div class="info-block__title">Kitchen</div>
+          <p class="imops-text imops-text--dim">HACCP, allergens, brigade structure</p>
+        </div>
+        <div class="info-block">
+          <div class="info-block__title">Care</div>
+          <p class="imops-text imops-text--dim">Shift handover, documentation, duty of care</p>
+        </div>
+        <div class="info-block">
+          <div class="info-block__title">Construction</div>
+          <p class="imops-text imops-text--dim">Safety, protocols, daily reports</p>
+        </div>
+        <div class="info-block">
+          <div class="info-block__title">Production</div>
+          <p class="imops-text imops-text--dim">Manufacturing steps, quality, audit trail</p>
+        </div>
+      </div>
+      <p class="imops-text imops-text--dim">
+        The professional evaluation of measures always remains with the respective organization.
+      </p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: RELEASE STATUS -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="release">
+      <h2 class="imops-section__header">Release Status</h2>
+      <p class="imops-text">
+        <span class="phase-marker">v1.0.0</span>
+      </p>
+      <p class="imops-text">
+        Reference kernel with Gen 3 Guard Stack.
+        22 integrity tests. GDPR-compliant. Zero dependencies.
+      </p>
+      <p class="imops-text">
+        iOS 17+ · Xcode 16+ · Swift 5.9+ · MIT License
+      </p>
+
+      <h3 class="imops-section__header" style="margin-top: var(--space-2xl);">API Stability</h3>
+      <p class="imops-text imops-text--dim">
+        The following interfaces are stable until v2.0. No breaking changes.
+        Additive extensions are permitted.
+      </p>
+      <table class="stability-table">
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>TheBrain.set / get / kill / killTree</td><td>Stable</td></tr>
+          <tr><td>iMOPS.SET / GET / KILL / KILLTREE / GOTO</td><td>Stable</td></tr>
+          <tr><td>BrainPath Factory Methods</td><td>Stable</td></tr>
+          <tr><td>KernelArbeitsschritt (4-Stage Lifecycle)</td><td>Stable</td></tr>
+          <tr><td>TaskRepository (create / transition / complete)</td><td>Stable</td></tr>
+          <tr><td>SecurityLevel (exactly 2 cases)</td><td>Stable</td></tr>
+          <tr><td>MenschMeierModus Public API</td><td>Stable</td></tr>
+          <tr><td>BourdainGuard Public API</td><td>Stable</td></tr>
+          <tr><td>KernelGuards.evaluate() Signature</td><td>Stable</td></tr>
+          <tr><td>Export Signatures (Log / CSV / JSON)</td><td>Stable</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: WHAT v2.0 WOULD MEAN -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="v2">
+      <h2 class="imops-section__header">What v2.0 Would Mean</h2>
+      <ul class="imops-list imops-list--lock">
+        <li>Change of storage model (away from [String: Any])</li>
+        <li>A third SecurityLevel</li>
+        <li>Shifting the BourdainGuard thresholds (8h/10h)</li>
+        <li>Change of the HACCP archive structure</li>
+        <li>Introduction of mandatory dependencies</li>
+      </ul>
+      <p class="imops-text imops-text--dim">
+        As long as these boundaries hold, every fork remains compatible.
+      </p>
+    </section>
+
+    <hr class="imops-divider">
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: FORK MODEL -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="fork">
+      <h2 class="imops-section__header">Fork Model</h2>
+      <p class="imops-text">
+        iMOPS is not meant to be installed. It is built to be forked.
+      </p>
+      <p class="imops-text">
+        The kernel is the stable foundation. Your fork is your building.
+        You inherit everything. You build on top.
+      </p>
+
+      <div class="info-grid" style="margin-top: var(--space-2xl);">
+        <div class="info-block info-block--positive">
+          <div class="info-block__title">What You Inherit</div>
+          <ul class="imops-list">
+            <li>TheBrain (Storage Engine)</li>
+            <li>Syntax DSL</li>
+            <li>KernelGuards (complete stack)</li>
+            <li>TaskRepository + Lifecycle</li>
+            <li>KernelArbeitsschritt</li>
+            <li>Export with guards</li>
+            <li>22 integrity tests</li>
+            <li>Self-check (13 steps)</li>
+          </ul>
+        </div>
+        <div class="info-block info-block--warning">
+          <div class="info-block__title">What You Add</div>
+          <ul class="imops-list">
+            <li>Your industry logic</li>
+            <li>Your UI</li>
+            <li>Your sync layer</li>
+            <li>Your auth system</li>
+            <li>Your database</li>
+            <li>Your cloud backend</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: WHAT YOU MUST NOT CHANGE -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="regeln">
+      <h2 class="imops-section__header">Guard Integrity Is Mandatory</h2>
+      <p class="imops-text">
+        The guard stack is not an optional feature. It is the ethical foundation.
+        Whoever forks iMOPS accepts the following rules:
+      </p>
+      <ul class="imops-list imops-list--lock">
+        <li>KernelGuards.swift must not be modified</li>
+        <li>SecurityLevel remains at exactly two states</li>
+        <li>BourdainGuard thresholds (8h/10h) remain unchanged</li>
+        <li>Export functions and their GDPR guards are final</li>
+        <li>No personal data in the archive (roles, not names)</li>
+        <li>All 22 tests must pass. No exceptions.</li>
+      </ul>
+
+      <div class="imops-callout">
+        <strong>Philosophy:</strong> The guard system protects people from micro-tracking,
+        fatigue, and management abuse. A vulnerability in the guards is not a bug —
+        it is a breach of trust.
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: CI -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="ci">
+      <h2 class="imops-section__header">Continuous Integration</h2>
+      <p class="imops-text">
+        GitHub Actions checks on every push and pull request to main:
+        Build + all 22 Guard Integrity Tests.
+        If a test fails, there is no merge and no deploy.
+      </p>
+      <p class="imops-text imops-text--dim">
+        Security vulnerabilities in the guard system are not reported publicly.
+        Contact: <strong>a.pelczer@gmail.com</strong> with subject
+        [iMOPS SECURITY].
+      </p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: AUDIT RELEVANCE -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="pruefung">
+      <h2 class="imops-section__header">Audit Relevance &amp; Scope</h2>
+      <p class="imops-text">
+        This information is intended for inspectors, auditors, and
+        quality managers.
+      </p>
+      <ul class="imops-list imops-list--check">
+        <li>All manual actions are journaled as events</li>
+        <li>Automated system actions are separately marked</li>
+        <li>Documentation periods can be sealed and closed</li>
+        <li>Closed periods cannot be modified retroactively</li>
+        <li>Integrity can be verified at any time through integrated checks</li>
+        <li>Every action is attributed to a person or the system</li>
+      </ul>
+      <p class="imops-text imops-text--dim">
+        Measures can optionally be annotated with professional references —
+        internal process instructions, standard references, HACCP, ISO, internal SOPs.
+        These references serve for classification, not for evaluation.
+      </p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: WHY OPEN SOURCE -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="oss">
+      <h2 class="imops-section__header">Why Open Source</h2>
+      <p class="imops-text">
+        Because a system that is meant to protect people must not exist behind closed doors.
+      </p>
+      <p class="imops-text">
+        Anyone can read the guard code. Anyone can run the tests.
+        Anyone can verify that the protection promises are in the code —
+        not just in a marketing text.
+      </p>
+      <p class="imops-text">
+        iMOPS is MIT-licensed. Use it. Fork it. Build on it.
+        The guard stack travels with you.
+      </p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: CLOSING WORDS -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="imops-section" id="schluss">
+      <div class="imops-callout">
+        iMOPS was not designed in a laboratory. It was born in real kitchens,
+        during real shifts, under real pressure. Every line of code answers a question
+        that someone asked on a long day.
+        <br><br>
+        <strong>The kernel is complete. The guards stand. The code is open.</strong>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="imops-cta">
+      <div class="imops-cta__diamond">&#9670;</div>
+      <a href="https://github.com/AndreasPelczer/iMOPS_OS_CORE"
+         class="imops-cta__link"
+         target="_blank"
+         rel="noopener">
+        VIEW CODE (GITHUB)
+      </a>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="imops-footer">
+      <a href="index.html" class="imops-nav__link" style="display:block; margin-bottom: var(--space-md);">&laquo; BACK</a>
+      <p class="imops-footer__text">
+        iMOPS · REFERENCE KERNEL · iOS · SWIFT · MIT LICENSE
+      </p>
+    </div>
+  </footer>
+
+  <!-- JS -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Section reveal with IntersectionObserver
+      const sections = document.querySelectorAll('.imops-section');
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('imops-section--visible');
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '-40px' });
+      sections.forEach(s => observer.observe(s));
+
+      // Cursor glow (desktop only)
+      if (window.innerWidth > 768) {
+        const lerp = (a, b, f) => a + (b - a) * f;
+        const glow = document.createElement('div');
+        glow.className = 'cursor-glow';
+        document.body.appendChild(glow);
+        setTimeout(() => glow.classList.add('cursor-glow--active'), 500);
+        let mx = 0, my = 0, gx = 0, gy = 0;
+        document.addEventListener('mousemove', (e) => {
+          mx = e.clientX;
+          my = e.clientY;
+        }, { passive: true });
+        function tick() {
+          gx = lerp(gx, mx, 0.15);
+          gy = lerp(gy, my, 0.15);
+          glow.style.left = gx + 'px';
+          glow.style.top = gy + 'px';
+          requestAnimationFrame(tick);
+        }
+        tick();
+      }
+    });
+  </script>
+
+</body>
+</html>
