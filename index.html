@@ -426,9 +426,39 @@
          EASTER EGG — Game of Life Overlay
          ==================================================== -->
     <div class="gol-overlay" id="golOverlay">
-        <button class="gol-close" id="golClose" aria-label="Schließen">×</button>
-        <canvas class="gol-canvas" id="golCanvas" width="400" height="400"></canvas>
-        <div class="gol-info">Conway's Game of Life · 4 Regeln. Keine Steuerung. Emergenz. · Klick = Zelle setzen · ESC = Schließen</div>
+        <div class="gol-header">
+            <h2 class="gol-title">GAME OF LIFE</h2>
+            <p class="gol-subtitle">4 Regeln. Keine Steuerung. Emergenz.</p>
+            <button class="gol-close" id="golClose" aria-label="Schließen">×</button>
+        </div>
+
+        <div class="gol-patterns">
+            <button data-pattern="glider">Glider</button>
+            <button data-pattern="blinker">Blinker</button>
+            <button data-pattern="pulsar">Pulsar</button>
+            <button data-pattern="glidergun">Glider Gun</button>
+            <button data-pattern="acorn">Acorn</button>
+            <button data-pattern="rpentomino">R-Pentomino</button>
+            <button data-pattern="random">Zufall</button>
+        </div>
+
+        <div class="gol-controls">
+            <button id="golPlayPause">▶ Start</button>
+            <button id="golStep">→ Schritt</button>
+            <button id="golClear">✕ Reset</button>
+            <span class="gol-stats">
+                Gen: <span id="golGeneration">0</span> ·
+                Pop: <span id="golPopulation">0</span>
+            </span>
+        </div>
+
+        <canvas class="gol-canvas" id="golCanvas"></canvas>
+
+        <p class="gol-hint">
+            <em>Klick</em> = Zelle setzen/löschen · <em>Ziehen</em> = Malen ·
+            Die 4 Regeln: Einsamkeit (&lt;2 Nachbarn → Tod) · Überleben (2-3 → lebt) ·
+            Überbevölkerung (&gt;3 → Tod) · Geburt (genau 3 → lebt)
+        </p>
     </div>
 
     <!-- Scripts (MVVM: Model + ViewModel Layer) -->
