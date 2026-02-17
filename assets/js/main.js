@@ -105,6 +105,37 @@
         });
     }
 
+    /**
+     * iMOPS Sentinel Logo Scroll Behavior.
+     * Rotiert das Logo subtil beim Scrollen und aktiviert es,
+     * wenn die Apps-Sektion sichtbar wird.
+     */
+    function initSentinel() {
+        const sentinel = document.getElementById('sentinel');
+        const sentinelLogo = sentinel ? sentinel.querySelector('.sentinel__logo') : null;
+        const appsSection = document.getElementById('apps');
+
+        if (!sentinel || !sentinelLogo) return;
+
+        // Scroll-linked subtle rotation
+        window.addEventListener('scroll', function () {
+            const scrollProgress = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
+            const rotation = scrollProgress * 8; // 0° to 8° over full page
+            sentinelLogo.style.transform = 'rotate(' + rotation + 'deg)';
+        }, { passive: true });
+
+        // Activate when apps section is in view
+        if (appsSection && 'IntersectionObserver' in window) {
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    sentinel.classList.toggle('sentinel--active', entry.isIntersecting);
+                });
+            }, { threshold: 0.3 });
+
+            observer.observe(appsSection);
+        }
+    }
+
     /* -------------------------------------------------------
      * INIT — Alles starten wenn DOM bereit
      * ------------------------------------------------------- */
@@ -112,6 +143,7 @@
         initModeToggle();
         initScrollObserver();
         initMobileNav();
+        initSentinel();
     });
 
 })();
