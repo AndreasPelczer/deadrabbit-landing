@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leseprobe — Thermodynamik der Arbeit | Andreas Pelczer</title>
+<meta name="description" content="Leseprobe: Thermodynamik der Arbeit — Warum Systeme kollabieren. Von Andreas Pelczer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0a0e;--bg-card:rgba(255,255,255,0.02);
+    --text:#b0b0bc;--text-bright:#e8e8f0;
+    --accent:#ff6b35;--accent-dim:rgba(255,107,53,0.15);
+    --border:#1a1a24;
+    --mono:"JetBrains Mono","Fira Code",monospace;
+    --serif:"Instrument Serif","Playfair Display",Georgia,serif;
+    --max-w:720px
+  }
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px;line-height:1.8;font-weight:300;-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--accent);color:var(--bg)}
+
+  /* NAV */
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1.2rem 2rem;display:flex;justify-content:space-between;align-items:center;background:rgba(10,10,14,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  nav a{color:var(--accent);text-decoration:none;font-size:11px;letter-spacing:3px;text-transform:uppercase;transition:opacity 0.3s}
+  nav a:hover{opacity:0.7}
+  .nav-back::before{content:"← "}
+
+  /* HERO */
+  .hero{min-height:70vh;display:flex;flex-direction:column;justify-content:center;padding:8rem 2rem 4rem;max-width:var(--max-w);margin:0 auto}
+  .hero-label{font-size:9.6px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:2rem;display:inline-flex;align-items:center;gap:8px}
+  .hero-label::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
+  .hero h1{font-family:var(--serif);font-size:clamp(36px,6vw,64px);font-weight:400;color:var(--text-bright);line-height:1.15;margin-bottom:1.5rem}
+  .hero h1 em{color:var(--accent);font-style:italic;text-decoration:underline;text-decoration-color:rgba(255,107,53,0.3);text-underline-offset:6px}
+  .hero-sub{font-size:13px;color:var(--text);line-height:1.8;max-width:520px}
+  .hero-meta{margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap}
+  .tag{font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:6px 14px;border:1px solid var(--border);color:var(--text)}
+  .tag--active{border-color:var(--accent);color:var(--accent)}
+
+  .scroll-cta{text-align:center;padding:1rem 0 3rem;animation:float 2.5s ease-in-out infinite}
+  .scroll-cta span{font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:0.5rem}
+  .scroll-cta svg{width:20px;height:20px;stroke:var(--accent)}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+  /* CONTENT */
+  .content{max-width:var(--max-w);margin:0 auto;padding:0 2rem 6rem}
+  .chapter-marker{font-size:9.6px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;padding-top:4rem;border-top:1px solid var(--border)}
+  .chapter-marker:first-child{border-top:none;padding-top:0}
+  .chapter-title{font-family:var(--serif);font-size:clamp(28px,4vw,42px);font-weight:400;color:var(--text-bright);margin-bottom:0.3rem;line-height:1.2}
+  .chapter-subtitle{font-size:12px;color:var(--text);margin-bottom:3rem;opacity:0.6}
+  .section-head{font-family:var(--serif);font-size:22px;font-weight:400;color:var(--text-bright);margin:3rem 0 1.5rem}
+  .prose{margin-bottom:1.5rem;line-height:1.9}
+  .prose--indent{padding-left:1.5rem;border-left:2px solid var(--border)}
+  .prose em{color:var(--text-bright);font-style:italic}
+  .prose strong{color:var(--text-bright);font-weight:500}
+  .highlight{color:var(--text-bright);font-weight:400}
+  blockquote{border-left:2px solid var(--accent);padding:1.5rem 0 1.5rem 1.5rem;margin:2.5rem 0;font-family:var(--serif);font-size:20px;font-style:italic;color:var(--text-bright);line-height:1.5}
+  blockquote cite{display:block;margin-top:0.8rem;font-family:var(--mono);font-size:11px;font-style:normal;color:var(--text);letter-spacing:2px}
+  .separator{width:40px;height:1px;background:var(--accent);margin:3rem 0;opacity:0.5}
+
+  /* FADE OUT */
+  .fade-out{position:relative;padding-bottom:6rem}
+  .fade-out::after{content:"";position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(to bottom,transparent,var(--bg));pointer-events:none}
+
+  /* CTA */
+  .cta-section{text-align:center;padding:4rem 2rem 6rem;max-width:var(--max-w);margin:0 auto}
+  .cta-text{font-family:var(--serif);font-size:clamp(22px,3.5vw,32px);font-style:italic;color:var(--text-bright);margin-bottom:2rem;line-height:1.4}
+  .cta-sub{font-size:12px;color:var(--text);margin-bottom:2.5rem;opacity:0.6}
+  .cta-buttons{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;text-decoration:none;padding:12px 28px;border:1px solid var(--border);color:var(--text);transition:all 0.3s}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn--primary{border-color:var(--accent);color:var(--accent)}
+  .btn--primary:hover{background:var(--accent);color:var(--bg)}
+
+  footer{border-top:1px solid var(--border);padding:2rem;text-align:center}
+  footer a{color:var(--accent);text-decoration:none;font-size:11px;letter-spacing:2px}
+  footer p{font-size:10px;color:var(--text);opacity:0.4;margin-top:0.5rem;letter-spacing:1px}
+
+  .progress-bar{position:fixed;top:0;left:0;height:2px;background:var(--accent);z-index:200;width:0%;transition:width 0.1s linear}
+
+  .fade-in{opacity:0;transform:translateY(20px);animation:fadeUp 0.8s ease forwards}
+  .fade-in:nth-child(2){animation-delay:0.1s}
+  .fade-in:nth-child(3){animation-delay:0.2s}
+  .fade-in:nth-child(4){animation-delay:0.3s}
+  @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+
+  @media(max-width:640px){
+    nav{padding:1rem}
+    .hero{padding:6rem 1.2rem 3rem;min-height:60vh}
+    .content{padding:0 1.2rem 4rem}
+    .cta-section{padding:3rem 1.2rem 4rem}
+    blockquote{font-size:17px}
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<nav>
+  <a href="https://pelczer.de" class="nav-back">pelczer.de</a>
+  <a href="leseprobe-kuechencode.html">Küchencode →</a>
+</nav>
+
+<section class="hero">
+  <div class="fade-in"><div class="hero-label">Leseprobe</div></div>
+  <h1 class="fade-in">Thermodynamik der <em>Arbeit</em></h1>
+  <p class="hero-sub fade-in">Warum Systeme kollabieren. Keine Motivation, keine Moral — nur Struktur. Die theoretische Grundlage hinter iMOPS.</p>
+  <div class="hero-meta fade-in">
+    <span class="tag tag--active">Erhältlich</span>
+    <span class="tag">Fachbuch</span>
+    <span class="tag">2025</span>
+  </div>
+</section>
+
+<div class="scroll-cta">
+  <span>Lesen</span>
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
+</div>
+
+<article class="content">
+
+  <div class="chapter-marker">Vorwort</div>
+  <h2 class="chapter-title">Warum dieses Buch</h2>
+  <div class="chapter-subtitle">Eine Bestandsaufnahme</div>
+
+  <p class="prose">Dieses Buch ist aus der Beobachtung entstanden, dass Systeme selten an ihrem eigentlichen Zweck scheitern. Sie scheitern nicht, weil Prozesse fehlen, nicht, weil Menschen unwillig sind, und nicht, weil Regeln missachtet werden. Sie scheitern, weil sie über lange Zeit scheinbar funktionieren.</p>
+
+  <p class="prose">In vielen Organisationen werden instabile Zustände durch Erfahrung, Improvisation und persönlichen Einsatz ausgeglichen. Solange dies gelingt, bleibt der Zustand unsichtbar. Das System läuft – aber es trägt nicht.</p>
+
+  <p class="prose">Dieses Buch beschreibt diese unsichtbare Phase. Es untersucht, wann Systeme kippen, woran sich dieser Zustand erkennen lässt und warum klassische Reaktionen wie Kontrolle, Motivation oder Appelle an Verantwortung die Instabilität häufig verschärfen.</p>
+
+  <p class="prose">Der Fokus liegt nicht auf Menschen, sondern auf Strukturen. Nicht auf Verhalten, sondern auf Zuständen. Nicht auf Bewertung, sondern auf Nachvollziehbarkeit.</p>
+
+  <p class="prose">Dieses Buch ist kein Ratgeber. Es bietet keine Methoden, keine Checklisten und keine Rezepte zur schnellen Verbesserung. Es ist weder ein Führungsbuch noch ein Beitrag zur Organisationspsychologie.</p>
+
+  <p class="prose">Stattdessen versteht es Systeme als formale Gebilde, deren Stabilität davon abhängt, ob Verantwortung sichtbar, überprüfbar und unabhängig von einzelnen Personen getragen wird.</p>
+
+  <p class="prose">Es setzt voraus, dass Menschen ihre Arbeit grundsätzlich ordentlich erledigen wollen. Weitere Motivation wird nicht benötigt.</p>
+
+  <p class="prose"><em>Dieses Buch will keinen Konsens herstellen. Es will prüfbar sein.</em></p>
+
+  <p class="prose">Lesen Sie es daher nicht zustimmend, sondern kritisch. Nicht als Anleitung zur Veränderung, sondern als Referenzrahmen zur Einordnung von Zuständen.</p>
+
+  <p class="prose">Wenn die hier beschriebenen Muster zutreffen, lassen sie sich beobachten. Wenn sie nicht zutreffen, lassen sie sich widersprechen.</p>
+
+  <p class="prose">Mehr beansprucht dieses Buch nicht.</p>
+
+  <div class="separator"></div>
+
+  <div class="chapter-marker">Kapitel 1</div>
+  <h2 class="chapter-title">Warum Systeme scheitern, bevor sie versagen</h2>
+  <div class="chapter-subtitle">Die unsichtbare Instabilität</div>
+
+  <p class="prose">Systeme scheitern selten an ihrem Zweck. Sie scheitern, obwohl sie funktionieren.</p>
+
+  <p class="prose">In vielen Organisationen gilt ein System als stabil, solange Arbeitsergebnisse entstehen und der Betrieb fortgeführt werden kann. Ob das System diese Arbeit strukturell trägt, wird dabei nicht geprüft.</p>
+
+  <p class="prose highlight"><em>Funktionieren ist kein Beweis für Stabilität.</em></p>
+
+  <p class="prose">Ein System kann formal korrekt, regelkonform und dauerhaft in Betrieb sein und dennoch instabil bleiben. Der Unterschied liegt nicht im Ergebnis, sondern darin, wer die Arbeit trägt.</p>
+
+  <p class="prose prose--indent">Ein stabiles System trägt Arbeit selbst. Ein instabiles System verlagert Arbeit auf Menschen.</p>
+
+  <p class="prose">Solange Menschen diese Verlagerung ausgleichen, bleibt die Instabilität unsichtbar. Erfahrung, Improvisation und persönlicher Einsatz kompensieren strukturelle Defizite, ohne sie zu beheben. Das System liefert Ergebnisse, kennt aber seinen eigenen Zustand nicht.</p>
+
+  <p class="prose">Instabile Systeme zeigen dabei wiederkehrende, beobachtbare Muster: Wissen bleibt implizit. Verantwortung wird informell übernommen. Übergaben sind nicht eindeutig markiert. Nachweise fehlen oder entstehen rückwirkend.</p>
+
+  <p class="prose">Diese Muster sind keine Fehlleistungen Einzelner. Sie sind die notwendige Folge fehlender Zustände und nicht zugeordneter Verantwortung.</p>
+
+  <p class="prose"><em>Wo Struktur fehlt, beginnt Sprache zu kompensieren.</em></p>
+
+  <p class="prose">Sätze wie „Das weiß man doch.", „Frag einfach XY." oder „Im Prinzip ist das klar." ersetzen keine Dokumentation, sondern Systemzustände. Sie markieren den Übergang von systemischer zu personengebundener Stabilität.</p>
+
+  <p class="prose highlight"><em>Der strukturelle Kipppunkt eines Systems ist erreicht, wenn Arbeit nur noch korrekt ausgeführt werden kann, wenn bestimmte Personen anwesend sind.</em></p>
+
+  <p class="prose">Ab diesem Punkt ist das System nicht mehr reproduzierbar, nicht übergabefähig und nicht ausfallsicher. Es funktioniert weiter, trägt aber nicht mehr.</p>
+
+  <p class="prose">Der Ausfall zentraler Personen verursacht keinen Zusammenbruch. Er macht sichtbar, dass der Prozess nie stabil war.</p>
+
+  <p class="prose">Fehler sind dabei nicht das Problem. Fehler treten in jedem System auf. Entscheidend ist, ob der Systemzustand bekannt ist.</p>
+
+  <p class="prose">Wo Zustände fehlen, werden Fehler zu Schuldfragen. Verantwortung wird rückwirkend verhandelt. Aussagen stehen gegeneinander.</p>
+
+  <p class="prose">Systeme scheitern nicht am ersten Fehler. Sie scheitern, wenn ihr Zustand unsichtbar wird.</p>
+
+  <div class="fade-out">
+    <p class="prose">Dieses Scheitern beginnt vor dem sichtbaren Versagen.</p>
+
+    <blockquote>
+      Wenn ein System nur funktioniert, weil Menschen es permanent ausgleichen, dann <em style="color:var(--accent)">funktioniert es nicht.</em>
+    </blockquote>
+  </div>
+</article>
+
+<section class="cta-section">
+  <p class="cta-text">Funktionieren ist kein Beweis für <em style="color:var(--accent)">Stabilität.</em></p>
+  <p class="cta-sub">Jetzt das vollständige Buch lesen.</p>
+  <div class="cta-buttons">
+    <a href="https://pelczer.de" class="btn">← Zurück zu pelczer.de</a>
+    <a href="https://www.amazon.de/dp/B0GK95MWB5" target="_blank" rel="noopener" class="btn btn--primary">Auf Amazon kaufen</a>
+    <a href="leseprobe-kuechencode.html" class="btn">Küchencode lesen →</a>
+  </div>
+</section>
+
+<footer>
+  <a href="https://pelczer.de">Andreas Pelczer — Dead Rabbit Productions</a>
+  <p>© 2026 · MEMENTO MORI</p>
+</footer>
+
+<script>
+window.addEventListener('scroll',()=>{const h=document.documentElement;const p=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100;document.getElementById('progress').style.width=p+'%'});
+</script>
+</body>
+</html>

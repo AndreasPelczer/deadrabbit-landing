@@ -1,45 +1,953 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=https://pelczer.de/gastro-grid-logikplan.html">
-    <title>iMOPS Gastro Grid – Logikpläne & Architektur</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #fff;
-        }
-        .container {
-            text-align: center;
-            padding: 40px;
-        }
-        h1 {
-            font-size: 24px;
-            margin-bottom: 16px;
-        }
-        p {
-            color: #aaa;
-            margin-bottom: 24px;
-        }
-        a {
-            color: #e87830;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iMOPS Gastro Grid – Logikpläne &amp; Systemarchitektur</title>
+  <meta name="description" content="Vollständige Logikpläne und Systemarchitektur von iMOPS Gastro Grid: Event Sourcing, MUMPS-Kernel, Audit Trail, HACCP-Compliance.">
+  <meta name="keywords" content="Logikplan, Systemarchitektur, Event Sourcing, MUMPS, Audit Trail, HACCP, Mermaid, UML">
+  <meta name="author" content="Andreas Pelczer">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #1A1A2E;
+      --accent: #0F3460;
+      --highlight: #E94560;
+      --bg: #FAFBFC;
+      --card-bg: #FFFFFF;
+      --text: #2D3748;
+      --text-light: #718096;
+      --border: #E2E8F0;
+      --success: #38A169;
+      --warning: #DD6B20;
+      --diagram-bg: #0d1117;
+      --diagram-card: #161b22;
+      --diagram-border: #30363d;
+      --diagram-text: #c9d1d9;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* NAV */
+    .top-nav {
+      position: fixed; top: 0; width: 100%; z-index: 200;
+      background: rgba(26, 26, 46, 0.95); backdrop-filter: blur(10px);
+      padding: 0.8rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .top-nav .logo { color: #fff; font-weight: 800; font-size: 1.1rem; text-decoration: none; letter-spacing: -0.5px; }
+    .top-nav .logo span { color: var(--highlight); }
+    .top-nav ul { list-style: none; display: flex; gap: 2rem; }
+    .top-nav a { color: #CBD5E0; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.2s; }
+    .top-nav a:hover { color: #fff; }
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, #1a0a2e 50%, var(--accent) 100%);
+      color: #fff; padding: 8rem 2rem 4rem; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background:
+        radial-gradient(circle at 20% 80%, rgba(233,69,96,0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(15,52,96,0.15) 0%, transparent 50%);
+    }
+    .hero::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 80px;
+      background: linear-gradient(to bottom, transparent, var(--bg));
+    }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 0.5rem; position: relative; }
+    .hero h1 span { color: var(--highlight); }
+    .hero .tagline { font-size: 1.1rem; color: #A0AEC0; max-width: 650px; margin: 0.5rem auto 1.5rem; font-weight: 400; position: relative; }
+    .hero .stats-row {
+      display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;
+      margin-top: 2rem; position: relative;
+    }
+    .hero .stat {
+      text-align: center;
+    }
+    .hero .stat-num {
+      font-size: 2.2rem; font-weight: 800; color: #fff;
+      display: block; line-height: 1;
+    }
+    .hero .stat-label {
+      font-size: 0.75rem; color: #8b949e; text-transform: uppercase;
+      letter-spacing: 0.5px; margin-top: 0.3rem;
+    }
+    .hero .badge-row { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem; position: relative; }
+    .hero .badge {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.72rem; font-weight: 500; color: #CBD5E0;
+    }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: #A0AEC0; text-decoration: none; font-size: 0.85rem;
+      margin-bottom: 1rem; position: relative;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: #fff; }
+    /* TAB NAV */
+    .tab-nav {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; gap: 0; overflow-x: auto;
+      position: sticky; top: 52px; z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .tab-nav button {
+      background: none; border: none;
+      color: var(--text-light);
+      padding: 1rem 1.25rem;
+      font-size: 0.85rem; font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .tab-nav button:hover { color: var(--text); }
+    .tab-nav button.active {
+      color: var(--highlight);
+      border-bottom-color: var(--highlight);
+    }
+    /* SECTIONS */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+    .lp-section { padding: 3rem 0; }
+    .lp-section.hidden { display: none; }
+    .lp-section h2 {
+      font-size: 1.6rem; font-weight: 800; color: var(--primary);
+      margin-bottom: 0.3rem; letter-spacing: -0.5px;
+    }
+    .lp-section > .container > p:first-of-type {
+      color: var(--text-light); font-size: 0.92rem; margin-bottom: 2rem;
+    }
+    /* INFO GRID */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem; margin-bottom: 2rem;
+    }
+    .info-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.5rem;
+      transition: transform 0.2s;
+    }
+    .info-card:hover { transform: translateY(-2px); }
+    .info-card h4 {
+      color: var(--highlight); font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;
+    }
+    .info-card .number { font-size: 2rem; font-weight: 800; color: var(--primary); line-height: 1; }
+    .info-card .label { color: var(--text-light); font-size: 0.8rem; margin-top: 0.3rem; }
+    /* DIAGRAM CARDS */
+    .diagram-card {
+      background: var(--diagram-bg);
+      border: 1px solid var(--diagram-border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+    .diagram-card h3 {
+      color: #f0f6fc; font-size: 1rem; font-weight: 700;
+      margin-bottom: 1.2rem; padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--diagram-border);
+    }
+    .mermaid { display: flex; justify-content: center; }
+    .mermaid svg { max-width: 100%; height: auto; }
+    /* FOOTER */
+    footer {
+      background: var(--primary); color: #718096;
+      text-align: center; padding: 2rem; font-size: 0.8rem;
+    }
+    footer a { color: #A0AEC0; text-decoration: none; }
+    footer a:hover { color: #fff; }
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .top-nav ul { display: none; }
+      .hero { padding: 7rem 1.5rem 3rem; }
+      .hero h1 { font-size: 1.8rem; }
+      .hero .stats-row { gap: 1.5rem; }
+      .hero .stat-num { font-size: 1.6rem; }
+      .tab-nav { padding: 0 1rem; }
+      .tab-nav button { padding: 0.8rem 0.9rem; font-size: 0.78rem; }
+      .container { padding: 0 1rem; }
+      .diagram-card { padding: 1rem; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Weiterleitung zu den iMOPS Gastro Grid Logikplänen...</h1>
-        <p>Sie werden automatisch weitergeleitet. Falls nicht, <a href="https://pelczer.de/gastro-grid-logikplan.html">klicken Sie hier</a>.</p>
+
+<nav class="top-nav">
+  <a href="gastro-grid.html" class="logo">i<span>MOPS</span> Gastro Grid</a>
+  <ul>
+    <li><a href="gastro-grid.html#features">Funktionen</a></li>
+    <li><a href="gastro-grid.html#architektur">Architektur</a></li>
+    <li><a href="gastro-grid-logikplan.html" style="color: var(--highlight);">Logikpläne</a></li>
+    <li><a href="gastro-grid.html#compliance">Compliance</a></li>
+    <li><a href="https://github.com/AndreasPelczer/iMOPS-Gastro-Grid" target="_blank">GitHub</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <a href="gastro-grid.html" class="back-link">&larr; Zurück zur Produktseite</a>
+  <h1>Logikpläne &amp; <span>Systemarchitektur</span></h1>
+  <p class="tagline">173 Swift-Dateien. 13 Architektur-Ebenen. 59 SwiftUI-Views. Hier ist der komplette Bauplan.</p>
+  <div class="stats-row">
+    <div class="stat"><span class="stat-num">173</span><span class="stat-label">Swift-Dateien</span></div>
+    <div class="stat"><span class="stat-num">13</span><span class="stat-label">Architektur-Ebenen</span></div>
+    <div class="stat"><span class="stat-num">59</span><span class="stat-label">SwiftUI Views</span></div>
+    <div class="stat"><span class="stat-num">8</span><span class="stat-label">Kernel-Entitäten</span></div>
+  </div>
+  <div class="badge-row">
+    <span class="badge">Event Sourcing</span>
+    <span class="badge">MUMPS-Kernel</span>
+    <span class="badge">SHA-256 Hash-Chain</span>
+    <span class="badge">Offline-First</span>
+    <span class="badge">CloudKit Sync</span>
+  </div>
+</section>
+
+<div class="tab-nav" id="tabs">
+  <button class="active" onclick="show('overview')">Übersicht</button>
+  <button onclick="show('architecture')">Architektur</button>
+  <button onclick="show('auth')">Authentifizierung</button>
+  <button onclick="show('navigation')">Navigation</button>
+  <button onclick="show('data')">Datenmodell</button>
+  <button onclick="show('task')">Task-Lifecycle</button>
+  <button onclick="show('event')">Event Sourcing</button>
+  <button onclick="show('sync')">Sync &amp; Audit</button>
+</div>
+
+<!-- ===== ÜBERSICHT ===== -->
+<div id="overview" class="lp-section">
+  <div class="container">
+    <h2>System-Übersicht</h2>
+    <p>Die wichtigsten Kennzahlen und das Gesamtbild der App-Architektur.</p>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <h4>Views</h4>
+        <div class="number">59</div>
+        <div class="label">SwiftUI Screens &amp; Komponenten</div>
+      </div>
+      <div class="info-card">
+        <h4>Kernel-Entitäten</h4>
+        <div class="number">8</div>
+        <div class="label">User, Task, Event, Einsatz, Schritt, Zuordnung, Product, Brigade</div>
+      </div>
+      <div class="info-card">
+        <h4>Rollen</h4>
+        <div class="number">4</div>
+        <div class="label">Mitarbeiter &rarr; Schichtleiter &rarr; Dispatcher &rarr; Admin</div>
+      </div>
+      <div class="info-card">
+        <h4>PRP-Programme</h4>
+        <div class="number">10</div>
+        <div class="label">Allergen, Reinigung, Schädling, Temperatur, Lieferant, &hellip;</div>
+      </div>
     </div>
+
+    <div class="diagram-card">
+      <h3>Gesamtarchitektur — Schichtenmodell</h3>
+      <div class="mermaid">
+graph TB
+  subgraph UI["UI-Schicht (59 Views)"]
+    direction LR
+    Login["LoginView"]
+    Root["RootTabView"]
+    Dash["Dashboard"]
+    Events["Event-Kalender"]
+    Crew["Crew-Planung"]
+    Scan["Vision-Scanner"]
+    Knowledge["Wissens-Hub"]
+    Audit["Audit-Hub"]
+    Settings["Einstellungen"]
+  end
+  subgraph KERNEL["TheBrain — MUMPS-Kernel"]
+    direction LR
+    RAM["In-Memory Store"]
+    Meier["Meier-Score"]
+    Rules["Regelprüfung"]
+  end
+  subgraph ES["Event Sourcing"]
+    direction LR
+    Journal["Journal (append-only)"]
+    Replayer["Replayer"]
+    Diff["StateDiff"]
+  end
+  subgraph PERSIST["Persistenz"]
+    direction LR
+    SwiftData["SwiftData"]
+    CoreData["CoreData (Legacy)"]
+    HACCP["HACCP Records"]
+  end
+  subgraph SECURITY["Sicherheit"]
+    direction LR
+    AuditTrail["Audit Trail (Hash-Chain)"]
+    Integrity["Integrity Verifier"]
+    Auth["PIN-Auth"]
+  end
+  subgraph SYNC["Synchronisation"]
+    direction LR
+    Engine["SyncEngine"]
+    CloudKit["CloudKit"]
+    Conflict["Conflict Resolver"]
+  end
+  subgraph AI["ChefIQ"]
+    direction LR
+    OCR["OCR-Service"]
+    Gemini["Google Gemini"]
+  end
+  subgraph EXPORT["Export"]
+    direction LR
+    CSV["CSV/JSON"]
+    PDF["PDF"]
+    Paper["Papier-Fallback"]
+  end
+  UI -->|"liest/schreibt"| KERNEL
+  KERNEL -->|"protokolliert"| ES
+  ES -->|"persistiert"| PERSIST
+  KERNEL -->|"loggt"| SECURITY
+  SYNC -->|"synchronisiert"| ES
+  SYNC --> CloudKit
+  AI -->|"erkennt"| KERNEL
+  EXPORT -->|"exportiert"| PERSIST
+  style UI fill:#1f3a5f,stroke:#58a6ff,color:#fff
+  style KERNEL fill:#3b1f5e,stroke:#bc8cff,color:#fff
+  style ES fill:#1f4f3a,stroke:#56d364,color:#fff
+  style PERSIST fill:#4f3a1f,stroke:#d29922,color:#fff
+  style SECURITY fill:#5f1f1f,stroke:#f85149,color:#fff
+  style SYNC fill:#1f3a4f,stroke:#79c0ff,color:#fff
+  style AI fill:#3a1f4f,stroke:#d2a8ff,color:#fff
+  style EXPORT fill:#2f3a1f,stroke:#a5d6a7,color:#fff
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ARCHITEKTUR ===== -->
+<div id="architecture" class="lp-section">
+  <div class="container">
+    <h2>System-Architektur</h2>
+    <p>Die Event-Hierarchie und das Zusammenspiel der Komponenten.</p>
+
+    <div class="diagram-card">
+      <h3>Event &rarr; Einsatz &rarr; Schritt &rarr; Zuordnung</h3>
+      <div class="mermaid">
+graph TB
+  E["Event<br/><i>z.B. Hochzeitsessen</i><br/>Datum, Ort, Gäste, Menü"]
+  E --> E1["Einsatz 1<br/><i>Vorspeisen</i><br/>Verantwortlich: Chef John"]
+  E --> E2["Einsatz 2<br/><i>Hauptgang</i><br/>Verantwortlich: Chef James"]
+  E --> E3["Einsatz 3<br/><i>Desserts</i><br/>Verantwortlich: Lisa"]
+  E1 --> S1["Schritt 1<br/>Garnelen vorbereiten<br/>ANFÄNGER · 30min"]
+  E1 --> S2["Schritt 2<br/>Canapés anrichten<br/>PROFI · 45min"]
+  E2 --> S3["Schritt 3<br/>Fleisch vorbereiten<br/>SPEZIALIST · 60min"]
+  E2 --> S4["Schritt 4<br/>Sauce kochen<br/>PROFI · 30min"]
+  E3 --> S5["Schritt 5<br/>Mousse zubereiten<br/>PROFI · 40min"]
+  S1 --> Z1["Maria<br/>ERLEDIGT 14:30"]
+  S2 --> Z2["Thomas<br/>IN ARBEIT seit 14:45"]
+  S3 --> Z3["Michael<br/>BLOCKIERT<br/><i>Lieferung fehlt</i>"]
+  S4 --> Z4["Sandra<br/>OFFEN"]
+  S5 --> Z5["Rebecca<br/>OFFEN"]
+  style E fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style E1 fill:#238636,stroke:#56d364,color:#fff
+  style E2 fill:#238636,stroke:#56d364,color:#fff
+  style E3 fill:#238636,stroke:#56d364,color:#fff
+  style S1 fill:#30363d,stroke:#8b949e,color:#c9d1d9
+  style S2 fill:#30363d,stroke:#8b949e,color:#c9d1d9
+  style S3 fill:#30363d,stroke:#8b949e,color:#c9d1d9
+  style S4 fill:#30363d,stroke:#8b949e,color:#c9d1d9
+  style S5 fill:#30363d,stroke:#8b949e,color:#c9d1d9
+  style Z1 fill:#238636,stroke:#56d364,color:#fff
+  style Z2 fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style Z3 fill:#da3633,stroke:#f85149,color:#fff
+  style Z4 fill:#30363d,stroke:#6e7681,color:#8b949e
+  style Z5 fill:#30363d,stroke:#6e7681,color:#8b949e
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Meier-Score — Kognitive Belastungsberechnung</h3>
+      <div class="mermaid">
+flowchart LR
+  A["Offene Tasks<br/>sammeln"] --> B["Gewicht je Task<br/>addieren"]
+  B --> C["Ermüdungsfaktor<br/><i>1.0 + (Stunden/10)</i>"]
+  C --> D["Kapazität berechnen<br/><i>Staff x 20</i>"]
+  D --> ECalc["Score berechnen<br/><i>(Last/Kapazität)<br/>x Ermüdung x 100</i>"]
+  ECalc --> F{Score-Wert?}
+  F -->|"0-30"| G["Normal<br/>Alles im grünen Bereich"]
+  F -->|"30-70"| H["Moderat<br/>Erhöhte Aufmerksamkeit"]
+  F -->|"70-80"| I["Hoch<br/>Ermüdung setzt ein"]
+  F -->|"80-100"| J["Kritisch<br/>Fehlerrisiko!<br/>+ Jitter-Modus"]
+  style G fill:#238636,stroke:#56d364,color:#fff
+  style H fill:#9e6a03,stroke:#d29922,color:#fff
+  style I fill:#bd561d,stroke:#f0883e,color:#fff
+  style J fill:#da3633,stroke:#f85149,color:#fff
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AUTHENTIFIZIERUNG ===== -->
+<div id="auth" class="lp-section">
+  <div class="container">
+    <h2>Authentifizierung &amp; Rollensystem</h2>
+    <p>PIN-basierte Anmeldung mit 4-stufiger Rollenhierarchie.</p>
+
+    <div class="diagram-card">
+      <h3>Login-Flow</h3>
+      <div class="mermaid">
+flowchart TD
+  Start(["App-Start"]) --> Check{"Eingeloggt?"}
+  Check -->|"Nein"| Login["LoginView<br/>Mitarbeiter-Auswahl"]
+  Check -->|"Ja"| Root["RootTabView"]
+  Login --> Select["Mitarbeiter<br/>auswählen"]
+  Select --> HasPIN{"PIN<br/>eingerichtet?"}
+  HasPIN -->|"Nein"| Setup["SetupPINSheet<br/>4-stellige PIN erstellen"]
+  Setup --> SavePIN["PIN hashen<br/>und speichern"]
+  SavePIN --> Enter
+  HasPIN -->|"Ja"| Enter["PIN eingeben"]
+  Enter --> Validate{"PIN<br/>korrekt?"}
+  Validate -->|"Nein"| Error["Fehler anzeigen"]
+  Error --> Enter
+  Validate -->|"Ja"| Session["Session starten"]
+  Session --> Brain["TheBrain aktualisieren<br/>^NAV.ACTIVE_USER<br/>^NAV.ACTIVE_ROLE"]
+  Brain --> AuditLog["AuditTrail:<br/>USER_LOGIN protokollieren"]
+  AuditLog --> Root
+  Root --> Logout["Logout"]
+  Logout --> Kill["TheBrain:<br/>^NAV.ACTIVE_USER löschen"]
+  Kill --> AuditOut["AuditTrail:<br/>USER_LOGOUT"]
+  AuditOut --> Login
+  style Start fill:#8957e5,stroke:#bc8cff,color:#fff
+  style Root fill:#238636,stroke:#56d364,color:#fff
+  style Error fill:#da3633,stroke:#f85149,color:#fff
+  style Session fill:#1f6feb,stroke:#58a6ff,color:#fff
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Rollen-Hierarchie &amp; Berechtigungen</h3>
+      <div class="mermaid">
+graph LR
+  subgraph Rollen["Rollenhierarchie (aufsteigend)"]
+    M["Mitarbeiter<br/><i>Level 1</i>"] --> SL["Schichtleiter<br/><i>Level 2</i>"]
+    SL --> D["Dispatcher<br/><i>Level 3</i>"]
+    D --> A["Admin<br/><i>Level 4</i>"]
+  end
+  subgraph Rechte_M["Mitarbeiter-Rechte"]
+    M1["Eigene Aufgaben sehen"]
+    M2["Tasks starten/beenden"]
+    M3["Tasks blockieren"]
+  end
+  subgraph Rechte_SL["Schichtleiter-Rechte"]
+    SL1["+ Einsätze erstellen"]
+    SL2["+ Tasks umverteilen"]
+  end
+  subgraph Rechte_D["Dispatcher-Rechte"]
+    D1["+ Events erstellen"]
+    D2["+ Personal zuweisen"]
+    D3["+ Eskalation auslösen"]
+  end
+  subgraph Rechte_A["Admin-Rechte"]
+    A1["+ Rollen verwalten"]
+    A2["+ Systemkonfiguration"]
+    A3["+ HACCP-Export versiegeln"]
+  end
+  M -.-> Rechte_M
+  SL -.-> Rechte_SL
+  D -.-> Rechte_D
+  A -.-> Rechte_A
+  style M fill:#30363d,stroke:#8b949e,color:#c9d1d9
+  style SL fill:#0d419d,stroke:#58a6ff,color:#fff
+  style D fill:#8957e5,stroke:#bc8cff,color:#fff
+  style A fill:#da3633,stroke:#f85149,color:#fff
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NAVIGATION ===== -->
+<div id="navigation" class="lp-section">
+  <div class="container">
+    <h2>Navigation &amp; Screen-Flow</h2>
+    <p>Adaptive Navigation: Sidebar auf iPad/Mac, Tabs auf iPhone.</p>
+
+    <div class="diagram-card">
+      <h3>Haupt-Navigation</h3>
+      <div class="mermaid">
+flowchart TD
+  Root["RootTabView"] --> Platform{"Plattform?"}
+  Platform -->|"iPad/Mac +<br/>Dispatcher/Admin"| Sidebar["NavigationSplitView<br/>(Sidebar)"]
+  Platform -->|"iPhone /<br/>Crew/Schichtleiter"| Tabs["TabView<br/>(Bottom Tabs)"]
+  Sidebar --> D1["Dashboard"]
+  Sidebar --> D2["Zu erledigen"]
+  Sidebar --> D3["Mitarbeiter"]
+  Sidebar --> D4["RCA"]
+  Sidebar --> D5["Scan"]
+  Sidebar --> D6["Wissen"]
+  Sidebar --> D7["Audit"]
+  Sidebar --> D8["Notfallplan"]
+  Sidebar --> D9["Einstellungen"]
+  Tabs --> T1["Dashboard"]
+  Tabs --> T2["Zu erledigen"]
+  Tabs --> T5["Scan"]
+  Tabs --> T6["Wissen"]
+  Tabs --> T9["Einstellungen"]
+  D1 --> Role{"Rolle?"}
+  T1 --> Role
+  Role -->|"Dispatcher/Admin"| DDash["DispatcherDashboardView<br/>Events, Blocker, Team"]
+  Role -->|"Schichtleiter"| SLDash["MitarbeiterAufgabenView<br/>Eigene Einsätze"]
+  Role -->|"Mitarbeiter"| MDash["MitarbeiterAufgabenView<br/>Nur eigene Zuordnungen"]
+  style Root fill:#8957e5,stroke:#bc8cff,color:#fff
+  style Sidebar fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style Tabs fill:#238636,stroke:#56d364,color:#fff
+  style DDash fill:#da3633,stroke:#f85149,color:#fff
+  style SLDash fill:#0d419d,stroke:#58a6ff,color:#fff
+  style MDash fill:#30363d,stroke:#8b949e,color:#c9d1d9
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Alle Screens im Überblick</h3>
+      <div class="mermaid">
+mindmap
+  root((GastroGrid))
+    Authentifizierung
+      LoginView
+      SetupPINSheet
+    Dashboard
+      DispatcherDashboardView
+      MitarbeiterAufgabenView
+      VerantwortlicherDashboardView
+    Event-Management
+      ContentView / Kalender
+      EventListView
+      EventDetailView
+      AddEventView / EditEventView
+      AddJobView / EditJobView
+      AuftragDetailView
+    Crew
+      CrewPlanningView
+      VerantwortungsUebergabeView
+    ChefIQ / Scanner
+      VisionScanView
+      ResultDetailView
+    Wissen
+      KnowledgeHomeView
+      ProductListView
+      ProductKnowledgeDetailView
+      LexikonListView
+      LexikonKnowledgeDetailView
+    Audit und Compliance
+      AuditHubView
+      AuditLogView
+      AuditPlanView
+      HygieneCockpitView
+      IntegrityView
+      AllergenMatrixView
+    HACCP-Programme
+      CleaningDashboardView
+      PestControlView
+      SupplierListView
+      KPIDashboardView
+      RecallSimulationView
+      FoodDefenceCheckView
+      FoodFraudView
+    Notfall
+      NotfallModusView
+      NotfallplanView
+    System
+      SettingsView
+      ExportView
+      SyncDashboardView
+      SystemDiagnosticView
+      BetriebSetupView
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DATENMODELL ===== -->
+<div id="data" class="lp-section">
+  <div class="container">
+    <h2>Datenmodell</h2>
+    <p>Dual-Layer: MUMPS-Globals im TheBrain-Kernel + SwiftData/CoreData-Persistenz.</p>
+
+    <div class="diagram-card">
+      <h3>Kernel-Entitäten (TheBrain — In-Memory)</h3>
+      <div class="mermaid">
+erDiagram
+  USER ||--o{ ZUORDNUNG : "ist zugeordnet"
+  USER ||--o{ EINSATZ : "ist verantwortlich"
+  EVENT ||--o{ EINSATZ : "enthält"
+  EVENT ||--o{ TASK : "hat Jobs"
+  EINSATZ ||--o{ SCHRITT : "enthält"
+  SCHRITT ||--o{ ZUORDNUNG : "hat Zuweisungen"
+  TASK }o--|| USER : "zugewiesen an"
+  PRODUCT ||--o| SUPPLIER : "bezogen von"
+  USER {
+    string id PK
+    string name
+    string rolle
+    boolean aktiv
+    timestamp loginTime
+  }
+  EVENT {
+    string id PK
+    string title
+    date date
+    string location
+    int guests
+    string status
+  }
+  EINSATZ {
+    string id PK
+    string name
+    string event_id FK
+    string verantwortlicher_id FK
+    string status
+  }
+  SCHRITT {
+    string id PK
+    string bezeichnung
+    string einsatz FK
+    string anweisung
+    string status
+    int zeitvorgabe
+    string level
+  }
+  ZUORDNUNG {
+    string id PK
+    string schritt FK
+    string employee FK
+    string status
+    timestamp started_at
+    timestamp completed_at
+  }
+  TASK {
+    string id PK
+    string title
+    string status
+    int weight
+    string event_id FK
+    string assigned_to FK
+  }
+  PRODUCT {
+    string id PK
+    string name
+    string allergens
+    date expiry_date
+  }
+  SUPPLIER {
+    string id PK
+    string name
+    string contact
+  }
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Persistenz-Schicht (SwiftData / CoreData)</h3>
+      <div class="mermaid">
+erDiagram
+  iMOPSEvent {
+    UUID id PK
+    Date ts
+    String eventType
+    String path
+    String value
+    String userId
+    String deviceId
+    Int sequenceNumber
+  }
+  AuditLogEntry {
+    UUID id PK
+    Date timestamp
+    String action
+    String actorType
+    String objectType
+    String result
+    String prevHash
+    String chainHash
+    String role
+  }
+  HACCPRecord {
+    UUID id PK
+    String key
+    String value
+    Date createdAt
+    String createdBy
+    String signature
+    boolean isArchived
+  }
+  SyncMetadata {
+    UUID id PK
+    Date lastSyncTime
+    String deviceId
+    Data recordToken
+    Int conflictCount
+  }
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TASK LIFECYCLE ===== -->
+<div id="task" class="lp-section">
+  <div class="container">
+    <h2>Task-Lifecycle</h2>
+    <p>Status-Maschinen für Jobs (Aufträge) und Arbeitsschritte.</p>
+
+    <div class="diagram-card">
+      <h3>Auftrag (Job) — Status-Maschine</h3>
+      <div class="mermaid">
+stateDiagram-v2
+  [*] --> Offen : Job erstellt
+  Offen --> InArbeit : START
+  InArbeit --> Pausiert : PAUSE
+  Pausiert --> InArbeit : RESUME
+  InArbeit --> Fertig : COMPLETE
+  Pausiert --> Fertig : COMPLETE
+  Fertig --> [*] : Terminal
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Zuordnung (Employee Assignment) — Status-Maschine</h3>
+      <div class="mermaid">
+stateDiagram-v2
+  [*] --> OFFEN : Zuordnung erstellt
+  OFFEN --> IN_ARBEIT : Mitarbeiter startet
+  IN_ARBEIT --> BLOCKIERT : Problem gemeldet
+  BLOCKIERT --> IN_ARBEIT : Problem gelöst
+  IN_ARBEIT --> ERLEDIGT : Schritt abgeschlossen
+  BLOCKIERT --> ESKALIERT : Eskalation durch Dispatcher
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Einsatz — Status-Maschine</h3>
+      <div class="mermaid">
+stateDiagram-v2
+  [*] --> GEPLANT : Einsatz erstellt
+  GEPLANT --> LAUFEND : Erster Schritt gestartet
+  LAUFEND --> BLOCKIERT : Kritischer Schritt blockiert
+  BLOCKIERT --> LAUFEND : Blocker gelöst
+  LAUFEND --> FERTIG : Alle Schritte erledigt
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Eskalations-Flow</h3>
+      <div class="mermaid">
+flowchart TD
+  Block["Mitarbeiter meldet<br/>Blockierung"] --> Reason["Grund eingeben<br/><i>z.B. Lieferung fehlt</i>"]
+  Reason --> Status["Status BLOCKIERT<br/>in TheBrain"]
+  Status --> AuditB["AuditTrail:<br/>TASK_BLOCKED"]
+  AuditB --> Dispatcher["Dispatcher sieht<br/>Blocker im Dashboard"]
+  Dispatcher --> Decision{"Entscheidung?"}
+  Decision -->|"Lösen"| Resolve["Problem lösen<br/>Status IN_ARBEIT"]
+  Decision -->|"Umverteilen"| Reassign["Anderen MA zuweisen<br/>neue Zuordnung"]
+  Decision -->|"Eskalieren"| Escalate["An Schichtleiter/<br/>Admin eskalieren"]
+  Resolve --> AuditR["AuditTrail:<br/>BLOCKER_RESOLVED"]
+  Reassign --> AuditA["AuditTrail:<br/>TASK_REASSIGNED"]
+  Escalate --> AuditE["AuditTrail:<br/>ESCALATION_CREATED"]
+  style Block fill:#da3633,stroke:#f85149,color:#fff
+  style Resolve fill:#238636,stroke:#56d364,color:#fff
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EVENT SOURCING ===== -->
+<div id="event" class="lp-section">
+  <div class="container">
+    <h2>Event Sourcing &amp; Crash Recovery</h2>
+    <p>Jede Zustandsänderung wird als unveränderliches Event im Journal protokolliert.</p>
+
+    <div class="diagram-card">
+      <h3>Event Sourcing — Schreibpfad</h3>
+      <div class="mermaid">
+sequenceDiagram
+  participant UI as UI
+  participant Brain as TheBrain
+  participant Journal as Journal
+  participant SwiftData as SwiftData
+  participant Audit as AuditTrail
+  UI->>Brain: set("^TASK.001.STATUS", "OPEN")
+  Brain->>Brain: RAM-Store aktualisieren
+  Brain->>Journal: Event erstellen
+  Note over Journal: type: .set<br/>path: ^TASK.001.STATUS<br/>value: S:OPEN<br/>seq: 42
+  Journal->>SwiftData: Persistieren
+  Brain->>Audit: log(action: "SET", ...)
+  Note over Audit: Hash-Chain:<br/>chainHash = SHA-256(<br/>prevHash + data)
+  Audit->>SwiftData: Persistieren
+  Brain-->>UI: @Observable Update
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>App-Boot &amp; Recovery</h3>
+      <div class="mermaid">
+flowchart TD
+  Start(["App-Start"]) --> Container["ModelContainer<br/>initialisieren"]
+  Container --> Configure["brain.configure()<br/>Journal + AuditTrail"]
+  Configure --> Fetch["Journal.fetchAll()<br/>Alle Events laden"]
+  Fetch --> Rebuild["brain.rebuildFromJournal()"]
+  Rebuild --> Loop{"Für jedes Event"}
+  Loop -->|"set"| Set["RAM path = value"]
+  Loop -->|"kill"| Kill["RAM path löschen"]
+  Loop -->|"killTree"| KillTree["Alle mit Prefix löschen"]
+  Loop -->|"navGoto"| Nav["Navigations-Kontext"]
+  Set --> Loop
+  Kill --> Loop
+  KillTree --> Loop
+  Nav --> Loop
+  Loop -->|"fertig"| Migrate["SchemaMigrator<br/>migrateIfNeeded()"]
+  Migrate --> Validate["validateBootState()<br/>Lücken prüfen"]
+  Validate --> Gap{"Lücken<br/>gefunden?"}
+  Gap -->|"Ja"| Warn["Warnung loggen<br/>Datenverlust möglich"]
+  Gap -->|"Nein"| OK["Zustand intakt"]
+  Warn --> Purge
+  OK --> Purge
+  Purge["Alte Events purgen<br/>> 90 Tage"] --> Sync["SyncEngine starten"]
+  Sync --> WarmUp["BootLoader.warmUp()<br/>Aktive Daten laden"]
+  WarmUp --> Ready(["App bereit"])
+  style Start fill:#8957e5,stroke:#bc8cff,color:#fff
+  style Ready fill:#238636,stroke:#56d364,color:#fff
+  style Warn fill:#d29922,stroke:#e3b341,color:#000
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SYNC & AUDIT ===== -->
+<div id="sync" class="lp-section">
+  <div class="container">
+    <h2>Synchronisation &amp; Audit-Integrität</h2>
+    <p>CloudKit-basierte Multi-Device-Sync mit Blockchain-artiger Audit-Kette.</p>
+
+    <div class="diagram-card">
+      <h3>Multi-Device Sync</h3>
+      <div class="mermaid">
+sequenceDiagram
+  participant A as Gerät A
+  participant Cloud as CloudKit
+  participant B as Gerät B
+  A->>A: Task Status ändern
+  A->>Cloud: Journal-Events hochladen
+  Cloud->>B: Push-Notification
+  B->>Cloud: Neue Events abrufen
+  B->>B: MergeReplayer ausführen
+  Note over A,B: Konflikt-Szenario
+  A->>Cloud: ^TASK.001.STATUS = "IN_ARBEIT" (14:00)
+  B->>Cloud: ^TASK.001.STATUS = "BLOCKIERT" (14:01)
+  Cloud->>Cloud: Konflikt erkannt!
+  Cloud->>A: ConflictResolver
+  Cloud->>B: ConflictResolver
+  Note over A,B: Last-Write-Wins:<br/>B gewinnt (14:01 > 14:00)<br/>Status = BLOCKIERT
+  A->>A: TheBrain aktualisieren
+  B->>B: TheBrain aktualisieren
+  Note over A,B: Beide Geräte konsistent
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Audit-Trail Hash-Chain</h3>
+      <div class="mermaid">
+flowchart LR
+  E1["Entry 1<br/>LOGIN<br/><i>hash: abc...</i>"] --> E2["Entry 2<br/>SET<br/><i>prevHash: abc...</i><br/><i>hash: def...</i>"]
+  E2 --> E3["Entry 3<br/>SET<br/><i>prevHash: def...</i><br/><i>hash: ghi...</i>"]
+  E3 --> E4["Entry 4<br/>EXPORT<br/><i>prevHash: ghi...</i><br/><i>hash: jkl...</i>"]
+  E4 --> Verify{"Integritäts-<br/>prüfung"}
+  Verify -->|"Alle Hashes stimmen"| OK["Kette intakt"]
+  Verify -->|"Hash-Mismatch"| Alert["Manipulation!<br/>Notfall-Modus"]
+  style E1 fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style E2 fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style E3 fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style E4 fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style OK fill:#238636,stroke:#56d364,color:#fff
+  style Alert fill:#da3633,stroke:#f85149,color:#fff
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Notfall-Modus</h3>
+      <div class="mermaid">
+flowchart TD
+  Trigger{"Auslöser"}
+  Trigger -->|"Integritäts-<br/>verletzung"| NF
+  Trigger -->|"IT-Ausfall"| NF
+  Trigger -->|"Manuell<br/>aktiviert"| NF
+  NF["NotfallModusView<br/>(Vollbild)"]
+  NF --> Contact["Notfall-Kontakte<br/>anzeigen"]
+  NF --> PaperF["Papier-Fallback<br/>generieren"]
+  NF --> Manual["Manuelle<br/>Dokumentation"]
+  Manual --> Resolve["Problem<br/>behoben"]
+  Resolve --> Deactivate["Notfall-Modus<br/>deaktivieren"]
+  Deactivate --> AuditLog["AuditTrail:<br/>NOTFALL_RESOLVED"]
+  style NF fill:#da3633,stroke:#f85149,color:#fff
+  style Resolve fill:#238636,stroke:#56d364,color:#fff
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>&copy; 2026 Andreas Pelczer &middot; <a href="https://pelczer.de">pelczer.de</a> &middot; <a href="gastro-grid.html">Produktseite</a> &middot; <a href="https://github.com/AndreasPelczer/iMOPS-Gastro-Grid" target="_blank">GitHub</a></p>
+</footer>
+
+<script>
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'dark',
+  themeVariables: {
+    darkMode: true,
+    background: '#0d1117',
+    primaryColor: '#1f6feb',
+    primaryTextColor: '#c9d1d9',
+    primaryBorderColor: '#30363d',
+    lineColor: '#8b949e',
+    secondaryColor: '#238636',
+    tertiaryColor: '#30363d',
+    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+    fontSize: '13px'
+  },
+  flowchart: { curve: 'basis', useMaxWidth: true },
+  er: { useMaxWidth: true },
+  sequence: { useMaxWidth: true },
+  mindmap: { useMaxWidth: true }
+});
+
+mermaid.run().then(function() {
+  document.querySelectorAll('.lp-section').forEach(function(s) {
+    if (s.id !== 'overview') s.classList.add('hidden');
+  });
+});
+
+function show(id) {
+  document.querySelectorAll('.lp-section').forEach(function(s) {
+    if (s.id === id) {
+      s.classList.remove('hidden');
+    } else {
+      s.classList.add('hidden');
+    }
+  });
+  document.querySelectorAll('#tabs button').forEach(function(b) { b.classList.remove('active'); });
+  event.target.classList.add('active');
+}
+</script>
+
 </body>
 </html>

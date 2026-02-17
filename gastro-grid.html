@@ -1,45 +1,319 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=https://pelczer.de/gastro-grid.html">
-    <title>iMOPS Gastro Grid – Produktseite</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #fff;
-        }
-        .container {
-            text-align: center;
-            padding: 40px;
-        }
-        h1 {
-            font-size: 24px;
-            margin-bottom: 16px;
-        }
-        p {
-            color: #aaa;
-            margin-bottom: 24px;
-        }
-        a {
-            color: #e87830;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iMOPS Gastro Grid – Deterministische HACCP-Software</title>
+  <meta name="description" content="iMOPS Gastro Grid: Deterministische Produktions- und HACCP-Software für professionelle Küchen. Behördentauglicher Audit-Trail, Offline-First, SHA-256-Integrität.">
+  <meta name="keywords" content="HACCP, Gastronomie, Lebensmittelsicherheit, HACCP-Software, Küche, Audit-Trail, iOS, macOS, Hygiene, EU-VO 852/2004">
+  <meta name="author" content="Andreas Pelczer">
+  <meta property="og:title" content="iMOPS Gastro Grid – HACCP-Software für Profis">
+  <meta property="og:description" content="Deterministische Produktions- und HACCP-Software für Menschen unter Druck. Kein Checklisten-Tool – ein Steuerungssystem.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pelczer.de/imops">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #1A1A2E;
+      --accent: #0F3460;
+      --highlight: #E94560;
+      --bg: #FAFBFC;
+      --card-bg: #FFFFFF;
+      --text: #2D3748;
+      --text-light: #718096;
+      --border: #E2E8F0;
+      --success: #38A169;
+      --warning: #DD6B20;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* NAV */
+    nav {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      background: rgba(26, 26, 46, 0.95); backdrop-filter: blur(10px);
+      padding: 0.8rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    nav .logo { color: #fff; font-weight: 800; font-size: 1.1rem; text-decoration: none; letter-spacing: -0.5px; }
+    nav .logo span { color: var(--highlight); }
+    nav ul { list-style: none; display: flex; gap: 2rem; }
+    nav a { color: #CBD5E0; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.2s; }
+    nav a:hover { color: #fff; }
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      color: #fff; padding: 8rem 2rem 5rem; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .hero::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 80px;
+      background: linear-gradient(to bottom, transparent, var(--bg));
+    }
+    .hero h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 0.5rem; }
+    .hero h1 span { color: var(--highlight); }
+    .hero .tagline { font-size: 1.15rem; color: #A0AEC0; max-width: 600px; margin: 0.5rem auto 1.5rem; font-weight: 400; }
+    .hero .badge-row { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem; }
+    .hero .badge {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+      padding: 0.35rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500; color: #E2E8F0;
+    }
+    .cta-btn {
+      display: inline-block; background: var(--highlight); color: #fff;
+      padding: 0.85rem 2rem; border-radius: 8px; text-decoration: none;
+      font-weight: 700; font-size: 0.95rem; margin-top: 2rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+    }
+    .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(233, 69, 96, 0.4); }
+    /* SECTIONS */
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 2rem; }
+    section { padding: 4rem 0; }
+    section h2 { font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-bottom: 0.4rem; letter-spacing: -0.5px; }
+    section .subtitle { color: var(--text-light); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    /* NOT-IS */
+    .not-is { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .not-box, .is-box {
+      padding: 2rem; border-radius: 12px;
+    }
+    .not-box { background: #FFF5F5; border: 1px solid #FED7D7; }
+    .is-box { background: #F0FFF4; border: 1px solid #C6F6D5; }
+    .not-box h3 { color: #C53030; font-size: 1rem; margin-bottom: 1rem; }
+    .is-box h3 { color: #276749; font-size: 1rem; margin-bottom: 1rem; }
+    .not-box li, .is-box li { list-style: none; padding: 0.3rem 0; font-size: 0.9rem; }
+    .not-box li::before { content: '\2717 '; color: #C53030; font-weight: 700; margin-right: 0.3rem; }
+    .is-box li::before { content: '\2713 '; color: #276749; font-weight: 700; margin-right: 0.3rem; }
+    /* FEATURES */
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    .feature-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.8rem; transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .feature-card:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+    .feature-icon { font-size: 1.8rem; margin-bottom: 0.8rem; }
+    .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--primary); }
+    .feature-card p { font-size: 0.85rem; color: var(--text-light); line-height: 1.6; }
+    /* ARCHITECTURE */
+    .arch-box {
+      background: var(--primary); color: #E2E8F0; border-radius: 12px;
+      padding: 2.5rem; font-family: 'Courier New', monospace; font-size: 0.8rem;
+      line-height: 1.8; overflow-x: auto; white-space: pre;
+    }
+    /* COMPLIANCE TABLE */
+    .compliance-table { width: 100%; border-collapse: collapse; }
+    .compliance-table th {
+      background: var(--primary); color: #fff; padding: 0.7rem 1rem;
+      text-align: left; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .compliance-table td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+    .compliance-table tr:hover td { background: #F7FAFC; }
+    .status-ok { color: var(--success); font-weight: 600; }
+    .status-wip { color: var(--warning); font-weight: 600; }
+    /* CTA SECTION */
+    .cta-section {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      color: #fff; text-align: center; padding: 4rem 2rem; border-radius: 16px; margin: 2rem auto;
+    }
+    .cta-section h2 { color: #fff; margin-bottom: 0.8rem; }
+    .cta-section p { color: #A0AEC0; max-width: 500px; margin: 0 auto 1.5rem; font-size: 0.95rem; }
+    /* FOOTER */
+    footer {
+      background: var(--primary); color: #718096; text-align: center;
+      padding: 2rem; font-size: 0.8rem;
+    }
+    footer a { color: #A0AEC0; text-decoration: none; }
+    footer a:hover { color: #fff; }
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      nav ul { display: none; }
+      .not-is { grid-template-columns: 1fr; }
+      .hero { padding: 7rem 1.5rem 4rem; }
+      .hero h1 { font-size: 2rem; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Weiterleitung zur iMOPS Gastro Grid Produktseite...</h1>
-        <p>Sie werden automatisch weitergeleitet. Falls nicht, <a href="https://pelczer.de/gastro-grid.html">klicken Sie hier</a>.</p>
+<nav>
+  <a href="#" class="logo">i<span>MOPS</span> Gastro Grid</a>
+  <ul>
+    <li><a href="#features">Funktionen</a></li>
+    <li><a href="#architektur">Architektur</a></li>
+    <li><a href="gastro-grid-logikplan.html" style="color: var(--highlight);">Logikpläne</a></li>
+    <li><a href="#compliance">Compliance</a></li>
+    <li><a href="#kontakt">Kontakt</a></li>
+    <li><a href="https://github.com/AndreasPelczer/iMOPS-Gastro-Grid" target="_blank">GitHub</a></li>
+  </ul>
+</nav>
+<section class="hero">
+  <h1>i<span>MOPS</span> Gastro Grid</h1>
+  <p class="tagline">Deterministische Produktions- und HACCP-Software<br>für Menschen unter Druck.</p>
+  <div class="badge-row">
+    <span class="badge">iOS & macOS nativ</span>
+    <span class="badge">100% Swift</span>
+    <span class="badge">Offline-First</span>
+    <span class="badge">SHA-256 Audit-Trail</span>
+    <span class="badge">HACCP-konform</span>
+  </div>
+  <a href="gastro-grid-logikplan.html" class="cta-btn">Logikpläne &amp; Architektur</a>
+  <a href="https://github.com/AndreasPelczer/iMOPS-Gastro-Grid" class="cta-btn" target="_blank" style="background: transparent; border: 2px solid rgba(255,255,255,0.3); box-shadow: none; margin-left: 0.5rem;">GitHub Repository</a>
+</section>
+<section id="was-ist-imops">
+  <div class="container">
+    <h2>Was ist iMOPS?</h2>
+    <p class="subtitle">Kein Checklisten-Tool. Ein deterministisches Steuerungssystem.</p>
+    <div class="not-is">
+      <div class="not-box">
+        <h3>Was iMOPS NICHT ist</h3>
+        <ul>
+          <li>Kein Aufgabenmanagement-Tool</li>
+          <li>Keine digitalen Checklisten</li>
+          <li>Keine Gamification</li>
+          <li>Kein Workflow-Malbuch</li>
+        </ul>
+      </div>
+      <div class="is-box">
+        <h3>Was iMOPS IST</h3>
+        <ul>
+          <li>Deterministisches Arbeitssystem</li>
+          <li>Industrielle Steuerungssoftware</li>
+          <li>Behördentaugliche Dokumentation</li>
+          <li>Manipulationssicherer Audit-Trail</li>
+        </ul>
+      </div>
     </div>
+  </div>
+</section>
+<section id="features" style="background: #fff;">
+  <div class="container">
+    <h2>Kernfunktionen</h2>
+    <p class="subtitle">Alles, was eine professionelle Küche für HACCP-Compliance braucht.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🌡️</div>
+        <h3>HACCP-Kernfunktionen</h3>
+        <p>CCP-01 (Kerntemperatur), CCP-02 (Kühlung), PRP (Reinigung/Desinfektion mit Vier-Augen-Prinzip). Vier druckbare Notfall-Formulare als PDF-Fallback.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔗</div>
+        <h3>SHA-256 Audit-Trail</h3>
+        <p>Blockchain-ähnliche Verkettung aller Einträge. Event-Sourcing mit Append-Only-Journal. Behördentauglicher PDF-Export mit Integritätssiegeln.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3>KI-Integration (ChefIQ)</h3>
+        <p>OCR-Erkennung für Wareneingänge und Dokumente. Gemini-API-Anbindung und automatisierte Scanner-Funktionalität.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📡</div>
+        <h3>Offline-First</h3>
+        <p>Vollständig offline-fähig – jede Funktion funktioniert ohne WLAN. Multi-Device-Sync über Last-Write-Wins-Konfliktauflösung.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3>Crash-Recovery</h3>
+        <p>Vollständige Wiederherstellung durch Journal-Replay. Thread-sichere RAM-Kernel-Architektur mit serialisierten Queue-Operationen.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Datenmanagement</h3>
+        <p>Automatische Bereinigungszyklen (90/180/365 Tage). Backup/Restore mit SHA-256-Prüfsummen. CSV-, JSON- und PDF-Export.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="architektur">
+  <div class="container">
+    <h2>Architektur</h2>
+    <p class="subtitle">Ein zentraler In-Memory-Kernel. Eine einzige Quelle der Wahrheit.</p>
+    <div class="arch-box">
+┌─────────────────────────────────────────────────┐
+│                    UI Layer                      │
+│        SwiftUI · Terminal Interface              │
+├─────────────────────────────────────────────────┤
+│              TheBrain (Kernel)                   │
+│      In-Memory · Thread-Safe · Deterministisch   │
+├────────────────────┬────────────────────────────┤
+│      Journal       │        Audit-Trail          │
+│    (Event-Log)     │     (SHA-256-Chain)          │
+├────────────────────┴────────────────────────────┤
+│           Persistenz & Synchronisation           │
+│      Offline-First · CloudKit · Backup           │
+└─────────────────────────────────────────────────┘</div>
+    <p style="margin-top: 1.5rem; color: var(--text-light); font-size: 0.9rem;">100% Swift. Inspiriert von MUMPS/Globals. Die UI fragt den Zustand ab, statt ihn darzustellen.</p>
+    <div style="text-align: center; margin-top: 2rem;">
+      <a href="gastro-grid-logikplan.html" class="cta-btn" style="background: var(--accent);">Vollständige Logikpläne ansehen &rarr;</a>
+    </div>
+  </div>
+</section>
+<section id="compliance" style="background: #fff;">
+  <div class="container">
+    <h2>Compliance-Status</h2>
+    <p class="subtitle">EU-VO 852/2004, HACCP (Codex Alimentarius), DSGVO</p>
+    <table class="compliance-table">
+      <thead>
+        <tr><th>Standard / Anforderung</th><th>Status</th><th>Details</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>HACCP (Codex Alimentarius)</td><td class="status-ok">Erfüllt</td><td>CCP-01, CCP-02, PRP vollständig</td></tr>
+        <tr><td>EU-VO 852/2004 Dokumentation</td><td class="status-ok">Erfüllt</td><td>Audit-Trail, Export, Rückverfolgbarkeit</td></tr>
+        <tr><td>Datenintegrität</td><td class="status-ok">Erfüllt</td><td>SHA-256-Chain, verifyIntegrity()</td></tr>
+        <tr><td>Vier-Augen-Prinzip</td><td class="status-ok">Erfüllt</td><td>Bei Reinigung/Desinfektion</td></tr>
+        <tr><td>Offline-Fähigkeit</td><td class="status-ok">Erfüllt</td><td>Vollständig offline-fähig</td></tr>
+        <tr><td>Crash-Recovery</td><td class="status-ok">Erfüllt</td><td>Journal-Replay</td></tr>
+        <tr><td>Datensicherung</td><td class="status-ok">Erfüllt</td><td>Backup/Restore mit SHA-256</td></tr>
+        <tr><td>DSGVO-Konformität</td><td class="status-wip">In Arbeit</td><td>Datenschutzerklärung, Löschrechte</td></tr>
+        <tr><td>Rechtliche Dokumente</td><td class="status-wip">In Arbeit</td><td>AGB, EULA, Impressum</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+<section>
+  <div class="container">
+    <h2>Für wen?</h2>
+    <p class="subtitle">Premium-Lösung für Betriebe mit höchsten Ansprüchen an Dokumentation und Behördenkonformität.</p>
+    <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+      <div class="feature-card" style="text-align: center;">
+        <div class="feature-icon">👨‍🍳</div>
+        <h3>Gehobene Restaurants</h3>
+        <p>Fine Dining und Sterneküchen</p>
+      </div>
+      <div class="feature-card" style="text-align: center;">
+        <div class="feature-icon">🏨</div>
+        <h3>Hotel-Großküchen</h3>
+        <p>Hohe Durchsätze, strenge Kontrollen</p>
+      </div>
+      <div class="feature-card" style="text-align: center;">
+        <div class="feature-icon">🍽️</div>
+        <h3>Cateringunternehmen</h3>
+        <p>Mobile Einsätze, Offline-Pflicht</p>
+      </div>
+      <div class="feature-card" style="text-align: center;">
+        <div class="feature-icon">🏢</div>
+        <h3>Systemgastronomie</h3>
+        <p>Multi-Standort, standardisiert</p>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="kontakt">
+  <div class="container">
+    <div class="cta-section">
+      <h2>Bereit für behördensichere HACCP-Dokumentation?</h2>
+      <p>iMOPS Gastro Grid ist in aktiver Entwicklung. Melde dich direkt für mehr Informationen.</p>
+      <a href="https://github.com/AndreasPelczer/iMOPS-Gastro-Grid" class="cta-btn" target="_blank">GitHub Repository</a>
+      <a href="mailto:a.pelczer@gmail.com" class="cta-btn" style="background: transparent; border: 2px solid #fff; box-shadow: none; margin-left: 0.5rem;">Kontakt aufnehmen</a>
+    </div>
+  </div>
+</section>
+<footer>
+  <p>&copy; 2026 Andreas Pelczer &middot; <a href="https://pelczer.de">pelczer.de</a> &middot; <a href="https://github.com/AndreasPelczer" target="_blank">GitHub</a></p>
+</footer>
 </body>
 </html>

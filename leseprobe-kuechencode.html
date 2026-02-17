@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leseprobe — Der Küchencode | Andreas Pelczer</title>
+<meta name="description" content="Leseprobe: Der Küchencode — 36 Jahre Hitze. Ein Leben in Systemen. Von Andreas Pelczer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0a0e;--bg-card:rgba(255,255,255,0.02);
+    --text:#b0b0bc;--text-bright:#e8e8f0;
+    --accent:#ff6b35;--accent-dim:rgba(255,107,53,0.15);
+    --border:#1a1a24;
+    --mono:"JetBrains Mono","Fira Code",monospace;
+    --serif:"Instrument Serif","Playfair Display",Georgia,serif;
+    --max-w:720px
+  }
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px;line-height:1.8;font-weight:300;-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--accent);color:var(--bg)}
+
+  /* NAV */
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1.2rem 2rem;display:flex;justify-content:space-between;align-items:center;background:rgba(10,10,14,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  nav a{color:var(--accent);text-decoration:none;font-size:11px;letter-spacing:3px;text-transform:uppercase;transition:opacity 0.3s}
+  nav a:hover{opacity:0.7}
+  .nav-back::before{content:"← "}
+
+  /* HERO */
+  .hero{min-height:70vh;display:flex;flex-direction:column;justify-content:center;padding:8rem 2rem 4rem;max-width:var(--max-w);margin:0 auto}
+  .hero-label{font-size:9.6px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:2rem;display:inline-flex;align-items:center;gap:8px}
+  .hero-label::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
+  .hero h1{font-family:var(--serif);font-size:clamp(36px,6vw,64px);font-weight:400;color:var(--text-bright);line-height:1.15;margin-bottom:1.5rem}
+  .hero h1 em{color:var(--accent);font-style:italic;text-decoration:underline;text-decoration-color:rgba(255,107,53,0.3);text-underline-offset:6px}
+  .hero-sub{font-size:13px;color:var(--text);line-height:1.8;max-width:520px}
+  .hero-meta{margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap}
+  .tag{font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:6px 14px;border:1px solid var(--border);color:var(--text)}
+  .tag--active{border-color:var(--accent);color:var(--accent)}
+
+  .scroll-cta{text-align:center;padding:1rem 0 3rem;animation:float 2.5s ease-in-out infinite}
+  .scroll-cta span{font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:0.5rem}
+  .scroll-cta svg{width:20px;height:20px;stroke:var(--accent)}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+  /* CONTENT */
+  .content{max-width:var(--max-w);margin:0 auto;padding:0 2rem 6rem}
+  .chapter-marker{font-size:9.6px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;padding-top:4rem;border-top:1px solid var(--border)}
+  .chapter-marker:first-child{border-top:none;padding-top:0}
+  .chapter-title{font-family:var(--serif);font-size:clamp(28px,4vw,42px);font-weight:400;color:var(--text-bright);margin-bottom:0.3rem;line-height:1.2}
+  .chapter-subtitle{font-size:12px;color:var(--text);margin-bottom:3rem;opacity:0.6}
+  .section-head{font-family:var(--serif);font-size:22px;font-weight:400;color:var(--text-bright);margin:3rem 0 1.5rem}
+  .prose{margin-bottom:1.5rem;line-height:1.9}
+  .prose--indent{padding-left:1.5rem;border-left:2px solid var(--border)}
+  .prose em{color:var(--text-bright);font-style:italic}
+  .prose strong{color:var(--text-bright);font-weight:500}
+  .code-line{font-size:12px;color:var(--accent);opacity:0.7;margin:1rem 0;padding-left:1rem}
+  blockquote{border-left:2px solid var(--accent);padding:1.5rem 0 1.5rem 1.5rem;margin:2.5rem 0;font-family:var(--serif);font-size:20px;font-style:italic;color:var(--text-bright);line-height:1.5}
+  blockquote cite{display:block;margin-top:0.8rem;font-family:var(--mono);font-size:11px;font-style:normal;color:var(--text);letter-spacing:2px}
+  .separator{width:40px;height:1px;background:var(--accent);margin:3rem 0;opacity:0.5}
+
+  /* FADE OUT */
+  .fade-out{position:relative;padding-bottom:6rem}
+  .fade-out::after{content:"";position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(to bottom,transparent,var(--bg));pointer-events:none}
+
+  /* CTA */
+  .cta-section{text-align:center;padding:4rem 2rem 6rem;max-width:var(--max-w);margin:0 auto}
+  .cta-text{font-family:var(--serif);font-size:clamp(22px,3.5vw,32px);font-style:italic;color:var(--text-bright);margin-bottom:2rem;line-height:1.4}
+  .cta-sub{font-size:12px;color:var(--text);margin-bottom:2.5rem;opacity:0.6}
+  .cta-buttons{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;text-decoration:none;padding:12px 28px;border:1px solid var(--border);color:var(--text);transition:all 0.3s}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn--primary{border-color:var(--accent);color:var(--accent)}
+  .btn--primary:hover{background:var(--accent);color:var(--bg)}
+
+  footer{border-top:1px solid var(--border);padding:2rem;text-align:center}
+  footer a{color:var(--accent);text-decoration:none;font-size:11px;letter-spacing:2px}
+  footer p{font-size:10px;color:var(--text);opacity:0.4;margin-top:0.5rem;letter-spacing:1px}
+
+  .progress-bar{position:fixed;top:0;left:0;height:2px;background:var(--accent);z-index:200;width:0%;transition:width 0.1s linear}
+
+  .fade-in{opacity:0;transform:translateY(20px);animation:fadeUp 0.8s ease forwards}
+  .fade-in:nth-child(2){animation-delay:0.1s}
+  .fade-in:nth-child(3){animation-delay:0.2s}
+  .fade-in:nth-child(4){animation-delay:0.3s}
+  @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+
+  @media(max-width:640px){
+    nav{padding:1rem}
+    .hero{padding:6rem 1.2rem 3rem;min-height:60vh}
+    .content{padding:0 1.2rem 4rem}
+    .cta-section{padding:3rem 1.2rem 4rem}
+    blockquote{font-size:17px}
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<nav>
+  <a href="https://pelczer.de" class="nav-back">pelczer.de</a>
+  <a href="leseprobe-thermodynamik.html">Thermodynamik →</a>
+</nav>
+
+<section class="hero">
+  <div class="fade-in"><div class="hero-label">Leseprobe</div></div>
+  <h1 class="fade-in">Der <em>Küchencode</em></h1>
+  <p class="hero-sub fade-in">36 Jahre Hitze. Ein Leben in Systemen. Von der Bundeswehr-Brigade bis zur Sterneküche. Vom Gardemanger zum System Architect. Die Geschichte dahinter.</p>
+  <div class="hero-meta fade-in">
+    <span class="tag tag--active">Memoir</span>
+    <span class="tag">2026</span>
+    <span class="tag">~70% fertig</span>
+  </div>
+</section>
+
+<div class="scroll-cta">
+  <span>Lesen</span>
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
+</div>
+
+<article class="content">
+
+  <div class="chapter-marker">Prolog</div>
+  <h2 class="chapter-title">Der 12-jährige Forscher</h2>
+  <div class="chapter-subtitle">Wer ich war, bevor ich Koch wurde</div>
+
+  <p class="prose">Ich war zwölf, als ich verstand, dass Systeme töten können.</p>
+  <p class="prose">Nicht in der Schule. Im Kino.</p>
+  <p class="prose">Mein Vater nahm mich mit. WarGames. 1984. Bei uns im Kino. Ein Computer namens Joshua, der spielen wollte. Nur spielte er nicht irgendein Spiel. Er spielte Thermonuklearen Krieg. Und der einzige Weg zu gewinnen war: nicht zu spielen.</p>
+  <p class="code-line">„Shall we play a game?"</p>
+  <p class="prose">Als wir rauskamen, sagte mein Vater etwas, das ich nie vergessen habe. Er arbeitete mit MUMPS – einer Sprache für Krankenhausinformationssysteme. Einer der Ersten in Deutschland, die das auf Großrechnern zum Laufen brachten.</p>
+  <p class="prose">„Systeme kann man gut oder schlecht einsetzen." Ich war zwölf. Ich nickte.</p>
+  <p class="prose">Ich verstand es nicht wirklich.</p>
+  <p class="prose">Aber ich vergaß es nie.</p>
+
+  <div class="section-head">Das Krankenhaus</div>
+  <p class="prose">Das Krankenhaus war meine Hood.</p>
+  <p class="prose">Mein Vater war dort Verwaltungschef oder sowas – einer der ersten in Deutschland, die MUMPS auf Großrechnern zum Laufen brachten. Das System, das die Patientenakten verwaltete.</p>
+  <p class="prose prose--indent">„Die Patientenakte", sagte er, „die muss immer wissen, wo sie hingehört. Wenn der Doktor nachts um drei einen Notfall hat, muss das System die Akte finden. Nicht der Mensch."</p>
+  <p class="prose prose--indent">„Wenn das System ausfällt", sagte er, „kostet das Leben."</p>
+  <p class="prose">Das verstand ich.</p>
+  <p class="prose">Ich kannte jeden Gang. Jede Abkürzung. Jede Tür, die man eigentlich nicht öffnen durfte. Der Koch winkte mich durch. Die Schwestern halfen mir bei den Hausaufgaben. Die Sekretärinnen gaben mir Süßigkeiten.</p>
+  <p class="prose">Aber die beiden Orte, an denen ich wirklich sein wollte, waren das Labor und der Computerraum.</p>
+  <p class="prose">Das Labor roch nach Zukunft. Nach Dingen, die man noch nicht wusste, aber herausfinden konnte.</p>
+  <p class="prose">Der Computerraum summte. Maschinen, größer als ich, die Dinge taten, die ich nicht verstand – aber verstehen wollte.</p>
+  <p class="prose">Ich wollte Forscher werden. Wissenschaftler. Computerfachmann.</p>
+  <p class="prose">Auf jeden Fall Computerfachmann.</p>
+
+  <div class="section-head">Der Commodore</div>
+  <p class="prose">Zuhause hatte ich einen C116. Keinen C64 – den konnte ich mir nicht leisten. Aber der C116 reichte. Basic 2.0, erst die Datasette, dann das Floppylaufwerk.</p>
+  <p class="prose">Ich machte alle Übungsprogramme aus dem Handbuch. Dann kombinierte ich sie. Dann veränderte ich sie. Dann baute ich meine eigenen.</p>
+  <p class="code-line">CIRCLE 10,120,40,8</p>
+  <p class="prose">Ein Kreis. An diesem Ort. In dieser Größe. In dieser Farbe. Ein paar in die Mitte, einen halben hier und fertig war das Sonnensystem. Da weiß man, was man hat.</p>
+
+  <div class="section-head">Die Kästchen</div>
+  <p class="prose">Es gab nur ein Problem: Du konntest Informatik studieren. Das war's. Und ich kam von der Hauptschule. Hauptschüler studieren nicht.</p>
+  <p class="prose">Also ging ich auf die Weiterführende Wirtschaftsschule, weil es dort Informatikunterricht gab. Sie nannten es „Datenverarbeitung". Sie hatten keine Computer.</p>
+  <p class="prose">Wir malten Kästchen. Wie Kindergartenkinder in der Vorschule. Mit Schablonen. Auf Papier. Flussdiagramme für Programme, die wir nie schreiben würden.</p>
+  <p class="prose">Ich hatte ein Programm für Doppelte Buchführung geschrieben. In Basic 2.0. Auf Datasette gespeichert.</p>
+  <p class="prose">Aber in der Schule malte ich Kästchen.</p>
+  <p class="prose">Da wusste ich: Das hier ist nicht für mich. Das hier ist gegen mich.</p>
+
+  <div class="section-head">Die Antwort</div>
+  <p class="prose">40 Jahre nach WarGames baute ich mein eigenes System.</p>
+  <p class="prose">Nicht Joshua. Nicht ein System das tötet.</p>
+  <p class="prose">Software. Ein System das schützt.</p>
+  <p class="prose">Mein Vater hatte recht: Systeme kann man gut oder schlecht einsetzen.</p>
+  <p class="prose">Ich entschied mich früh.</p>
+
+  <div class="separator"></div>
+  <div class="fade-out">
+    <p class="prose">Dieses Buch ist mein Feldtagebuch. 36 Jahre Gastronomie-Dschungel. 36 Jahre Muster. 36 Jahre Erkenntnis.</p>
+    <p class="prose">Und am Ende: Ein System, das Menschen trägt, statt sie zu fressen. Hoffe ich.</p>
+    <p class="prose"><em>Willkommen in meinem Wald.</em></p>
+  </div>
+</article>
+
+<section class="cta-section">
+  <p class="cta-text">Systeme kann man gut oder schlecht einsetzen.<br>Ich entschied mich <em style="color:var(--accent)">früh.</em></p>
+  <p class="cta-sub">Der Küchencode erscheint 2026. Das Fundament steht bereits.</p>
+  <div class="cta-buttons">
+    <a href="https://pelczer.de" class="btn btn--primary">← Zurück zu pelczer.de</a>
+    <a href="leseprobe-thermodynamik.html" class="btn">Thermodynamik lesen →</a>
+    <a href="https://www.amazon.de/dp/B0GK95MWB5" class="btn">Buch 1 auf Amazon</a>
+  </div>
+</section>
+
+<footer>
+  <a href="https://pelczer.de">Andreas Pelczer — Dead Rabbit Productions</a>
+  <p>© 2026 · MEMENTO MORI</p>
+</footer>
+
+<script>
+window.addEventListener('scroll',()=>{const h=document.documentElement;const p=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100;document.getElementById('progress').style.width=p+'%'});
+</script>
+</body>
+</html>
