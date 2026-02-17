@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leseprobe — Der junge Hering | Andreas Pelczer</title>
+<meta name="description" content="Leseprobe: Der junge Hering — Dein Begleiter durch die Kochausbildung. Von Andreas Pelczer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0a0e;--bg-card:rgba(255,255,255,0.02);
+    --text:#b0b0bc;--text-bright:#e8e8f0;
+    --accent:#ff6b35;--accent-dim:rgba(255,107,53,0.15);
+    --border:#1a1a24;
+    --mono:"JetBrains Mono","Fira Code",monospace;
+    --serif:"Instrument Serif","Playfair Display",Georgia,serif;
+    --max-w:720px
+  }
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px;line-height:1.8;font-weight:300;-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--accent);color:var(--bg)}
+
+  /* NAV */
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1.2rem 2rem;display:flex;justify-content:space-between;align-items:center;background:rgba(10,10,14,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  nav a{color:var(--accent);text-decoration:none;font-size:11px;letter-spacing:3px;text-transform:uppercase;transition:opacity 0.3s}
+  nav a:hover{opacity:0.7}
+  .nav-back::before{content:"← "}
+
+  /* HERO */
+  .hero{min-height:70vh;display:flex;flex-direction:column;justify-content:center;padding:8rem 2rem 4rem;max-width:var(--max-w);margin:0 auto}
+  .hero-label{font-size:9.6px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:2rem;display:inline-flex;align-items:center;gap:8px}
+  .hero-label::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
+  .hero h1{font-family:var(--serif);font-size:clamp(36px,6vw,64px);font-weight:400;color:var(--text-bright);line-height:1.15;margin-bottom:1.5rem}
+  .hero h1 em{color:var(--accent);font-style:italic;text-decoration:underline;text-decoration-color:rgba(255,107,53,0.3);text-underline-offset:6px}
+  .hero-sub{font-size:13px;color:var(--text);line-height:1.8;max-width:520px}
+  .hero-meta{margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap}
+  .tag{font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:6px 14px;border:1px solid var(--border);color:var(--text)}
+  .tag--active{border-color:var(--accent);color:var(--accent)}
+
+  .scroll-cta{text-align:center;padding:1rem 0 3rem;animation:float 2.5s ease-in-out infinite}
+  .scroll-cta span{font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:0.5rem}
+  .scroll-cta svg{width:20px;height:20px;stroke:var(--accent)}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+  /* CONTENT */
+  .content{max-width:var(--max-w);margin:0 auto;padding:0 2rem 6rem}
+  .chapter-marker{font-size:9.6px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;padding-top:4rem;border-top:1px solid var(--border)}
+  .chapter-marker:first-child{border-top:none;padding-top:0}
+  .chapter-title{font-family:var(--serif);font-size:clamp(28px,4vw,42px);font-weight:400;color:var(--text-bright);margin-bottom:0.3rem;line-height:1.2}
+  .chapter-subtitle{font-size:12px;color:var(--text);margin-bottom:3rem;opacity:0.6}
+  .section-head{font-family:var(--serif);font-size:22px;font-weight:400;color:var(--text-bright);margin:3rem 0 1.5rem}
+  .prose{margin-bottom:1.5rem;line-height:1.9}
+  .prose--indent{padding-left:1.5rem;border-left:2px solid var(--border)}
+  .prose em{color:var(--text-bright);font-style:italic}
+  .prose strong{color:var(--text-bright);font-weight:500}
+  .highlight{color:var(--text-bright);font-weight:400}
+  .matjes-quote{background:var(--bg-card);border-left:3px solid var(--accent);padding:1.5rem;margin:2rem 0;font-size:13px;line-height:1.8}
+  .matjes-quote::before{content:"🐟 Matjes sagt:";display:block;color:var(--accent);font-weight:500;margin-bottom:0.8rem;font-size:11px;letter-spacing:2px;text-transform:uppercase}
+  blockquote{border-left:2px solid var(--accent);padding:1.5rem 0 1.5rem 1.5rem;margin:2.5rem 0;font-family:var(--serif);font-size:20px;font-style:italic;color:var(--text-bright);line-height:1.5}
+  blockquote cite{display:block;margin-top:0.8rem;font-family:var(--mono);font-size:11px;font-style:normal;color:var(--text);letter-spacing:2px}
+  .separator{width:40px;height:1px;background:var(--accent);margin:3rem 0;opacity:0.5}
+
+  /* FADE OUT */
+  .fade-out{position:relative;padding-bottom:6rem}
+  .fade-out::after{content:"";position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(to bottom,transparent,var(--bg));pointer-events:none}
+
+  /* CTA */
+  .cta-section{text-align:center;padding:4rem 2rem 6rem;max-width:var(--max-w);margin:0 auto}
+  .cta-text{font-family:var(--serif);font-size:clamp(22px,3.5vw,32px);font-style:italic;color:var(--text-bright);margin-bottom:2rem;line-height:1.4}
+  .cta-sub{font-size:12px;color:var(--text);margin-bottom:2.5rem;opacity:0.6}
+  .cta-buttons{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;text-decoration:none;padding:12px 28px;border:1px solid var(--border);color:var(--text);transition:all 0.3s}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn--primary{border-color:var(--accent);color:var(--accent)}
+  .btn--primary:hover{background:var(--accent);color:var(--bg)}
+
+  footer{border-top:1px solid var(--border);padding:2rem;text-align:center}
+  footer a{color:var(--accent);text-decoration:none;font-size:11px;letter-spacing:2px}
+  footer p{font-size:10px;color:var(--text);opacity:0.4;margin-top:0.5rem;letter-spacing:1px}
+
+  @media(max-width:768px){
+    .hero{padding:6rem 1.5rem 3rem}
+    .content{padding:0 1.5rem 4rem}
+    nav{padding:1rem 1.5rem}
+    .cta-buttons{flex-direction:column;align-items:stretch}
+  }
+</style>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="nav-back">Zurück</a>
+    <a href="books/junger-hering.html">Buchseite</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-label">Leseprobe</div>
+    <h1>Der <em>junge Hering</em></h1>
+    <p class="hero-sub">Dein Begleiter durch die Kochausbildung. Alles, was du für die IHK-Prüfung brauchst — geschrieben von jemandem, der 36 Jahre in Küchen gestanden hat.</p>
+    <div class="hero-meta">
+      <span class="tag tag--active">Lehrbuch</span>
+      <span class="tag">2025</span>
+      <span class="tag">Erhältlich</span>
+    </div>
+  </section>
+
+  <div class="scroll-cta">
+    <span>Scroll</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </div>
+
+  <article class="content fade-out">
+    <div class="chapter-marker">Kapitel 4</div>
+    <h2 class="chapter-title">Warenkunde II: Gemüse, Kartoffeln, Pilze, Hülsenfrüchte</h2>
+
+    <div class="matjes-quote">
+      „In meinen ersten Lehrjahren war Gemüse das, was neben dem Fleisch auf dem Teller lag. Garnitur. Beiwerk. Heute ist pflanzliche Küche eines der spannendsten Felder der Gastronomie. Ganze Restaurants bauen ihre Karte um Gemüse herum auf. Aber egal ob Beilage oder Hauptdarsteller — die Grundlage ist dieselbe: Sie müssen Ihre Ware kennen. Jedes Gemüse hat seine Saison, seine Lagerung, seine Garmethode. Lernen Sie das, und Sie können mit einer Karotte mehr anfangen als mancher Koch mit einem Entrecôte."
+    </div>
+
+    <p class="prose">Dieses Kapitel stellt Ihnen 36 pflanzliche Produkte vor, die zum Basiswissen eines Kochs gehören. Sie sind nach botanischen Gruppen geordnet. Zu jedem Produkt finden Sie: Erkennungsmerkmale, Saison, Lagerung, typische Verwendung und Besonderheiten. In den Kapiteln zu Garmethoden (7), pflanzlicher Küche (13) und Menüplanung (16) werden diese Produkte wieder auftauchen — dann im Kontext von Zubereitung, Kreativität und Planung.</p>
+
+    <h3 class="section-head">4.1 Gemüse — Systematik und Einteilung</h3>
+
+    <p class="prose">Die Einteilung von Gemüse erfolgt in der Küchenpraxis nach dem genutzten Pflanzenteil. Botanisch ist das nicht immer korrekt — die Tomate ist eine Beere, die Erdnuss eine Hülsenfrucht, die Kartoffel ein Nachtschattengewächs wie die Tomate — aber in der Küche zählt die praktische Ordnung.</p>
+
+    <h3 class="section-head">Fruchtgemüse</h3>
+
+    <p class="prose">Fruchtgemüse ist der essbare Fruchtstand einer Pflanze. Gemeinsam ist diesen Gemüsen, dass sie Wärme zum Reifen brauchen und kälteempfindlich sind.</p>
+
+    <p class="prose"><strong>Tomate</strong> — Das meistverwendete Fruchtgemüse der europäischen Küche. Hauptsaison Juli bis Oktober, als Gewächshausware ganzjährig verfügbar. Sorten reichen von der kleinen Cocktailtomate über die Roma (ideal für Saucen, fleischig, wenig Kerne) bis zur Ochsenherztomate (groß, aromatisch, für Salate). <em>Lagerung bei Raumtemperatur, nie im Kühlschrank</em> — Kälte zerstört die flüchtigen Aromastoffe und macht das Fruchtfleisch mehlig. Tomaten nachreifen lassen: neben Äpfeln lagern, das Ethylen der Äpfel beschleunigt die Reifung. Verwendung: roh (Salate, Bruschetta), als Concassée, für Saucen, Suppen, geschmort, getrocknet, konfiert. Die Tomate ist Basis der Tomatensauce — eine der fünf Grundsaucen.</p>
+
+    <p class="prose"><strong>Paprika</strong> — Grüne Paprika ist unreif geerntet, daher leicht bitter. Rote und gelbe Paprika sind ausgereift, süßer und bekömmlicher. Saison Juli bis Oktober. Lagerung im Kühlschrank bei 7 bis 10 °C, bis zu einer Woche. Vor der Verwendung häuten: über offener Flamme oder unter dem Grill schwärzen, in einem geschlossenen Behälter dämpfen lassen, Haut abziehen. Gehäutete Paprika hat ein intensiveres, süßeres Aroma und ist leichter verdaulich. Verwendung: roh in Salaten, gefüllt, gegrillt, in Suppen und Eintöpfen, als Pesto, für Ratatouille.</p>
+
+    <p class="prose"><strong>Zucchini</strong> — Botanisch ein Kürbisgewächs. Saison Juni bis Oktober. Kleine Zucchini (15 bis 20 cm) sind aromatischer und fester als große. Lagerung im Kühlschrank bei 8 bis 10 °C, nicht unter 5 °C (kälteempfindlich), bis zu einer Woche. Nicht neben Tomaten oder Äpfeln lagern — das Ethylen beschleunigt den Verderb. Verwendung: gebraten, gegrillt, als Gemüsebeilage, in Suppen, roh in dünnen Scheiben (Carpaccio), gefüllt, als Nudel-Alternative (Zoodles).</p>
+
+    <p class="prose"><strong>Aubergine</strong> — Glänzende, feste Haut ohne braune Stellen zeigt Frische an. Saison Juli bis Oktober. Lagerung bei 10 bis 12 °C, sehr kälteempfindlich — nie unter 7 °C. Innerhalb weniger Tage verbrauchen. Das Fruchtfleisch oxidiert schnell braun nach dem Schneiden — sofort verarbeiten oder in Zitronenwasser legen. Das früher übliche Salzen und Entwässern ist bei modernen Sorten kaum noch nötig, kann aber bei großen Exemplaren überschüssige Feuchtigkeit reduzieren. Verwendung: gegrillt, gebraten, geschmort, für Moussaka, Ratatouille, Baba Ghanoush, als Kaviar d'aubergine.</p>
+
+    <p class="prose"><strong>Gurke</strong> — Salatgurke (Schlangengurke) und Einlegegurke (Cornichon) sind die gängigsten Typen. Saison Mai bis September. Lagerung im Kühlschrank bei 10 bis 13 °C, nicht zu kalt […]</p>
+
+    <div class="separator"></div>
+  </article>
+
+  <section class="cta-section">
+    <p class="cta-text">Das Buch enthält über 400 Seiten prüfungsrelevantes Wissen.</p>
+    <p class="cta-sub">Erhältlich bei Amazon · In Kombination mit der Matjes-App</p>
+    <div class="cta-buttons">
+      <a href="https://www.amazon.de/" class="btn btn--primary">Bei Amazon kaufen</a>
+      <a href="books/junger-hering.html" class="btn">Zurück zur Buchseite</a>
+    </div>
+  </section>
+
+  <footer>
+    <a href="legal/impressum.html">Impressum</a> · <a href="legal/datenschutz.html">Datenschutz</a>
+    <p>© 2026 B.I.N.D.A. Verlag · Andreas Pelczer</p>
+  </footer>
+</body>
+</html>
