@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matjes-Pro — pelczer.de</title>
+    <meta name="description" content="Die Profi-Version für Ausbilder und Berufsschulen">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/variables.css">
+    <link rel="stylesheet" href="../assets/css/base.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+    <link rel="stylesheet" href="../assets/css/layout.css">
+    <link rel="stylesheet" href="../assets/css/pages.css">
+</head>
+<body data-mode="human">
+    <div class="mode-toggle-wrap">
+        <button class="mode-toggle" id="modeToggle" aria-label="Ansicht wechseln"></button>
+        <span class="mode-label" id="modeLabel">Mensch</span>
+    </div>
+    <nav class="nav"><div class="nav-inner">
+        <a href="/" class="nav-brand">Andreas Pelczer</a>
+        <button class="nav-menu-btn" id="navMenuBtn" aria-label="Menü"><svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="/#apps">Apps</a></li>
+            <li><a href="/#books">Bücher</a></li>
+            <li><a href="/#about">Über mich</a></li>
+            <li><a href="/#contact">Kontakt</a></li>
+        </ul>
+    </div></nav>
+    <section class="page-hero"><div class="container">
+        <div class="breadcrumb"><a href="/">Startseite</a> / <a href="/#apps">Apps</a> / Matjes-Pro</div>
+        <div class="page-hero-inner">
+            <div class="page-hero-icon" style="background:linear-gradient(135deg, #1a4a7a, #4a8ad0);display:flex;align-items:center;justify-content:center;">
+                <span style="font-size:48px;">🐟</span>
+            </div>
+            <div>
+                <h1>Matjes-Pro</h1>
+                <p class="hero-text" style="animation:none;opacity:1;">
+                    <span class="desc-human">Für Ausbilder, Berufsschullehrer und Prüfer. Eigene Fragen erstellen, Fortschritte verfolgen.</span>
+                    <span class="desc-coder">Content-Management für Ausbilder. Custom Question Sets, Progress Tracking, Export.</span>
+                </p>
+                <span class="badge badge-wip">In Prüfung</span>
+            </div>
+        </div>
+    </div></section>
+
+    <!-- Features -->
+    <section class="bg-alt"><div class="container">
+        <div class="section-header fade-in">
+            <div class="section-label">Features</div>
+            <h2 class="section-title">
+                <span class="desc-human">Was die App kann</span>
+                <span class="desc-coder">Feature Set</span>
+            </h2>
+        </div>
+        <div class="feature-list">
+            <div class="feature-item fade-in">
+                <div class="feature-icon">✏️</div>
+                <div>
+                    <h3><span class="desc-human">Eigene Fragen erstellen</span><span class="desc-coder">Custom Question Set Builder</span></h3>
+                    <p><span class="desc-human">Erstellen Sie individuelle Fragenkataloge für Ihre Klasse oder Ihren Ausbildungsbetrieb.</span><span class="desc-coder">CRUD für Question Sets. Import/Export als JSON. Kategorisierung und Tagging.</span></p>
+                </div>
+            </div>
+            <div class="feature-item fade-in">
+                <div class="feature-icon">📊</div>
+                <div>
+                    <h3><span class="desc-human">Lernfortschritte verfolgen</span><span class="desc-coder">Progress Analytics</span></h3>
+                    <p><span class="desc-human">Sehen Sie auf einen Blick, wo Ihre Azubis stehen und wo noch Nachholbedarf besteht.</span><span class="desc-coder">Aggregierte Lernmetriken. Schwachstellenanalyse per Kategorie. SwiftData Persistence.</span></p>
+                </div>
+            </div>
+        </div>
+    </div></section>
+
+    <!-- Legal Links -->
+    <section><div class="container" style="text-align:center;">
+        <div class="link-row" style="justify-content:center;">
+            <a href="../legal/matjes-pro-privacy.html" class="link-arrow">Datenschutzerklärung →</a>
+            <a href="../legal/matjes-pro-terms.html" class="link-arrow">Nutzungsbedingungen →</a>
+        </div>
+    </div></section>
+
+    <!-- Footer -->
+    <footer class="footer"><div class="container">
+        <div class="footer-brand">B.I.N.D.A. Verlag</div>
+        <p class="footer-sub">Andreas Pelczer · Frankfurt am Main / Wertheim</p>
+        <div class="footer-legal">
+            <a href="../legal/impressum.html">Impressum</a> · <a href="../legal/datenschutz.html">Datenschutz</a>
+            <br><br>&copy; 2026 B.I.N.D.A. Verlag
+        </div>
+    </div></footer>
+    <script src="../assets/js/main.js"></script>
+</body>
+</html>

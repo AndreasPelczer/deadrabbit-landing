@@ -1,0 +1,143 @@
+/* ============================================================
+ * base.css — Reset, Typografie, Animationen
+ * ============================================================
+ * Globale Basis-Styles. Keine Komponenten-Logik hier.
+ * ============================================================ */
+
+/* ---- Reset ---- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--font-body);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.7;
+    transition: background var(--transition), color var(--transition);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---- Subtle Grain Texture ---- */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---- Typography ---- */
+h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--text-primary);
+    transition: color var(--transition);
+}
+
+h1 { font-size: clamp(2.4rem, 5vw, 3.6rem); }
+h2 { font-size: clamp(1.8rem, 3.5vw, 2.4rem); }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1rem; }
+
+p {
+    color: var(--text-secondary);
+    transition: color var(--transition);
+}
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color var(--transition);
+}
+
+a:hover {
+    color: var(--accent-hover);
+}
+
+em {
+    font-style: italic;
+    color: var(--accent);
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* ---- Selection ---- */
+::selection {
+    background: var(--accent-soft);
+    color: var(--text-primary);
+}
+
+/* ---- Mode-Conditional Content ---- */
+.desc-human { display: block; }
+.desc-coder { display: none; }
+[data-mode="coder"] .desc-human { display: none; }
+[data-mode="coder"] .desc-coder { display: block; }
+
+/* Inline variants */
+.inline-human { display: inline; }
+.inline-coder { display: none; }
+[data-mode="coder"] .inline-human { display: none; }
+[data-mode="coder"] .inline-coder { display: inline; }
+
+/* ---- Animations ---- */
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Scroll-triggered fade */
+.fade-in {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Staggered children animation */
+.stagger > .fade-in:nth-child(1) { transition-delay: 0.05s; }
+.stagger > .fade-in:nth-child(2) { transition-delay: 0.1s; }
+.stagger > .fade-in:nth-child(3) { transition-delay: 0.15s; }
+.stagger > .fade-in:nth-child(4) { transition-delay: 0.2s; }
+.stagger > .fade-in:nth-child(5) { transition-delay: 0.25s; }
+
+/* ---- Focus Styles (Accessibility) ---- */
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+}
+
+/* ---- Reduced Motion ---- */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+    .fade-in { opacity: 1; transform: none; }
+}
