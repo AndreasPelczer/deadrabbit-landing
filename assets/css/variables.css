@@ -1,0 +1,78 @@
+/* ============================================================
+ * variables.css — Design Tokens
+ * ============================================================
+ * Zentrale Farbpalette, Typografie und Spacing.
+ * Zwei Themes: Human (default) und Coder (data-mode="coder").
+ * Alle Komponenten referenzieren ausschließlich CSS Variables.
+ * ============================================================ */
+
+:root {
+    /* ---- Human Mode (Default) ---- */
+    --bg-primary:       #FDFAF6;
+    --bg-secondary:     #F5F0E8;
+    --bg-card:          #FFFFFF;
+    --text-primary:     #2C2416;
+    --text-secondary:   #6B5D4D;
+    --text-muted:       #9B8E7E;
+    --accent:           #C4652A;
+    --accent-hover:     #A8541F;
+    --accent-soft:      #F2E4D4;
+    --accent-glow:      rgba(196, 101, 42, 0.12);
+    --border:           #E8DFD2;
+    --border-light:     #F0EBE3;
+
+    /* ---- Shadows ---- */
+    --shadow-sm:        0 1px 3px rgba(44, 36, 22, 0.06);
+    --shadow-md:        0 4px 16px rgba(44, 36, 22, 0.08);
+    --shadow-lg:        0 8px 32px rgba(44, 36, 22, 0.1);
+
+    /* ---- Radii ---- */
+    --radius:           12px;
+    --radius-sm:        8px;
+    --radius-xs:        4px;
+
+    /* ---- Typography ---- */
+    --font-display:     'Lora', Georgia, serif;
+    --font-body:        'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono:        'JetBrains Mono', 'Fira Code', monospace;
+
+    /* ---- Spacing Scale ---- */
+    --space-xs:         4px;
+    --space-sm:         8px;
+    --space-md:         16px;
+    --space-lg:         24px;
+    --space-xl:         32px;
+    --space-2xl:        48px;
+    --space-3xl:        64px;
+    --space-4xl:        80px;
+
+    /* ---- Transitions ---- */
+    --transition:       0.3s ease;
+    --transition-fast:  0.15s ease;
+
+    /* ---- Layout ---- */
+    --max-width:        1100px;
+    --nav-height:       60px;
+}
+
+/* ============================================================
+ * CODER MODE — Dark Theme Override
+ * Aktiviert via data-mode="coder" auf <body>
+ * ============================================================ */
+[data-mode="coder"] {
+    --bg-primary:       #0D0D0D;
+    --bg-secondary:     #161616;
+    --bg-card:          #1A1A1A;
+    --text-primary:     #E8E2D8;
+    --text-secondary:   #A09888;
+    --text-muted:       #6B6358;
+    --accent:           #E8863A;
+    --accent-hover:     #F09848;
+    --accent-soft:      rgba(232, 134, 58, 0.12);
+    --accent-glow:      rgba(232, 134, 58, 0.2);
+    --border:           #2A2520;
+    --border-light:     #222018;
+    --shadow-sm:        0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md:        0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg:        0 8px 32px rgba(0, 0, 0, 0.5);
+}
