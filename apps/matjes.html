@@ -3,8 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matjes, der junge Hering — pelczer.de</title>
-    <meta name="description" content="Spielerisch lernen für die Kochausbildung">
+    <title>Matjes, der junge Hering — Koch-Ausbildung als Spiel | pelczer.de</title>
+    <meta name="description" content="Gamifizierte Lern-App für die Kochausbildung. 20 Level, 566 Fragen, 134 Produkte, IHK-Prüfungsvorbereitung — entwickelt von einem Küchenmeister mit 36 Jahren Erfahrung. Kostenlos für iOS.">
+    <meta name="keywords" content="Koch Ausbildung App, IHK Prüfung Koch, Kochausbildung Lernspiel, Azubi Koch, Warenkunde, Küchenfachkunde, Berufsschule Koch">
+    <meta property="og:title" content="Matjes — Deine Koch-Ausbildung wird zum Spiel">
+    <meta property="og:description" content="20 Level, 566 Fragen, Boss-Fight. Vom 1. Tag bis zur IHK-Prüfung. Kostenlos für iOS.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pelczer.de/apps/matjes.html">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -29,54 +34,202 @@
             <li><a href="/#contact">Kontakt</a></li>
         </ul>
     </div></nav>
+
+    <!-- Hero -->
     <section class="page-hero"><div class="container">
         <div class="breadcrumb"><a href="/">Startseite</a> / <a href="/#apps">Apps</a> / Matjes, der junge Hering</div>
         <div class="page-hero-inner">
-            <div class="page-hero-icon" style="background:linear-gradient(135deg, #1a4a7a, #2a6ab0);display:flex;align-items:center;justify-content:center;">
-                <span style="font-size:48px;">🐟</span>
+            <div class="page-hero-icon" style="overflow:hidden;">
+                <img src="../assets/images/matjes-icon.png" alt="Matjes App Icon">
             </div>
             <div>
                 <h1>Matjes, der junge Hering</h1>
                 <p class="hero-text" style="animation:none;opacity:1;">
-                    <span class="desc-human">Dein Lernbegleiter durch die Kochausbildung. Spielerisch lernen, IHK-Prüfung bestehen.</span>
-                    <span class="desc-coder">SwiftUI · SwiftData · Spaced Repetition · Gastri-Grid Entry Point</span>
+                    <span class="desc-human">Deine Koch-Ausbildung wird zum Spiel. 20 Level, Sterne, Boss-Fight — vom ersten Tag bis zur IHK-Prüfung. Entwickelt von einem Küchenmeister.</span>
+                    <span class="desc-coder">Gamifizierte Lern-App für Kochausbildung. SwiftUI · SwiftData · Spaced Repetition · Bloom-Taxonomie · Offline-First. Entry Point ins Gastri-Grid Ökosystem.</span>
                 </p>
-                <span class="badge badge-live">Im App Store</span>
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                    <span class="badge badge-live">Im App Store</span>
+                    <a href="https://apps.apple.com/app/matjes-der-junge-hering/id6744129507" class="app-store-btn">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                        Kostenlos laden
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div></section>
+
+    <!-- Zahlen-Block -->
+    <section class="bg-alt"><div class="container">
+        <div class="stats-grid fade-in">
+            <div class="stat-item">
+                <div class="stat-number">20</div>
+                <div class="stat-label">Level</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">566</div>
+                <div class="stat-label">Fragen</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">134</div>
+                <div class="stat-label">Produkte im Lexikon</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">2</div>
+                <div class="stat-label">Prüfungen</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">20</div>
+                <div class="stat-label">Garmethoden</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">20</div>
+                <div class="stat-label">Saucen</div>
             </div>
         </div>
     </div></section>
 
     <!-- Features -->
-    <section class="bg-alt"><div class="container">
+    <section><div class="container">
         <div class="section-header fade-in">
             <div class="section-label">Features</div>
             <h2 class="section-title">
-                <span class="desc-human">Was die App kann</span>
+                <span class="desc-human">Statt Karteikarten: ein Spiel.</span>
                 <span class="desc-coder">Feature Set</span>
             </h2>
+            <p class="section-subtitle">
+                <span class="desc-human">Matjes verwandelt trockene Theorie in ein Spiel mit Sternen, Prüfungen und einem Boss-Fight. Konzipiert nach der Bloom-Taxonomie für nachhaltiges Lernen.</span>
+                <span class="desc-coder">Gamification Layer über kuratiertem Fachcontent. Spaced Repetition + Bloom-Taxonomie. Zero Dependencies, Offline-First.</span>
+            </p>
         </div>
         <div class="feature-list">
             <div class="feature-item fade-in">
-                <div class="feature-icon">📚</div>
+                <div class="feature-icon">⭐</div>
                 <div>
-                    <h3><span class="desc-human">Küchenfachkunde lernen</span><span class="desc-coder">Content: Küchenfachkunde-Module</span></h3>
-                    <p><span class="desc-human">Alle wichtigen Themen der Kochausbildung — von Gartechniken über Warenkunde bis zur Hygiene.</span><span class="desc-coder">Modularer Content-Katalog: Gartechniken, Warenkunde, Hygiene/HACCP, Ernährungslehre, BWL.</span></p>
+                    <h3><span class="desc-human">Stern-System & Level</span><span class="desc-coder">Gamification: Stars + Levels</span></h3>
+                    <p><span class="desc-human">Jedes Level hat drei Sterne. Erst wenn du genug Sterne hast, wird das nächste Level freigeschaltet. Das motiviert, dran zu bleiben — ohne Druck.</span><span class="desc-coder">Star-Gate Progression System. 3 Sterne pro Level, Gate-Threshold für Unlock. Linearer + non-linearer Fortschritt kombiniert.</span></p>
                 </div>
             </div>
             <div class="feature-item fade-in">
-                <div class="feature-icon">🎮</div>
+                <div class="feature-icon">📚</div>
                 <div>
-                    <h3><span class="desc-human">Spielerisch statt stumpf</span><span class="desc-coder">Gamification + Spaced Repetition</span></h3>
-                    <p><span class="desc-human">Kein trockenes Pauken. Matjes macht Lernen zum Spiel — mit Fortschrittsanzeige und Wiederholungen zum richtigen Zeitpunkt.</span><span class="desc-coder">Spaced Repetition Algorithmus. Progress Tracking per SwiftData. Adaptive Wiederholungsintervalle.</span></p>
+                    <h3><span class="desc-human">Küchenfachkunde komplett</span><span class="desc-coder">Content: Vollständiger Fachkunde-Katalog</span></h3>
+                    <p><span class="desc-human">Alle wichtigen Themen der Kochausbildung — von Gartechniken über Warenkunde bis zur Hygiene. 566 Fragen, geschrieben von einem Koch mit 36 Jahren Erfahrung.</span><span class="desc-coder">566 kuratierte Fragen. Module: Gartechniken, Warenkunde, Hygiene/HACCP, Ernährungslehre, BWL, Saucenkunde. Kein User-Generated Content.</span></p>
+                </div>
+            </div>
+            <div class="feature-item fade-in">
+                <div class="feature-icon">🎯</div>
+                <div>
+                    <h3><span class="desc-human">IHK-Prüfungsvorbereitung</span><span class="desc-coder">IHK Exam Prep: ZP + AP</span></h3>
+                    <p><span class="desc-human">Zwei vollständige Prüfungssimulationen: die Zwischenprüfung (Commis-Prüfung) und die Abschlussprüfung. Genau wie in der echten IHK-Prüfung.</span><span class="desc-coder">Zwischenprüfung (nach Semester 2) und Abschlussprüfung (nach Semester 4). Prüfungsmodus mit Timer, Auswertung, Fehleranalyse.</span></p>
+                </div>
+            </div>
+            <div class="feature-item fade-in">
+                <div class="feature-icon">👾</div>
+                <div>
+                    <h3><span class="desc-human">Boss-Fight</span><span class="desc-coder">Boss-Fight: Endgame Challenge</span></h3>
+                    <p><span class="desc-human">Am Ende wartet der Boss-Fight — die ultimative Herausforderung aus allen Bereichen. Wer den Boss besiegt, ist bereit für die echte Prüfung.</span><span class="desc-coder">Aggregierter Challenge-Modus. Zufällige Fragen aus allen Kategorien, erhöhter Schwierigkeitsgrad. Endgame-Content nach Level 20.</span></p>
+                </div>
+            </div>
+            <div class="feature-item fade-in">
+                <div class="feature-icon">🔄</div>
+                <div>
+                    <h3><span class="desc-human">Spaced Repetition</span><span class="desc-coder">Spaced Repetition Engine</span></h3>
+                    <p><span class="desc-human">Falsch beantwortete Fragen kommen automatisch wieder — genau zum richtigen Zeitpunkt. So bleibt das Wissen langfristig im Kopf.</span><span class="desc-coder">Adaptiver Wiederholungsalgorithmus. Falsche Antworten werden priorisiert re-queued. SwiftData Persistence für Lernhistorie.</span></p>
                 </div>
             </div>
             <div class="feature-item fade-in">
                 <div class="feature-icon">📖</div>
                 <div>
-                    <h3><span class="desc-human">Begleitbuch inklusive</span><span class="desc-coder">Companion: "Der junge Hering"</span></h3>
-                    <p><span class="desc-human">Zum Vertiefen gibt es das Begleitbuch „Der junge Hering" — geschrieben von einem Koch mit 36 Jahren Erfahrung.</span><span class="desc-coder">Cross-Referencing zwischen App-Content und Buchkapiteln. Entry Point ins Gastri-Grid Ökosystem.</span></p>
+                    <h3><span class="desc-human">Komplettes Küchenlexikon</span><span class="desc-coder">Reference: Küchenlexikon</span></h3>
+                    <p><span class="desc-human">134 Produkte, 20 Garmethoden, 20 Saucen — jederzeit nachschlagen. Dein Nachschlagewerk in der Hosentasche.</span><span class="desc-coder">Offline-Datenbank: 134 Produkte, 20 Garmethoden, 20 Saucen. Volltextsuche, kategorisiert, verlinkt mit Quiz-Content.</span></p>
                 </div>
             </div>
+            <div class="feature-item fade-in">
+                <div class="feature-icon">🧠</div>
+                <div>
+                    <h3><span class="desc-human">Bloom-Taxonomie</span><span class="desc-coder">Bloom's Taxonomy Integration</span></h3>
+                    <p><span class="desc-human">Die Fragen sind nach der Bloom-Taxonomie strukturiert: vom Erinnern über Verstehen bis zum Anwenden. So lernst du nicht nur Fakten, sondern verstehst Zusammenhänge.</span><span class="desc-coder">Fragestruktur nach Bloom: Remember → Understand → Apply → Analyze. Progressive Difficulty innerhalb der Level.</span></p>
+                </div>
+            </div>
+            <div class="feature-item fade-in">
+                <div class="feature-icon">📴</div>
+                <div>
+                    <h3><span class="desc-human">Offline-fähig</span><span class="desc-coder">Offline-First Architecture</span></h3>
+                    <p><span class="desc-human">Kein WLAN in der Berufsschule? Kein Problem. Matjes funktioniert komplett offline — alle Inhalte sind in der App.</span><span class="desc-coder">Zero Network Dependency. Alle Inhalte lokal via SwiftData. Kein Backend, kein Account, kein Tracking. Privacy by Design.</span></p>
+                </div>
+            </div>
+        </div>
+    </div></section>
+
+    <!-- Semester-Übersicht -->
+    <section class="bg-alt"><div class="container">
+        <div class="section-header fade-in">
+            <div class="section-label">Aufbau</div>
+            <h2 class="section-title">
+                <span class="desc-human">4 Semester. 20 Level. Eine Ausbildung.</span>
+                <span class="desc-coder">Content Structure: 4 Semester</span>
+            </h2>
+            <p class="section-subtitle">
+                <span class="desc-human">Matjes begleitet dich durch die komplette dreijährige Kochausbildung — Semester für Semester, Level für Level.</span>
+                <span class="desc-coder">Linearer Fortschritt entlang der IHK-Ausbildungsordnung. Gate-Progression nach Semestern.</span>
+            </p>
+        </div>
+        <div class="semester-grid stagger">
+            <div class="semester-card fade-in">
+                <div class="semester-number">1. Semester</div>
+                <div class="semester-title">Grundlagen</div>
+                <p style="font-size:14px;color:var(--text-secondary);margin-bottom:8px;">Hygiene, erste Gartechniken, Grundprodukte, Arbeitsschutz</p>
+                <div class="semester-levels">Level 1 – 5</div>
+            </div>
+            <div class="semester-card fade-in">
+                <div class="semester-number">2. Semester</div>
+                <div class="semester-title">Warenkunde</div>
+                <p style="font-size:14px;color:var(--text-secondary);margin-bottom:8px;">Fleisch, Fisch, Gemüse, Milchprodukte, Ernährungslehre</p>
+                <div class="semester-levels">Level 6 – 10 + Commis-Prüfung</div>
+            </div>
+            <div class="semester-card fade-in">
+                <div class="semester-number">3. Semester</div>
+                <div class="semester-title">Vertiefung</div>
+                <p style="font-size:14px;color:var(--text-secondary);margin-bottom:8px;">Saucenkunde, Garmethoden, Menüplanung, BWL-Grundlagen</p>
+                <div class="semester-levels">Level 11 – 15</div>
+            </div>
+            <div class="semester-card fade-in">
+                <div class="semester-number">4. Semester</div>
+                <div class="semester-title">Prüfungsvorbereitung</div>
+                <p style="font-size:14px;color:var(--text-secondary);margin-bottom:8px;">Alle Themen wiederholen, Prüfungssimulation, Boss-Fight</p>
+                <div class="semester-levels">Level 16 – 20 + Abschlussprüfung</div>
+            </div>
+        </div>
+    </div></section>
+
+    <!-- Buch Cross-Sell -->
+    <section><div class="container">
+        <div class="cta-banner fade-in">
+            <div class="cta-banner-icon">📕</div>
+            <div class="cta-banner-content">
+                <h3>Das Begleitbuch: Der junge Hering</h3>
+                <p>
+                    <span class="desc-human">Zum Vertiefen gibt es das Begleitbuch — geschrieben vom gleichen Koch, der die App entwickelt hat. Alles, was du für die IHK-Prüfung brauchst, kompakt und verständlich.</span>
+                    <span class="desc-coder">Companion Book zur App. Cross-Referencing zwischen App-Modulen und Buchkapiteln. IHK-Prüfungsvorbereitung Koch/Köchin.</span>
+                </p>
+            </div>
+            <a href="../books/junger-hering.html" class="link-arrow">Zum Buch →</a>
+        </div>
+    </div></section>
+
+    <!-- Für Schulen Teaser -->
+    <section class="bg-alt"><div class="container">
+        <div class="cta-banner fade-in">
+            <div class="cta-banner-icon">🏫</div>
+            <div class="cta-banner-content">
+                <h3>Für Berufsschulen und Ausbilder</h3>
+                <p>
+                    <span class="desc-human">Du bist Ausbilder oder Berufsschullehrer? Matjes-Pro bringt das Lernspiel in dein Klassenzimmer — mit Klassenverwaltung, Fortschrittstracking und eigenen Fragenkatalogen.</span>
+                    <span class="desc-coder">B2B-Version: Matjes-Pro. Klassenverwaltung, Custom Question Sets, PDF-Reports, iCloud-Sync. Eigene App mit separater Lizenz.</span>
+                </p>
+            </div>
+            <a href="matjes-pro.html" class="link-arrow">Mehr erfahren →</a>
         </div>
     </div></section>
 
