@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a1019">
+    <title>WattSafe — Wattwander-Sicherheit | pelczer.de</title>
+    <meta name="description" content="Gezeitenberechnung, Safety-Check und Notfall-Briefing für Wattwanderungen an der Nordsee. Harmonische Simulation, Zeitfenster-Finder, Pflichtausrüstung nach NWattFVO. Kostenlos, kein Tracking.">
+    <meta name="keywords" content="Wattwandern, Gezeiten, Nordsee, Harlesiel, Wangerooge, Spiekeroog, Wattwanderung Sicherheit, Tide, Ebbe, Flut, Niedrigwasser">
+    <meta property="og:title" content="WattSafe — Wattwander-Sicherheit">
+    <meta property="og:description" content="Gezeitenberechnung und Safety-Check für Wattwanderungen. Harmonische Simulation, Zeitfenster, Notfall-Briefing.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pelczer.de/wattwandern/">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/variables.css">
+    <link rel="stylesheet" href="../assets/css/base.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+    <link rel="stylesheet" href="../assets/css/layout.css">
+    <link rel="stylesheet" href="../assets/css/pages.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+/* ═══════════════════════════════════════
+   WATTSAFE APP STYLES
+   Marineblau-Theme innerhalb pelczer.de Shell
+   ═══════════════════════════════════════ */
+.ws-app{--ws-bg:#0a1019;--ws-card:#0f1a28;--ws-border:rgba(255,255,255,0.06);--ws-accent:#3b9ed6;--ws-safe:#21c55d;--ws-caution:#f59e0b;--ws-danger:#f04444;--ws-hw:#f59e0b;--ws-nw:#5cb8e6;--ws-text:#e3ecf5;--ws-text2:#8fa5ba;--ws-text3:#667788;background:var(--ws-bg);color:var(--ws-text);border-radius:16px;overflow:hidden;border:1px solid var(--ws-border)}
+
+/* App Header */
+.ws-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--ws-border);background:rgba(10,16,25,0.95)}
+.ws-header h2{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;margin:0;color:var(--ws-text)}
+.ws-header .ws-dot{width:8px;height:8px;border-radius:50%;background:var(--ws-caution);flex-shrink:0}
+.ws-header .ws-sub{font-size:9px;color:var(--ws-text3);letter-spacing:1px;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+.ws-header-right{text-align:right;font-size:11px;color:var(--ws-text3);font-family:'JetBrains Mono',monospace}
+
+/* Tabs */
+.ws-tabs{display:flex;border-bottom:1px solid var(--ws-border);background:rgba(10,16,25,0.9);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ws-tab{flex:1;min-width:72px;padding:10px 6px;text-align:center;font-size:11px;font-weight:600;color:var(--ws-text3);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:'Source Sans 3',sans-serif}
+.ws-tab.active{color:var(--ws-accent);border-bottom-color:var(--ws-accent)}
+.ws-tab:hover{color:var(--ws-text2)}
+
+/* Cards */
+.ws-card{background:var(--ws-card);border-radius:12px;border:1px solid var(--ws-border);padding:14px;margin-bottom:12px}
+.ws-section-title{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--ws-text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;font-family:'Source Sans 3',sans-serif}
+.ws-section-title .ws-icon{color:var(--ws-accent)}
+
+/* Tab panels */
+.ws-panel{display:none;padding:16px}
+.ws-panel.active{display:block}
+
+/* Canvas */
+#tideCurveCanvas{width:100%;height:220px;border-radius:10px;border:1px solid var(--ws-border);background:rgba(0,0,0,.3)}
+
+/* Extreme tiles */
+.ws-extremes{display:flex;gap:8px;flex-wrap:wrap}
+.ws-ext{flex:1;min-width:100px;padding:10px;border-radius:8px;text-align:center}
+.ws-ext.hw{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2)}
+.ws-ext.nw{background:rgba(92,184,230,.08);border:1px solid rgba(92,184,230,.2)}
+.ws-ext .type{font-size:9px;font-weight:700;letter-spacing:.5px;font-family:'JetBrains Mono',monospace}
+.ws-ext .time{font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.ws-ext .height{font-size:10px;color:var(--ws-text3);font-family:'JetBrains Mono',monospace}
+
+/* Form */
+.ws-form-row{display:flex;gap:12px;margin-bottom:10px}
+.ws-fg{flex:1}
+.ws-fg label{display:block;font-size:9px;font-weight:600;color:var(--ws-text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.ws-fg select,.ws-fg input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--ws-border);background:rgba(255,255,255,.04);color:var(--ws-text);font-size:14px;font-family:'Source Sans 3',sans-serif}
+.ws-fg select:focus,.ws-fg input:focus{outline:none;border-color:var(--ws-accent)}
+
+/* Safe windows */
+.ws-window{display:flex;align-items:center;gap:10px;padding:12px;border-radius:8px;border:1px solid var(--ws-border);margin-bottom:6px;cursor:pointer;transition:all .2s}
+.ws-window:hover{border-color:var(--ws-accent)}
+.ws-window.selected{border-color:var(--ws-safe);background:rgba(33,197,93,.05)}
+.ws-window .quality{font-size:10px;font-weight:700}
+.ws-window .quality.optimal{color:var(--ws-safe)}
+.ws-window .quality.gut{color:var(--ws-accent)}
+.ws-window .quality.grenzwertig{color:var(--ws-caution)}
+.ws-window .times{font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.ws-window .meta{font-size:9px;color:var(--ws-text3)}
+
+/* Equipment */
+.ws-equip{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.ws-equip input[type="checkbox"]{width:20px;height:20px;accent-color:var(--ws-safe)}
+.ws-equip .name{font-size:12px}
+.ws-equip .ref{font-size:9px;color:var(--ws-text3);margin-left:auto}
+
+/* Buttons */
+.ws-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:10px;font-size:14px;font-weight:600;transition:all .2s;cursor:pointer;border:none;font-family:'Source Sans 3',sans-serif}
+.ws-btn-accent{background:rgba(59,158,214,.12);color:var(--ws-accent);border:1px solid rgba(59,158,214,.25)}
+.ws-btn-safe{background:rgba(33,197,93,.12);color:var(--ws-safe);border:1px solid rgba(33,197,93,.25)}
+.ws-btn-danger{background:var(--ws-danger);color:white;font-size:16px;font-weight:800;padding:18px}
+.ws-btn:hover{filter:brightness(1.15)}
+.ws-btn:active{transform:scale(.98)}
+.ws-btn:disabled{opacity:.4;pointer-events:none}
+
+/* Verdict */
+.ws-verdict{padding:16px;border-radius:12px;margin-bottom:12px}
+.ws-verdict.stable{background:rgba(33,197,93,.12);border:1px solid rgba(33,197,93,.3)}
+.ws-verdict.unstable{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3)}
+.ws-verdict.critical{background:rgba(240,68,68,.12);border:1px solid rgba(240,68,68,.3)}
+.ws-verdict .v-status{font-size:22px;font-weight:800;margin-bottom:4px}
+.ws-verdict .v-sub{font-size:11px;opacity:.8}
+.ws-verdict .v-check{display:flex;align-items:center;gap:8px;font-size:12px;margin-top:6px}
+.ws-verdict .v-detail{font-size:11px;margin-top:10px;line-height:1.6}
+
+/* Map */
+#wsMap{width:100%;height:350px;border-radius:10px;border:1px solid var(--ws-border)}
+.ws-map-fullscreen #wsMap{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:1000;border-radius:0}
+.ws-map-close{display:none;position:fixed;top:16px;left:16px;z-index:1001;padding:8px 16px;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);color:white;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none}
+.ws-map-fullscreen .ws-map-close{display:block}
+.ws-map-expand{position:absolute;top:10px;right:10px;z-index:500;padding:6px 10px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);color:white;border-radius:6px;font-size:11px;cursor:pointer;border:none}
+
+/* SafetyNet */
+.ws-timer-big{font-size:48px;font-weight:800;font-family:'JetBrains Mono',monospace;text-align:center}
+.ws-timer-label{font-size:11px;color:var(--ws-text3);text-align:center}
+.ws-contact{display:flex;align-items:center;gap:10px;padding:8px 0}
+.ws-contact .c-name{font-size:12px;font-weight:500}
+.ws-contact .c-phone{font-size:10px;color:var(--ws-text3)}
+.ws-contact .c-call{margin-left:auto;color:var(--ws-safe);text-decoration:none;font-size:18px}
+
+/* Terminal */
+.ws-terminal{background:rgba(0,0,0,.4);border:1px solid rgba(0,255,255,.1);border-radius:8px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:10px}
+.ws-term-line{color:rgba(0,255,0,.7);line-height:1.6}
+.ws-term-key{color:rgba(0,255,255,.6);display:inline-block;width:70px;text-align:right;margin-right:8px}
+
+/* Disclaimer */
+.ws-disclaimer{font-size:9px;color:rgba(240,68,68,.6);padding:10px;border-radius:8px;background:rgba(240,68,68,.04);border:1px solid rgba(240,68,68,.1);line-height:1.5}
+
+/* Slider */
+.ws-app input[type="range"]{width:100%;accent-color:var(--ws-accent)}
+
+/* Responsive */
+@media(max-width:500px){.ws-form-row{flex-direction:column;gap:8px}.ws-extremes{flex-direction:column}#tideCurveCanvas{height:180px}}
+</style>
+</head>
+<body data-mode="human">
+    <!-- pelczer.de Mode Toggle -->
+    <div class="mode-toggle-wrap">
+        <button class="mode-toggle" id="modeToggle" aria-label="Ansicht wechseln"></button>
+        <span class="mode-label" id="modeLabel">Mensch</span>
+    </div>
+
+    <!-- pelczer.de Navigation -->
+    <nav class="nav"><div class="nav-inner">
+        <a href="/" class="nav-brand">Andreas Pelczer</a>
+        <button class="nav-menu-btn" id="navMenuBtn" aria-label="Menü"><svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="/#apps">Apps</a></li>
+            <li><a href="/#books">Bücher</a></li>
+            <li><a href="/#about">Über mich</a></li>
+            <li><a href="/#contact">Kontakt</a></li>
+        </ul>
+    </div></nav>
+
+    <!-- Hero -->
+    <section class="page-hero"><div class="container">
+        <div class="breadcrumb"><a href="/">Startseite</a> / <a href="/#apps">Apps</a> / WattSafe</div>
+        <div class="page-hero-inner">
+            <div class="page-hero-icon" style="background:linear-gradient(135deg, #0a3d6b, #3b9ed6);display:flex;align-items:center;justify-content:center;">
+                <span style="font-size:48px;">🌊</span>
+            </div>
+            <div>
+                <h1>WattSafe</h1>
+                <p class="hero-text" style="animation:none;opacity:1;">
+                    <span class="desc-human">Sicher durchs Watt. Gezeitenberechnung, Zeitfenster-Finder und Notfall-Briefing — für Wattwanderer an der ostfriesischen Küste. Funktioniert ohne App Store, ohne Account, ohne Tracking.</span>
+                    <span class="desc-coder">Harmonische Gezeitensimulation (9 Konstituenten, Nodalfaktoren). jokefactor Safety-Check v3 (richtungsabhängig). Leaflet + OpenSeaMap. PWA-ready. Zero Dependencies.</span>
+                </p>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span class="badge badge-live">Web-App</span>
+                    <span class="badge" style="background:rgba(59,158,214,0.1);color:#3b9ed6;border:1px solid rgba(59,158,214,0.2);">
+                        <span class="desc-human">Kostenlos · Kein Tracking</span>
+                        <span class="desc-coder">Zero Analytics · Offline-Capable</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div></section>
+
+    <!-- WattSafe App -->
+    <section><div class="container">
+        <div class="ws-app" id="wsApp">
+
+            <div class="ws-header">
+                <div>
+                    <h2><span class="ws-dot"></span> WattSafe</h2>
+                    <div class="ws-sub" id="sourceLabel">● Gezeitensimulation</div>
+                </div>
+                <div class="ws-header-right">
+                    <div id="dateDisplay"></div>
+                    <div id="moonDisplay"></div>
+                </div>
+            </div>
+
+            <div class="ws-tabs">
+                <button class="ws-tab active" data-tab="tides">🌊 Gezeiten</button>
+                <button class="ws-tab" data-tab="planning">🗺️ Planung</button>
+                <button class="ws-tab" data-tab="safetynet">🛡️ SafetyNet</button>
+                <button class="ws-tab" data-tab="imops">⌨️ iMOPS</button>
+            </div>
+
+            <!-- GEZEITEN -->
+            <div class="ws-panel active" id="panel-tides">
+                <div class="ws-card">
+                    <div class="ws-section-title"><span class="ws-icon">🌊</span> Tidekurve — <span id="stationName">Harlesiel</span></div>
+                    <canvas id="tideCurveCanvas"></canvas>
+                </div>
+                <div class="ws-card">
+                    <div class="ws-section-title"><span class="ws-icon">📊</span> Hoch- & Niedrigwasser</div>
+                    <div class="ws-extremes" id="extremesRow"></div>
+                </div>
+                <div class="ws-card">
+                    <div class="ws-section-title"><span class="ws-icon">🌙</span> Astronomie</div>
+                    <div id="astroInfo" style="font-size:12px;line-height:1.8;"></div>
+                </div>
+            </div>
+
+            <!-- PLANUNG -->
+            <div class="ws-panel" id="panel-planning">
+                <div class="ws-card" style="position:relative;">
+                    <div class="ws-section-title"><span class="ws-icon">🗺️</span> Seekarte</div>
+                    <div id="wsMap"></div>
+                    <button class="ws-map-expand" onclick="toggleMapFS()">⤢ Vollbild</button>
+                </div>
+                <button class="ws-map-close" onclick="toggleMapFS()">⤡ Zurück</button>
+
+                <div class="ws-card">
+                    <div class="ws-section-title"><span class="ws-icon">🚶</span> Wanderplanung</div>
+                    <div class="ws-form-row">
+                        <div class="ws-fg"><label>Von</label>
+                            <select id="planVon" onchange="updateRoute()"><option>Harlesiel</option><option>Carolinensiel</option><option>Neuharlingersiel</option></select>
+                        </div>
+                        <div class="ws-fg"><label>Nach</label>
+                            <select id="planNach" onchange="updateRoute()"><option>Wangerooge</option><option>Spiekeroog</option></select>
+                        </div>
+                    </div>
+                    <div class="ws-form-row">
+                        <div class="ws-fg"><label>Datum</label><input type="date" id="planDate" onchange="onDateChange()"></div>
+                        <div class="ws-fg"><label>Teilnehmer</label><input type="number" id="planCount" value="1" min="1" max="50"></div>
+                    </div>
+                </div>
+
+                <button class="ws-btn ws-btn-accent" onclick="findWindows()" style="margin-bottom:12px;">⏱️ Wann kann ich los?</button>
+                <div id="windowsContainer"></div>
+
+                <div class="ws-card">
+                    <div class="ws-section-title"><span class="ws-icon">🎒</span> Pflichtausrüstung <span id="equipCount" style="margin-left:auto;color:var(--ws-safe);font-family:'JetBrains Mono',monospace">0/10</span></div>
+                    <div id="equipList"></div>
+                </div>
+
+                <button class="ws-btn ws-btn-safe" onclick="runSafetyCheck()" id="checkBtn" disabled style="margin-bottom:12px;">🛡️ Gesamtprüfung starten</button>
+                <div id="verdictContainer"></div>
+                <div class="ws-disclaimer">⚠️ SIMULATION — Nicht für Navigation. Offizielle Daten: BSH Gezeitentafeln. Seenotrettung: 124 116</div>
+            </div>
+
+            <!-- SAFETYNET -->
+            <div class="ws-panel" id="panel-safetynet">
+                <div class="ws-card">
+                    <div class="ws-section-title"><span class="ws-icon">📞</span> Notfall-Kontakte</div>
+                    <div class="ws-contact"><span>🚢</span><div><div class="c-name">Seenotrettung (DGzRS)</div><div class="c-phone">124 116</div></div><a href="tel:124116" class="c-call">📞</a></div>
+                    <div class="ws-contact"><span>🚑</span><div><div class="c-name">Notruf</div><div class="c-phone">112</div></div><a href="tel:112" class="c-call">📞</a></div>
+                </div>
+                <div class="ws-card">
+                    <div class="ws-section-title"><span class="ws-icon">📄</span> Notfall-Briefing</div>
+                    <p style="font-size:10px;color:var(--ws-text3);margin-bottom:10px;line-height:1.5;">Sendet alle Planungsdaten an deinen Notfall-Kontakt.</p>
+                    <button class="ws-btn ws-btn-accent" onclick="shareBriefing()">📤 Briefing erstellen & teilen</button>
+                </div>
+                <div class="ws-card">
+                    <div class="ws-section-title"><span class="ws-icon">⏱️</span> Deadman-Timer <span id="timerBadge" style="margin-left:auto;"></span></div>
+                    <div id="timerContent">
+                        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;"><span>Rückkehr in:</span><span id="returnTimeLabel" style="font-weight:700;font-family:'JetBrains Mono',monospace">180 Min.</span></div>
+                        <input type="range" id="returnSlider" min="60" max="360" step="15" value="180" oninput="updateReturnLabel()">
+                        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--ws-text3);"><span>1h</span><span>6h</span></div>
+                        <button class="ws-btn ws-btn-safe" onclick="startTimer()" style="margin-top:10px;">🚶 Timer aktivieren</button>
+                    </div>
+                    <div id="timerActive" style="display:none;text-align:center;">
+                        <div class="ws-timer-big" id="timerCountdown" style="color:var(--ws-safe);">180</div>
+                        <div class="ws-timer-label">Minuten bis Rückkehr</div>
+                        <div style="display:flex;gap:8px;margin-top:12px;">
+                            <button class="ws-btn ws-btn-accent" onclick="extendTimer()" style="flex:1;padding:10px;font-size:12px;">+30 Min.</button>
+                            <button class="ws-btn ws-btn-safe" onclick="endWalk()" style="flex:1;padding:10px;font-size:12px;">✅ Zurück</button>
+                            <button class="ws-btn" style="flex:1;padding:10px;font-size:12px;background:rgba(255,255,255,.05);color:var(--ws-text3);border:1px solid var(--ws-border);" onclick="stopTimer()">⏹</button>
+                        </div>
+                    </div>
+                </div>
+                <button class="ws-btn ws-btn-danger" onclick="triggerSOS()">🆘 SOS — NOTFALL</button>
+                <p style="font-size:9px;color:var(--ws-text3);text-align:center;margin-top:6px;">Seenotrettung: 124 116 · Notruf: 112</p>
+            </div>
+
+            <!-- iMOPS -->
+            <div class="ws-panel" id="panel-imops">
+                <div class="ws-card">
+                    <div style="font-family:'JetBrains Mono',monospace;color:cyan;font-size:14px;font-weight:700;">iMOPS KERNEL MONITOR</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:gray;">PelczerMatrix v2 | jokefactor v3 | TideEngine</div>
+                </div>
+                <div class="ws-terminal" id="kernelStatus"></div>
+                <div class="ws-terminal" style="margin-top:12px;" id="kernelLog"></div>
+            </div>
+
+        </div><!-- /ws-app -->
+    </div></section>
+
+    <!-- Features (pelczer.de style) -->
+    <section class="bg-alt"><div class="container">
+        <div class="section-header fade-in">
+            <div class="section-label">Features</div>
+            <h2 class="section-title">
+                <span class="desc-human">Was WattSafe kann</span>
+                <span class="desc-coder">Feature Set</span>
+            </h2>
+        </div>
+        <div class="feature-list">
+            <div class="feature-item fade-in">
+                <div class="feature-icon">🌊</div>
+                <div>
+                    <h3><span class="desc-human">Gezeitenberechnung</span><span class="desc-coder">Harmonische Analyse (9 Konstituenten)</span></h3>
+                    <p><span class="desc-human">Hoch- und Niedrigwasser für alle Stationen an der ostfriesischen Küste. Tidekurve, Mondphase, Spring-/Nipptide-Erkennung.</span><span class="desc-coder">TideEngine: 9 harmonische Konstituenten (M2, S2, N2, K2, K1, O1, M4, MS4, M6) mit Nodalfaktoren und Gleichgewichtsargumenten. 48h-Vorhersage.</span></p>
+                </div>
+            </div>
+            <div class="feature-item fade-in">
+                <div class="feature-icon">🛡️</div>
+                <div>
+                    <h3><span class="desc-human">Safety-Check</span><span class="desc-coder">jokefactor v3 (richtungsabhängig)</span></h3>
+                    <p><span class="desc-human">Automatische Sicherheitsprüfung: Zeitfenster, Ausrüstung, Gezeiten — ein Button, ein Ergebnis. Unterscheidet zwischen Ebbe (sicher) und Flut (gefährlich).</span><span class="desc-coder">Richtungsabhängiger Safety-Check: VOR NW (Ebbe) vs. NACH NW (Flut) mit unterschiedlichen Schwellenwerten. Springtide-Korrektur. NWattFVO-Konformität.</span></p>
+                </div>
+            </div>
+            <div class="feature-item fade-in">
+                <div class="feature-icon">📄</div>
+                <div>
+                    <h3><span class="desc-human">Notfall-Briefing</span><span class="desc-coder">SafetyNet Module</span></h3>
+                    <p><span class="desc-human">Generiert ein Klartext-Briefing für deine Kontaktperson: Route, Zeiten, was zu tun ist wenn du überfällig bist. Teilen per WhatsApp, SMS oder Mail.</span><span class="desc-coder">Laien-optimiertes Briefing mit Handlungsanweisungen. Share-API-Integration. Deadman-Timer mit Countdown.</span></p>
+                </div>
+            </div>
+            <div class="feature-item fade-in">
+                <div class="feature-icon">🗺️</div>
+                <div>
+                    <h3><span class="desc-human">Seekarte mit Seezeichen</span><span class="desc-coder">Leaflet + OpenSeaMap Overlay</span></h3>
+                    <p><span class="desc-human">Interaktive Karte mit Routenplanung, Häfen, Inseln und Seezeichen. Vollbild-Modus für unterwegs.</span><span class="desc-coder">Leaflet.js mit OSM-Basislayer + OpenSeaMap-Seamark-Overlay. CircleMarker für Stationen, Polyline für Routen.</span></p>
+                </div>
+            </div>
+        </div>
+    </div></section>
+
+    <!-- iOS App Teaser -->
+    <section><div class="container">
+        <div class="cta-banner fade-in">
+            <div class="cta-banner-icon">📱</div>
+            <div class="cta-banner-content">
+                <h3>
+                    <span class="desc-human">WattSafe als iOS-App</span>
+                    <span class="desc-coder">Native iOS (Swift/SwiftUI)</span>
+                </h3>
+                <p>
+                    <span class="desc-human">WattSafe gibt es auch als native iOS-App mit PEGELONLINE-Anbindung, GPS-Tracking, Session-Archivierung und Push-Benachrichtigungen. Bald im App Store.</span>
+                    <span class="desc-coder">Swift · SwiftUI · MapKit · CoreLocation · PEGELONLINE WSV REST-API · TideDataService (Dual-Source). SafetyNet mit GPS-Audit-Trail. TestFlight verfügbar.</span>
+                </p>
+            </div>
+            <a href="/#apps" class="link-arrow">Alle Apps →</a>
+        </div>
+    </div></section>
+
+    <!-- Legal Links -->
+    <section class="bg-alt"><div class="container" style="text-align:center;">
+        <div class="link-row" style="justify-content:center;">
+            <a href="../legal/datenschutz.html" class="link-arrow">Datenschutzerklärung →</a>
+            <a href="../legal/impressum.html" class="link-arrow">Impressum →</a>
+        </div>
+    </div></section>
+
+    <!-- Footer -->
+    <footer class="footer"><div class="container">
+        <div class="footer-brand">B.I.N.D.A. Verlag</div>
+        <p class="footer-sub">Andreas Pelczer · Frankfurt am Main / Wertheim</p>
+        <div class="footer-legal">
+            <a href="../legal/impressum.html">Impressum</a> · <a href="../legal/datenschutz.html">Datenschutz</a>
+            <br><br>&copy; 2026 B.I.N.D.A. Verlag
+        </div>
+    </div></footer>
+
+    <script src="../assets/js/main.js"></script>
+<script>
+// ═══════════════════════════════════════
+// WATTSAFE WEB ENGINE
+// Portiert von Swift/iOS – TideEngine + jokefactor v3
+// ═══════════════════════════════════════
+
+const STATIONS={Harlesiel:{id:'harlesiel',name:'Harlesiel',lat:53.7067,lon:7.8083,z0:1.45,constituents:[{id:'M2',amp:1.28,phase:135,speed:28.9841042},{id:'S2',amp:0.32,phase:178,speed:30},{id:'N2',amp:0.24,phase:118,speed:28.4397295},{id:'K2',amp:0.09,phase:175,speed:30.0821373},{id:'K1',amp:0.08,phase:340,speed:15.0410686},{id:'O1',amp:0.06,phase:310,speed:13.9430356},{id:'M4',amp:0.18,phase:290,speed:57.9682084},{id:'MS4',amp:0.08,phase:320,speed:58.9841042},{id:'M6',amp:0.06,phase:45,speed:86.9523126}]},Carolinensiel:{id:'carolinensiel',name:'Carolinensiel',lat:53.6939,lon:7.8006,z0:1.42,constituents:null},Neuharlingersiel:{id:'neuharlingersiel',name:'Neuharlingersiel',lat:53.7031,lon:7.7013,z0:1.40,constituents:null}};
+['Carolinensiel','Neuharlingersiel'].forEach(n=>{const s=STATIONS[n];const f=n==='Carolinensiel'?{a:.92,p:8}:{a:.96,p:-6};s.constituents=STATIONS.Harlesiel.constituents.map(c=>({...c,amp:c.amp*f.a,phase:c.phase+f.p}));});
+const DEST={Wangerooge:{lat:53.7897,lon:7.8951},Spiekeroog:{lat:53.7694,lon:7.6843}};
+const EQUIP=[{name:'Notsignalmittel',ref:'§5 Abs.3'},{name:'Marschkompass',ref:'§5 Abs.3'},{name:'Uhr',ref:'§5 Abs.3'},{name:'Fernglas',ref:'§5 Abs.3'},{name:'Trillerpfeife',ref:'§5 Abs.3'},{name:'Verbandsmaterial',ref:'§5 Abs.3'},{name:'Rettungsleine (30m)',ref:'§5 Abs.3'},{name:'Rettungsdecke',ref:'§5 Abs.3'},{name:'Funkgerät/Telefon',ref:'§5 Abs.3'},{name:'Seekartenausschnitt',ref:'§5 Abs.3'}];
+
+// Astronomie
+function jd(d){const u=new Date(d.getTime()+d.getTimezoneOffset()*6e4);let y=u.getFullYear(),m=u.getMonth()+1;const dy=u.getDate(),h=u.getHours()+u.getMinutes()/60+u.getSeconds()/3600;if(m<=2){y--;m+=12;}const A=Math.floor(y/100),B=2-A+Math.floor(A/4);return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+dy+h/24+B-1524.5;}
+function jc(j){return(j-2451545)/36525;}
+function mml(T){return(218.3165+481267.8813*T)%360;}
+function msl(T){return(280.4661+36000.7698*T)%360;}
+function mmp(T){return(83.3533+4069.0137*T)%360;}
+function lnl(T){return(125.0445-1934.1363*T)%360;}
+function mp(d){const J=jd(d),T=jc(J);return(((mml(T)-msl(T))%360+360)%360)/360;}
+function mi(d){return .5*(1-Math.cos(mp(d)*2*Math.PI));}
+function mpn(d){const p=mp(d);if(p<.03||p>.97)return'Neumond 🌑';if(p<.22)return'Zunehmend 🌒';if(p<.28)return'Erstes Viertel 🌓';if(p<.47)return'Zunehmend 🌔';if(p<.53)return'Vollmond 🌕';if(p<.72)return'Abnehmend 🌖';if(p<.78)return'Letztes Viertel 🌗';return'Abnehmend 🌘';}
+function isSpr(d){const p=mp(d);return p<.08||p>.92||(p>.42&&p<.58);}
+
+// Nodalfaktoren + Gleichgewichtsargumente
+function nod(d){const J=jd(d),T=jc(J),N=lnl(T)*Math.PI/180;return{M2:{f:1-.037*Math.cos(N),u:-2.1*Math.sin(N)},S2:{f:1,u:0},N2:{f:1-.037*Math.cos(N),u:-2.1*Math.sin(N)},K2:{f:1.024+.286*Math.cos(N),u:-17.7*Math.sin(N)},K1:{f:1.006+.115*Math.cos(N),u:-8.9*Math.sin(N)},O1:{f:1.009+.187*Math.cos(N),u:10.8*Math.sin(N)},M4:{f:Math.pow(1-.037*Math.cos(N),2),u:-4.2*Math.sin(N)},MS4:{f:1-.037*Math.cos(N),u:-2.1*Math.sin(N)},M6:{f:Math.pow(1-.037*Math.cos(N),3),u:-6.3*Math.sin(N)}};}
+function eqa(ep){const J=jd(ep),T=jc(J),s=mml(T),h=msl(T),p=mmp(T);return{M2:(2*h-2*s)%360,S2:0,N2:(2*h-3*s+p)%360,K2:(2*h)%360,K1:(h+90)%360,O1:(h-2*s-90)%360,M4:(4*h-4*s)%360,MS4:(2*h-2*s)%360,M6:(6*h-6*s)%360};}
+
+// TideEngine
+function wl(st,d){const y=d.getFullYear(),ep=new Date(Date.UTC(y,0,1)),hrs=(d.getTime()-ep.getTime())/36e5,n=nod(d),V=eqa(ep);let h=st.z0;for(const c of st.constituents){const f=(n[c.id]||{f:1}).f,u=(n[c.id]||{u:0}).u,v=V[c.id]||0;h+=f*c.amp*Math.cos((c.speed*hrs+v+u-c.phase)*Math.PI/180);}return h;}
+function tc(st,s,hrs,iv=10){const pts=[];for(let m=0;m<=hrs*60;m+=iv)pts.push({date:new Date(s.getTime()+m*6e4),height:wl(st,new Date(s.getTime()+m*6e4))});return pts;}
+function fe(st,s,hrs,r=3){const ex=[],step=r*6e4,tot=hrs*36e5;let prev=wl(st,s),ps=0;for(let t=step;t<=tot;t+=step){const d=new Date(s.getTime()+t),h=wl(st,d),sl=h-prev;if(ps>0&&sl<=0){const ed=new Date(s.getTime()+t-step/2);ex.push({date:ed,height:wl(st,ed),type:'HW'});}else if(ps<0&&sl>=0){const ed=new Date(s.getTime()+t-step/2);ex.push({date:ed,height:wl(st,ed),type:'NW'});}prev=h;ps=sl;}return ex.sort((a,b)=>a.date-b.date);}
+function nlt(st,d){const s=new Date(d.getTime()-864e5);return fe(st,s,48).filter(e=>e.type==='NW').sort((a,b)=>Math.abs(a.date-d)-Math.abs(b.date-d))[0];}
+function tr(st,d){const s=new Date(d.getTime()-864e5),ex=fe(st,s,48),hw=ex.filter(e=>e.type==='HW').sort((a,b)=>Math.abs(a.date-d)-Math.abs(b.date-d))[0],nw=ex.filter(e=>e.type==='NW').sort((a,b)=>Math.abs(a.date-d)-Math.abs(b.date-d))[0];return hw&&nw?hw.height-nw.height:2.5;}
+
+// Safe Windows
+function fsw(st,d,isle){const cal=new Date(d);cal.setHours(0,0,0,0);const ex=fe(st,cal,26,3),sp=isSpr(d),w=[];for(const nw of ex.filter(e=>e.type==='NW')){const h=nw.date.getHours();if(h<7||h>18)continue;const rng=tr(st,nw.date),so=sp?30:0;const os=new Date(nw.date.getTime()-(180-so)*6e4),oe=new Date(nw.date.getTime()-(90+so)*6e4);if(os.getHours()>=7)w.push({start:os,end:oe,quality:'OPTIMAL',nw,range:rng,spring:sp});const gs=new Date(nw.date.getTime()-(90+so)*6e4),ge=new Date(nw.date.getTime()-30*6e4);if(gs.getHours()>=7)w.push({start:gs,end:ge,quality:'GUT',nw,range:rng,spring:sp});if(!sp){const grs=new Date(nw.date.getTime()-210*6e4),gre=new Date(nw.date.getTime()-180*6e4);if(grs.getHours()>=7)w.push({start:grs,end:gre,quality:'GRENZWERTIG',nw,range:rng,spring:sp});}}return w.sort((a,b)=>a.start-b.start);}
+
+// Safety Check v3 (richtungsabhängig)
+function chk(st,pd,cnt,nach){const nw=nlt(st,pd);if(!nw)return{status:'UNSTABLE',message:'Kein NW berechenbar',detail:''};const raw=(pd-nw.date)/6e4,abs=Math.abs(raw),bef=raw<0,sp=isSpr(pd),rng=tr(st,pd);let status,msg;if(bef){if(abs<=180&&!sp){status='STABLE';msg=`✅ Gutes Zeitfenster! Start ${Math.round(abs)} Min. vor NW (${fmt(nw.date)}) bei ablaufendem Wasser.`;}else if(abs<=180&&sp){status='UNSTABLE';msg=`⚠️ SPRINGTIDE! Start ${Math.round(abs)} Min. vor NW. Tidenhub ${rng.toFixed(1)}m.`;}else if(abs<=210&&!sp){status='UNSTABLE';msg=`⚠️ Sehr früher Start (${Math.round(abs)} Min. vor NW). Nur für erfahrene Wattführer!`;}else{status='CRITICAL';msg=`🛑 Zu früher Start! ${Math.round(abs)} Min. vor NW.`;}}else{if(abs<=30){status=sp?'UNSTABLE':'STABLE';msg=sp?`⚠️ Start ${Math.round(abs)} Min. nach NW bei SPRINGTIDE.`:`✅ Start ${Math.round(abs)} Min. nach NW.`;}else if(abs<=60&&!sp){status='UNSTABLE';msg=`⚠️ Flut läuft seit ${Math.round(abs)} Min.!`;}else{status='CRITICAL';msg=`🛑 LEBENSGEFAHR! ${Math.round(abs)} Min. nach NW!`;}}const detail=`NW ${st.name}: ${fmt(nw.date)} (${nw.height.toFixed(2)}m)\nDiff: ${Math.round(abs)} Min. ${bef?'vor':'nach'} NW | Hub: ${rng.toFixed(1)}m\n${mpn(pd)}${sp?' [SPRING]':''}`;return{status,message:msg,detail};}
+
+// Globals
+let curSt=STATIONS.Harlesiel,curDate=new Date(),safeW=[],selW=null,eqChk=new Array(10).fill(false),tmrI=null,tmrEnd=null,lMap=null,rLine=null;const logs=[];
+function fmt(d){return d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});}
+function fmtD(d){return d.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'long',year:'numeric'});}
+
+window.addEventListener('DOMContentLoaded',()=>{document.getElementById('planDate').value=curDate.toISOString().split('T')[0];initTabs();initEquip();refresh();initMap();addLog('iMOPS Kernel online.');addLog('jokefactor v3 bereit.');});
+
+function initTabs(){document.querySelectorAll('.ws-tab').forEach(t=>{t.addEventListener('click',()=>{document.querySelectorAll('.ws-tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.ws-panel').forEach(x=>x.classList.remove('active'));t.classList.add('active');document.getElementById('panel-'+t.dataset.tab).classList.add('active');if(t.dataset.tab==='tides')drawCurve();if(t.dataset.tab==='imops')updateKernel();if(t.dataset.tab==='planning'&&lMap)setTimeout(()=>lMap.invalidateSize(),100);});});}
+
+function onDateChange(){curDate=new Date(document.getElementById('planDate').value+'T12:00:00');safeW=[];selW=null;document.getElementById('windowsContainer').innerHTML='';document.getElementById('verdictContainer').innerHTML='';refresh();}
+
+function refresh(){document.getElementById('dateDisplay').textContent=fmtD(curDate);document.getElementById('moonDisplay').textContent=mpn(curDate);document.getElementById('stationName').textContent=curSt.name;document.getElementById('astroInfo').innerHTML=`${mpn(curDate)}<br>Beleuchtung: ${(mi(curDate)*100).toFixed(0)}%<br>${isSpr(curDate)?'⚠️ <strong style="color:var(--ws-caution)">SPRINGTIDE</strong>':'Normaltide'}`;renderEx();drawCurve();}
+
+function drawCurve(){const cv=document.getElementById('tideCurveCanvas');if(!cv.offsetWidth)return;const dp=window.devicePixelRatio||1;cv.width=cv.offsetWidth*dp;cv.height=cv.offsetHeight*dp;const ctx=cv.getContext('2d');ctx.scale(dp,dp);const W=cv.offsetWidth,H=cv.offsetHeight;ctx.clearRect(0,0,W,H);const s=new Date(curDate);s.setHours(0,0,0,0);const pts=tc(curSt,s,24,10),mn=Math.min(...pts.map(p=>p.height))-.2,mx=Math.max(...pts.map(p=>p.height))+.2,pd={t:20,b:30,l:40,r:20},cw=W-pd.l-pd.r,ch=H-pd.t-pd.b;const x=i=>(i/(pts.length-1))*cw+pd.l,y=h=>pd.t+ch-(h-mn)/(mx-mn)*ch;
+ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;for(let h=Math.ceil(mn*2)/2;h<=mx;h+=.5){ctx.beginPath();ctx.moveTo(pd.l,y(h));ctx.lineTo(W-pd.r,y(h));ctx.stroke();ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='9px JetBrains Mono';ctx.fillText(h.toFixed(1)+'m',4,y(h)+3);}
+for(let hr=0;hr<=24;hr+=3){const px=pd.l+(hr/24)*cw;ctx.beginPath();ctx.moveTo(px,pd.t);ctx.lineTo(px,H-pd.b);ctx.stroke();ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='9px JetBrains Mono';ctx.fillText(`${hr.toString().padStart(2,'0')}:00`,px-15,H-pd.b+14);}
+ctx.beginPath();ctx.strokeStyle='#3b9ed6';ctx.lineWidth=2;pts.forEach((p,i)=>{i===0?ctx.moveTo(x(i),y(p.height)):ctx.lineTo(x(i),y(p.height));});ctx.stroke();
+ctx.beginPath();pts.forEach((p,i)=>{i===0?ctx.moveTo(x(i),y(p.height)):ctx.lineTo(x(i),y(p.height));});ctx.lineTo(x(pts.length-1),H-pd.b);ctx.lineTo(pd.l,H-pd.b);ctx.closePath();const gr=ctx.createLinearGradient(0,pd.t,0,H-pd.b);gr.addColorStop(0,'rgba(59,158,214,0.15)');gr.addColorStop(1,'rgba(59,158,214,0)');ctx.fillStyle=gr;ctx.fill();
+const now=new Date();if(now.toDateString()===curDate.toDateString()){const nm=(now.getHours()*60+now.getMinutes())/1440,nx=pd.l+nm*cw;ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(nx,pd.t);ctx.lineTo(nx,H-pd.b);ctx.stroke();ctx.setLineDash([]);}
+fe(curSt,s,24).forEach(e=>{const em=(e.date.getHours()*60+e.date.getMinutes())/1440,ex=pd.l+em*cw,ey=y(e.height);ctx.fillStyle=e.type==='HW'?'#f59e0b':'#5cb8e6';ctx.beginPath();ctx.arc(ex,ey,4,0,Math.PI*2);ctx.fill();ctx.font='bold 9px JetBrains Mono';ctx.fillText(e.type+' '+fmt(e.date),ex-20,ey-10);});}
+
+function renderEx(){const s=new Date(curDate);s.setHours(0,0,0,0);document.getElementById('extremesRow').innerHTML=fe(curSt,s,24).map(e=>`<div class="ws-ext ${e.type.toLowerCase()}"><div class="type" style="color:${e.type==='HW'?'var(--ws-hw)':'var(--ws-nw)'}">${e.type==='HW'?'HOCHWASSER':'NIEDRIGWASSER'}</div><div class="time">${fmt(e.date)}</div><div class="height">${e.height.toFixed(2)} m</div></div>`).join('');}
+
+function getSt(){return STATIONS[document.getElementById('planVon').value]||STATIONS.Harlesiel;}
+
+function findWindows(){curSt=getSt();curDate=new Date(document.getElementById('planDate').value+'T12:00:00');const nach=document.getElementById('planNach').value;safeW=fsw(curSt,curDate,['Wangerooge','Spiekeroog'].includes(nach));selW=null;refresh();addLog(`Zeitfenster: ${safeW.length} für ${curSt.name}`);
+const c=document.getElementById('windowsContainer');if(!safeW.length){c.innerHTML='<div class="ws-card" style="text-align:center;color:var(--ws-text3);font-size:12px;">Keine sicheren Zeitfenster an diesem Tag.</div>';return;}
+c.innerHTML='<div class="ws-card"><div class="ws-section-title"><span class="ws-icon">⏱️</span> Sichere Zeitfenster</div>'+safeW.map((w,i)=>`<div class="ws-window" onclick="selWin(${i})" id="sw-${i}"><div><div class="quality ${w.quality.toLowerCase()}">${w.quality}</div><div class="times">${fmt(w.start)} – ${fmt(w.end)} <span style="font-size:12px;color:var(--ws-text3)">Uhr</span></div><div class="meta">NW ${fmt(w.nw.date)} · Hub ${w.range.toFixed(1)}m${w.spring?' · ⚠️ Spring':''}</div></div></div>`).join('')+'</div>';updBtn();}
+
+function selWin(i){selW=safeW[i];document.querySelectorAll('.ws-window').forEach((el,j)=>el.classList.toggle('selected',j===i));updBtn();}
+
+function updBtn(){const all=eqChk.every(Boolean),btn=document.getElementById('checkBtn');btn.disabled=!all;if(all&&(selW||safeW.length)){const w=selW||safeW.sort((a,b)=>({OPTIMAL:0,GUT:1,GRENZWERTIG:2}[a.quality])-({OPTIMAL:0,GUT:1,GRENZWERTIG:2}[b.quality]))[0];btn.textContent=selW?`🛡️ Prüft: ${w.quality} ${fmt(w.start)}`:`🛡️ Auto: ${w.quality} ${fmt(w.start)}`;}}
+
+function runSafetyCheck(){const st=getSt();let w=selW;if(!w&&safeW.length)w=safeW.sort((a,b)=>({OPTIMAL:0,GUT:1,GRENZWERTIG:2}[a.quality])-({OPTIMAL:0,GUT:1,GRENZWERTIG:2}[b.quality]))[0];if(!w)return;selW=w;const cnt=parseInt(document.getElementById('planCount').value)||1,nach=document.getElementById('planNach').value,r=chk(st,w.start,cnt,nach);addLog(`Safety: ${r.status}`);
+const all=eqChk.every(Boolean),ok=r.status==='STABLE';let fs,fl,fc;if(ok&&all){fs='stable';fl='FREIGEGEBEN';fc='var(--ws-safe)';}else if(r.status==='CRITICAL'){fs='critical';fl='NICHT GEHEN';fc='var(--ws-danger)';}else{fs='unstable';fl='ACHTUNG';fc='var(--ws-caution)';}
+document.getElementById('verdictContainer').innerHTML=`<div class="ws-verdict ${fs}"><div class="v-status" style="color:${fc}">${fl}</div><div class="v-check">${ok?'✅':'❌'} <strong>Gezeiten</strong></div><div class="v-check">${all?'✅':'❌'} <strong>Ausrüstung</strong></div><div class="v-check">${selW?'✅':'❌'} <strong>Zeitfenster</strong></div><div class="v-detail">${r.message}</div><div style="font-size:9px;color:var(--ws-text3);margin-top:8px;white-space:pre-line">${r.detail}</div><div style="font-size:8px;color:var(--ws-text3);margin-top:6px;">jokefactor v3 | TideEngine/${st.name}</div></div>`;}
+
+function initEquip(){document.getElementById('equipList').innerHTML=EQUIP.map((e,i)=>`<div class="ws-equip"><input type="checkbox" id="eq-${i}" onchange="togEq(${i})"><label for="eq-${i}" class="name">${e.name}</label><span class="ref">${e.ref}</span></div>`).join('');}
+function togEq(i){eqChk[i]=document.getElementById('eq-'+i).checked;const c=eqChk.filter(Boolean).length;document.getElementById('equipCount').textContent=`${c}/10`;document.getElementById('equipCount').style.color=c===10?'var(--ws-safe)':'var(--ws-caution)';updBtn();}
+
+function initMap(){lMap=L.map('wsMap',{zoomControl:true}).setView([53.745,7.82],11);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:18}).addTo(lMap);L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',{maxZoom:18,opacity:.8}).addTo(lMap);[{n:'Harlesiel',la:53.7067,lo:7.8083,c:'#3b9ed6'},{n:'Carolinensiel',la:53.6939,lo:7.8006,c:'#3b9ed6'},{n:'Neuharlingersiel',la:53.7031,lo:7.7013,c:'#3b9ed6'},{n:'Wangerooge',la:53.7897,lo:7.8951,c:'#f59e0b'},{n:'Spiekeroog',la:53.7694,lo:7.6843,c:'#f59e0b'}].forEach(p=>{L.circleMarker([p.la,p.lo],{radius:6,fillColor:p.c,color:'white',weight:2,fillOpacity:.9}).addTo(lMap).bindPopup(p.n);});updateRoute();}
+function updateRoute(){if(rLine)lMap.removeLayer(rLine);const f=STATIONS[document.getElementById('planVon').value],t=DEST[document.getElementById('planNach').value];if(f&&t){rLine=L.polyline([[f.lat,f.lon],[t.lat,t.lon]],{color:'#a855f7',dashArray:'8,6',weight:3,opacity:.7}).addTo(lMap);lMap.fitBounds(rLine.getBounds(),{padding:[40,40]});}}
+function toggleMapFS(){document.body.classList.toggle('ws-map-fullscreen');setTimeout(()=>lMap.invalidateSize(),100);}
+
+function shareBriefing(){const von=document.getElementById('planVon').value,nach=document.getElementById('planNach').value,date=document.getElementById('planDate').value,cnt=document.getElementById('planCount').value,st=getSt(),s=new Date(date+'T00:00:00'),ex=fe(st,s,24),b=selW||safeW[0],rm=parseInt(document.getElementById('returnSlider').value),rt=b?new Date(b.start.getTime()+rm*6e4):new Date();
+const txt=`⚠️ WATTWANDERUNG – BITTE AUFBEWAHREN!\n\nIch gehe heute ins Watt. Falls ich mich nicht rechtzeitig zurückmelde, bitte Seenotrettung anrufen: ☎️ 124 116\n\n📍 VON: ${von}\n📍 NACH: ${nach}\n📅 DATUM: ${date}\n🚶 LOS UM: ${b?fmt(b.start):'?'} Uhr\n🏠 ZURÜCK BIS: ${fmt(rt)} Uhr\n👥 PERSONEN: ${cnt}\n\n❗ WAS DU TUN MUSST:\nWenn ich mich bis ${fmt(rt)} Uhr NICHT gemeldet habe:\n1. Ruf mich an\n2. Wenn ich nicht rangehe → 124 116 anrufen\n3. Sag: „Wattwanderer überfällig, Route ${von}→${nach}, ${cnt} Person(en)"\n\n--- Gezeiten ---\n${ex.map(e=>`${e.type}: ${fmt(e.date)}`).join('\n')}\n${mpn(new Date(date))}\n\nGesendet via WattSafe · pelczer.de/wattwandern`;
+if(navigator.share)navigator.share({title:`Wattwanderung ${von}→${nach}`,text:txt});else{navigator.clipboard.writeText(txt);alert('Briefing kopiert!');}}
+
+function updateReturnLabel(){const v=document.getElementById('returnSlider').value;document.getElementById('returnTimeLabel').textContent=`${v} Min.`;}
+function startTimer(){const m=parseInt(document.getElementById('returnSlider').value);tmrEnd=new Date(Date.now()+m*6e4);document.getElementById('timerContent').style.display='none';document.getElementById('timerActive').style.display='block';document.getElementById('timerBadge').innerHTML='<span style="font-size:9px;font-weight:700;color:var(--ws-safe);background:rgba(33,197,93,.12);padding:2px 6px;border-radius:4px;">AKTIV</span>';tmrI=setInterval(updTmr,1e3);addLog('Timer gestartet');}
+function updTmr(){if(!tmrEnd)return;const r=Math.max(0,Math.round((tmrEnd-Date.now())/6e4));document.getElementById('timerCountdown').textContent=r;if(r<=0){document.getElementById('timerCountdown').style.color='var(--ws-danger)';document.getElementById('timerCountdown').textContent='ÜBERFÄLLIG!';document.getElementById('timerBadge').innerHTML='<span style="font-size:9px;font-weight:700;color:var(--ws-danger);background:rgba(240,68,68,.12);padding:2px 6px;border-radius:4px;">ÜBERFÄLLIG</span>';}else if(r<=15){document.getElementById('timerCountdown').style.color='var(--ws-caution)';}}
+function extendTimer(){if(tmrEnd)tmrEnd=new Date(tmrEnd.getTime()+18e5);document.getElementById('timerCountdown').style.color='var(--ws-safe)';addLog('Timer +30 Min.');}
+function endWalk(){clearInterval(tmrI);document.getElementById('timerContent').style.display='block';document.getElementById('timerActive').style.display='none';document.getElementById('timerBadge').innerHTML='<span style="font-size:9px;font-weight:700;color:var(--ws-safe);background:rgba(33,197,93,.12);padding:2px 6px;border-radius:4px;">✅</span>';addLog('✅ Sicher zurück');}
+function stopTimer(){clearInterval(tmrI);document.getElementById('timerContent').style.display='block';document.getElementById('timerActive').style.display='none';document.getElementById('timerBadge').innerHTML='';addLog('Timer gestoppt');}
+function triggerSOS(){if(!confirm('🆘 NOTFALL bestätigen?\n\nÖffnet Telefon für Seenotrettung (124 116).'))return;window.location.href='tel:124116';}
+
+function addLog(m){const n=new Date();logs.push(`> ${fmt(n)}:${n.getSeconds().toString().padStart(2,'0')}: ${m}`);if(logs.length>15)logs.shift();}
+function updateKernel(){const s=curSt,w=wl(s,new Date()),st=new Date();st.setHours(0,0,0,0);const ex=fe(s,st,48);document.getElementById('kernelStatus').innerHTML=`<div style="margin-bottom:6px;"><span style="color:orange;font-weight:bold;">● OFFLINE</span> <span style="color:gray;">Harmonische Simulation</span></div><div><span class="ws-term-key">STATION</span>${s.name}</div><div><span class="ws-term-key">LAT/LON</span>${s.lat.toFixed(4)}°N ${s.lon.toFixed(4)}°E</div><div><span class="ws-term-key">Z₀</span>${s.z0.toFixed(2)} m</div><div><span class="ws-term-key">WL SIM</span>${w.toFixed(3)} m</div><div><span class="ws-term-key">HW/NW</span>${ex.length} Extremwerte</div>`;document.getElementById('kernelLog').innerHTML='<div style="color:gray;font-size:9px;margin-bottom:4px;">SYSTEM LOG</div>'+logs.map(l=>`<div class="ws-term-line">${l}</div>`).join('');}
+
+window.addEventListener('resize',()=>{if(document.getElementById('panel-tides').classList.contains('active'))drawCurve();});
+</script>
+</body>
+</html>
