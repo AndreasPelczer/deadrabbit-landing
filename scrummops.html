@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ScrumMops — PSM I Exam Simulator | pelczer.de</title>
+    <meta name="description" content="PSM I Prüfungssimulator: 80 Fragen, Lern- und Prüfungsmodus, Deutsch + Englisch. Basierend auf dem Scrum Guide 2020. Kostenlos, kein Tracking.">
+    <meta name="keywords" content="PSM I, Scrum, Scrum Master, Professional Scrum Master, Prüfung, Exam, Simulator, Scrum Guide 2020, Zertifizierung">
+    <meta property="og:title" content="ScrumMops — PSM I Exam Simulator">
+    <meta property="og:description" content="PSM I Prüfungssimulator mit 80 Fragen. Lerne auf Deutsch, bestehe auf Englisch.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pelczer.de/scrummops/">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/variables.css">
+    <link rel="stylesheet" href="../assets/css/base.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+    <link rel="stylesheet" href="../assets/css/layout.css">
+    <link rel="stylesheet" href="../assets/css/pages.css">
+<style>
+/* ═══════════════════════════════════════
+   SCRUMMOPS APP STYLES
+   Dark-Orange Theme innerhalb pelczer.de Shell
+   ═══════════════════════════════════════ */
+.sm-app{--bg:#0a0a0a;--sf:#141414;--sf2:#1a1a1a;--bd:#2a2a2a;--tx:#e8e8e8;--dim:#888;--ac:#e67e22;--ac2:#f39c12;--rd:#e74c3c;--gn:#2ecc71;--bl:#3498db;--r:12px;background:var(--bg);color:var(--tx);border-radius:16px;overflow:hidden;border:1px solid var(--bd);font-family:'Space Grotesk','Source Sans 3',sans-serif}
+.sm-app *{box-sizing:border-box}
+.sm-hdr{padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;background:var(--bg);z-index:100;position:sticky;top:60px}
+.sm-logo{display:flex;align-items:center;gap:6px}.sm-logo i{font-size:20px}.sm-logo b{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--ac)}
+.sm-tmr{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;padding:5px 12px;border-radius:8px;border:1px solid var(--bd);background:var(--sf)}
+.sm-tmr.warn{color:var(--rd);border-color:var(--rd);animation:sm-p 1s infinite}@keyframes sm-p{0%,100%{opacity:1}50%{opacity:.6}}
+.sm-scr{display:none;padding:16px;max-width:660px;margin:0 auto}.sm-scr.on{display:block}
+.sm-st{font-size:24px;font-weight:700;text-align:center;margin:24px 0 6px;color:var(--tx)}.sm-ss{color:var(--dim);text-align:center;margin-bottom:20px;font-size:13px}
+.sm-ig{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.sm-ic{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:12px;text-align:center}
+.sm-ic .v{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--ac)}.sm-ic .l{font-size:10px;color:var(--dim);margin-top:2px}
+.sm-sbtn{display:block;width:100%;padding:14px;border:none;border-radius:var(--r);background:var(--ac);color:#000;font-size:16px;font-weight:700;font-family:'Source Sans 3',sans-serif;cursor:pointer}
+.sm-sbtn:hover{background:var(--ac2)}
+.sm-tgl{display:flex;gap:6px;justify-content:center;margin-bottom:14px}
+.sm-tb{padding:8px 14px;border-radius:8px;border:1px solid var(--bd);background:var(--sf);color:var(--dim);font-size:12px;font-weight:600;cursor:pointer;font-family:'Source Sans 3',sans-serif}
+.sm-tb.on{background:var(--ac);color:#000;border-color:var(--ac)}.sm-tb.bl{background:var(--bl);color:#fff;border-color:var(--bl)}
+.sm-qp{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.sm-qbw{flex:1;height:5px;background:var(--sf2);border-radius:3px;overflow:hidden}.sm-qb{height:100%;background:var(--ac);border-radius:3px;transition:width .3s}
+.sm-qc{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);white-space:nowrap}
+.sm-qcat{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ac);margin-bottom:4px}
+.sm-qtp{font-size:10px;color:var(--dim);margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+.sm-qt{font-size:15px;font-weight:600;line-height:1.5;margin-bottom:6px;color:var(--tx)}
+.sm-qtd{font-size:13px;color:var(--dim);line-height:1.4;margin-bottom:16px;padding-left:10px;border-left:2px solid var(--bd);font-style:italic}
+.sm-qtd.hid{display:none}
+.sm-opts{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.sm-opt{padding:11px 12px;border-radius:var(--r);border:1px solid var(--bd);background:var(--sf);cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:9px;font-size:13px;line-height:1.4;color:var(--tx)}
+.sm-opt:hover{border-color:var(--ac);background:var(--sf2)}.sm-opt.sel{border-color:var(--ac);background:rgba(230,126,34,.1)}
+.sm-opt.ok{border-color:var(--gn);background:rgba(46,204,113,.1)}.sm-opt.no{border-color:var(--rd);background:rgba(231,76,60,.1)}.sm-opt.dis{pointer-events:none}
+.sm-od{font-size:11px;color:var(--dim);font-style:italic;margin-top:2px}.sm-od.hid{display:none}
+.sm-om{width:19px;height:19px;min-width:19px;border-radius:5px;border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin-top:1px}
+.sm-opt.sel .sm-om{border-color:var(--ac);color:var(--ac)}.sm-opt.ok .sm-om{border-color:var(--gn);color:var(--gn)}.sm-opt.no .sm-om{border-color:var(--rd);color:var(--rd)}
+.sm-exp{display:none;padding:12px;border-radius:var(--r);margin-bottom:14px;border-left:3px solid var(--ac);background:rgba(230,126,34,.05);font-size:12px;line-height:1.6;color:var(--tx)}
+.sm-exp.sh{display:block;animation:sm-fi .3s}.sm-exd{color:var(--ac2);padding-top:6px;border-top:1px solid var(--bd);margin-top:6px}.sm-exd.hid{display:none}
+.sm-ref{margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ac)}
+@keyframes sm-fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.sm-nav{display:flex;gap:7px}.sm-nb{flex:1;padding:11px;border-radius:var(--r);border:1px solid var(--bd);background:var(--sf);color:var(--tx);font-size:13px;font-weight:600;cursor:pointer;font-family:'Source Sans 3',sans-serif}
+.sm-nb:hover{border-color:var(--ac)}.sm-nb.pr{background:var(--ac);color:#000;border-color:var(--ac)}.sm-nb:disabled{opacity:.3;pointer-events:none}
+.sm-fb{padding:11px;border-radius:var(--r);border:1px solid var(--bd);background:var(--sf);color:var(--dim);font-size:13px;cursor:pointer}.sm-fb.fl{color:var(--ac);border-color:var(--ac)}
+.sm-rsc{text-align:center;margin:24px 0 20px}
+.sm-rp{font-family:'JetBrains Mono',monospace;font-size:56px;font-weight:700}.sm-rp.ps{color:var(--gn)}.sm-rp.fl{color:var(--rd)}
+.sm-rl{font-size:16px;margin-top:6px;font-weight:600;color:var(--tx)}.sm-rd{color:var(--dim);margin-top:4px;font-size:12px}
+.sm-rbd{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:16px 0}
+.sm-rbc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:12px;text-align:center}
+.sm-rbv{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700}.sm-rbl{font-size:10px;color:var(--dim);margin-top:2px}
+.sm-ri{padding:10px 12px;border-bottom:1px solid var(--bd);cursor:pointer}.sm-ri:hover{background:var(--sf)}
+.sm-rh{display:flex;justify-content:space-between;align-items:center}.sm-rq{font-size:12px;line-height:1.4;flex:1;color:var(--tx)}
+.sm-rbg{font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:8px;white-space:nowrap;background:rgba(231,76,60,.15);color:var(--rd)}
+.sm-rvb{display:none;margin-top:6px;font-size:11px;line-height:1.5}
+.sm-tip{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:12px;margin-bottom:16px;font-size:12px;line-height:1.5;color:var(--dim)}
+@media(max-width:500px){.sm-qt{font-size:14px}.sm-opt{font-size:12px}.sm-rp{font-size:44px}}
+</style>
+</head>
+<body data-mode="human">
+    <!-- pelczer.de Mode Toggle -->
+    <div class="mode-toggle-wrap">
+        <button class="mode-toggle" id="modeToggle" aria-label="Ansicht wechseln"></button>
+        <span class="mode-label" id="modeLabel">Mensch</span>
+    </div>
+
+    <!-- pelczer.de Navigation -->
+    <nav class="nav"><div class="nav-inner">
+        <a href="/" class="nav-brand">Andreas Pelczer</a>
+        <button class="nav-menu-btn" id="navMenuBtn" aria-label="Menü"><svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="/#apps">Apps</a></li>
+            <li><a href="/#books">Bücher</a></li>
+            <li><a href="/#about">Über mich</a></li>
+            <li><a href="/#contact">Kontakt</a></li>
+        </ul>
+    </div></nav>
+
+    <!-- Hero -->
+    <section class="page-hero"><div class="container">
+        <div class="breadcrumb"><a href="/">Startseite</a> / <a href="/#apps">Apps</a> / ScrumMops</div>
+        <div class="page-hero-inner">
+            <div class="page-hero-icon" style="background:linear-gradient(135deg, #b45309, #e67e22);display:flex;align-items:center;justify-content:center;">
+                <span style="font-size:48px;">🐕</span>
+            </div>
+            <div>
+                <h1>ScrumMops</h1>
+                <p class="hero-text" style="animation:none;opacity:1;">
+                    <span class="desc-human">PSM I Prüfungssimulator — lerne auf Deutsch, bestehe auf Englisch. 80 Fragen aus dem Scrum Guide 2020, mit Lern- und Prüfungsmodus. Kostenlos, ohne Account, ohne Tracking.</span>
+                    <span class="desc-coder">PSM I Exam Simulator. 80 randomisierte Fragen (Single/Multi/T-F). Dual-Language Engine (DE+EN). Lernmodus mit sofortigem Feedback + Scrum Guide Referenzen. Prüfungsmodus mit 60-Min-Timer. Vanilla JS, Zero Dependencies.</span>
+                </p>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span class="badge badge-live">Web App</span>
+                    <span class="badge" style="background:rgba(230,126,34,0.1);color:#e67e22;border:1px solid rgba(230,126,34,0.2);">
+                        <span class="desc-human">Kostenlos · Kein Tracking</span>
+                        <span class="desc-coder">Zero Analytics · Client-Side Only</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div></section>
+
+    <!-- ScrumMops App -->
+    <section><div class="container">
+        <div class="sm-app" id="smApp">
+
+            <div class="sm-hdr">
+                <div class="sm-logo"><i>&#x1F415;</i><b>ScrumMops DE/EN</b></div>
+                <div class="sm-tmr" id="tmr">60:00</div>
+            </div>
+
+            <div class="sm-scr on" id="s0">
+                <div class="sm-st">PSM I Exam Simulator</div>
+                <div class="sm-ss">Lerne auf Deutsch, bestehe auf Englisch</div>
+                <div class="sm-tgl" id="ltgl"><div class="sm-tb bl" onclick="sL('both',this)">DE + EN</div><div class="sm-tb" onclick="sL('en',this)">EN only</div></div>
+                <div class="sm-tgl" id="mtgl"><div class="sm-tb on" onclick="sM('learn',this)">&#x1F4D6; Lernmodus</div><div class="sm-tb" onclick="sM('exam',this)">&#x1F3AF; Prüfung</div></div>
+                <div class="sm-ig"><div class="sm-ic"><div class="v">80</div><div class="l">Fragen</div></div><div class="sm-ic"><div class="v">60:00</div><div class="l">Minuten</div></div><div class="sm-ic"><div class="v">85%</div><div class="l">Bestehensgrenze</div></div><div class="sm-ic"><div class="v">68</div><div class="l">Richtige nötig</div></div></div>
+                <div class="sm-tip"><b style="color:var(--ac)">&#x1F4D6; Lernmodus:</b> Kein Timer. Erklärung nach jeder Frage (DE+EN).<br><b style="color:var(--ac)">&#x1F3AF; Prüfungsmodus:</b> 60 Min Timer. Antworten am Ende.<br><br><b style="color:var(--tx)">Tipp:</b> Starte mit DE+EN im Lernmodus. Wenn sicher, wechsle auf EN only + Prüfung.</div>
+                <button class="sm-sbtn" onclick="go()">Los geht's!</button>
+            </div>
+
+            <div class="sm-scr" id="s1">
+                <div class="sm-qp"><div class="sm-qbw"><div class="sm-qb" id="qb"></div></div><div class="sm-qc" id="qc"></div></div>
+                <div class="sm-qcat" id="qcat"></div><div class="sm-qtp" id="qtp"></div>
+                <div class="sm-qt" id="qt"></div><div class="sm-qtd" id="qtd"></div>
+                <div class="sm-opts" id="opts"></div><div class="sm-exp" id="exp"></div>
+                <div class="sm-nav"><button class="sm-nb" id="pb" onclick="pQ()">&#x2190;</button><button class="sm-fb" id="flb" onclick="tF()">&#x1F6A9;</button><button class="sm-nb pr" id="nb" onclick="nQ()">Weiter &#x2192;</button></div>
+            </div>
+
+            <div class="sm-scr" id="s2"></div>
+
+        </div>
+    </div></section>
+
+<script>
+const DB=[
+{c:"Scrum Theory",t:"s",q:"Scrum is based on which theory?",d:"Auf welcher Theorie basiert Scrum?",o:["Empiricism and lean thinking","Waterfall methodology","Six Sigma","Predictive planning"],od:["Empirismus und schlankes Denken","Wasserfall-Methodik","Six Sigma","Vorhersagende Planung"],a:[0],e:"Scrum is founded on empiricism and lean thinking. Knowledge comes from experience.",ed:"Scrum basiert auf Empirismus und Lean Thinking. Wissen entsteht durch Erfahrung.",r:"Scrum Guide 2020 - Scrum Theory"},
+{c:"Scrum Theory",t:"m",q:"What are the three pillars of empiricism? (Select THREE)",d:"Was sind die drei Säulen des Empirismus? (Wähle DREI)",o:["Transparency","Inspection","Adaptation","Prediction","Control"],od:["Transparenz","Überprüfung","Anpassung","Vorhersage","Kontrolle"],a:[0,1,2],e:"The three pillars: Transparency, Inspection, Adaptation.",ed:"Die drei Säulen: Transparenz, Überprüfung, Anpassung. Ohne Transparenz ist Überprüfung irreführend.",r:"Scrum Guide 2020 - Scrum Theory"},
+{c:"Scrum Theory",t:"s",q:"What is Scrum?",d:"Was ist Scrum?",o:["A lightweight framework for complex problems","A software development methodology","A set of project management tools","A process for managing teams"],od:["Ein leichtgewichtiges Framework für komplexe Probleme","Eine Software-Entwicklungsmethodik","Eine Sammlung von PM-Tools","Ein Prozess zur Teamverwaltung"],a:[0],e:"Scrum is a lightweight framework, not a methodology. Purposefully incomplete.",ed:"Scrum ist ein leichtgewichtiges Framework, keine Methodik. Bewusst unvollständig.",r:"Scrum Guide 2020 - Definition of Scrum"},
+{c:"Scrum Values",t:"m",q:"What are the five Scrum values? (Select FIVE)",d:"Was sind die fünf Scrum-Werte? (Wähle FÜNF)",o:["Commitment","Courage","Focus","Openness","Respect","Trust","Transparency"],od:["Selbstverpflichtung","Mut","Fokus","Offenheit","Respekt","Vertrauen","Transparenz"],a:[0,1,2,3,4],e:"Five values: Commitment, Courage, Focus, Openness, Respect.",ed:"Fünf Werte: Selbstverpflichtung, Mut, Fokus, Offenheit, Respekt. ACHTUNG: Transparenz ist eine Säule, kein Wert!",r:"Scrum Guide 2020 - Scrum Values"},
+{c:"Scrum Theory",t:"tf",q:"True or False: Implementing only parts of Scrum is possible, but the result is not Scrum.",d:"Richtig oder Falsch: Nur Teile von Scrum umzusetzen ist möglich, aber das Ergebnis ist nicht Scrum.",o:["True","False"],od:["Richtig","Falsch"],a:[0],e:"The Scrum framework is immutable. Partial implementation is not Scrum.",ed:"Das Scrum-Framework ist unveränderlich. Teilweise Umsetzung ist möglich, aber nicht Scrum.",r:"Scrum Guide 2020 - Definition"},
+{c:"Scrum Team",t:"m",q:"Which accountabilities exist within a Scrum Team? (Select THREE)",d:"Welche Verantwortlichkeiten gibt es im Scrum Team? (Wähle DREI)",o:["Scrum Master","Product Owner","Developers","Project Manager","Team Lead"],od:["Scrum Master","Product Owner","Entwickler","Projektmanager","Teamleiter"],a:[0,1,2],e:"SM, PO, Developers. No Project Manager or Team Lead in Scrum.",ed:"SM, PO, Entwickler. Es gibt KEINEN Projektmanager oder Teamleiter in Scrum.",r:"Scrum Guide 2020 - Scrum Team"},
+{c:"Scrum Team",t:"s",q:"Who is responsible for managing the Product Backlog?",d:"Wer ist verantwortlich für das Product Backlog?",o:["The Product Owner","The Scrum Master","The Developers","The entire Scrum Team"],od:["Der Product Owner","Der Scrum Master","Die Entwickler","Das gesamte Scrum Team"],a:[0],e:"The PO is the sole person responsible for managing the Product Backlog.",ed:"Der PO ist allein verantwortlich für das Product Backlog.",r:"Scrum Guide 2020 - Product Owner"},
+{c:"Scrum Team",t:"s",q:"Who decides HOW the work will be done during a Sprint?",d:"Wer entscheidet, WIE die Arbeit im Sprint erledigt wird?",o:["The Developers","The Scrum Master","The Product Owner","The stakeholders"],od:["Die Entwickler","Der Scrum Master","Der Product Owner","Die Stakeholder"],a:[0],e:"Developers self-manage and decide how work is done.",ed:"Die Entwickler organisieren sich selbst und entscheiden, WIE die Arbeit erledigt wird.",r:"Scrum Guide 2020 - Developers"},
+{c:"Scrum Team",t:"tf",q:"True or False: The Scrum Master assigns tasks to Developers.",d:"Richtig oder Falsch: Der Scrum Master weist Entwicklern Aufgaben zu.",o:["True","False"],od:["Richtig","Falsch"],a:[1],e:"False. The SM is a servant-leader. Developers self-manage.",ed:"Falsch! Der SM weist KEINE Aufgaben zu. Die Entwickler organisieren sich selbst.",r:"Scrum Guide 2020 - Scrum Master"},
+{c:"Scrum Team",t:"s",q:"The Scrum Team is typically how many people?",d:"Wie viele Personen hat ein Scrum Team typischerweise?",o:["10 or fewer","5 or fewer","15 or fewer","No specific limit"],od:["10 oder weniger","5 oder weniger","15 oder weniger","Keine Obergrenze"],a:[0],e:"Typically 10 or fewer people.",ed:"Typischerweise 10 oder weniger Personen.",r:"Scrum Guide 2020 - Scrum Team"},
+{c:"Scrum Team",t:"tf",q:"True or False: There can be sub-teams or hierarchies within a Scrum Team.",d:"Richtig oder Falsch: Es kann Sub-Teams oder Hierarchien im Scrum Team geben.",o:["True","False"],od:["Richtig","Falsch"],a:[1],e:"False. No sub-teams, no hierarchies. One cohesive unit.",ed:"Falsch! Keine Sub-Teams, keine Hierarchien. Ein zusammenhängendes Team.",r:"Scrum Guide 2020 - Scrum Team"},
+{c:"Events",t:"s",q:"What is the maximum length of a Sprint?",d:"Was ist die maximale Dauer eines Sprints?",o:["One calendar month","Two weeks","Four weeks","No maximum"],od:["Ein Kalendermonat","Zwei Wochen","Vier Wochen","Kein Maximum"],a:[0],e:"Sprints are one month or less. Shorter = more learning cycles.",ed:"Sprints sind maximal ein Kalendermonat. Kürzer = mehr Lernzyklen.",r:"Scrum Guide 2020 - The Sprint"},
+{c:"Events",t:"s",q:"Who can cancel a Sprint?",d:"Wer kann einen Sprint abbrechen?",o:["Only the Product Owner","The Scrum Master","The Developers","Any stakeholder"],od:["Nur der Product Owner","Der Scrum Master","Die Entwickler","Jeder Stakeholder"],a:[0],e:"Only the PO can cancel a Sprint, if the Sprint Goal becomes obsolete.",ed:"Nur der PO kann abbrechen - und nur wenn das Sprint-Ziel obsolet ist.",r:"Scrum Guide 2020 - The Sprint"},
+{c:"Events",t:"s",q:"Maximum duration of Sprint Planning for a one-month Sprint?",d:"Maximale Dauer der Sprint-Planung bei einem Monats-Sprint?",o:["8 hours","4 hours","2 hours","No timebox"],od:["8 Stunden","4 Stunden","2 Stunden","Keine Timebox"],a:[0],e:"Sprint Planning: max 8 hours for a one-month Sprint.",ed:"Sprint Planning: max 8 Stunden bei einem Monats-Sprint.",r:"Scrum Guide 2020 - Sprint Planning"},
+{c:"Events",t:"m",q:"Sprint Planning addresses which topics? (Select THREE)",d:"Welche Themen behandelt Sprint Planning? (Wähle DREI)",o:["Why is this Sprint valuable?","What can be Done this Sprint?","How will the work get done?","Who will do each task?","When will tasks finish?"],od:["Warum ist dieser Sprint wertvoll?","Was kann erledigt werden?","Wie wird die Arbeit erledigt?","Wer macht welche Aufgabe?","Wann wird jede Aufgabe fertig?"],a:[0,1,2],e:"Three topics: Why (Sprint Goal), What (items), How (plan). NOT who or when.",ed:"Drei Themen: Warum (Sprint-Ziel), Was (Items), Wie (Plan). NICHT wer oder wann!",r:"Scrum Guide 2020 - Sprint Planning"},
+{c:"Events",t:"s",q:"What is the timebox for the Daily Scrum?",d:"Wie lang ist die Timebox für das Daily Scrum?",o:["15 minutes","30 minutes","1 hour","No timebox"],od:["15 Minuten","30 Minuten","1 Stunde","Keine Timebox"],a:[0],e:"15-minute event for the Developers.",ed:"15-Minuten-Event für die Entwickler.",r:"Scrum Guide 2020 - Daily Scrum"},
+{c:"Events",t:"s",q:"Who participates in the Daily Scrum?",d:"Wer nimmt am Daily Scrum teil?",o:["The Developers","The entire Scrum Team","SM and Developers","All stakeholders"],od:["Die Entwickler","Das gesamte Scrum Team","SM und Entwickler","Alle Stakeholder"],a:[0],e:"The Daily Scrum is for the Developers. PO/SM only if working on Sprint Backlog.",ed:"Das Daily ist FÜR die Entwickler. PO und SM nur wenn sie aktiv am Sprint Backlog arbeiten.",r:"Scrum Guide 2020 - Daily Scrum"},
+{c:"Events",t:"tf",q:"True or False: The Daily Scrum must use the three questions format.",d:"Richtig oder Falsch: Das Daily Scrum muss das Drei-Fragen-Format verwenden.",o:["True","False"],od:["Richtig","Falsch"],a:[1],e:"False. Developers choose their own format. Three questions are just one example.",ed:"Falsch! Die Entwickler wählen ihr Format selbst. Drei Fragen sind nur ein Beispiel.",r:"Scrum Guide 2020 - Daily Scrum"},
+{c:"Events",t:"s",q:"What is the purpose of the Sprint Review?",d:"Was ist der Zweck des Sprint Reviews?",o:["Inspect outcome and determine adaptations","Present a status report","Demonstrate productivity","Approve the Increment"],od:["Ergebnis prüfen und Anpassungen bestimmen","Statusbericht präsentieren","Produktivität zeigen","Inkrement genehmigen"],a:[0],e:"Inspect outcomes, determine future adaptations. Working session, not a presentation.",ed:"Ergebnis prüfen, Anpassungen bestimmen. Arbeitstreffen, KEINE Präsentation!",r:"Scrum Guide 2020 - Sprint Review"},
+{c:"Events",t:"s",q:"Sprint Retrospective timebox (one-month Sprint)?",d:"Timebox der Sprint Retrospektive (Monats-Sprint)?",o:["3 hours","4 hours","8 hours","1 hour"],od:["3 Stunden","4 Stunden","8 Stunden","1 Stunde"],a:[0],e:"Max 3 hours. The Retro is the LAST event in a Sprint.",ed:"Max 3 Stunden. Die Retro ist das LETZTE Event im Sprint.",r:"Scrum Guide 2020 - Sprint Retrospective"},
+{c:"Events",t:"s",q:"Which is the last event in a Sprint?",d:"Welches ist das letzte Event im Sprint?",o:["Sprint Retrospective","Sprint Review","Daily Scrum","Sprint Planning"],od:["Sprint Retrospektive","Sprint Review","Daily Scrum","Sprint-Planung"],a:[0],e:"Retro concludes the Sprint. Order: Planning, Dailies, Review, Retro.",ed:"Die Retro schliesst den Sprint ab. Reihenfolge: Planning, Dailies, Review, Retro.",r:"Scrum Guide 2020 - Sprint Retrospective"},
+{c:"Events",t:"tf",q:"True or False: A new Sprint starts immediately after the previous one ends.",d:"Richtig oder Falsch: Ein neuer Sprint startet sofort nach dem vorherigen.",o:["True","False"],od:["Richtig","Falsch"],a:[0],e:"True. No gap between Sprints.",ed:"Richtig! Keine Pause zwischen Sprints.",r:"Scrum Guide 2020 - The Sprint"},
+{c:"Artifacts",t:"s",q:"Which artifact is an ordered list of what is needed to improve the product?",d:"Welches Artefakt ist eine geordnete Liste zur Produktverbesserung?",o:["Product Backlog","Sprint Backlog","Increment","Definition of Done"],od:["Product Backlog","Sprint Backlog","Inkrement","Definition of Done"],a:[0],e:"The Product Backlog is emergent and ordered. Single source of work.",ed:"Das Product Backlog ist emergent und GEORDNET (nicht priorisiert!). Einzige Arbeitsquelle.",r:"Scrum Guide 2020 - Product Backlog"},
+{c:"Artifacts",t:"s",q:"The Sprint Backlog is composed of:",d:"Das Sprint Backlog besteht aus:",o:["Sprint Goal + selected items + delivery plan","Only selected items","Tasks assigned by SM","Filtered Product Backlog"],od:["Sprint-Ziel + ausgewählte Items + Umsetzungsplan","Nur ausgewählte Items","Vom SM zugewiesene Aufgaben","Gefiltertes Product Backlog"],a:[0],e:"Sprint Backlog = Sprint Goal (why) + items (what) + plan (how).",ed:"Sprint Backlog = Sprint-Ziel (warum) + Items (was) + Plan (wie). Gehört den Entwicklern!",r:"Scrum Guide 2020 - Sprint Backlog"},
+{c:"Artifacts",t:"s",q:"Who owns the Sprint Backlog?",d:"Wem gehört das Sprint Backlog?",o:["The Developers","The Product Owner","The Scrum Master","The entire Scrum Team"],od:["Den Entwicklern","Dem Product Owner","Dem Scrum Master","Dem gesamten Team"],a:[0],e:"The Sprint Backlog is by and for the Developers.",ed:"Das Sprint Backlog gehört komplett den Entwicklern.",r:"Scrum Guide 2020 - Sprint Backlog"},
+{c:"Artifacts",t:"tf",q:"True or False: Multiple Increments may be created within a Sprint.",d:"Richtig oder Falsch: Mehrere Inkremente können in einem Sprint erstellt werden.",o:["True","False"],od:["Richtig","Falsch"],a:[0],e:"True. Multiple Increments may be created and delivered any time during the Sprint.",ed:"Richtig! Mehrere Inkremente pro Sprint möglich, jederzeit auslieferbar.",r:"Scrum Guide 2020 - Increment"},
+{c:"Commitments",t:"s",q:"What is the commitment for the Product Backlog?",d:"Was ist das Commitment des Product Backlogs?",o:["Product Goal","Sprint Goal","Definition of Done","Release Plan"],od:["Produktziel","Sprint-Ziel","Definition of Done","Release-Plan"],a:[0],e:"Product Backlog -> Product Goal. Sprint Backlog -> Sprint Goal. Increment -> DoD.",ed:"Jedes Artefakt hat EIN Commitment: PB->Produktziel, SB->Sprint-Ziel, Inkrement->DoD.",r:"Scrum Guide 2020 - Product Goal"},
+{c:"Commitments",t:"s",q:"Who creates the Definition of Done if the org doesn't have one?",d:"Wer erstellt die DoD, wenn die Organisation keine hat?",o:["The Developers","The Product Owner","The Scrum Master","Management"],od:["Die Entwickler","Der Product Owner","Der Scrum Master","Das Management"],a:[0],e:"Developers create the DoD if no organizational standard exists.",ed:"Die Entwickler erstellen die DoD wenn es keinen Organisationsstandard gibt. NICHT der PO!",r:"Scrum Guide 2020 - Definition of Done"},
+{c:"Commitments",t:"tf",q:"True or False: A team can pursue multiple Product Goals simultaneously.",d:"Richtig oder Falsch: Ein Team kann mehrere Produktziele gleichzeitig verfolgen.",o:["True","False"],od:["Richtig","Falsch"],a:[1],e:"False. One Product Goal at a time. Fulfill or abandon before the next.",ed:"Falsch! Immer nur EIN Produktziel. Erst erfüllen oder aufgeben, dann das nächste.",r:"Scrum Guide 2020 - Product Goal"},
+{c:"Scrum Master",t:"s",q:"A Scrum Master is best described as:",d:"Ein Scrum Master ist am besten beschrieben als:",o:["A servant-leader who helps understand Scrum","A project manager tracking tasks","The team's boss","A technical lead"],od:["Ein Servant Leader der Scrum vermittelt","Ein Projektmanager","Der Chef des Teams","Ein technischer Leiter"],a:[0],e:"SM = true leader who serves the team and organization.",ed:"SM = echte Führungspersönlichkeit die dem Team und der Organisation DIENT.",r:"Scrum Guide 2020 - Scrum Master"},
+{c:"Scrum Master",t:"s",q:"A Developer is blocked by another team. What should the SM do?",d:"Ein Entwickler wird von einem anderen Team blockiert. Was tut der SM?",o:["Facilitate conversation between teams","Tell Developer to solve it alone","Escalate to management","Extend the Sprint"],od:["Gespräch zwischen Teams vermitteln","Entwickler soll es allein lösen","Ans Management eskalieren","Sprint verlängern"],a:[0],e:"SM removes impediments by facilitating, coaching, or escalating.",ed:"Der SM beseitigt Hindernisse durch Vermittlung, Coaching oder Eskalation.",r:"Scrum Guide 2020 - Scrum Master"},
+{c:"Developers",t:"s",q:"Who estimates the size of Product Backlog items?",d:"Wer schätzt den Aufwand von Product Backlog Items?",o:["The Developers","The Product Owner","The Scrum Master","The team lead"],od:["Die Entwickler","Der Product Owner","Der Scrum Master","Der Teamleiter"],a:[0],e:"The people doing the work (Developers) estimate.",ed:"Die Menschen die die Arbeit machen (Entwickler) schätzen. Nicht der PO, nicht der SM!",r:"Scrum Guide 2020 - Product Backlog"},
+{c:"Key Concepts",t:"tf",q:"True or False: Refinement is a formal Scrum event.",d:"Richtig oder Falsch: Refinement ist ein offizielles Scrum-Event.",o:["True","False"],od:["Richtig","Falsch"],a:[1],e:"False. Refinement is ongoing, not a formal event. Max 10% of capacity.",ed:"Falsch! Refinement ist eine laufende Aktivität, KEIN Event. Max 10% der Kapazität.",r:"Scrum Guide 2020 - Product Backlog"},
+{c:"Key Concepts",t:"s",q:"Multiple teams, same product: how many Product Backlogs?",d:"Mehrere Teams, ein Produkt: Wie viele Product Backlogs?",o:["One","One per team","One per Sprint","Depends"],od:["Eines","Eines pro Team","Eines pro Sprint","Kommt drauf an"],a:[0],e:"One product = one Product Backlog = one PO. Always.",ed:"Ein Produkt = ein Product Backlog = ein PO. Immer.",r:"Scrum Guide 2020 - Product Backlog"},
+{c:"Exam Traps",t:"s",q:"The Product Backlog is best described as:",d:"Das Product Backlog wird am besten beschrieben als:",o:["An emergent, ordered list","A prioritized list of features","A fixed requirements document","A list of bugs"],od:["Eine emergente, geordnete Liste","Eine priorisierte Feature-Liste","Ein festes Anforderungsdokument","Eine Bug-Liste"],a:[0],e:"TRAP: 'Ordered' not 'prioritized'! The Guide uses 'ordered' intentionally.",ed:"FALLE: 'Geordnet' (ordered), NICHT 'priorisiert'! Bewusste Wortwahl im Guide.",r:"Scrum Guide 2020 - Product Backlog"},
+{c:"Exam Traps",t:"s",q:"Velocity is:",d:"Velocity ist:",o:["Not in the Scrum Guide","A required metric","Set by the PO","Tracked by the SM"],od:["Nicht im Scrum Guide","Eine Pflicht-Kennzahl","Vom PO festgelegt","Vom SM erfasst"],a:[0],e:"TRAP: Velocity is NOT in the Scrum Guide. Common practice, not Scrum.",ed:"FALLE: Velocity kommt im Guide nicht vor! Praxis ja, Scrum nein.",r:"Scrum Guide 2020 - (not mentioned)"},
+{c:"Exam Traps",t:"s",q:"User Stories are:",d:"User Stories sind:",o:["Not required by Scrum","Required PBI format","Created by the SM","Only for Planning"],od:["Nicht von Scrum vorgeschrieben","Pflichtformat für PBI","Vom SM erstellt","Nur für Planning"],a:[0],e:"TRAP: User Stories are not in the Guide. Any format is fine.",ed:"FALLE: User Stories kommen im Guide nicht vor! Jedes Format ist ok.",r:"Scrum Guide 2020 - (not mentioned)"},
+{c:"Exam Traps",t:"s",q:"Story points are:",d:"Story Points sind:",o:["Not part of the Scrum Guide","Required for sizing","Set by the PO","A core metric"],od:["Nicht Teil des Scrum Guide","Pflicht für Schätzungen","Vom PO festgelegt","Eine Kernmetrik"],a:[0],e:"TRAP: Story points, burndowns - common but NOT in the Guide.",ed:"FALLE: Story Points und Burndowns sind Praxis, aber NICHT im Guide!",r:"Scrum Guide 2020 - (not mentioned)"},
+{c:"Exam Traps",t:"tf",q:"True or False: The 2020 Guide uses 'roles' for PO, SM, Developers.",d:"Richtig oder Falsch: Der Guide 2020 nutzt 'Rollen' für PO, SM, Entwickler.",o:["True","False"],od:["Richtig","Falsch"],a:[1],e:"False. Since 2020: 'accountabilities' not 'roles'.",ed:"Falsch! Seit 2020: 'Verantwortlichkeiten' (accountabilities), nicht 'Rollen'.",r:"Scrum Guide 2020 - Scrum Team"},
+{c:"Exam Traps",t:"s",q:"'Developers' in Scrum refers to:",d:"'Developers' in Scrum bezieht sich auf:",o:["Anyone creating any aspect of the Increment","Only programmers","Only code writers","Senior technical members"],od:["Alle die am Inkrement arbeiten","Nur Programmierer","Nur Code-Schreiber","Erfahrene Techniker"],a:[0],e:"Developers = anyone creating any aspect of a usable Increment. Not just coders!",ed:"Developers = alle die am Inkrement arbeiten. Tester, Designer, Analysten - nicht nur Coder!",r:"Scrum Guide 2020 - Developers"},
+{c:"Scenarios",t:"s",q:"Manager wants status report on each Developer. SM should:",d:"Manager will Statusbericht über jeden Entwickler. SM soll:",o:["Explain self-management, suggest Sprint Review","Create the report","Ask Devs to write it","Ignore it"],od:["Selbstorganisation erklären, Sprint Review empfehlen","Bericht erstellen","Entwickler sollen es schreiben","Ignorieren"],a:[0],e:"SM coaches on Scrum. Individual reports contradict self-management.",ed:"SM coacht über Scrum. Einzelberichte widersprechen der Selbstorganisation.",r:"Scrum Guide 2020 - Scrum Master"},
+{c:"Scenarios",t:"s",q:"Developers can't finish all items. What should they do?",d:"Entwickler schaffen nicht alle Items. Was tun?",o:["Negotiate scope with PO, protect Sprint Goal","Work overtime","Ask SM to extend Sprint","Report failure at Retro"],od:["Umfang mit PO verhandeln, Sprint-Ziel schützen","Überstunden machen","SM bitten Sprint zu verlängern","Misserfolg in Retro melden"],a:[0],e:"Scope is renegotiated with PO. Sprint Goal must not be compromised.",ed:"Umfang wird mit PO nachverhandelt. Sprint-Ziel darf nicht gefährdet werden!",r:"Scrum Guide 2020 - The Sprint"},
+{c:"Scenarios",t:"s",q:"Items don't meet DoD at Sprint end. What happens?",d:"Items erfüllen am Sprint-Ende nicht die DoD. Was passiert?",o:["Not in Increment, back to Product Backlog","Released as partial","PO decides if good enough","DoD adjusted"],od:["Nicht im Inkrement, zurück ins Product Backlog","Als Teil-Inkrement ausgeliefert","PO entscheidet","DoD wird angepasst"],a:[0],e:"Not Done = not released, not presented at Review. Back to Product Backlog.",ed:"Nicht fertig = nicht auslieferbar, nicht im Review zeigbar. Zurück ins Product Backlog!",r:"Scrum Guide 2020 - Definition of Done"},
+{c:"Scenarios",t:"s",q:"Stakeholders interrupt Developers mid-Sprint. What should happen?",d:"Stakeholder stören Entwickler im Sprint. Was soll passieren?",o:["SM protects the team","Devs stop and handle requests","PO adds to Sprint Backlog","Each Dev decides"],od:["SM schützt das Team","Entwickler stoppen und bearbeiten","PO fügt zum Sprint Backlog hinzu","Jeder Entwickler entscheidet"],a:[0],e:"SM removes impediments and protects from interference.",ed:"SM beseitigt Hindernisse und schützt vor Störungen von aussen.",r:"Scrum Guide 2020 - Scrum Master"},
+{c:"Scenarios",t:"s",q:"PO wants to change Sprint Goal mid-Sprint. What happens?",d:"PO will Sprint-Ziel mitten im Sprint ändern. Was passiert?",o:["Sprint may be cancelled if Goal is obsolete","Goal updated immediately","SM decides","Nothing, Goals can't change"],od:["Sprint kann abgebrochen werden","Ziel wird sofort aktualisiert","SM entscheidet","Nichts, Ziele ändern sich nicht"],a:[0],e:"Sprint Goal is fixed. If obsolete, PO may cancel the Sprint entirely.",ed:"Sprint-Ziel ist fix. Wenn obsolet, kann der PO den Sprint komplett abbrechen.",r:"Scrum Guide 2020 - The Sprint"},
+{c:"Scrum Theory",t:"s",q:"Who is accountable for the Scrum Team's effectiveness?",d:"Wer ist verantwortlich für die Effektivität des Scrum Teams?",o:["The Scrum Master","The Product Owner","The Developers","All equally"],od:["Der Scrum Master","Der Product Owner","Die Entwickler","Alle gleich"],a:[0],e:"The SM is accountable for the team's effectiveness.",ed:"Der SM ist verantwortlich für die Effektivität des Teams.",r:"Scrum Guide 2020 - Scrum Master"},
+{c:"Events",t:"s",q:"During a Sprint, which is true?",d:"Während eines Sprints, was stimmt?",o:["No changes endanger the Sprint Goal","Scope is completely fixed","Only SM can add work","PO can add anything"],od:["Keine Änderungen gefährden das Sprint-Ziel","Umfang ist komplett fix","Nur SM kann Arbeit hinzufügen","PO kann alles hinzufügen"],a:[0],e:"No changes that endanger Sprint Goal. Scope may be clarified with PO.",ed:"Keine Änderungen die das Sprint-Ziel gefährden. Umfang kann mit PO geklärt werden.",r:"Scrum Guide 2020 - The Sprint"},
+{c:"Scenarios",t:"s",q:"Developer wants SM to assign tasks. SM should:",d:"Entwickler will dass SM Aufgaben zuweist. SM soll:",o:["Coach on self-management","Assign the tasks","Ask PO to assign","Create task board"],od:["Über Selbstorganisation coachen","Aufgaben zuweisen","PO bitten zuzuweisen","Task-Board erstellen"],a:[0],e:"Scrum Teams self-manage. SM coaches, doesn't assign.",ed:"Scrum Teams organisieren sich selbst. SM coacht, weist nicht zu!",r:"Scrum Guide 2020 - SM/Developers"},
+{c:"Events",t:"s",q:"Purpose of the Sprint Retrospective?",d:"Zweck der Sprint Retrospektive?",o:["Plan ways to increase quality and effectiveness","Review the Increment","Update Product Backlog","Report to stakeholders"],od:["Wege planen für mehr Qualität und Effektivität","Inkrement prüfen","Product Backlog aktualisieren","An Stakeholder berichten"],a:[0],e:"Retro = improve process. Review = inspect product.",ed:"Retro = Prozess verbessern. Review = Produkt prüfen. Nicht verwechseln!",r:"Scrum Guide 2020 - Sprint Retrospective"},
+{c:"Scrum Team",t:"s",q:"Cross-functional means:",d:"Cross-funktional bedeutet:",o:["Team has all skills needed to create value","Everyone can do every job","Members from different departments","Mix of junior and senior"],od:["Team hat alle Fähigkeiten um Wert zu schaffen","Jeder kann alles","Mitglieder aus verschiedenen Abteilungen","Mix aus Junior und Senior"],a:[0],e:"Collectively all skills needed. NOT everyone is interchangeable.",ed:"GEMEINSAM alle Fähigkeiten. Nicht dass jeder alles können muss!",r:"Scrum Guide 2020 - Scrum Team"},
+{c:"Events",t:"s",q:"Sprint Review timebox (one-month Sprint)?",d:"Sprint Review Timebox (Monats-Sprint)?",o:["4 hours","8 hours","3 hours","2 hours"],od:["4 Stunden","8 Stunden","3 Stunden","2 Stunden"],a:[0],e:"Review: 4h. Planning: 8h. Retro: 3h. Daily: 15min. MEMORIZE!",ed:"Review: 4h. Planning: 8h. Retro: 3h. Daily: 15min. AUSWENDIG LERNEN!",r:"Scrum Guide 2020 - Sprint Review"},
+{c:"Commitments",t:"s",q:"If a PBI doesn't meet DoD?",d:"Wenn ein PBI die DoD nicht erfüllt?",o:["Cannot be released or shown at Review","PO can approve exception","SM overrides DoD","Released with note"],od:["Kann nicht ausgeliefert oder gezeigt werden","PO kann Ausnahme genehmigen","SM überschreibt DoD","Wird mit Hinweis ausgeliefert"],a:[0],e:"No exceptions. Not Done = not released. Back to Product Backlog.",ed:"Keine Ausnahmen! Nicht fertig = nicht auslieferbar. Zurück ins Product Backlog.",r:"Scrum Guide 2020 - Definition of Done"},
+{c:"Product Owner",t:"s",q:"The Product Owner is:",d:"Der Product Owner ist:",o:["One person, not a committee","A committee that votes","Rotated each Sprint","Assigned by SM"],od:["Eine Person, kein Komitee","Ein Komitee das abstimmt","Wird rotiert","Vom SM bestimmt"],a:[0],e:"PO = one person. May represent many, decides alone.",ed:"PO = EINE Person. Kann viele vertreten, entscheidet aber allein.",r:"Scrum Guide 2020 - Product Owner"},
+{c:"Product Owner",t:"tf",q:"True or False: PO can delegate backlog work but remains accountable.",d:"Richtig oder Falsch: PO kann Backlog-Arbeit delegieren, bleibt aber verantwortlich.",o:["True","False"],od:["Richtig","Falsch"],a:[0],e:"True. PO may delegate but stays accountable.",ed:"Richtig! PO kann delegieren, bleibt aber verantwortlich.",r:"Scrum Guide 2020 - Product Owner"},
+{c:"Scenarios",t:"s",q:"Developers find a better way to Sprint Goal. They should:",d:"Entwickler finden besseren Weg zum Sprint-Ziel. Sie sollen:",o:["Update Sprint Backlog - their living plan","Ask PO permission","Wait for next Planning","Call emergency meeting"],od:["Sprint Backlog aktualisieren - ihr Plan","PO um Erlaubnis fragen","Bis zum nächsten Planning warten","Notfall-Meeting einberufen"],a:[0],e:"Sprint Backlog belongs to Developers. They update it as needed.",ed:"Sprint Backlog gehört den Entwicklern. Sie aktualisieren es laufend, keine Erlaubnis nötig!",r:"Scrum Guide 2020 - Sprint Backlog"},
+{c:"Key Concepts",t:"s",q:"How much capacity should Refinement consume?",d:"Wie viel Kapazität sollte Refinement beanspruchen?",o:["No more than 10%","Exactly 20%","At least 25%","As much as needed"],od:["Nicht mehr als 10%","Genau 20%","Mindestens 25%","So viel wie nötig"],a:[0],e:"No more than 10% of Developers' capacity.",ed:"Nicht mehr als 10% der Kapazität der Entwickler.",r:"Scrum Guide 2020 - Product Backlog"},
+{c:"Scrum Master",t:"s",q:"SM serves the organization by:",d:"SM dient der Organisation durch:",o:["Leading and coaching in Scrum adoption","Ensuring all follow same process","Reporting performance","Setting deadlines"],od:["Führung und Coaching bei Scrum-Einführung","Sicherstellen alle folgen gleichem Prozess","Leistungsberichte","Deadlines setzen"],a:[0],e:"SM leads, trains, coaches in Scrum adoption.",ed:"SM führt, trainiert, coacht bei der Scrum-Einführung.",r:"Scrum Guide 2020 - Scrum Master"},
+{c:"Events",t:"s",q:"Who creates the Sprint Goal?",d:"Wer erstellt das Sprint-Ziel?",o:["The entire Scrum Team","The PO alone","Developers alone","The SM"],od:["Das gesamte Scrum Team","Nur der PO","Nur die Entwickler","Der SM"],a:[0],e:"Sprint Goal is crafted by the ENTIRE Scrum Team collaboratively.",ed:"Sprint-Ziel wird vom GESAMTEN Team gemeinsam erarbeitet!",r:"Scrum Guide 2020 - Sprint Planning"},
+{c:"Key Concepts",t:"s",q:"Sprint Review is attended by:",d:"Am Sprint Review nehmen teil:",o:["Scrum Team and invited stakeholders","Only the Scrum Team","Only Devs and PO","Only management"],od:["Scrum Team und eingeladene Stakeholder","Nur das Scrum Team","Nur Entwickler und PO","Nur Management"],a:[0],e:"Scrum Team + key stakeholders discuss progress toward Product Goal.",ed:"Scrum Team + Stakeholder besprechen Fortschritt zum Produktziel.",r:"Scrum Guide 2020 - Sprint Review"},
+{c:"Scrum Theory",t:"s",q:"Scrum optimizes predictability through:",d:"Scrum optimiert Vorhersagbarkeit durch:",o:["Iterative, incremental approach","Detailed upfront planning","Fixed scope","Management oversight"],od:["Iterativen, inkrementellen Ansatz","Detaillierte Vorausplanung","Fixen Umfang","Management-Aufsicht"],a:[0],e:"Iterative + incremental = optimize predictability and control risk.",ed:"Iterativ + inkrementell = Vorhersagbarkeit optimieren und Risiko kontrollieren.",r:"Scrum Guide 2020 - Scrum Theory"},
+{c:"Key Concepts",t:"tf",q:"True or False: Sprint Goal can be renegotiated mid-Sprint.",d:"Richtig oder Falsch: Sprint-Ziel kann im Sprint nachverhandelt werden.",o:["True","False"],od:["Richtig","Falsch"],a:[1],e:"False. Sprint Goal is fixed. If obsolete, PO cancels the Sprint.",ed:"Falsch! Sprint-Ziel ist fix. Wenn obsolet: Sprint abbrechen, nicht Ziel ändern.",r:"Scrum Guide 2020 - The Sprint"},
+{c:"Commitments",t:"s",q:"If DoD is organizational standard, who follows it?",d:"Wenn DoD ein Organisationsstandard ist, wer hält sich daran?",o:["All Scrum Teams as minimum","Only willing teams","Same-product teams only","PO decides per team"],od:["Alle Scrum Teams als Minimum","Nur willige Teams","Nur Teams am selben Produkt","PO entscheidet pro Team"],a:[0],e:"All teams follow org DoD as minimum. May add stricter criteria.",ed:"ALLE Teams halten die Org-DoD als Minimum ein. Strengere Kriterien sind erlaubt.",r:"Scrum Guide 2020 - Definition of Done"},
+{c:"Exam Traps",t:"s",q:"Burndown charts are:",d:"Burndown Charts sind:",o:["Not required by Scrum","Required for tracking","Created daily by SM","Reviewed at every Daily"],od:["Nicht von Scrum vorgeschrieben","Pflicht für Tracking","Täglich vom SM erstellt","Bei jedem Daily besprochen"],a:[0],e:"TRAP: Not in the Scrum Guide. Useful but not required.",ed:"FALLE: Nicht im Scrum Guide. Nützlich, aber keine Pflicht.",r:"Scrum Guide 2020 - (not mentioned)"},
+{c:"Scrum Master",t:"s",q:"Stakeholders demand new features mid-Sprint conflicting with Sprint Goal. SM should:",d:"Stakeholder fordern neue Features mitten im Sprint die dem Sprint-Ziel widersprechen. SM soll:",o:["Help PO protect Sprint Goal, manage expectations","Add features immediately","Cancel the Sprint","Tell stakeholders to wait"],od:["PO helfen Sprint-Ziel zu schützen, Erwartungen managen","Features sofort hinzufügen","Sprint abbrechen","Stakeholder ohne Erklärung warten lassen"],a:[0],e:"SM helps PO manage stakeholder expectations and protect the Sprint Goal.",ed:"SM hilft dem PO, Stakeholder-Erwartungen zu managen und das Sprint-Ziel zu schützen.",r:"Scrum Guide 2020 - The Sprint / Scrum Master"},
+{c:"Scenarios",t:"s",q:"A new team member joins. Who onboards them into Scrum?",d:"Ein neues Teammitglied kommt. Wer führt sie in Scrum ein?",o:["The Scrum Master","The Product Owner","HR department","The team lead"],od:["Der Scrum Master","Der Product Owner","Die HR-Abteilung","Der Teamleiter"],a:[0],e:"The SM coaches team members in self-management and Scrum practices.",ed:"Der SM coacht Teammitglieder in Selbstmanagement und Scrum-Praktiken.",r:"Scrum Guide 2020 - Scrum Master"},
+{c:"Developers",t:"tf",q:"True or False: Only Developers select items from Product Backlog for the Sprint.",d:"Richtig oder Falsch: Nur Entwickler wählen Items aus dem Product Backlog für den Sprint.",o:["True","False"],od:["Richtig","Falsch"],a:[0],e:"True. Developers select the items. PO can clarify and help trade-offs.",ed:"Richtig! Entwickler wählen die Items. PO kann klären und bei Kompromissen helfen.",r:"Scrum Guide 2020 - Sprint Planning"},
+{c:"Key Concepts",t:"s",q:"What happens if the Sprint Goal becomes obsolete?",d:"Was passiert wenn das Sprint-Ziel obsolet wird?",o:["PO may cancel the Sprint","Sprint continues regardless","SM decides","Developers vote"],od:["PO kann Sprint abbrechen","Sprint geht trotzdem weiter","SM entscheidet","Entwickler stimmen ab"],a:[0],e:"Only the PO can cancel. Only reason: Sprint Goal is obsolete.",ed:"Nur der PO kann abbrechen. Einziger Grund: Sprint-Ziel ist obsolet.",r:"Scrum Guide 2020 - The Sprint"},
+{c:"Scrum Master",t:"s",q:"SM helps PO with:",d:"SM hilft dem PO bei:",o:["Techniques for effective Backlog management","Deciding backlog content","Prioritizing for them","Assigning tasks based on PO priorities"],od:["Techniken für effektives Backlog-Management","Entscheidung über Backlog-Inhalte","Priorisierung für ihn","Aufgabenzuweisung basierend auf PO-Prioritäten"],a:[0],e:"SM helps find techniques, does NOT manage the backlog for the PO.",ed:"SM hilft bei Techniken, verwaltet aber NICHT das Backlog für den PO.",r:"Scrum Guide 2020 - Scrum Master"},
+{c:"Artifacts",t:"tf",q:"True or False: An Increment may be delivered before Sprint end.",d:"Richtig oder Falsch: Ein Inkrement kann vor Sprint-Ende ausgeliefert werden.",o:["True","False"],od:["Richtig","Falsch"],a:[0],e:"True. Delivery can happen any time. Sprint Review is not a release gate.",ed:"Richtig! Auslieferung jederzeit möglich. Sprint Review ist kein Release-Tor.",r:"Scrum Guide 2020 - Increment"},
+{c:"Scrum Theory",t:"s",q:"When should inspection occur?",d:"Wann soll Überprüfung stattfinden?",o:["Frequently but not disruptively","Only at Sprint Review","Only when problems found","Once per Sprint"],od:["Häufig aber nicht störend","Nur beim Sprint Review","Nur bei Problemen","Einmal pro Sprint"],a:[0],e:"Inspect frequently enough to detect variances, but not so often it disrupts.",ed:"Häufig genug um Abweichungen zu erkennen, aber nicht so oft dass es stört.",r:"Scrum Guide 2020 - Inspection"},
+];
+// === ENGINE ===
+let mode='learn',lang='both',cur=0,ans=[],flags=new Set(),tI,tL=3600,sq=[];
+function shuf(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
+function sM(m,el){mode=m;document.querySelectorAll('#mtgl .sm-tb').forEach(b=>b.classList.remove('on'));el.classList.add('on')}
+function sL(l,el){lang=l;document.querySelectorAll('#ltgl .sm-tb').forEach(b=>{b.classList.remove('bl');b.classList.remove('on')});el.classList.add('bl')}
+function go(){
+  sq=shuf(DB);while(sq.length<80)sq.push(...shuf(DB));sq=sq.slice(0,80);
+  ans=new Array(80).fill(null);flags=new Set();cur=0;
+  document.getElementById('s0').classList.remove('on');
+  document.getElementById('s1').classList.add('on');
+  if(mode==='exam'){tL=3600;tI=setInterval(tick,1000)}else document.getElementById('tmr').textContent='\u{1F4D6}';
+  rnd();
+}
+function tick(){
+  tL--;const m=Math.floor(tL/60),s=tL%60,el=document.getElementById('tmr');
+  el.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  if(tL<=300)el.classList.add('warn');if(tL<=0){clearInterval(tI);fin()}
+}
+function rnd(){
+  const q=sq[cur];
+  document.getElementById('qb').style.width=((cur+1)/80*100)+'%';
+  document.getElementById('qc').textContent=`${cur+1}/80`;
+  document.getElementById('qcat').textContent=q.c;
+  const tEN=q.t==='m'?`Select ${q.a.length}`:q.t==='tf'?'True/False':'Select one';
+  const tDE=q.t==='m'?`W\u00e4hle ${q.a.length}`:q.t==='tf'?'Richtig/Falsch':'W\u00e4hle eine';
+  document.getElementById('qtp').textContent=lang==='both'?`${tDE} | ${tEN}`:tEN;
+  document.getElementById('qt').textContent=q.q;
+  const de=document.getElementById('qtd');de.textContent=q.d;de.className=lang==='en'?'sm-qtd hid':'sm-qtd';
+  const A=ans[cur],sh=mode==='learn'&&A!==null;
+  document.getElementById('opts').innerHTML=q.o.map((o,i)=>{
+    let c='sm-opt';if(A&&A.includes(i))c+=' sel';
+    if(sh){c+=' dis';if(q.a.includes(i))c+=' ok';else if(A&&A.includes(i))c+=' no'}
+    const mk=String.fromCharCode(65+i);
+    const dO=q.od?q.od[i]:'';
+    return`<div class="${c}" onclick="sel(${i})"><div class="sm-om">${sh?(q.a.includes(i)?'\u2713':(A&&A.includes(i)?'\u2717':mk)):mk}</div><div><div>${o}</div>${lang==='both'&&dO?`<div class="sm-od">${dO}</div>`:''}</div></div>`;
+  }).join('');
+  const ex=document.getElementById('exp');
+  if(sh){ex.innerHTML=`<div>${q.e}</div>${lang==='both'?`<div class="sm-exd">${q.ed}</div>`:''}<div class="sm-ref">\u{1F4D6} ${q.r}</div>`;ex.className='sm-exp sh'}
+  else ex.className='sm-exp';
+  document.getElementById('pb').disabled=cur===0;
+  document.getElementById('nb').textContent=cur===79?(mode==='exam'?'Abgeben':'Ergebnis'):'Weiter \u2192';
+  document.getElementById('flb').className=flags.has(cur)?'sm-fb fl':'sm-fb';
+}
+function sel(i){
+  const q=sq[cur];if(mode==='learn'&&ans[cur]!==null)return;
+  if(q.t==='m'){if(!ans[cur])ans[cur]=[];const p=ans[cur].indexOf(i);if(p>=0)ans[cur].splice(p,1);else ans[cur].push(i);if(!ans[cur].length)ans[cur]=null}
+  else ans[cur]=[i];rnd();
+}
+function nQ(){if(cur===79){fin();return}cur++;rnd();window.scrollTo(0,0)}
+function pQ(){if(cur>0){cur--;rnd();window.scrollTo(0,0)}}
+function tF(){if(flags.has(cur))flags.delete(cur);else flags.add(cur);document.getElementById('flb').className=flags.has(cur)?'sm-fb fl':'sm-fb'}
+function fin(){
+  clearInterval(tI);
+  document.getElementById('s1').classList.remove('on');
+  document.getElementById('s2').classList.add('on');
+  document.getElementById('tmr').textContent='\u2713';
+  let ok=0,no=0,sk=0;const det=[];
+  sq.forEach((q,i)=>{const a=ans[i];const g=a&&a.length===q.a.length&&a.every(v=>q.a.includes(v));if(!a)sk++;else if(g)ok++;else no++;det.push({q,a,g,i})});
+  const pct=Math.round(ok/80*100),pass=pct>=85;
+  let h=`<div class="sm-rsc"><div class="sm-rp ${pass?'ps':'fl'}">${pct}%</div><div class="sm-rl">${pass?'\u{1F389} BESTANDEN!':'\u274C Noch nicht \u2014 weiter \u00fcben!'}</div><div class="sm-rd">${ok}/80 richtig | Bestehensgrenze: 85%</div></div>
+  <div class="sm-rbd"><div class="sm-rbc"><div class="sm-rbv" style="color:var(--gn)">${ok}</div><div class="sm-rbl">Richtig</div></div><div class="sm-rbc"><div class="sm-rbv" style="color:var(--rd)">${no}</div><div class="sm-rbl">Falsch</div></div><div class="sm-rbc"><div class="sm-rbv" style="color:var(--dim)">${sk}</div><div class="sm-rbl">Skip</div></div></div>
+  <button class="sm-sbtn" onclick="location.reload()" style="margin-bottom:16px">\u{1F504} Nochmal</button>
+  <div style="font-size:11px;color:var(--dim);margin:12px 0 8px;font-family:'JetBrains Mono',monospace">REVIEW \u2014 Falsche & \u00fcbersprungene Fragen:</div>`;
+  det.filter(d=>!d.g).forEach(d=>{
+    const y=d.a?d.a.map(x=>d.q.o[x]).join(', '):'Skip';
+    const r=d.q.a.map(x=>d.q.o[x]).join(', ');
+    h+=`<div class="sm-ri" onclick="this.querySelector('.sm-rvb').style.display=this.querySelector('.sm-rvb').style.display==='block'?'none':'block'"><div class="sm-rh"><div class="sm-rq">${d.q.q}<br><span style="color:var(--dim);font-style:italic;font-size:11px">${d.q.d}</span></div><span class="sm-rbg">${d.a?'FALSCH':'SKIP'}</span></div><div class="sm-rvb"><div style="color:var(--rd)"><b>Deine Antwort:</b> ${y}</div><div style="color:var(--gn)"><b>Richtig:</b> ${r}</div><div style="color:var(--dim);margin-top:4px">${d.q.e}</div><div style="color:var(--ac2);margin-top:4px">${d.q.ed}</div><div class="sm-ref">\u{1F4D6} ${d.q.r}</div></div></div>`;
+  });
+  document.getElementById('s2').innerHTML=h;
+}
+document.addEventListener('keydown',e=>{if(!document.getElementById('s1').classList.contains('on'))return;if(e.key==='ArrowRight')nQ();if(e.key==='ArrowLeft')pQ()});
+</script>
+<script src="../assets/js/main.js"></script>
+</body>
+</html>
