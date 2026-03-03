@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iMOPS + Der Mops — Architektur</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0C0C0C;
+    --surface: #161616;
+    --surface-hover: #1C1C1C;
+    --border: #262626;
+    --border-light: #333333;
+    --text: #E5E5E5;
+    --text-dim: #737373;
+    --text-muted: #525252;
+    --text-dark: #404040;
+    --orange: #F97316;
+    --orange-dim: #FDBA74;
+    --purple: #8B5CF6;
+    --purple-bg: #F5F3FF;
+    --blue: #0EA5E9;
+    --blue-bg: #F0F9FF;
+    --red: #DC2626;
+    --red-bg: #FEF2F2;
+    --green: #059669;
+    --green-bg: #ECFDF5;
+    --orange-bg: #FFF7ED;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .container {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 32px 20px 48px;
+  }
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .header-tag {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--orange);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  .header-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  /* Layer */
+  .layer {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    user-select: none;
+  }
+  .layer:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-light);
+  }
+  .layer.active {
+    border-color: var(--layer-color);
+  }
+  .layer-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .layer-icon {
+    font-size: 26px;
+    flex-shrink: 0;
+    width: 36px;
+    text-align: center;
+  }
+  .layer-info { flex: 1; }
+  .layer-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.5px;
+    transition: color 0.2s;
+  }
+  .layer.active .layer-label { color: var(--layer-color); }
+  .layer-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    transition: color 0.2s;
+  }
+  .layer.active .layer-sub { opacity: 0.8; }
+  .layer-arrow-icon {
+    font-size: 10px;
+    color: var(--text-muted);
+    transition: transform 0.25s;
+  }
+  .layer.active .layer-arrow-icon { transform: rotate(90deg); }
+  .layer-detail {
+    display: none;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-dim);
+  }
+  .layer.active .layer-detail { display: block; }
+  /* Connectors */
+  .connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 52px;
+    position: relative;
+  }
+  .connector-line {
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--color-top), var(--color-bottom));
+    opacity: 0.4;
+  }
+  .connector-label {
+    position: absolute;
+    font-size: 9px;
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+  .connector-label.left {
+    right: calc(50% + 18px);
+    text-align: right;
+  }
+  .connector-label.right {
+    left: calc(50% + 18px);
+    text-align: left;
+  }
+  /* Principle Box */
+  .principle {
+    margin-top: 36px;
+    background: #1A0A00;
+    border: 1px solid rgba(249, 115, 22, 0.25);
+    border-radius: 10px;
+    padding: 18px 22px;
+  }
+  .principle-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    color: var(--orange);
+    margin-bottom: 8px;
+  }
+  .principle-text {
+    font-size: 13px;
+    line-height: 1.8;
+    color: #D4D4D4;
+  }
+  .principle-text .red { color: #EF4444; font-weight: 700; }
+  .principle-text .orange { color: var(--orange); font-weight: 700; }
+  /* Use Cases */
+  .usecases-toggle {
+    margin-top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+  }
+  .usecases-toggle:hover { background: var(--surface-hover); }
+  .usecases-toggle span { font-size: 13px; color: var(--text-dim); }
+  .usecases-toggle .arrow {
+    font-size: 10px;
+    color: var(--text-muted);
+    transition: transform 0.25s;
+  }
+  .usecases-toggle.open .arrow { transform: rotate(90deg); }
+  .usecases-list {
+    display: none;
+    margin-top: 8px;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .usecases-list.open { display: flex; }
+  .usecase {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .usecase-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .usecase-flow {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  /* Comparison Table */
+  .compare {
+    margin-top: 32px;
+  }
+  .compare-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .compare-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .compare-card.highlight {
+    border-color: var(--orange);
+    background: #1A0A00;
+  }
+  .compare-card .label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .compare-card .value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .compare-card.highlight .value { color: var(--orange); }
+  .compare-card .note {
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  /* Footer */
+  .footer {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-dark);
+    line-height: 1.8;
+  }
+  .footer .highlight { color: var(--orange); }
+  .footer a {
+    color: var(--text-dim);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border);
+    transition: color 0.2s;
+  }
+  .footer a:hover { color: var(--orange); }
+  /* Mobile */
+  @media (max-width: 480px) {
+    .connector-label { font-size: 8px; }
+    .connector-label.left { right: calc(50% + 12px); }
+    .connector-label.right { left: calc(50% + 12px); }
+    .header h1 { font-size: 22px; }
+    .compare-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-tag">Architektur</div>
+    <h1>iMOPS + Der Mops</h1>
+    <div class="header-sub">
+      LLM als Übersetzer · Kernel als Gehirn · Alles auf dem iPhone · Komplett offline
+    </div>
+  </div>
+  <!-- Layer 1: Koch -->
+  <div class="layer" style="--layer-color: #F97316" onclick="toggleLayer(this)">
+    <div class="layer-head">
+      <div class="layer-icon">👨‍🍳</div>
+      <div class="layer-info">
+        <div class="layer-label">KOCH / NEUER MA</div>
+        <div class="layer-sub">Spricht oder tippt</div>
+      </div>
+      <div class="layer-arrow-icon">▶</div>
+    </div>
+    <div class="layer-detail">
+      Der Koch interagiert mit dem Mops über Sprache (iOS Speech Framework) oder Text. Kein WLAN nötig, kein Server, kein Cloud-Dienst. Funktioniert im Keller, auf der Baustelle, überall.
+    </div>
+  </div>
+  <!-- Connector 1 -->
+  <div class="connector">
+    <div class="connector-label left" style="color: #F97316">▼ „Kühlhaus zeigt 8,5"</div>
+    <div class="connector-line" style="--color-top: #F97316; --color-bottom: #8B5CF6"></div>
+    <div class="connector-label right" style="color: #8B5CF6">▲ „Achtung, über Grenzwert!"</div>
+  </div>
+  <!-- Layer 2: Der Mops -->
+  <div class="layer" style="--layer-color: #8B5CF6" onclick="toggleLayer(this)">
+    <div class="layer-head">
+      <div class="layer-icon">🐕</div>
+      <div class="layer-info">
+        <div class="layer-label">DER MOPS</div>
+        <div class="layer-sub">On-Device LLM · Übersetzer</div>
+      </div>
+      <div class="layer-arrow-icon">▶</div>
+    </div>
+    <div class="layer-detail">
+      Phi-3 Mini oder TinyLlama, läuft direkt auf dem iPhone. Versteht natürliche Sprache → wandelt in Kernel-Abfrage. Empfängt Kernel-Antwort → formuliert menschlich. Weiß <strong>NICHTS</strong> selbst. Erfindet <strong>NICHTS</strong>. Ist nur der Dolmetscher.
+    </div>
+  </div>
+  <!-- Connector 2 -->
+  <div class="connector">
+    <div class="connector-label left" style="color: #8B5CF6">▼ Natürliche Sprache</div>
+    <div class="connector-line" style="--color-top: #8B5CF6; --color-bottom: #0EA5E9"></div>
+    <div class="connector-label right" style="color: #0EA5E9">▲ Menschliche Antwort</div>
+  </div>
+  <!-- Layer 3: Interpreter -->
+  <div class="layer" style="--layer-color: #0EA5E9" onclick="toggleLayer(this)">
+    <div class="layer-head">
+      <div class="layer-icon">⚡</div>
+      <div class="layer-info">
+        <div class="layer-label">iMOPS INTERPRETER</div>
+        <div class="layer-sub">NLU → Structured Command → NLG</div>
+      </div>
+      <div class="layer-arrow-icon">▶</div>
+    </div>
+    <div class="layer-detail">
+      Zwischenschicht: LLM-Output wird in strukturierte JSON-Befehle umgewandelt, z.B. <code>{typ: "temperatur", ort: "kühlhaus", wert: 8.5}</code>. Kernel-Antwort wird zurück an LLM gegeben zur Formulierung. Wenn das LLM Unsinn parsed, fängt der Interpreter es ab.
+    </div>
+  </div>
+  <!-- Connector 3 -->
+  <div class="connector">
+    <div class="connector-label left" style="color: #0EA5E9">▼ {typ: temp, wert: 8.5}</div>
+    <div class="connector-line" style="--color-top: #0EA5E9; --color-bottom: #DC2626"></div>
+    <div class="connector-label right" style="color: #DC2626">▲ {status: WARNUNG}</div>
+  </div>
+  <!-- Layer 4: Kernel -->
+  <div class="layer" style="--layer-color: #DC2626" onclick="toggleLayer(this)">
+    <div class="layer-head">
+      <div class="layer-icon">🧠</div>
+      <div class="layer-info">
+        <div class="layer-label">TheBrain · KERNEL</div>
+        <div class="layer-sub">Deterministisch · Offline · Auditfähig</div>
+      </div>
+      <div class="layer-arrow-icon">▶</div>
+    </div>
+    <div class="layer-detail">
+      MUMPS-inspirierter In-Memory Store. Single Source of Truth. Event Sourcing mit Hash-Chain Audit Trail. <strong>HIER liegen ALLE Entscheidungen.</strong> Temperatur über Grenzwert? Kernel entscheidet. Arbeitszeit überschritten? Kernel entscheidet. KEINE Halluzinationen möglich — deterministischer Code.
+    </div>
+  </div>
+  <!-- Connector 4 -->
+  <div class="connector">
+    <div class="connector-label left" style="color: #DC2626">▼ Abfrage</div>
+    <div class="connector-line" style="--color-top: #DC2626; --color-bottom: #059669"></div>
+    <div class="connector-label right" style="color: #059669">▲ Regeln &amp; Daten</div>
+  </div>
+  <!-- Layer 5: PRP -->
+  <div class="layer" style="--layer-color: #059669" onclick="toggleLayer(this)">
+    <div class="layer-head">
+      <div class="layer-icon">📋</div>
+      <div class="layer-info">
+        <div class="layer-label">PRP · 10 STORES</div>
+        <div class="layer-sub">Allergen · Temperatur · Reinigung · Audit · …</div>
+      </div>
+      <div class="layer-arrow-icon">▶</div>
+    </div>
+    <div class="layer-detail">
+      10 Präventivprogramme: Allergen, Reinigung, Schädling, Temperatur, Supplier, KPI, Recall, FoodDefence, FoodFraud, Audit. Plus: ChefIQ-Wissensdatenbank, Phase7-Dispatcher (Rollen, Eskalation), Mitarbeiter-Daten, betriebsspezifische Regeln. <strong>Alles was der Mops „weiß" kommt von hier.</strong>
+    </div>
+  </div>
+  <!-- Principle Box -->
+  <div class="principle">
+    <div class="principle-tag">KERNPRINZIP</div>
+    <div class="principle-text">
+      Das LLM erfindet <span class="red">NICHTS</span>.
+      Jede Antwort kommt aus dem Kernel.
+      Jede Entscheidung ist deterministisch.
+      Der Mops ist der <span class="orange">Mund</span>, nicht das <span class="orange">Gehirn</span>.
+    </div>
+  </div>
+  <!-- Comparison -->
+  <div class="compare">
+    <div class="compare-tag">VORHER → NACHHER</div>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <div class="label">CLOUD LLM</div>
+        <div class="value">Gemini / GPT</div>
+        <div class="note">Abhängig · Teuer · Datenabfluss</div>
+      </div>
+      <div class="compare-card highlight">
+        <div class="label">DER MOPS</div>
+        <div class="value">On-Device LLM</div>
+        <div class="note">Offline · Kostenlos · Deine Daten</div>
+      </div>
+      <div class="compare-card">
+        <div class="label">LLM ENTSCHEIDET</div>
+        <div class="value">Halluzinationen</div>
+        <div class="note">Kann falsche Temperaturen nennen</div>
+      </div>
+      <div class="compare-card highlight">
+        <div class="label">KERNEL ENTSCHEIDET</div>
+        <div class="value">Deterministisch</div>
+        <div class="note">Code prüft, LLM formuliert nur</div>
+      </div>
+    </div>
+  </div>
+  <!-- Use Cases -->
+  <div class="usecases-toggle" onclick="toggleUseCases(this)">
+    <span>Anwendungsbeispiele</span>
+    <span class="arrow">▶</span>
+  </div>
+  <div class="usecases-list" id="usecases">
+    <div class="usecase">
+      <div class="usecase-title">🌡️ Temperaturkontrolle</div>
+      <div class="usecase-flow">Koch → „Kühlhaus 8,5 Grad" → Mops versteht → Kernel prüft (>7°C!) → Mops warnt</div>
+    </div>
+    <div class="usecase">
+      <div class="usecase-title">⏰ Arbeitszeitprüfung</div>
+      <div class="usecase-flow">Koch → „Wie lange bin ich heute?" → Kernel rechnet → Mops: „9h 20min, noch 40min bis Grenze"</div>
+    </div>
+    <div class="usecase">
+      <div class="usecase-title">🆕 Neuen MA einlernen</div>
+      <div class="usecase-flow">Neuer Koch → „Was muss ich hier machen?" → Kernel kennt Station + Aufgaben → Mops erklärt</div>
+    </div>
+    <div class="usecase">
+      <div class="usecase-title">📝 Audit-Vorbereitung</div>
+      <div class="usecase-flow">Chef → „Audit-Report diese Woche" → Kernel sammelt → Mops formuliert Bericht</div>
+    </div>
+    <div class="usecase">
+      <div class="usecase-title">⚠️ Allergen-Check</div>
+      <div class="usecase-flow">Koch → „Sellerie in der Suppe?" → PRP-Allergen-Store → Mops: „Ja, Allergen Nr. 9"</div>
+    </div>
+    <div class="usecase">
+      <div class="usecase-title">🏗️ Baustellen-Mops</div>
+      <div class="usecase-flow">Selbe Architektur, anderer Kernel: Sicherheitsunterweisungen statt HACCP</div>
+    </div>
+  </div>
+  <!-- Footer -->
+  <div class="footer">
+    iMOPS Gastro Grid · <a href="https://pelczer.de">B.I.N.D.A. Verlag</a> · 2026<br>
+    Kein WLAN · Kein Server · Kein Gemini · Kein ChatGPT<br>
+    <span class="highlight">Alles auf dem Gerät. Alles unter deiner Kontrolle.</span><br><br>
+    <a href="apps/imops.html">← zurück zu iMOPS</a>
+  </div>
+</div>
+<script>
+function toggleLayer(el) {
+  const wasActive = el.classList.contains('active');
+  document.querySelectorAll('.layer').forEach(l => l.classList.remove('active'));
+  if (!wasActive) el.classList.add('active');
+}
+function toggleUseCases(el) {
+  el.classList.toggle('open');
+  document.getElementById('usecases').classList.toggle('open');
+}
+</script>
+</body>
+</html>
