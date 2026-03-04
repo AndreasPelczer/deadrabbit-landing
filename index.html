@@ -3,436 +3,354 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Andreas Pelczer — Koch. Entwickler. Autor.</title>
-    <meta name="description" content="36 Jahre Küche. Jetzt Software, die Menschen schützt statt kontrolliert. Apps, Bücher und Beratung von Andreas Pelczer / B.I.N.D.A. Verlag.">
+    <title>Andreas Pelczer — Mobile Systems Engineer · iOS / Swift</title>
+    <meta name="description" content="iOS Developer & System Architect. 36 Jahre Küche. Das Problem war nie die Sauce, sondern das System drumherum. Apps, Bücher und Systeme von Andreas Pelczer.">
     <meta name="author" content="Andreas Pelczer">
-    <meta name="keywords" content="Koch App, Kochausbildung, IHK Prüfung Koch, HACCP App, Küchenverwaltung, iOS Entwickler, Andreas Pelczer, B.I.N.D.A. Verlag, Wattwandern, Gezeiten App, WattSafe, Nordsee Sicherheit, Daumenkino GIF, Pixel Animation, Sprite Editor">
+    <meta name="keywords" content="iOS Developer, Swift, SwiftUI, Mobile Systems Engineer, Hospitality Software, HACCP, Gastronomie, Andreas Pelczer, B.I.N.D.A. Verlag, iMOPS, Production Software">
 
     <!-- Open Graph -->
-    <meta property="og:title" content="Andreas Pelczer — Koch. Entwickler. Autor.">
-    <meta property="og:description" content="36 Jahre Küche. Das Problem war nie die Sauce.">
+    <meta property="og:title" content="Andreas Pelczer — Mobile Systems Engineer">
+    <meta property="og:description" content="iOS / Swift · Hospitality & Production Software. 36 Jahre Küche. Das Problem war nie die Sauce.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://pelczer.de">
 
-    <!-- Fonts -->
+    <!-- Fonts: JetBrains Mono + IBM Plex Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
-    <!-- Styles (MVVM: View Layer) -->
-    <link rel="stylesheet" href="assets/css/variables.css">
-    <link rel="stylesheet" href="assets/css/base.css">
-    <link rel="stylesheet" href="assets/css/components.css">
-    <link rel="stylesheet" href="assets/css/layout.css">
-    <link rel="stylesheet" href="assets/css/pages.css">
-    <link rel="stylesheet" href="assets/css/sentinel.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="assets/css/portfolio.css">
 </head>
 <body data-mode="human">
 
-    <!-- ====================================================
-         SENTINEL: iMOPS Floating Logo
-         ==================================================== -->
-    <a href="apps/imops.html" class="sentinel" id="sentinel" title="iMOPS – Mehr erfahren">
-        <svg class="sentinel__logo" viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" aria-label="iMOPS">
-            <path d="M60 0 L100 0 L100 50 L170 50 L170 80 L142 80 L170 220 L130 220 L108 105 L100 80 L90 80 L82 105 L60 220 L20 220 L48 80 L20 80 L20 50 L60 50 Z" fill="#ff6b35"/>
-        </svg>
-        <span class="sentinel__label">iMOPS</span>
-    </a>
-
-    <!-- ====================================================
-         MODE TOGGLE — Mensch / Coder
-         ==================================================== -->
+    <!-- Mode Toggle -->
     <div class="mode-toggle-wrap">
-        <button class="mode-toggle" id="modeToggle" aria-label="Ansicht wechseln zwischen Mensch und Coder Modus"></button>
+        <button class="mode-toggle" id="modeToggle" aria-label="Modus wechseln"></button>
         <span class="mode-label" id="modeLabel">Mensch</span>
     </div>
 
-    <!-- ====================================================
-         NAVIGATION
-         ==================================================== -->
+    <!-- Navigation -->
     <nav class="nav">
         <div class="nav-inner">
-            <a href="/" class="nav-brand">Andreas Pelczer</a>
-            <button class="nav-menu-btn" id="navMenuBtn" aria-label="Menü öffnen">
-                <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            </button>
+            <a href="#" class="nav-brand"><span class="accent">A</span>Pelczer</a>
             <ul class="nav-links" id="navLinks">
-                <li><a href="#apps">Apps</a></li>
-                <li><a href="#books">Bücher</a></li>
-                <li><a href="fuer-schulen.html">Für Schulen</a></li>
-                <li><a href="#about">Über mich</a></li>
+                <li><a href="#projects">Projekte</a></li>
+                <li><a href="#skills">Skills</a></li>
+                <li><a href="#systems">Systeme</a></li>
+                <li><a href="#publications">Bücher</a></li>
                 <li><a href="#contact">Kontakt</a></li>
             </ul>
+            <button class="nav-menu-btn" id="navMenuBtn" aria-label="Menü">
+                <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
         </div>
     </nav>
 
-    <!-- ====================================================
-         HERO
-         ==================================================== -->
-    <section class="hero">
+    <!-- ============================================================
+         1. HERO
+         ============================================================ -->
+    <section class="hero" id="hero">
         <div class="container">
             <div class="hero-content">
-                <div class="hero-eyebrow">B.I.N.D.A. Verlag · Frankfurt am Main</div>
+                <div class="hero-terminal" id="heroTerminal">
+                    <span class="terminal-prompt">$</span>
+                    <span class="terminal-text" id="terminalText"></span><span class="terminal-cursor">▊</span>
+                </div>
+                <p class="hero-role">Mobile Systems Engineer<br>iOS / Swift · Hospitality &amp; Production Software</p>
+                <h1>Andreas Pelczer</h1>
+                <p class="hero-tagline">36 Jahre Küche. Das Problem war nie die Sauce.</p>
+                <div class="hero-links">
+                    <a href="https://github.com/AndreasPelczer" class="hero-link" target="_blank" rel="noopener">GitHub</a>
+                    <a href="https://linkedin.com/in/andreas-pelczer-5b5050160" class="hero-link" target="_blank" rel="noopener">LinkedIn</a>
+                    <a href="mailto:a.pelczer@outlook.de" class="hero-link">E-Mail</a>
+                    <a href="#projects" class="hero-link hero-link--accent">↓ Projekte</a>
+                </div>
+                <p class="hero-sub">Wertheim, BW · B.I.N.D.A. Verlag · Verfügbar für neue Projekte</p>
+            </div>
+        </div>
+    </section>
 
-                <h1>
-                    <span class="desc-human">36 Jahre Küche.<br>Das Problem war nie <em>die Sauce.</em></span>
-                    <span class="desc-coder">36 Jahre Produktion.<br>Jetzt <em>Systeme.</em></span>
-                </h1>
-
-                <p class="hero-text">
-                    <span class="desc-human">Ich bin Andreas — Koch, Autor und App-Entwickler. Nach über drei Jahrzehnten in professionellen Küchen habe ich angefangen, die Werkzeuge zu bauen, die ich damals gebraucht hätte. Apps für Köche, Bücher über das, was in Küchen wirklich passiert, und Software, die Menschen schützt statt kontrolliert.</span>
-                    <span class="desc-coder">Andreas Pelczer — Gardemanger, Souschef, Küchenchef. Irgendwann gemerkt, dass das eigentliche Problem nie die Sauce war, sondern das System drumherum. Heute baue ich Software für Menschen, die unter Druck arbeiten. Swift, SwiftUI, MUMPS-inspiriert, offline-first.</span>
+    <!-- ============================================================
+         2. FEATURED PROJECT — iMOPS
+         ============================================================ -->
+    <section id="featured" class="bg-alt">
+        <div class="container">
+            <div class="section-header fade-in">
+                <span class="section-label">Featured Project</span>
+            </div>
+            <div class="featured fade-in">
+                <span class="featured-label">Kitchen Operating System</span>
+                <h3>iMOPS Gastro-Grid</h3>
+                <p class="featured-subtitle">Produktionssteuerung für professionelle Küchen</p>
+                <p class="featured-desc">
+                    Kein WLAN im Keller. Kein Warten auf den Server. iMOPS ist ein offline-first
+                    iOS-System für HACCP-Dokumentation, Schichtplanung und Produktionssteuerung —
+                    entwickelt von einem Koch, der 36 Jahre lang mit Software gearbeitet hat,
+                    die Leute ohne Küchenpraxis gebaut haben.
                 </p>
-
-                <div class="hero-cta">
-                    <a href="#apps" class="btn btn-primary">Meine Apps entdecken</a>
-                    <a href="#books" class="btn btn-secondary">Bücher ansehen</a>
+                <div class="featured-tags">
+                    <span class="tag">Swift</span>
+                    <span class="tag">SwiftUI</span>
+                    <span class="tag">MVVM</span>
+                    <span class="tag">Offline-First</span>
+                    <span class="tag">HACCP</span>
+                    <span class="tag">MUMPS-Inspired</span>
+                    <span class="tag">Rollenbasiert</span>
+                    <span class="tag">BourdainGuard</span>
+                    <span class="tag">MenschMeierModus</span>
+                </div>
+                <div class="featured-links">
+                    <a href="apps/imops.html" class="card-link">→ Produktseite</a>
+                    <a href="https://github.com/AndreasPelczer/iMOPS_OS_CORE" class="card-link" target="_blank" rel="noopener">→ GitHub</a>
+                    <a href="imops-demo-v3-roles.html" class="card-link">→ Live Demo</a>
+                    <a href="imops-architektur.html" class="card-link">→ Architektur</a>
+                </div>
+                <div class="callout">
+                    In-Memory Kernel · Deterministisch · Kein Cloud-Overkill<br>
+                    SET / GET / KILL — wenn du ein Handbuch brauchst, ist es zu komplex.
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ====================================================
-         APPS
-         ==================================================== -->
-    <section id="apps">
+    <!-- ============================================================
+         3. PROJECT GRID
+         ============================================================ -->
+    <section id="projects">
         <div class="container">
             <div class="section-header fade-in">
-                <div class="section-label">Apps</div>
-                <h2 class="section-title">Werkzeuge aus der Praxis</h2>
-                <p class="section-subtitle">
-                    <span class="desc-human">Apps, die ich gebaut habe, weil sie gefehlt haben. Für Köche, für Azubis, für alle, die ihr Geld im Griff haben wollen.</span>
-                    <span class="desc-coder">Native iOS · Swift · SwiftUI · SwiftData · Offline-First</span>
-                </p>
+                <span class="section-label">Projekte</span>
+                <h2 class="section-title">Was ich baue</h2>
             </div>
+            <div class="project-grid stagger">
 
-            <div class="grid-2 stagger">
-
-                <!-- Matjes, der junge Hering -->
-                <div class="card app-card fade-in">
-                    <div class="app-card-header">
-                        <div class="app-icon">
-                            <img src="assets/images/matjes-icon.png" alt="Matjes Küchenfachkunde">
-                        </div>
-                        <div>
-                            <h3>Matjes, der junge Hering</h3>
-                            <div class="app-tagline">AusbildungsSpielKoch</div>
-                        </div>
-                    </div>
+                <!-- Matjes -->
+                <div class="project-card fade-in">
+                    <h3>Matjes</h3>
+                    <span class="project-card-tagline">AusbildungsSpielKoch</span>
                     <p>
-                        <span class="desc-human">Du machst eine Kochausbildung? Matjes hilft dir spielerisch beim Lernen — Küchenfachkunde, Warenkunde, Prüfungsvorbereitung. Wie ein Karteikarten-System, nur mit mehr Spaß.</span>
-                        <span class="desc-coder">Gamifizierte Lern-App für Kochausbildung. SwiftUI, SwiftData. Einstiegspunkt ins Gastri-Grid Ökosystem. Karteikartensystem mit Spaced Repetition für IHK-Prüfungsvorbereitung.</span>
+                        Gamifizierte Lern-App für Kochazubis. Karteikarten, Spaced Repetition,
+                        IHK-Prüfungsvorbereitung. Companion zur Fachbuchreihe.
                     </p>
-                    <span class="badge badge-live">Im App Store</span>
-                    <div class="link-row">
-                        <a href="apps/matjes.html" class="link-arrow">Mehr erfahren →</a>
+                    <div class="project-card-tags">
+                        <span class="tag">Swift</span>
+                        <span class="tag">SwiftUI</span>
+                        <span class="tag">SwiftData</span>
+                        <span class="tag">Gamification</span>
+                        <span class="tag">B2C</span>
                     </div>
-                </div>
-
-                <!-- Matjes-Pro (Einzellizenz) -->
-                <div class="card app-card fade-in">
-                    <div class="app-card-header">
-                        <div class="app-icon">
-                            <img src="assets/images/matjes-icon.png" alt="Matjes Pro">
-                        </div>
-                        <div>
-                            <h3>Matjes-Pro</h3>
-                            <div class="app-tagline">Einzellizenz für Azubis</div>
-                        </div>
-                    </div>
-                    <p>
-                        <span class="desc-human">Die Premium-Version für Azubis, die es ernst meinen. Detaillierte Statistiken, erweiterte Lernmodi, Schwächenanalyse — alles, was du für die Prüfung brauchst.</span>
-                        <span class="desc-coder">Premium-Version für Einzelnutzer. Erweiterte Analytics, Schwächenanalyse, zusätzliche Prüfungsmodi. In-App-Purchase Monetarisierung.</span>
-                    </p>
-                    <span class="badge badge-wip">In Vorbereitung</span>
-                    <div class="link-row">
-                        <a href="apps/matjes-pro.html" class="link-arrow">Mehr erfahren →</a>
-                    </div>
-                </div>
-
-                <!-- Matjes-Schule (B2B) -->
-                <div class="card app-card fade-in">
-                    <div class="app-card-header">
-                        <div class="app-icon">
-                            <img src="assets/images/matjes-icon.png" alt="Matjes Schule">
-                        </div>
-                        <div>
-                            <h3>Matjes-Schule</h3>
-                            <div class="app-tagline">Für Berufsschulen &amp; Betriebe</div>
-                        </div>
-                    </div>
-                    <p>
-                        <span class="desc-human">Das Ausbildungsspiel für Ihr Klassenzimmer. Klassenverwaltung, Fortschrittstracking, eigene Fragenkataloge, PDF-Reports. DSGVO-konform.</span>
-                        <span class="desc-coder">B2B-Version. CloudKit Multi-Tenant, Klassenverwaltung, Custom Question Sets, Progress Analytics, PDF-Export. Zero-Backend-Architecture.</span>
-                    </p>
-                    <span class="badge badge-wip">In Vorbereitung</span>
-                    <div class="link-row">
-                        <a href="apps/matjes-schule.html" class="link-arrow">Mehr erfahren →</a>
-                        <a href="fuer-schulen.html" class="link-arrow">Preise & Details →</a>
-                    </div>
-                </div>
-
-                <!-- iMOPS Gastro-Grid -->
-                <div class="card app-card fade-in">
-                    <div class="app-card-header">
-                        <div class="app-icon">
-                            <img src="assets/images/gastrogrid-icon.png" alt="GASTRO-GRID OMNI">
-                        </div>
-                        <div>
-                            <h3>iMOPS Gastro-Grid</h3>
-                            <div class="app-tagline">Küchenmanagementsystem</div>
-                        </div>
-                    </div>
-                    <p>
-                        <span class="desc-human">Digitale Küchenverwaltung — HACCP-Listen, Aufgabenverteilung, Schichtplanung. Funktioniert auch ohne WLAN, weil im Keller keins ist. Entwickelt von einem Koch, nicht von einer IT-Firma.</span>
-                        <span class="desc-coder">In-Memory Kernel für Produktionssteuerung. HACCP-konform, offline, deterministisch. MUMPS-inspiriert. Rollenbasiert (Küchenchef bis Leihkoch). MenschMeierModus für Anti-Surveillance, BourdainGuard für Worker Protection.</span>
-                    </p>
-                    <span class="badge badge-live">Im App Store</span>
-                    <div class="link-row">
-                        <a href="apps/imops.html" class="link-arrow">Mehr erfahren →</a>
-                        <a href="gastro-grid.html" class="link-arrow">Produktseite →</a>
-                        <a href="imops-demo-v3-roles.html" class="link-arrow desc-coder">Live Demo →</a>
-                        <a href="https://github.com/AndreasPelczer/iMOPS_OS_CORE" class="link-arrow desc-coder">GitHub →</a>
+                    <div class="project-card-links">
+                        <a href="apps/matjes.html" class="card-link">→ Produktseite</a>
                     </div>
                 </div>
 
                 <!-- MoneyPath2026 -->
-                <div class="card app-card fade-in">
-                    <div class="app-card-header">
-                        <div class="app-icon">
-                            <img src="assets/images/moneypath-icon.png" alt="MoneyPath">
-                        </div>
-                        <div>
-                            <h3>MoneyPath2026</h3>
-                            <div class="app-tagline">Finanzen verstehen</div>
-                        </div>
-                    </div>
+                <div class="project-card fade-in">
+                    <h3>MoneyPath2026</h3>
+                    <span class="project-card-tagline">Personal Finance Tracker</span>
                     <p>
-                        <span class="desc-human">Geld im Griff, ohne BWL-Studium. MoneyPath zeigt dir, wo dein Geld hingeht und hilft dir, bessere Entscheidungen zu treffen. Einfach, ehrlich, ohne Werbung.</span>
-                        <span class="desc-coder">Personal Finance Tracker. SwiftUI, SwiftData. Tip-Jar Monetarisierung. Keine Ads, kein Tracking. Offline-first.</span>
+                        Offline-first, keine Werbung, kein Tracking. Tip-Jar Modell.
+                        Gebaut für Leute die ihr Geld verstehen wollen, ohne BWL studiert zu haben.
                     </p>
-                    <span class="badge badge-live">Im App Store</span>
-                    <div class="link-row">
-                        <a href="apps/moneypath.html" class="link-arrow">Mehr erfahren →</a>
+                    <div class="project-card-tags">
+                        <span class="tag">Swift</span>
+                        <span class="tag">SwiftUI</span>
+                        <span class="tag">SwiftData</span>
+                        <span class="tag">Offline-First</span>
+                        <span class="tag">Privacy</span>
+                    </div>
+                    <div class="project-card-links">
+                        <a href="apps/moneypath.html" class="card-link">→ Produktseite</a>
                     </div>
                 </div>
 
                 <!-- SOLARA -->
-                <div class="card app-card fade-in">
-                    <div class="app-card-header">
-                        <div class="app-icon">
-                            <img src="assets/images/solara-icon.png" alt="SOLARA">
-                        </div>
-                        <div>
-                            <h3>SOLARA</h3>
-                            <div class="app-tagline">Satirische To-Do-App</div>
-                        </div>
-                    </div>
+                <div class="project-card fade-in">
+                    <h3>SOLARA</h3>
+                    <span class="project-card-tagline">Satirische To-Do-App</span>
                     <p>
-                        <span class="desc-human">Eine To-Do-App, die manchmal einfach „Nein" sagt. Kosmische Zustände, esoterische Pop-ups und eine 30%-Chance, dass deine Aufgabe abgelehnt wird. Weil nicht alles immer funktionieren muss.</span>
-                        <span class="desc-coder">Satirische Productivity-App. Randomisierte Task-Ablehnung, esoterisches UI, kosmische States. Open Source, MIT Lizenz.</span>
+                        30% Ablehnungsrate. Kosmische Zustände, esoterische Pop-ups. Open Source.
+                        Weil nicht alles immer funktionieren muss.
                     </p>
-                    <span class="badge badge-live">Im App Store</span>
-                    <div class="link-row">
-                        <a href="apps/solara.html" class="link-arrow">Mehr erfahren →</a>
+                    <div class="project-card-tags">
+                        <span class="tag">Swift</span>
+                        <span class="tag">SwiftUI</span>
+                        <span class="tag">Open Source</span>
+                        <span class="tag">MIT</span>
+                        <span class="tag">Humor</span>
+                    </div>
+                    <div class="project-card-links">
+                        <a href="apps/solara.html" class="card-link">→ Produktseite</a>
+                        <a href="https://github.com/AndreasPelczer" class="card-link" target="_blank" rel="noopener">→ GitHub</a>
                     </div>
                 </div>
 
                 <!-- Connect4D -->
-                <div class="card app-card fade-in">
-                    <div class="app-card-header">
-                        <div class="app-icon" style="background:linear-gradient(135deg, #D9A621, #e8c84a);display:flex;align-items:center;justify-content:center;border-radius:16px;width:60px;height:60px;">
-                            <span style="font-size:32px;">🔴</span>
-                        </div>
-                        <div>
-                            <h3>Connect4D</h3>
-                            <div class="app-tagline">Vier Gewinnt — neu gedacht</div>
-                        </div>
-                    </div>
+                <div class="project-card fade-in">
+                    <h3>Connect4D</h3>
+                    <span class="project-card-tagline">Vier-Gewinnt, neu gebaut</span>
                     <p>
-                        <span class="desc-human">Das klassische Vier-Gewinnt-Spiel in einer neuen Dimension. Offline, werbefrei, für alle Altersgruppen. Einfach spielen.</span>
-                        <span class="desc-coder">Connect Four Reimagined. SwiftUI. Offline-first. Keine Datenerhebung. Keine Ads. Keine Drittanbieter-SDKs.</span>
+                        Klassisches Vier-Gewinnt. Offline, werbefrei, kinderfreundlich.
+                        Keine Datenerhebung, keine Drittanbieter-SDKs.
                     </p>
-                    <span class="badge badge-wip">In Vorbereitung</span>
-                    <div class="link-row">
-                        <a href="legal/connect4d-privacy.html" class="link-arrow">Datenschutz →</a>
+                    <div class="project-card-tags">
+                        <span class="tag">Swift</span>
+                        <span class="tag">SwiftUI</span>
+                        <span class="tag">GameKit</span>
+                        <span class="tag">Offline</span>
+                        <span class="tag">Kids</span>
+                    </div>
+                    <div class="project-card-links">
+                        <a href="https://github.com/AndreasPelczer/Connect4D" class="card-link" target="_blank" rel="noopener">→ GitHub</a>
                     </div>
                 </div>
 
-                <!-- WattSafe — Wattwandern -->
-                <div class="card app-card fade-in">
-                    <div class="app-card-header">
-                        <div class="app-icon" style="background:linear-gradient(135deg, #1a6b8a, #3b9ed6);display:flex;align-items:center;justify-content:center;border-radius:16px;width:60px;height:60px;">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 20 Q8 16, 12 20 Q16 24, 20 20 Q24 16, 28 20" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-                                <path d="M4 24 Q8 20, 12 24 Q16 28, 20 24 Q24 20, 28 24" stroke="rgba(255,255,255,0.5)" stroke-width="2" fill="none" stroke-linecap="round"/>
-                                <circle cx="16" cy="10" r="5" fill="rgba(255,255,255,0.9)"/>
-                                <path d="M16 10 L16 6 M12 10 L20 10" stroke="#1a6b8a" stroke-width="1.5" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3>WattSafe</h3>
-                            <div class="app-tagline">Wattwander-Sicherheit</div>
-                        </div>
-                    </div>
+                <!-- WattSafe -->
+                <div class="project-card fade-in">
+                    <h3>WattSafe</h3>
+                    <span class="project-card-tagline">Sicherheits-Web-App für Wattwanderungen</span>
                     <p>
-                        <span class="desc-human">Sicher durchs Watt. WattSafe berechnet Gezeiten, findet sichere Wanderfenster und hat einen Deadman-Timer für den Notfall. Funktioniert komplett offline — auch mitten im Watt.</span>
-                        <span class="desc-coder">Harmonische Gezeitenberechnung (9 Konstituenten). Leaflet.js + OpenSeaMap. SafetyNet mit Deadman-Timer. Offline-first Web App. Sicherheitsfenster-Algorithmus mit Qualitätsbewertung (OPTIMAL/GUT/GRENZWERTIG).</span>
+                        Harmonische Gezeitenberechnung (9 Konstituenten), Deadman-Timer,
+                        SafetyNet-Algorithmus. Komplett offline — auch mitten im Watt.
                     </p>
-                    <span class="badge badge-live">Web App</span>
-                    <div class="link-row">
-                        <a href="wattwandern.html" class="link-arrow">Web App starten →</a>
+                    <div class="project-card-tags">
+                        <span class="tag">JavaScript</span>
+                        <span class="tag">Leaflet.js</span>
+                        <span class="tag">PWA</span>
+                        <span class="tag">Offline-First</span>
+                        <span class="tag">Safety</span>
+                    </div>
+                    <div class="project-card-links">
+                        <a href="wattwandern.html" class="card-link">→ Web App</a>
                     </div>
                 </div>
 
-                <!-- ScrumMops — PSM I Simulator -->
-                <div class="card app-card fade-in">
-                    <div class="app-card-header">
-                        <div class="app-icon" style="background:linear-gradient(135deg, #b45309, #e67e22);display:flex;align-items:center;justify-content:center;border-radius:16px;width:60px;height:60px;">
-                            <span style="font-size:32px;">🐕</span>
-                        </div>
-                        <div>
-                            <h3>ScrumMops</h3>
-                            <div class="app-tagline">PSM I Exam Simulator</div>
-                        </div>
-                    </div>
+                <!-- iMOPS Construction Grid -->
+                <div class="project-card fade-in">
+                    <h3>iMOPS Construction Grid</h3>
+                    <span class="project-card-tagline">Workflow-System für Baustellen</span>
                     <p>
-                        <span class="desc-human">PSM I Prüfungssimulator — lerne auf Deutsch, bestehe auf Englisch. 80 Fragen aus dem Scrum Guide 2020 mit Lern- und Prüfungsmodus. Kostenlos, ohne Account, ohne Tracking.</span>
-                        <span class="desc-coder">PSM I Exam Simulator. 80 randomisierte Fragen (Single/Multi/T-F). Dual-Language Engine (DE+EN). Lernmodus mit Instant-Feedback + Scrum Guide Referenzen. Prüfungsmodus mit 60-Min-Timer. Vanilla JS, Zero Dependencies.</span>
+                        Excel-to-SketchUp Integration, 63 Commits, Produktionssteuerung
+                        für Nicht-Gastro-Umgebungen. Das Architektur-Denken ist transferierbar.
                     </p>
-                    <span class="badge badge-live">Web App</span>
-                    <div class="link-row">
-                        <a href="scrummops.html" class="link-arrow">Web App starten →</a>
+                    <div class="project-card-tags">
+                        <span class="tag">Swift</span>
+                        <span class="tag">Workflow</span>
+                        <span class="tag">Architecture</span>
+                        <span class="tag">Construction</span>
+                    </div>
+                    <div class="project-card-links">
+                        <a href="https://github.com/AndreasPelczer" class="card-link" target="_blank" rel="noopener">→ GitHub</a>
                     </div>
                 </div>
 
-                <!-- Daumenkino-GIF (PlanktonSprite) -->
-                <div class="card app-card fade-in">
-                    <div class="app-card-header">
-                        <div class="app-icon" style="background:linear-gradient(135deg, #7b2d8e, #c855e0);display:flex;align-items:center;justify-content:center;border-radius:16px;width:60px;height:60px;">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="6" y="4" width="20" height="24" rx="2" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.5"/>
-                                <rect x="10" y="8" width="12" height="12" rx="1" fill="rgba(255,255,255,0.3)"/>
-                                <rect x="10" y="8" width="4" height="4" fill="#ff6b9d"/>
-                                <rect x="14" y="8" width="4" height="4" fill="#4ecdc4"/>
-                                <rect x="18" y="8" width="4" height="4" fill="#ffe66d"/>
-                                <rect x="10" y="12" width="4" height="4" fill="#4ecdc4"/>
-                                <rect x="14" y="12" width="4" height="4" fill="#ff6b9d"/>
-                                <rect x="18" y="12" width="4" height="4" fill="#4ecdc4"/>
-                                <rect x="10" y="16" width="4" height="4" fill="#ffe66d"/>
-                                <rect x="14" y="16" width="4" height="4" fill="#4ecdc4"/>
-                                <rect x="18" y="16" width="4" height="4" fill="#ff6b9d"/>
-                                <line x1="10" y1="24" x2="22" y2="24" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3>Daumenkino-GIF</h3>
-                            <div class="app-tagline">Pixel-Sprite-Animator</div>
-                        </div>
-                    </div>
-                    <p>
-                        <span class="desc-human">Zeichne Pixel-Sprites, animiere sie Frame für Frame und exportiere sie als GIF oder Spritesheet. Perfekt für kleine Animationen, die du per WhatsApp, iMessage oder AirDrop teilen kannst.</span>
-                        <span class="desc-coder">32×32 Pixel Canvas. Multi-Frame Animation (bis 24 Frames). Export als GIF (ImageIO) oder PNG-Spritesheet (SpriteKit-kompatibel). Swift, SwiftUI. Flood-Fill, Undo/Redo Stack. Universal App (iPhone + iPad + macOS).</span>
-                    </p>
-                    <span class="badge badge-wip">In Entwicklung</span>
-                    <div class="link-row">
-                        <a href="https://github.com/AndreasPelczer/PlanktonSprite" class="link-arrow desc-coder">GitHub →</a>
-                    </div>
-                </div>
-
-            </div><!-- /grid-2 -->
+            </div>
         </div>
     </section>
 
-    <!-- ====================================================
-         QUOTE BREAK
-         ==================================================== -->
-    <section class="quote-section">
-        <div class="container fade-in">
-            <p class="quote-text">„Das eigentliche Problem war nie die Sauce, sondern das System drumherum."</p>
-            <p class="quote-attr">— README.md</p>
-        </div>
-    </section>
-
-    <!-- ====================================================
-         BÜCHER
-         ==================================================== -->
-    <section id="books" class="bg-alt">
+    <!-- ============================================================
+         4. SKILLS
+         ============================================================ -->
+    <section id="skills" class="bg-alt">
         <div class="container">
             <div class="section-header fade-in">
-                <div class="section-label">Publikationen</div>
-                <h2 class="section-title">Bücher</h2>
-                <p class="section-subtitle">
-                    <span class="desc-human">Was in Küchen wirklich passiert — und warum Systeme wichtiger sind als Motivation.</span>
-                    <span class="desc-coder">Fachbuch · Lehrbuch · Memoir</span>
+                <span class="section-label">Stack</span>
+                <h2 class="section-title">Skills</h2>
+            </div>
+
+            <div class="skills-category fade-in">
+                <span class="skills-category-label">iOS &amp; Mobile</span>
+                <div class="skills-grid">
+                    <span class="skill-badge">Swift</span>
+                    <span class="skill-badge">SwiftUI</span>
+                    <span class="skill-badge">UIKit</span>
+                    <span class="skill-badge">SwiftData</span>
+                    <span class="skill-badge">CloudKit</span>
+                    <span class="skill-badge">StoreKit 2</span>
+                    <span class="skill-badge">CoreData</span>
+                    <span class="skill-badge">MapKit</span>
+                    <span class="skill-badge">SpriteKit</span>
+                    <span class="skill-badge">MVVM</span>
+                    <span class="skill-badge">Offline-First</span>
+                </div>
+            </div>
+
+            <div class="skills-category fade-in">
+                <span class="skills-category-label">Platform &amp; Tools</span>
+                <div class="skills-grid">
+                    <span class="skill-badge">Firebase</span>
+                    <span class="skill-badge">Git / GitHub</span>
+                    <span class="skill-badge">REST APIs</span>
+                    <span class="skill-badge">PWA</span>
+                    <span class="skill-badge">JavaScript</span>
+                    <span class="skill-badge">Leaflet.js</span>
+                    <span class="skill-badge">Python</span>
+                    <span class="skill-badge">Xcode</span>
+                    <span class="skill-badge">VS Code</span>
+                    <span class="skill-badge">Flutter (Grundlagen)</span>
+                </div>
+            </div>
+
+            <div class="skills-category fade-in">
+                <span class="skills-category-label">Domain</span>
+                <div class="skills-grid">
+                    <span class="skill-badge">HACCP</span>
+                    <span class="skill-badge">ISO 9001</span>
+                    <span class="skill-badge">Gastronomie-Workflows</span>
+                    <span class="skill-badge">Produktionssteuerung</span>
+                    <span class="skill-badge">Ausbildungsrecht (AEVO)</span>
+                    <span class="skill-badge">MUMPS-Architektur</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         5. SYSTEMS THINKING
+         ============================================================ -->
+    <section id="systems">
+        <div class="container">
+            <div class="section-header fade-in">
+                <span class="section-label">Philosophie</span>
+                <h2 class="section-title">Systeme, nicht Motivation.</h2>
+            </div>
+
+            <div class="systems-text fade-in">
+                <p>
+                    Software die Menschen kontrolliert, schafft Eskalation.
+                    Software die Abläufe modelliert, schafft Klarheit.
+                </p>
+                <br>
+                <p>
+                    Dieser Unterschied ist die Grundlage von allem, was ich baue.
+                    36 Jahre Produktion lehren: <em>Das Problem ist nie der Mensch.
+                    Das Problem ist das System, das den Menschen nicht trägt.</em>
+                </p>
+                <br>
+                <p>
+                    iMOPS hat einen BourdainGuard — weil Gastronomie statistisch einer der
+                    härtesten Arbeitsbereiche für psychische Gesundheit ist. Der MenschMeierModus
+                    misst absichtlich unscharf, weil Surveillance als Motivation nicht funktioniert.
+                </p>
+                <br>
+                <p>
+                    Das ist keine Philosophie. Das ist <em>Architekturentscheidung</em>.
                 </p>
             </div>
 
-            <div class="grid-3 stagger">
-
-                <div class="card book-card fade-in">
-                    <h3>Thermodynamik der Arbeit</h3>
-                    <div class="book-meta">Fachbuch · 2025 · Erhältlich</div>
-                    <p>
-                        <span class="desc-human">Warum scheitern Teams, obwohl alle „motiviert" sind? Dieses Buch erklärt, warum es nicht an den Menschen liegt, sondern an den Strukturen. Kein Motivationsratgeber — ein Systembuch.</span>
-                        <span class="desc-coder">Warum Systeme kollabieren. Keine Motivation, keine Moral — nur Struktur. Die theoretische Grundlage hinter iMOPS. Thermodynamische Analogien auf Arbeitsorganisation angewandt.</span>
-                    </p>
-                    <div class="link-row">
-                        <a href="https://www.amazon.de/dp/B0GK95MWB5" class="link-arrow">Bei Amazon →</a>
-                        <a href="books/thermodynamik.html" class="link-arrow">Leseprobe →</a>
-                    </div>
-                </div>
-
-                <div class="card book-card fade-in">
-                    <h3>Der junge Hering</h3>
-                    <div class="book-meta">Lehrbuch · 2025 · Erhältlich</div>
-                    <p>
-                        <span class="desc-human">Dein Begleiter durch die Kochausbildung. Alles, was du für die IHK-Prüfung brauchst, geschrieben von jemandem, der 36 Jahre in Küchen gestanden hat. Das Begleitbuch zur Matjes-App.</span>
-                        <span class="desc-coder">Companion Book zur AusbildungsSpielKoch-App. IHK-Prüfungsvorbereitung Koch/Köchin. Entry Point ins Gastri-Grid Ökosystem.</span>
-                    </p>
-                    <div class="link-row">
-                        <a href="books/junger-hering.html" class="link-arrow">Mehr erfahren →</a>
-                        <a href="leseprobe-junger-hering.html" class="link-arrow">Leseprobe →</a>
-                    </div>
-                </div>
-
-                <div class="card book-card fade-in">
-                    <h3>Der Küchencode</h3>
-                    <div class="book-meta">Memoir · 2026 · ~70% fertig</div>
-                    <p>
-                        <span class="desc-human">36 Jahre professionelle Küche. Von der Bundeswehr-Brigade bis zum Systemarchitekten. Drei Stimmen erzählen eine Geschichte — die Geschichte hinter allem, was ich heute mache.</span>
-                        <span class="desc-coder">Memoir. 36 Jahre. Bundeswehr-Brigade bis System Architect. Drei-Stimmen-Narrative-Struktur. Die Geschichte hinter iMOPS und der Thermodynamik der Arbeit.</span>
-                    </p>
-                    <div class="link-row">
-                        <a href="books/kuechencode.html" class="link-arrow">Leseprobe →</a>
-                    </div>
-                </div>
-
-            </div><!-- /grid-3 -->
-        </div>
-    </section>
-
-    <!-- ====================================================
-         PRINZIPIEN (nur Coder-Modus)
-         ==================================================== -->
-    <section class="coder-only">
-        <div class="container">
-            <div class="section-header fade-in">
-                <div class="section-label">Prinzipien</div>
-                <h2 class="section-title">Wie ich baue</h2>
-            </div>
-            <div class="grid-4 stagger">
+            <div class="principles-grid stagger">
                 <div class="principle-card fade-in">
                     <h4>Offline zuerst</h4>
-                    <p>Im Keller gibt's kein WLAN. Um 20:30 wartet niemand auf einen Server.</p>
+                    <p>Im Keller kein WLAN. Um 20:30 kein Server.</p>
                 </div>
                 <div class="principle-card fade-in">
                     <h4>Menschen über Profit</h4>
-                    <p>Systeme die funktionieren, entlasten Menschen. Systeme die „motivieren", belasten sie.</p>
+                    <p>Systeme entlasten oder belasten. Es gibt kein Dazwischen.</p>
                 </div>
                 <div class="principle-card fade-in">
                     <h4>Korrektes Verhalten, einfach gemacht</h4>
-                    <p>Wenn das Richtige schwerer ist als das Falsche, ist das System schuld.</p>
+                    <p>Wenn das Richtige schwerer ist, ist das System schuld.</p>
                 </div>
                 <div class="principle-card fade-in">
                     <h4>SET / GET / KILL</h4>
@@ -442,542 +360,105 @@
         </div>
     </section>
 
-    <!-- ====================================================
-         STACK (nur Coder-Modus)
-         ==================================================== -->
-    <section class="coder-only bg-alt">
+    <!-- ============================================================
+         6. PUBLIKATIONEN
+         ============================================================ -->
+    <section id="publications" class="bg-alt">
         <div class="container">
             <div class="section-header fade-in">
-                <div class="section-label">Stack</div>
-                <h2 class="section-title">Kein Schnickschnack.</h2>
-            </div>
-            <div class="stack-tags fade-in">
-                <span class="stack-tag">Swift</span>
-                <span class="stack-tag">SwiftUI</span>
-                <span class="stack-tag">SwiftData</span>
-                <span class="stack-tag">Xcode</span>
-                <span class="stack-tag">Offline-First</span>
-                <span class="stack-tag">HACCP</span>
-                <span class="stack-tag">ISO 9001</span>
-                <span class="stack-tag">MUMPS-Inspired</span>
-                <span class="stack-tag">GitHub Pages</span>
-            </div>
-        </div>
-    </section>
-
-    <!-- ====================================================
-         ÜBER MICH
-         ==================================================== -->
-    <section id="about">
-        <div class="container">
-            <div class="section-header fade-in">
-                <div class="section-label">Über mich</div>
-                <h2 class="section-title">Andreas Pelczer</h2>
+                <span class="section-label">Bücher</span>
+                <h2 class="section-title">Publikationen</h2>
             </div>
 
-            <div class="split-grid fade-in">
-                <div>
-                    <p style="font-size: 16px; line-height: 1.8; margin-bottom: 16px;">
-                        <span class="desc-human">Ich habe mit 16 angefangen zu kochen und 36 Jahre lang nicht mehr aufgehört. Gardemanger, Souschef, Küchenchef, Betriebsleiter — ich kenne jede Position in einer Küche. Großverpflegung, Sterneküche, Kliniken, Europa-Park, Bundeswehr.</span>
-                        <span class="desc-coder">36 Jahre professionelle Gastronomie. Gardemanger → Souschef → Küchenchef → Betriebsleiter. Großverpflegung, Sterneküche, Kliniken, Europa-Park, Bundeswehr (600-Mann-Brigade).</span>
+            <div class="books-grid stagger">
+                <div class="book-card fade-in">
+                    <h3>Thermodynamik der Arbeit</h3>
+                    <span class="book-meta">2025 · Erhältlich auf Amazon</span>
+                    <p>
+                        Warum Teams scheitern, obwohl alle motiviert sind. Kein Ratgeber —
+                        ein Systembuch. Die theoretische Grundlage hinter iMOPS.
                     </p>
-                    <p style="font-size: 16px; line-height: 1.8; margin-bottom: 16px;">
-                        <span class="desc-human">Irgendwann habe ich gemerkt, dass die eigentlichen Probleme in Küchen nicht die Gerichte sind — sondern die Systeme, in denen Menschen arbeiten. Also habe ich angefangen, bessere Systeme zu bauen. Erst auf Papier, dann als Software.</span>
-                        <span class="desc-coder">2023–2024: iOS-Entwicklung am Syntax Institut. Swift, SwiftUI, Xcode. Seitdem: iMOPS-Kernel, fünf veröffentlichte Apps, drei Bücher. MUMPS-Background durch den Vater (Krankenhaussysteme).</span>
-                    </p>
-                    <p style="font-size: 16px; line-height: 1.8;">
-                        <span class="desc-human">Heute entwickle ich Apps, schreibe Bücher und berate Betriebe — alles mit einem Ziel: Arbeit muss funktionieren, ohne Menschen kaputt zu machen.</span>
-                        <span class="desc-coder">Gründer B.I.N.D.A. Verlag. iOS-Entwicklung, Fachbuch-Autor, System-Architektur für Produktionsumgebungen. Frankfurt am Main / Wertheim.</span>
-                    </p>
+                    <a href="books/thermodynamik.html" class="book-link">→ Mehr erfahren</a>
                 </div>
 
-                <div class="timeline">
-                    <div class="timeline-item">
-                        <span class="timeline-year">2024 —</span>
-                        <div class="timeline-content">
-                            <h4>B.I.N.D.A. Verlag</h4>
-                            <p>Apps, Bücher, Systemarchitektur</p>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <span class="timeline-year">2023 — 24</span>
-                        <div class="timeline-content">
-                            <h4>Syntax Institut</h4>
-                            <p>iOS-Entwicklung · Swift · SwiftUI</p>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <span class="timeline-year">1994 — 98</span>
-                        <div class="timeline-content">
-                            <h4>Bundeswehr — Küchenchef</h4>
-                            <p>600-Mann-Brigade</p>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <span class="timeline-year">1988 —</span>
-                        <div class="timeline-content">
-                            <h4>36 Jahre Gastronomie</h4>
-                            <p>Gardemanger → Küchenchef → Systeme</p>
-                        </div>
-                    </div>
+                <div class="book-card fade-in">
+                    <h3>Der junge Hering</h3>
+                    <span class="book-meta">2025 · Erhältlich auf Amazon</span>
+                    <p>
+                        Lehrbuch für Kochazubis. IHK-Prüfungsvorbereitung.
+                        Companion zum Matjes-Ökosystem. Sie-Form, 200 Seiten, KDP Taschenbuch.
+                    </p>
+                    <a href="books/junger-hering.html" class="book-link">→ Mehr erfahren</a>
+                </div>
+
+                <div class="book-card fade-in">
+                    <h3>Der Küchencode</h3>
+                    <span class="book-meta">2026 · In Finalisierung</span>
+                    <p>
+                        Memoir. 36 Jahre. Bundeswehr-Brigade bis System Architect.
+                        Drei Stimmen — GHOST_OF_MUMPS, Hannes der Koch, der System Architect.
+                    </p>
+                    <a href="books/kuechencode.html" class="book-link">→ Coming 2026</a>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ====================================================
-         FOOTER
-         ==================================================== -->
-    <footer class="footer" id="contact">
+    <!-- ============================================================
+         7. AVAILABLE FOR
+         ============================================================ -->
+    <section id="contact">
         <div class="container">
-            <div class="footer-brand">B.I.N.D.A. Verlag</div>
-            <p class="footer-sub">Andreas Pelczer · Frankfurt am Main / Wertheim</p>
-
-            <div class="footer-links">
-                <a href="https://github.com/AndreasPelczer">GitHub</a>
-                <a href="https://www.linkedin.com/in/andreas-pelczer-5b5050160/">LinkedIn</a>
-                <a href="https://www.amazon.de/Thermodynamik-Arbeit-warum-Systeme-kollabieren/dp/B0GK95MWB5">Amazon</a>
+            <div class="section-header fade-in">
+                <span class="section-label">Verfügbar</span>
+                <h2 class="section-title">Offen für</h2>
             </div>
 
-            <div class="footer-legal">
+            <div class="hire-grid stagger">
+                <div class="hire-item fade-in">iOS Development</div>
+                <div class="hire-item fade-in">Hospitality Software</div>
+                <div class="hire-item fade-in">Mobile Engineering</div>
+                <div class="hire-item fade-in">Workflow Systems</div>
+                <div class="hire-item fade-in">Swift / SwiftUI</div>
+                <div class="hire-item fade-in">Production Digitisation</div>
+                <div class="hire-item fade-in">Domain Expertise</div>
+                <div class="hire-item fade-in">Vocational Training (AEVO)</div>
+            </div>
+
+            <div class="contact-links fade-in">
+                <a href="mailto:a.pelczer@outlook.de" class="contact-link">
+                    <span class="contact-link-label">Mail</span> a.pelczer@outlook.de
+                </a>
+                <a href="https://github.com/AndreasPelczer" class="contact-link" target="_blank" rel="noopener">
+                    <span class="contact-link-label">GitHub</span> github.com/AndreasPelczer
+                </a>
+                <a href="https://linkedin.com/in/andreas-pelczer-5b5050160" class="contact-link" target="_blank" rel="noopener">
+                    <span class="contact-link-label">LinkedIn</span> linkedin.com/in/andreas-pelczer-5b5050160
+                </a>
+                <a href="tel:+4917050006902" class="contact-link">
+                    <span class="contact-link-label">Telefon</span> 0170 5006902
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         8. FOOTER
+         ============================================================ -->
+    <footer class="footer">
+        <div class="container">
+            <p class="footer-copy">&copy; 2026 B.I.N.D.A. Verlag · Andreas Pelczer · Wertheim, BW</p>
+            <p class="footer-legal">
                 <a href="legal/impressum.html">Impressum</a> · <a href="legal/datenschutz.html">Datenschutz</a>
-                <br><br>
-                © 2026 B.I.N.D.A. Verlag · <span class="footer-easter" id="easterEgg" title="Memento Mori">MEMENTO MORI</span>
+            </p>
+            <p class="footer-memento" id="mementoMori">MEMENTO MORI</p>
+            <div class="gol-canvas-wrap" id="golWrap">
+                <canvas id="golCanvas"></canvas>
             </div>
         </div>
     </footer>
 
-    <!-- ============================================
-       EASTER EGG: Conway's Game of Life
-       Aktiviert durch Klick auf "MEMENTO MORI"
-       ============================================ -->
-  <div id="conway-overlay" class="conway-overlay" aria-hidden="true">
-    <div class="conway-header">
-      <h2 class="conway-title">GAME OF LIFE</h2>
-      <p class="conway-subtitle">4 Regeln. Keine Steuerung. Emergenz.</p>
-      <button class="conway-close" onclick="closeConway()" title="Schließen">×</button>
-    </div>
-    <div class="conway-patterns">
-      <button onclick="conwayLoadPattern('glider')">Glider</button>
-      <button onclick="conwayLoadPattern('blinker')">Blinker</button>
-      <button onclick="conwayLoadPattern('pulsar')">Pulsar</button>
-      <button onclick="conwayLoadPattern('glidergun')">Glider Gun</button>
-      <button onclick="conwayLoadPattern('acorn')">Acorn</button>
-      <button onclick="conwayLoadPattern('rpentomino')">R-Pentomino</button>
-      <button onclick="conwayRandom()">Zufall</button>
-    </div>
-    <div class="conway-controls">
-      <button onclick="conwayTogglePlay()" id="conway-play">▶ Start</button>
-      <button onclick="conwayStep()">→ Schritt</button>
-      <button onclick="conwayClear()">✕ Reset</button>
-      <span class="conway-stats">Gen: <span id="conway-gen">0</span> · Pop: <span id="conway-pop">0</span></span>
-    </div>
-    <canvas id="conway-canvas"></canvas>
-    <p class="conway-hint">
-      <em>Klick</em> = Zelle setzen/löschen · <em>Ziehen</em> = Malen ·
-      Die 4 Regeln: Einsamkeit (&lt;2 Nachbarn → Tod) · Überleben (2-3 → lebt) ·
-      Überbevölkerung (&gt;3 → Tod) · Geburt (genau 3 → lebt)
-    </p>
-  </div>
-
-  <style>
-    /* Conway Easter Egg Styles */
-    .conway-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(10, 10, 10, 0.97);
-      z-index: 10000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.4s ease, visibility 0.4s;
-    }
-    .conway-overlay.active {
-      opacity: 1;
-      visibility: visible;
-    }
-    .conway-header {
-      text-align: center;
-      margin-bottom: 15px;
-      position: relative;
-      width: 100%;
-      max-width: 640px;
-    }
-    .conway-title {
-      font-family: var(--font-mono);
-      font-size: 1.4rem;
-      font-weight: 400;
-      color: var(--accent);
-      letter-spacing: 3px;
-      margin: 0;
-    }
-    .conway-subtitle {
-      font-size: 0.75rem;
-      color: #666;
-      margin: 4px 0 0 0;
-    }
-    .conway-close {
-      position: absolute;
-      top: 0;
-      right: 0;
-      background: transparent;
-      border: none;
-      color: #666;
-      font-size: 2rem;
-      cursor: pointer;
-      line-height: 1;
-      padding: 0 10px;
-      transition: color 0.2s;
-    }
-    .conway-close:hover {
-      color: var(--accent);
-    }
-    .conway-controls {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 15px;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
-    }
-    .conway-controls button {
-      background: #1a1a1a;
-      color: #e0e0e0;
-      border: 1px solid #333;
-      padding: 8px 14px;
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      cursor: pointer;
-      transition: all 0.15s;
-      border-radius: 3px;
-    }
-    .conway-controls button:hover {
-      background: #2a2a2a;
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    .conway-controls button.active {
-      background: var(--accent);
-      color: #0a0a0a;
-      border-color: var(--accent);
-    }
-    .conway-stats {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: #888;
-      margin-left: 10px;
-    }
-    .conway-stats span {
-      color: var(--accent);
-    }
-    #conway-canvas {
-      border: 1px solid #222;
-      cursor: crosshair;
-      image-rendering: pixelated;
-      max-width: 100%;
-    }
-    .conway-patterns {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .conway-patterns button {
-      background: transparent;
-      color: #666;
-      border: 1px solid #222;
-      padding: 4px 10px;
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      cursor: pointer;
-      transition: all 0.15s;
-      border-radius: 3px;
-    }
-    .conway-patterns button:hover {
-      color: var(--accent);
-      border-color: var(--accent);
-    }
-    .conway-hint {
-      font-size: 0.65rem;
-      color: #555;
-      margin-top: 14px;
-      text-align: center;
-      max-width: 500px;
-      line-height: 1.6;
-    }
-    .conway-hint em {
-      color: var(--accent);
-      font-style: normal;
-    }
-    .footer-easter:hover {
-      text-shadow: 0 0 10px var(--accent);
-    }
-  </style>
-
-    <!-- Scripts -->
-    <script src="assets/js/main.js"></script>
-    <script>
-    // ============================================
-    // CONWAY'S GAME OF LIFE - Easter Egg
-    // ============================================
-    let conwayCanvas, conwayCtx;
-    let conwayGrid = [];
-    let conwayRunning = false;
-    let conwayInterval = null;
-    let conwayGeneration = 0;
-    let conwayIsDrawing = false;
-    let conwayDrawValue = 1;
-    const CONWAY_CELL = 8;
-    let CONWAY_COLS = 80;
-    let CONWAY_ROWS = 50;
-
-    // Trigger setup
-    document.addEventListener('DOMContentLoaded', () => {
-      const trigger = document.getElementById('easterEgg');
-      if (trigger) {
-        trigger.addEventListener('click', openConway);
-      }
-    });
-
-    function openConway() {
-      const overlay = document.getElementById('conway-overlay');
-      overlay.classList.add('active');
-      document.body.style.overflow = 'hidden';
-      if (!conwayCanvas) {
-        initConway();
-      }
-      conwayLoadPattern('glider');
-    }
-
-    function closeConway() {
-      const overlay = document.getElementById('conway-overlay');
-      overlay.classList.remove('active');
-      document.body.style.overflow = '';
-      if (conwayRunning) {
-        conwayTogglePlay();
-      }
-    }
-
-    function initConway() {
-      conwayCanvas = document.getElementById('conway-canvas');
-      conwayCtx = conwayCanvas.getContext('2d');
-      const maxWidth = Math.min(window.innerWidth - 40, 640);
-      CONWAY_COLS = Math.floor(maxWidth / CONWAY_CELL);
-      CONWAY_ROWS = Math.floor((window.innerHeight * 0.5) / CONWAY_CELL);
-      conwayCanvas.width = CONWAY_COLS * CONWAY_CELL;
-      conwayCanvas.height = CONWAY_ROWS * CONWAY_CELL;
-      conwayGrid = conwayCreateGrid();
-      conwayCanvas.addEventListener('mousedown', conwayMouseDown);
-      conwayCanvas.addEventListener('mousemove', conwayMouseMove);
-      conwayCanvas.addEventListener('mouseup', () => conwayIsDrawing = false);
-      conwayCanvas.addEventListener('mouseleave', () => conwayIsDrawing = false);
-      conwayCanvas.addEventListener('touchstart', conwayTouchStart, { passive: false });
-      conwayCanvas.addEventListener('touchmove', conwayTouchMove, { passive: false });
-      conwayCanvas.addEventListener('touchend', () => conwayIsDrawing = false);
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeConway();
-      });
-      conwayDraw();
-    }
-
-    function conwayCreateGrid() {
-      return Array.from({ length: CONWAY_ROWS }, () => new Uint8Array(CONWAY_COLS));
-    }
-
-    function conwayDraw() {
-      conwayCtx.fillStyle = '#0a0a0a';
-      conwayCtx.fillRect(0, 0, conwayCanvas.width, conwayCanvas.height);
-      conwayCtx.strokeStyle = '#151515';
-      conwayCtx.lineWidth = 0.5;
-      for (let x = 0; x <= CONWAY_COLS; x++) {
-        conwayCtx.beginPath();
-        conwayCtx.moveTo(x * CONWAY_CELL, 0);
-        conwayCtx.lineTo(x * CONWAY_CELL, CONWAY_ROWS * CONWAY_CELL);
-        conwayCtx.stroke();
-      }
-      for (let y = 0; y <= CONWAY_ROWS; y++) {
-        conwayCtx.beginPath();
-        conwayCtx.moveTo(0, y * CONWAY_CELL);
-        conwayCtx.lineTo(CONWAY_COLS * CONWAY_CELL, y * CONWAY_CELL);
-        conwayCtx.stroke();
-      }
-      let pop = 0;
-      for (let r = 0; r < CONWAY_ROWS; r++) {
-        for (let c = 0; c < CONWAY_COLS; c++) {
-          if (conwayGrid[r][c]) {
-            pop++;
-            const n = conwayCountNeighbors(r, c);
-            if (n < 2 || n > 3) conwayCtx.fillStyle = '#ff4444';
-            else if (n === 3) conwayCtx.fillStyle = '#44ff88';
-            else conwayCtx.fillStyle = '#E8863A';
-            conwayCtx.fillRect(c * CONWAY_CELL + 1, r * CONWAY_CELL + 1, CONWAY_CELL - 2, CONWAY_CELL - 2);
-          }
-        }
-      }
-      document.getElementById('conway-pop').textContent = pop;
-    }
-
-    function conwayCountNeighbors(row, col) {
-      let count = 0;
-      for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-          if (dr === 0 && dc === 0) continue;
-          const r = (row + dr + CONWAY_ROWS) % CONWAY_ROWS;
-          const c = (col + dc + CONWAY_COLS) % CONWAY_COLS;
-          count += conwayGrid[r][c];
-        }
-      }
-      return count;
-    }
-
-    function conwayStep() {
-      const next = conwayCreateGrid();
-      for (let r = 0; r < CONWAY_ROWS; r++) {
-        for (let c = 0; c < CONWAY_COLS; c++) {
-          const n = conwayCountNeighbors(r, c);
-          if (conwayGrid[r][c]) {
-            if (n === 2 || n === 3) next[r][c] = 1;
-          } else {
-            if (n === 3) next[r][c] = 1;
-          }
-        }
-      }
-      conwayGrid = next;
-      conwayGeneration++;
-      document.getElementById('conway-gen').textContent = conwayGeneration;
-      conwayDraw();
-    }
-
-    function conwayTogglePlay() {
-      conwayRunning = !conwayRunning;
-      const btn = document.getElementById('conway-play');
-      if (conwayRunning) {
-        btn.textContent = '⏸ Pause';
-        btn.classList.add('active');
-        conwayInterval = setInterval(conwayStep, 100);
-      } else {
-        btn.textContent = '▶ Start';
-        btn.classList.remove('active');
-        clearInterval(conwayInterval);
-      }
-    }
-
-    function conwayClear() {
-      if (conwayRunning) conwayTogglePlay();
-      conwayGrid = conwayCreateGrid();
-      conwayGeneration = 0;
-      document.getElementById('conway-gen').textContent = '0';
-      conwayDraw();
-    }
-
-    function conwayRandom() {
-      conwayClear();
-      for (let r = 0; r < CONWAY_ROWS; r++) {
-        for (let c = 0; c < CONWAY_COLS; c++) {
-          conwayGrid[r][c] = Math.random() < 0.25 ? 1 : 0;
-        }
-      }
-      conwayDraw();
-    }
-
-    function conwayLoadPattern(name) {
-      conwayClear();
-      const cx = Math.floor(CONWAY_COLS / 2);
-      const cy = Math.floor(CONWAY_ROWS / 2);
-      const patterns = {
-        glider: [[0,1],[1,2],[2,0],[2,1],[2,2]],
-        blinker: [[0,0],[0,1],[0,2]],
-        pulsar: (() => {
-          const p = [];
-          const offsets = [
-            [-6,-4],[-6,-3],[-6,-2],[-6,2],[-6,3],[-6,4],
-            [-4,-6],[-3,-6],[-2,-6],[-4,-1],[-3,-1],[-2,-1],
-            [-4,1],[-3,1],[-2,1],[-4,6],[-3,6],[-2,6],
-            [-1,-4],[-1,-3],[-1,-2],[-1,2],[-1,3],[-1,4],
-          ];
-          offsets.forEach(([r,c]) => {
-            p.push([r,c]); p.push([-r,c]); p.push([r,-c]); p.push([-r,-c]);
-          });
-          const seen = new Set();
-          return p.filter(([r,c]) => {
-            const key = `${r},${c}`;
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          });
-        })(),
-        glidergun: [
-          [0,24],[1,22],[1,24],[2,12],[2,13],[2,20],[2,21],[2,34],[2,35],
-          [3,11],[3,15],[3,20],[3,21],[3,34],[3,35],[4,0],[4,1],[4,10],[4,16],[4,20],[4,21],
-          [5,0],[5,1],[5,10],[5,14],[5,16],[5,17],[5,22],[5,24],[6,10],[6,16],[6,24],
-          [7,11],[7,15],[8,12],[8,13]
-        ],
-        acorn: [[0,1],[1,3],[2,0],[2,1],[2,4],[2,5],[2,6]],
-        rpentomino: [[0,1],[0,2],[1,0],[1,1],[2,1]],
-      };
-      const pat = patterns[name];
-      if (pat) {
-        const ox = name === 'glidergun' ? 5 : cx;
-        const oy = name === 'glidergun' ? 5 : cy;
-        pat.forEach(([r, c]) => {
-          const row = oy + r;
-          const col = ox + c;
-          if (row >= 0 && row < CONWAY_ROWS && col >= 0 && col < CONWAY_COLS) {
-            conwayGrid[row][col] = 1;
-          }
-        });
-      }
-      conwayDraw();
-    }
-
-    function conwayGetCell(e) {
-      const rect = conwayCanvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const col = Math.floor(x / CONWAY_CELL);
-      const row = Math.floor(y / CONWAY_CELL);
-      if (row >= 0 && row < CONWAY_ROWS && col >= 0 && col < CONWAY_COLS) {
-        return { row, col };
-      }
-      return null;
-    }
-
-    function conwayMouseDown(e) {
-      const cell = conwayGetCell(e);
-      if (cell) {
-        conwayIsDrawing = true;
-        conwayDrawValue = conwayGrid[cell.row][cell.col] ? 0 : 1;
-        conwayGrid[cell.row][cell.col] = conwayDrawValue;
-        conwayDraw();
-      }
-    }
-
-    function conwayMouseMove(e) {
-      if (!conwayIsDrawing) return;
-      const cell = conwayGetCell(e);
-      if (cell) {
-        conwayGrid[cell.row][cell.col] = conwayDrawValue;
-        conwayDraw();
-      }
-    }
-
-    function conwayTouchStart(e) {
-      e.preventDefault();
-      const touch = e.touches[0];
-      conwayMouseDown({ clientX: touch.clientX, clientY: touch.clientY });
-    }
-
-    function conwayTouchMove(e) {
-      e.preventDefault();
-      const touch = e.touches[0];
-      conwayMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
-    }
-    </script>
-
+    <!-- Script -->
+    <script src="assets/js/portfolio.js"></script>
 </body>
 </html>
