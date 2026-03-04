@@ -557,22 +557,28 @@ section {
     justify-content: center;
     flex-shrink: 0;
     overflow: hidden;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    transition: border-color var(--transition);
+}
+
+.project-card:hover .project-icon {
+    border-color: var(--accent);
 }
 
 .project-icon img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 12px;
 }
 
 .project-icon svg {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
 }
 
 .project-icon--emoji {
-    font-size: 26px;
+    font-size: 24px;
     line-height: 1;
 }
 
@@ -601,13 +607,19 @@ section {
     border-radius: 14px;
     flex-shrink: 0;
     overflow: hidden;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    transition: border-color var(--transition);
+}
+
+.featured:hover .featured-icon {
+    border-color: var(--accent);
 }
 
 .featured-icon img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 14px;
 }
 
 .project-card p {
