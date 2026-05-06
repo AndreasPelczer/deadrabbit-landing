@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Goldschmitt Bau GmbH – Wertheim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sand:    #F5F0E8;
+    --stone:   #D4C9B0;
+    --earth:   #8B7355;
+    --dark:    #1C1A17;
+    --accent:  #C17B2A;
+    --white:   #FDFBF7;
+    --muted:   #6B6357;
+    --serif:   'DM Serif Display', Georgia, serif;
+    --sans:    'DM Sans', system-ui, sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--white);
+    color: var(--dark);
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 3rem;
+    background: rgba(253,251,247,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--stone);
+    transition: box-shadow 0.3s;
+  }
+  nav.scrolled { box-shadow: 0 2px 20px rgba(0,0,0,0.08); }
+  .nav-brand {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    color: var(--dark);
+    letter-spacing: -0.02em;
+  }
+  .nav-brand span { color: var(--accent); }
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+  .nav-links a {
+    font-size: 0.875rem; font-weight: 500; color: var(--muted);
+    text-decoration: none; letter-spacing: 0.04em; text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-cta {
+    background: var(--accent); color: white; border: none;
+    padding: 0.6rem 1.4rem; font-family: var(--sans); font-size: 0.875rem;
+    font-weight: 500; cursor: pointer; letter-spacing: 0.03em;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .nav-cta:hover { background: var(--earth); transform: translateY(-1px); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding-top: 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-left {
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 6rem 4rem 6rem 5rem;
+    background: var(--white);
+    position: relative; z-index: 2;
+  }
+  .hero-eyebrow {
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 1.5rem;
+    opacity: 0; animation: fadeUp 0.8s 0.2s forwards;
+  }
+  .hero-title {
+    font-family: var(--serif);
+    font-size: clamp(2.8rem, 4.5vw, 5rem);
+    line-height: 1.05;
+    color: var(--dark);
+    letter-spacing: -0.03em;
+    margin-bottom: 1.5rem;
+    opacity: 0; animation: fadeUp 0.8s 0.4s forwards;
+  }
+  .hero-title em { color: var(--accent); font-style: italic; }
+  .hero-sub {
+    font-size: 1.05rem; line-height: 1.7; color: var(--muted);
+    max-width: 420px; margin-bottom: 3rem;
+    opacity: 0; animation: fadeUp 0.8s 0.6s forwards;
+  }
+  .hero-actions {
+    display: flex; gap: 1rem; align-items: center;
+    opacity: 0; animation: fadeUp 0.8s 0.8s forwards;
+  }
+  .btn-primary {
+    background: var(--accent); color: white;
+    padding: 0.9rem 2rem; font-size: 0.9rem; font-weight: 500;
+    text-decoration: none; display: inline-block;
+    transition: background 0.2s, transform 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .btn-primary:hover { background: var(--earth); transform: translateY(-2px); }
+  .btn-secondary {
+    color: var(--dark); font-size: 0.9rem; font-weight: 500;
+    text-decoration: none; letter-spacing: 0.02em;
+    border-bottom: 1px solid var(--stone);
+    padding-bottom: 2px; transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-secondary:hover { color: var(--accent); border-color: var(--accent); }
+
+  .hero-right {
+    position: relative; overflow: hidden;
+    background: var(--dark);
+    opacity: 0; animation: fadeIn 1.2s 0.3s forwards;
+  }
+  .hero-right::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(135deg, rgba(193,123,42,0.15) 0%, transparent 60%),
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 40px,
+        rgba(255,255,255,0.015) 40px,
+        rgba(255,255,255,0.015) 41px
+      );
+    z-index: 1;
+  }
+  .hero-pattern {
+    position: absolute; inset: 0;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    gap: 2px; padding: 2px; z-index: 0;
+  }
+  .hero-block {
+    background: var(--earth);
+    opacity: 0;
+    animation: blockIn 0.4s forwards;
+  }
+  .hero-block:nth-child(odd) { background: #2C2820; }
+  .hero-block:nth-child(3n) { background: #3D3529; }
+  .hero-block:nth-child(5n) { background: var(--earth); opacity: 0.6; }
+
+  .hero-stat-strip {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
+    display: flex; background: var(--accent);
+    opacity: 0; animation: fadeUp 0.8s 1.2s forwards;
+  }
+  .hero-stat {
+    flex: 1; padding: 1.5rem 1rem; text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.2);
+  }
+  .hero-stat:last-child { border-right: none; }
+  .hero-stat-num {
+    font-family: var(--serif); font-size: 2rem; color: white;
+    display: block; line-height: 1;
+  }
+  .hero-stat-label {
+    font-size: 0.7rem; color: rgba(255,255,255,0.75);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-top: 0.3rem; display: block;
+  }
+
+  /* LEISTUNGEN */
+  .section { padding: 7rem 5rem; }
+  .section-eyebrow {
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 1rem;
+  }
+  .section-title {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 3.5vw, 3.2rem);
+    letter-spacing: -0.03em; line-height: 1.1;
+    margin-bottom: 1rem;
+  }
+  .section-sub {
+    color: var(--muted); font-size: 1rem; line-height: 1.7;
+    max-width: 500px; margin-bottom: 3.5rem;
+  }
+
+  .leistungen { background: var(--sand); }
+  .leistungen-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5px;
+    background: var(--stone);
+    border: 1.5px solid var(--stone);
+  }
+  .leistung-card {
+    background: var(--white);
+    padding: 2.5rem 2rem;
+    transition: background 0.25s, transform 0.2s;
+    cursor: default;
+    position: relative; overflow: hidden;
+  }
+  .leistung-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s;
+  }
+  .leistung-card:hover { background: var(--sand); }
+  .leistung-card:hover::before { transform: scaleX(1); }
+  .leistung-icon {
+    font-size: 2rem; margin-bottom: 1.2rem; display: block;
+    filter: grayscale(0.2);
+  }
+  .leistung-title {
+    font-family: var(--serif); font-size: 1.15rem;
+    margin-bottom: 0.6rem; color: var(--dark);
+  }
+  .leistung-text {
+    font-size: 0.875rem; color: var(--muted); line-height: 1.6;
+  }
+
+  /* GESCHICHTE */
+  .geschichte { background: var(--white); }
+  .geschichte-inner {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6rem;
+    align-items: start;
+  }
+  .timeline { position: relative; padding-left: 2rem; }
+  .timeline::before {
+    content: '';
+    position: absolute; left: 0; top: 8px; bottom: 8px;
+    width: 1px; background: var(--stone);
+  }
+  .timeline-item { position: relative; margin-bottom: 2.5rem; }
+  .timeline-item::before {
+    content: '';
+    position: absolute; left: -2rem; top: 8px;
+    width: 8px; height: 8px;
+    border-radius: 50%; background: var(--accent);
+    transform: translateX(-50%) translateX(0.5px);
+  }
+  .timeline-year {
+    font-size: 0.75rem; font-weight: 600; color: var(--accent);
+    letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem;
+  }
+  .timeline-text {
+    font-size: 0.95rem; color: var(--dark); line-height: 1.65;
+  }
+
+  .geschichte-visual {
+    position: sticky; top: 120px;
+  }
+  .geschichte-quote {
+    background: var(--dark);
+    padding: 3rem;
+    position: relative; overflow: hidden;
+  }
+  .geschichte-quote::before {
+    content: '"';
+    font-family: var(--serif);
+    font-size: 12rem; color: var(--accent);
+    position: absolute; top: -2rem; left: 1rem;
+    line-height: 1; opacity: 0.15; pointer-events: none;
+  }
+  .geschichte-quote p {
+    font-family: var(--serif); font-size: 1.5rem;
+    color: var(--white); line-height: 1.4;
+    position: relative; z-index: 1;
+  }
+  .geschichte-quote cite {
+    display: block; margin-top: 1.5rem;
+    font-size: 0.8rem; color: var(--stone);
+    font-style: normal; letter-spacing: 0.06em; text-transform: uppercase;
+    position: relative; z-index: 1;
+  }
+  .geschichte-nums {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1px; background: var(--stone); margin-top: 1px;
+  }
+  .gnum {
+    background: var(--sand); padding: 1.5rem;
+  }
+  .gnum-val {
+    font-family: var(--serif); font-size: 2.2rem;
+    color: var(--accent); display: block; line-height: 1;
+  }
+  .gnum-label {
+    font-size: 0.8rem; color: var(--muted); margin-top: 0.3rem;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+
+  /* KONTAKT */
+  .kontakt { background: var(--dark); }
+  .kontakt .section-eyebrow { color: var(--accent); }
+  .kontakt .section-title { color: var(--white); }
+  .kontakt .section-sub { color: var(--stone); }
+  .kontakt-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
+    align-items: start;
+  }
+  .kontakt-item {
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 1.5rem; margin-bottom: 2rem;
+  }
+  .kontakt-label {
+    font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem;
+  }
+  .kontakt-value {
+    font-size: 1.1rem; color: var(--white);
+  }
+  .kontakt-value a { color: var(--white); text-decoration: none; }
+  .kontakt-value a:hover { color: var(--accent); }
+
+  .map-placeholder {
+    background: #2C2820;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 3rem; text-align: center;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 300px; gap: 1rem;
+  }
+  .map-pin { font-size: 3rem; }
+  .map-address {
+    color: var(--stone); font-size: 0.9rem; line-height: 1.6;
+  }
+  .map-link {
+    display: inline-block; margin-top: 0.5rem;
+    color: var(--accent); font-size: 0.85rem;
+    text-decoration: none; border-bottom: 1px solid var(--accent);
+    padding-bottom: 2px; transition: opacity 0.2s;
+  }
+  .map-link:hover { opacity: 0.7; }
+
+  /* FOOTER */
+  footer {
+    background: #0E0D0B;
+    padding: 2rem 5rem;
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  footer p { font-size: 0.8rem; color: var(--muted); }
+  .footer-brand { font-family: var(--serif); color: var(--stone); font-size: 1rem; }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .reveal {
+    opacity: 0; transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  /* RESPONSIVE */
+  @media (max-width: 1024px) {
+    nav { padding: 1rem 2rem; }
+    .nav-links { display: none; }
+    .hero { grid-template-columns: 1fr; min-height: auto; }
+    .hero-left { padding: 6rem 2rem 3rem; }
+    .hero-right { height: 300px; }
+    .section { padding: 5rem 2rem; }
+    .leistungen-grid { grid-template-columns: repeat(2, 1fr); }
+    .geschichte-inner { grid-template-columns: 1fr; gap: 3rem; }
+    .geschichte-visual { position: static; }
+    .kontakt-grid { grid-template-columns: 1fr; }
+    footer { flex-direction: column; gap: 0.5rem; text-align: center; padding: 1.5rem 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-brand">Goldschmitt <span>Bau</span></div>
+  <ul class="nav-links">
+    <li><a href="#leistungen">Leistungen</a></li>
+    <li><a href="#geschichte">Geschichte</a></li>
+    <li><a href="#kontakt">Kontakt</a></li>
+  </ul>
+  <button class="nav-cta" onclick="document.getElementById('kontakt').scrollIntoView({behavior:'smooth'})">Anfrage stellen</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <p class="hero-eyebrow">Wertheim-Dörlesberg · Seit 1947</p>
+    <h1 class="hero-title">
+      Massiv.<br>
+      <em>Verlässlich.</em><br>
+      Regional.
+    </h1>
+    <p class="hero-sub">
+      Gerhard Goldschmitt Bau GmbH — Drei Generationen Erfahrung im Massivbau, Schlüsselfertigbau und Spezialarbeiten im Main-Tauber-Kreis.
+    </p>
+    <div class="hero-actions">
+      <a href="#leistungen" class="btn-primary">Unsere Leistungen</a>
+      <a href="#kontakt" class="btn-secondary">Kontakt aufnehmen →</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-pattern" id="heroPattern"></div>
+    <div class="hero-stat-strip">
+      <div class="hero-stat">
+        <span class="hero-stat-num">75+</span>
+        <span class="hero-stat-label">Jahre Erfahrung</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">3</span>
+        <span class="hero-stat-label">Generationen</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">2</span>
+        <span class="hero-stat-label">Dipl.-Bauingenieure</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LEISTUNGEN -->
+<section class="section leistungen" id="leistungen">
+  <p class="section-eyebrow reveal">Was wir bauen</p>
+  <h2 class="section-title reveal">Leistungsspektrum</h2>
+  <p class="section-sub reveal">Vom Erdaushub bis zum schlüsselfertigen Haus — alles aus einer Hand, mit handwerklicher Sorgfalt.</p>
+
+  <div class="leistungen-grid reveal">
+    <div class="leistung-card">
+      <span class="leistung-icon">🏗️</span>
+      <h3 class="leistung-title">Erdarbeiten</h3>
+      <p class="leistung-text">Aushub, Planierung, Drainagen und Geländegestaltung für Neubau und Sanierung.</p>
+    </div>
+    <div class="leistung-card">
+      <span class="leistung-icon">🧱</span>
+      <h3 class="leistung-title">Beton- &amp; Stahlbetonbau</h3>
+      <p class="leistung-text">Fundamente, Decken, Stützen und Sichtbeton — präzise ausgeführt nach DIN.</p>
+    </div>
+    <div class="leistung-card">
+      <span class="leistung-icon">🏠</span>
+      <h3 class="leistung-title">Mauerarbeiten</h3>
+      <p class="leistung-text">Massivbauweise in Ziegel, Kalksandstein und Porenbeton für Neu- und Umbau.</p>
+    </div>
+    <div class="leistung-card">
+      <span class="leistung-icon">🪨</span>
+      <h3 class="leistung-title">Natursteinarbeiten</h3>
+      <p class="leistung-text">Handwerkskunst mit regionalem Sandstein — Mauern, Treppen, Verkleidungen.</p>
+    </div>
+    <div class="leistung-card">
+      <span class="leistung-icon">🔩</span>
+      <h3 class="leistung-title">Kernbohrungen</h3>
+      <p class="leistung-text">Präzisionsbohrungen für Leitungsdurchführungen, Türen und Fenster im Bestand.</p>
+    </div>
+    <div class="leistung-card">
+      <span class="leistung-icon">🌿</span>
+      <h3 class="leistung-title">Außenanlagen</h3>
+      <p class="leistung-text">Wege, Terrassen, Einfahrten und Stützmauern — das Haus bis zur Grundstücksgrenze fertig.</p>
+    </div>
+    <div class="leistung-card">
+      <span class="leistung-icon">🔑</span>
+      <h3 class="leistung-title">Schlüsselfertigbau</h3>
+      <p class="leistung-text">Town &amp; Country Lizenzpartner: massiver Hausbau fix und fertig im Main-Tauber-Kreis.</p>
+    </div>
+    <div class="leistung-card">
+      <span class="leistung-icon">🔄</span>
+      <h3 class="leistung-title">Umbau &amp; Sanierung</h3>
+      <p class="leistung-text">Bestandsgebäude modernisieren, erweitern oder grundlegend sanieren.</p>
+    </div>
+  </div>
+</section>
+
+<!-- GESCHICHTE -->
+<section class="section geschichte" id="geschichte">
+  <p class="section-eyebrow reveal">Wer wir sind</p>
+  <h2 class="section-title reveal">Drei Generationen<br>Bauhandwerk</h2>
+  <div class="geschichte-inner">
+    <div class="timeline reveal">
+      <div class="timeline-item">
+        <div class="timeline-year">Vor 1945</div>
+        <div class="timeline-text">Der Großvater betreibt einen eigenen Steinbruch und arbeitet als Steinmetz — der Anfang einer langen Familientradition im Bauhandwerk.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">1947</div>
+        <div class="timeline-text">Nach dem Krieg nimmt Gerhard Goldschmitt seine Lehre auf. Ein Neuanfang mit Hammer und Kelle in Wertheim.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">1950 – 1952</div>
+        <div class="timeline-text">Gesellenprüfung bestanden, Arbeit in Frankfurt — dann Rückkehr nach Dörlesberg, um den väterlichen Betrieb zu übernehmen.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">Meisterbrief</div>
+        <div class="timeline-text">Nach sieben Gesellenjahren legt Gerhard Goldschmitt die Meisterprüfung ab. Der Betrieb läuft fortan auf seinen Namen.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">1981</div>
+        <div class="timeline-text">Umwandlung in die <strong>Gerhard Goldschmitt Bau GmbH</strong>.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">1996</div>
+        <div class="timeline-text">Die Söhne Bernd und Stefan Goldschmitt treten als Teilhaber ein. Das neue Büro entsteht in Dörlesberg — die Firma ist nun vollständig vor Ort.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">1998 – Heute</div>
+        <div class="timeline-text"><strong>Bernd Goldschmitt</strong> (Dipl.-Bauingenieur FH) und <strong>Stefan Goldschmitt</strong> (Dipl.-Bauingenieur FH) führen das Unternehmen gemeinsam als Geschäftsführer.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">Seit 2006</div>
+        <div class="timeline-text">Lizenzpartner von <strong>Town &amp; Country</strong> — schlüsselfertige Massivhäuser im Main-Tauber-Kreis und Umgebung.</div>
+      </div>
+    </div>
+
+    <div class="geschichte-visual reveal">
+      <div class="geschichte-quote">
+        <p>Gebaut wird immer. Und wenn, dann richtig.</p>
+        <cite>Goldschmitt Bau GmbH · Wertheim-Dörlesberg</cite>
+      </div>
+      <div class="geschichte-nums">
+        <div class="gnum">
+          <span class="gnum-val">1947</span>
+          <span class="gnum-label">Gründungsjahr</span>
+        </div>
+        <div class="gnum">
+          <span class="gnum-val">75+</span>
+          <span class="gnum-label">Jahre im Betrieb</span>
+        </div>
+        <div class="gnum">
+          <span class="gnum-val">3</span>
+          <span class="gnum-label">Generationen</span>
+        </div>
+        <div class="gnum">
+          <span class="gnum-val">2</span>
+          <span class="gnum-label">Dipl.-Ing. (FH)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KONTAKT -->
+<section class="section kontakt" id="kontakt">
+  <p class="section-eyebrow reveal">Sprechen Sie uns an</p>
+  <h2 class="section-title reveal">Kontakt</h2>
+  <p class="section-sub reveal">Wir sind ein lokales Unternehmen. Kurze Wege, direkte Ansprechpartner.</p>
+  <div class="kontakt-grid reveal">
+    <div>
+      <div class="kontakt-item">
+        <div class="kontakt-label">Adresse</div>
+        <div class="kontakt-value">Breiter Weg 24<br>97877 Wertheim-Dörlesberg</div>
+      </div>
+      <div class="kontakt-item">
+        <div class="kontakt-label">Telefon</div>
+        <div class="kontakt-value"><a href="tel:+4993426244">(09342) 6244</a></div>
+      </div>
+      <div class="kontakt-item">
+        <div class="kontakt-label">Fax</div>
+        <div class="kontakt-value">(09342) 21323</div>
+      </div>
+      <div class="kontakt-item">
+        <div class="kontakt-label">E-Mail</div>
+        <div class="kontakt-value"><a href="mailto:stefan@goldschmitt-bau.de">stefan@goldschmitt-bau.de</a></div>
+      </div>
+      <div class="kontakt-item">
+        <div class="kontakt-label">Geschäftsführung</div>
+        <div class="kontakt-value">Bernd Goldschmitt · Stefan Goldschmitt</div>
+      </div>
+    </div>
+    <div>
+      <div class="map-placeholder">
+        <div class="map-pin">📍</div>
+        <div class="map-address">
+          Gerhard Goldschmitt Bau GmbH<br>
+          Breiter Weg 24<br>
+          97877 Wertheim-Dörlesberg<br>
+          Baden-Württemberg
+        </div>
+        <a href="https://maps.google.com/?q=Breiter+Weg+24+97877+Wertheim-Dörlesberg" target="_blank" class="map-link">
+          In Google Maps öffnen →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">Goldschmitt Bau</div>
+  <p>© 2026 Gerhard Goldschmitt Bau GmbH · Wertheim-Dörlesberg</p>
+  <p><a href="#" style="color:var(--muted);text-decoration:none;font-size:0.8rem">Impressum · Datenschutz</a></p>
+</footer>
+
+<script>
+  // Nav scroll effect
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // Hero pattern animation
+  const pattern = document.getElementById('heroPattern');
+  for (let i = 0; i < 48; i++) {
+    const b = document.createElement('div');
+    b.className = 'hero-block';
+    b.style.animationDelay = (Math.random() * 1.5) + 's';
+    b.style.animationDuration = (0.3 + Math.random() * 0.4) + 's';
+    pattern.appendChild(b);
+  }
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+  reveals.forEach(r => observer.observe(r));
+</script>
+</body>
+</html>
