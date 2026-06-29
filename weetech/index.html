@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Andreas Pelczer — für WEETECH GmbH, Wertheim</title>
+<meta name="description" content="Initiativbewerbung. Production Systems Engineer aus Wertheim. Deterministische, prüfbare, dokumentierte Systeme — dieselbe DNA wie ein Funktionstester.">
+<style>
+  :root{
+    --ink:#15181c;
+    --ink-2:#2b3038;
+    --muted:#5d6571;
+    --line:#e3e6eb;
+    --bg:#f6f7f9;
+    --card:#ffffff;
+    --pass:#1f9e5a;
+    --pass-bg:#e9f6ef;
+    --signal:#d4332a;
+    --steel:#2f6fed;
+    --accent:#0f1115;
+    --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:980px;margin:0 auto;padding:0 24px}
+
+  /* ---------- top bar ---------- */
+  .topbar{border-bottom:1px solid var(--line);background:rgba(246,247,249,.85);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:58px}
+  .brandmark{font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--ink)}
+  .brandmark b{color:var(--signal)}
+  .topnav{display:flex;gap:22px;font-size:13.5px;color:var(--muted)}
+  .topnav a{text-decoration:none}
+  .topnav a:hover{color:var(--ink)}
+  @media(max-width:640px){.topnav{display:none}}
+
+  /* ---------- hero ---------- */
+  .hero{background:var(--accent);color:#eef1f5;padding:72px 0 64px;position:relative;overflow:hidden}
+  .hero:before{content:"";position:absolute;inset:0;
+    background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
+    background-size:34px 34px;opacity:.6}
+  .hero .wrap{position:relative}
+  .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:#9aa6b6;margin-bottom:22px}
+  .eyebrow .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--pass);margin-right:8px;vertical-align:middle;box-shadow:0 0 0 3px rgba(31,158,90,.22)}
+  h1{font-size:clamp(28px,5vw,46px);line-height:1.12;font-weight:700;letter-spacing:-.02em;margin-bottom:20px}
+  h1 .hl{color:#fff;border-bottom:3px solid var(--signal);padding-bottom:1px}
+  .lede{font-size:clamp(16px,2.4vw,19px);color:#c3cbd6;max-width:640px;margin-bottom:30px}
+  .who{font-family:var(--mono);font-size:13px;color:#8b97a6;display:flex;flex-wrap:wrap;gap:8px 18px}
+  .who span:before{content:"▸ ";color:var(--pass)}
+
+  /* ---------- sections ---------- */
+  section{padding:58px 0;border-bottom:1px solid var(--line)}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  h2{font-size:clamp(21px,3.4vw,28px);line-height:1.2;letter-spacing:-.01em;margin-bottom:18px;font-weight:680}
+  .body p{color:var(--ink-2);max-width:680px;margin-bottom:16px}
+  .body p strong{color:var(--ink)}
+
+  /* ---------- mapping table ---------- */
+  .map{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:26px;background:var(--card)}
+  .map .head{padding:14px 18px;font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:#f0f2f5;border-bottom:1px solid var(--line)}
+  .map .head.l{border-right:1px solid var(--line)}
+  .map .cell{padding:15px 18px;border-bottom:1px solid var(--line);font-size:14.5px}
+  .map .cell.l{border-right:1px solid var(--line);color:var(--muted)}
+  .map .cell.r{color:var(--ink);font-weight:520}
+  .map .cell.r b{color:var(--pass);font-family:var(--mono);font-size:12px;letter-spacing:.03em;display:block;margin-top:2px}
+  .map .row:last-child .cell{border-bottom:none}
+  @media(max-width:620px){
+    .map{grid-template-columns:1fr}
+    .map .head.l,.map .cell.l{border-right:none}
+    .map .head.r{display:none}
+    .map .cell.l{background:#f0f2f5;font-weight:600;color:var(--ink);padding-bottom:6px;border-bottom:none}
+    .map .cell.r{padding-top:6px}
+  }
+
+  /* ---------- proof cards ---------- */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  @media(max-width:760px){.grid3{grid-template-columns:1fr}}
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;transition:transform .15s ease,box-shadow .15s ease}
+  .pcard:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(20,24,28,.07)}
+  .pcard .tag{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel);margin-bottom:10px}
+  .pcard h3{font-size:17px;margin-bottom:8px}
+  .pcard p{font-size:13.5px;color:var(--muted);flex:1;margin-bottom:14px}
+  .pcard a{font-family:var(--mono);font-size:12.5px;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:2px;align-self:flex-start}
+  .pcard a:hover{border-color:var(--signal);color:var(--signal)}
+
+  /* ---------- functional test panel ---------- */
+  .test{background:#0f1115;color:#e6eaef;border-radius:14px;padding:26px;font-family:var(--mono);font-size:13.5px;margin-top:24px;border:1px solid #23272e}
+  .test .bar{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #23272e;padding-bottom:14px;margin-bottom:8px}
+  .test .bar .id{color:#8b97a6;font-size:12px;letter-spacing:.05em}
+  .test .bar .dots span{display:inline-block;width:10px;height:10px;border-radius:50%;margin-left:6px;background:#3a3f47}
+  .test .line{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px dashed #23272e;opacity:0;transform:translateY(4px);transition:opacity .3s,transform .3s}
+  .test .line.show{opacity:1;transform:none}
+  .test .line .label{color:#c3cbd6}
+  .test .line .verdict{color:var(--pass);font-weight:700;letter-spacing:.06em}
+  .test .summary{margin-top:16px;padding-top:14px;border-top:1px solid #23272e;display:flex;align-items:center;justify-content:space-between;opacity:0;transition:opacity .4s}
+  .test .summary.show{opacity:1}
+  .test .summary .res{color:var(--pass);font-weight:700;font-size:15px}
+  .test .summary .res .x{color:#fff}
+  .btn-test{margin-top:18px;font-family:var(--mono);font-size:13px;letter-spacing:.04em;background:var(--pass);color:#fff;border:none;border-radius:8px;padding:11px 20px;cursor:pointer;transition:background .15s}
+  .btn-test:hover{background:#1b8b4f}
+  .btn-test:disabled{background:#3a3f47;cursor:default}
+
+  /* ---------- kitchen note ---------- */
+  .note{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--signal);border-radius:0 12px 12px 0;padding:22px 24px;margin-top:8px}
+  .note p{max-width:none;margin-bottom:0;color:var(--ink-2);font-size:15px}
+
+  /* ---------- contact ---------- */
+  .contact{background:var(--accent);color:#eef1f5;border-bottom:none}
+  .contact h2{color:#fff}
+  .contact .body p{color:#c3cbd6}
+  .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:24px}
+  @media(max-width:620px){.cgrid{grid-template-columns:1fr}}
+  .crow{background:#181b20;border:1px solid #23272e;border-radius:10px;padding:16px 18px}
+  .crow .k{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8b97a6;margin-bottom:5px}
+  .crow .v{font-size:15px;color:#fff}
+  .crow .v a{text-decoration:none;border-bottom:1px solid #3a3f47}
+  .crow .v a:hover{border-color:var(--pass)}
+  .cta{display:inline-flex;align-items:center;gap:9px;margin-top:26px;background:var(--pass);color:#fff;text-decoration:none;font-weight:600;padding:14px 24px;border-radius:9px;font-size:15px;transition:background .15s}
+  .cta:hover{background:#1b8b4f}
+
+  footer{padding:30px 0 50px;font-size:12.5px;color:var(--muted)}
+  footer .wrap{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;justify-content:space-between}
+  footer a{text-decoration:none;border-bottom:1px solid var(--line)}
+  footer .mono{font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="brandmark">Andreas Pelczer <b>·</b> für WEETECH</div>
+    <nav class="topnav">
+      <a href="#bruecke">Brücke</a>
+      <a href="#mapping">Gemeinsame DNA</a>
+      <a href="#arbeit">Arbeitsproben</a>
+      <a href="#kontakt">Kontakt</a>
+    </nav>
+  </div>
+</div>
+
+<!-- ===================== HERO ===================== -->
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow"><span class="dot"></span>Initiativbewerbung · WEETECH GmbH · Hafenstraße 1, Wertheim</div>
+    <h1>Sie testen. Ich baue die <span class="hl">Systeme</span>, die Produktion nichts dem Zufall überlassen.</h1>
+    <p class="lede">Deterministisch, offline-fähig, lückenlos dokumentiert, rollenbasiert. Genau die DNA eines Funktionstesters — nur dass ich die Software drumherum baue, die aus Messwerten verlässliche Abläufe macht.</p>
+    <div class="who">
+      <span>Andreas Pelczer</span>
+      <span>Production Systems Engineer</span>
+      <span>Wertheim — vor Ort</span>
+      <span>baumops.com · iMOPS</span>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== BRÜCKE ===================== -->
+<section id="bruecke">
+  <div class="wrap body">
+    <div class="kicker">Warum ich Ihnen schreibe</div>
+    <h2>Wir denken dasselbe — nur an verschiedenen Orten.</h2>
+    <p>WEETECH baut seit über 50 Jahren Prüf- und Testsysteme: Kabeltester, Funktionstester, Prüftische. Pass oder Fail, reproduzierbar, nachweisbar, sicherheitskritisch — für Automotive, Luft- und Raumfahrt, Bahn und Industrie. Ihr Motto bringt es auf den Punkt: <strong>We test.</strong></p>
+    <p>Ich baue Software für genau diese Art von Welt: <strong>deterministische, offline-fähige Produktionssteuerung mit lückenlosem Nachweis</strong>. In der Küche heißt das HACCP und ISO 9001. Auf der Baustelle heißt es <strong>baumops</strong> — Nachweise, Lieferketten, Abläufe, die nicht jeden Morgen neu zusammengeflickt werden müssen. Der Prüftisch und die Baustelle sind beides Produktionsumgebungen, die dasselbe brauchen: ein System, das bei jedem Durchlauf das gleiche, belegbare Ergebnis liefert.</p>
+    <p>Ich bewerbe mich nicht, weil ich zufällig in Wertheim wohne. Ich bewerbe mich, weil ich Ihre Produkte als das lese, was ich seit Jahren selbst baue — Werkzeuge, die korrektes Verhalten einfach machen und es beweisen können.</p>
+  </div>
+</section>
+
+<!-- ===================== MAPPING ===================== -->
+<section id="mapping">
+  <div class="wrap body">
+    <div class="kicker">Gemeinsame Architektur</div>
+    <h2>Ihr Prüfsystem ↔ meine Systeme</h2>
+    <p>Dieselben Prinzipien, andere Domäne. Was bei Ihnen Hardware am Prüftisch ist, ist bei mir Architektur im Code.</p>
+    <div class="map">
+      <div class="head l">WEETECH-Welt</div>
+      <div class="head r">Was ich dazu mitbringe</div>
+
+      <div class="row" style="display:contents">
+        <div class="cell l">Pass / Fail — reproduzierbares Prüfergebnis</div>
+        <div class="cell r">Deterministische Systeme: gleicher Input → gleicher, belegbarer Output<b>SET / GET / KILL</b></div>
+      </div>
+      <div class="row" style="display:contents">
+        <div class="cell l">Prüfprotokolle &amp; Nachweisdokumentation</div>
+        <div class="cell r">Audit-Trail &amp; Nachweise als Kern, nicht als Nachgedanke<b>baumops · Nachweise</b></div>
+      </div>
+      <div class="row" style="display:contents">
+        <div class="cell l">Betrieb in rauer Fertigungsumgebung</div>
+        <div class="cell r">Offline-first — funktioniert ohne Server, ohne Cloud, ohne WLAN<b>im Keller kein Netz</b></div>
+      </div>
+      <div class="row" style="display:contents">
+        <div class="cell l">Qualitäts- &amp; Arbeitsschutzmanagement (ISO)</div>
+        <div class="cell r">ISO 9001 / HACCP von innen gelebt, nicht nur zertifiziert<b>36 Jahre Praxis</b></div>
+      </div>
+      <div class="row" style="display:contents">
+        <div class="cell l">Bediener vom Einrichter bis zur Anlernkraft</div>
+        <div class="cell r">Rollenbasierte Systeme — vom Chef bis zur Aushilfe, ohne Handbuch<b>Rollenkonzept</b></div>
+      </div>
+      <div class="row" style="display:contents">
+        <div class="cell l">Software für Prüfstände (CEETIS, IVISIon Studio)</div>
+        <div class="cell r">Systemarchitekt, der die Plattform nach dem Problem wählt — nicht umgekehrt<b>iOS heute, System immer</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FUNKTIONSTEST ===================== -->
+<section id="test">
+  <div class="wrap body">
+    <div class="kicker">Funktionstest</div>
+    <h2>Kandidat #AP-2026 — Sie kennen das Format.</h2>
+    <p>Sie prüfen Bauteile gegen eine Spezifikation. Hier die gleiche Logik, auf mich angewendet. Ein Klick startet den Durchlauf.</p>
+    <div class="test" id="testPanel">
+      <div class="bar">
+        <div class="id">FUNCTIONAL TEST · CANDIDATE AP-2026</div>
+        <div class="dots"><span></span><span></span><span></span></div>
+      </div>
+      <div id="testLines"></div>
+      <div class="summary" id="testSummary">
+        <span class="res"><span class="x">6 / 6</span> &nbsp;PASS</span>
+        <span style="color:#8b97a6">Kandidat erfüllt Spezifikation</span>
+      </div>
+    </div>
+    <button class="btn-test" id="runBtn" onclick="runTest()">▶ Test starten</button>
+  </div>
+</section>
+
+<!-- ===================== ARBEITSPROBEN ===================== -->
+<section id="arbeit">
+  <div class="wrap body">
+    <div class="kicker">Belege statt Behauptungen</div>
+    <h2>Arbeitsproben — Software, die läuft</h2>
+    <p>Ich rede nicht über Software, ich liefere sie. Drei davon können Sie sich heute Abend ansehen.</p>
+    <div class="grid3">
+      <div class="pcard">
+        <div class="tag">Produktionssteuerung · Bau</div>
+        <h3>baumops</h3>
+        <p>Lokale Baustellenintelligenz für Nachweise, Lieferketten und Abläufe. Die direkte Übertragung des Systemdenkens in eine industrielle Umgebung — das engste Analog zu Ihrer Welt.</p>
+        <a href="https://baumops.com" target="_blank" rel="noopener">baumops.com →</a>
+      </div>
+      <div class="pcard">
+        <div class="tag">In-Memory Kernel · ISO/HACCP</div>
+        <h3>iMOPS</h3>
+        <p>Deterministische Produktionssteuerung mit In-Memory-Kernel, offline, HACCP-/ISO-9001-konform, rollenbasiert. MUMPS-inspirierte Architektur — Systemdenken, kein App-Baukasten.</p>
+        <a href="https://pelczer.de/imops-architektur.html" target="_blank" rel="noopener">Architektur ansehen →</a>
+      </div>
+      <div class="pcard">
+        <div class="tag">Quellcode · öffentlich</div>
+        <h3>GitHub</h3>
+        <p>Offene Repositories: vom Kernel über Sicherheits-Tools bis zu kleinen Utilities. Code, den Sie lesen und beurteilen können — so wie Sie ein Prüfprotokoll lesen würden.</p>
+        <a href="https://github.com/AndreasPelczer" target="_blank" rel="noopener">github.com/AndreasPelczer →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== KÜCHE ===================== -->
+<section id="herkunft">
+  <div class="wrap body">
+    <div class="kicker">Zur Einordnung</div>
+    <h2>Woher das Systemdenken kommt</h2>
+    <div class="note">
+      <p>36 Jahre professionelle Küche sind kein Quereinsteiger-Hobby, sondern der Härtetest meiner Überzeugung: <strong>Das Problem ist selten der Mensch — meistens ist es das System, das ihn nicht trägt.</strong> Produktion unter Zeitdruck, mit Hygiene-Compliance, Schichtwechsel und Null-Toleranz für Fehler ist die anspruchsvollste Lernumgebung für Abläufe, die ich kenne. Was ich dort über Determinismus, Dokumentation und Entlastung gelernt habe, baue ich heute in Software. Bei WEETECH würde ich es in Prüftechnik bauen.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== KONTAKT ===================== -->
+<section id="kontakt" class="contact">
+  <div class="wrap body">
+    <div class="kicker" style="color:#8b97a6">Nächster Schritt</div>
+    <h2>Reden wir — ich bin um die Ecke.</h2>
+    <p>Eine vollständige Bewerbung schicke ich gern an Frau Staubitz. Zuerst wollte ich Ihnen aber zeigen, dass ich Ihr Geschäft verstanden habe, bevor ich um Ihre Zeit bitte.</p>
+    <div class="cgrid">
+      <div class="crow"><div class="k">Name</div><div class="v">Andreas Pelczer</div></div>
+      <div class="crow"><div class="k">Standort</div><div class="v">Wertheim, BW — vor Ort</div></div>
+      <div class="crow"><div class="k">E-Mail</div><div class="v"><a href="mailto:a.pelczer@outlook.de">a.pelczer@outlook.de</a></div></div>
+      <div class="crow"><div class="k">Telefon</div><div class="v"><a href="tel:+491705006902">0170 5006902</a></div></div>
+      <div class="crow"><div class="k">Portfolio</div><div class="v"><a href="https://pelczer.de" target="_blank" rel="noopener">pelczer.de</a></div></div>
+      <div class="crow"><div class="k">LinkedIn</div><div class="v"><a href="https://linkedin.com/in/andreas-pelczer-5b5050160" target="_blank" rel="noopener">andreas-pelczer</a></div></div>
+    </div>
+    <a class="cta" href="mailto:a.pelczer@outlook.de?subject=Initiativbewerbung%20—%20Andreas%20Pelczer%20(Production%20Systems%20Engineer)">✉ Gespräch anstoßen</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="mono">© 2026 Andreas Pelczer · Wertheim</span>
+    <span class="mono">Diese Seite wurde eigens für WEETECH gebaut. We test. — und ich auch.</span>
+  </div>
+</footer>
+
+<script>
+  var checks = [
+    {label:"Determinismus — gleicher Input, gleicher Output", verdict:"PASS"},
+    {label:"Offline-Fähigkeit — ohne Server, ohne Cloud", verdict:"PASS"},
+    {label:"Nachweise & Audit-Trail — ISO 9001 / HACCP", verdict:"PASS"},
+    {label:"Produktionserfahrung — 36 Jahre Shop Floor", verdict:"PASS"},
+    {label:"Rollenkonzept — vom Chef bis zur Aushilfe", verdict:"PASS"},
+    {label:"Standort Wertheim — vor Ort, sofort", verdict:"PASS"}
+  ];
+  var linesEl = document.getElementById('testLines');
+  var summaryEl = document.getElementById('testSummary');
+  var runBtn = document.getElementById('runBtn');
+
+  // pre-render lines (hidden)
+  checks.forEach(function(c){
+    var d = document.createElement('div');
+    d.className = 'line';
+    d.innerHTML = '<span class="label">'+c.label+'</span><span class="verdict">'+c.verdict+'</span>';
+    linesEl.appendChild(d);
+  });
+  var lineEls = linesEl.querySelectorAll('.line');
+
+  function runTest(){
+    runBtn.disabled = true;
+    runBtn.textContent = '… läuft';
+    summaryEl.classList.remove('show');
+    lineEls.forEach(function(el){el.classList.remove('show');});
+    var i = 0;
+    var iv = setInterval(function(){
+      if(i < lineEls.length){
+        lineEls[i].classList.add('show');
+        i++;
+      } else {
+        clearInterval(iv);
+        summaryEl.classList.add('show');
+        runBtn.disabled = false;
+        runBtn.textContent = '↻ Erneut prüfen';
+      }
+    }, 360);
+  }
+</script>
+</body>
+</html>
