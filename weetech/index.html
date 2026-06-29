@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>Andreas Pelczer — für WEETECH GmbH, Wertheim</title>
-<meta name="description" content="Initiativbewerbung. Production Systems Engineer aus Wertheim. Deterministische, prüfbare, dokumentierte Systeme — dieselbe DNA wie ein Funktionstester.">
+<meta name="description" content="Initiativbewerbung. Systems Engineer aus Wertheim. WEETECH prüft Produkte — ich entwickle Systeme, damit sie gar nicht erst unkontrollierbar werden.">
 <style>
   :root{
     --ink:#15181c;
@@ -51,6 +51,13 @@
   .lede{font-size:clamp(16px,2.4vw,19px);color:#c3cbd6;max-width:640px;margin-bottom:30px}
   .who{font-family:var(--mono);font-size:13px;color:#8b97a6;display:flex;flex-wrap:wrap;gap:8px 18px}
   .who span:before{content:"▸ ";color:var(--pass)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:34px}
+  .chips span{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:#cdd5df;border:1px solid #2c333d;border-radius:999px;padding:5px 13px;background:rgba(255,255,255,.02)}
+  .identity{border-top:1px solid #23272e;padding-top:20px}
+  .idname{font-size:18px;color:#fff;margin-bottom:7px}
+  .idname b{color:#fff;border-bottom:2px solid var(--pass);padding-bottom:1px}
+  .idtags{font-family:var(--mono);font-size:12.5px;color:#9aa6b6;margin-bottom:6px}
+  .idloc{font-family:var(--mono);font-size:12.5px;color:#7d8896}
 
   /* ---------- sections ---------- */
   section{padding:58px 0;border-bottom:1px solid var(--line)}
@@ -86,6 +93,23 @@
   .pcard p{font-size:13.5px;color:var(--muted);flex:1;margin-bottom:14px}
   .pcard a{font-family:var(--mono);font-size:12.5px;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:2px;align-self:flex-start}
   .pcard a:hover{border-color:var(--signal);color:var(--signal)}
+
+  /* ---------- engineering tiles ---------- */
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:24px}
+  @media(max-width:760px){.grid4{grid-template-columns:1fr 1fr}}
+  @media(max-width:440px){.grid4{grid-template-columns:1fr}}
+  .etile{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;text-decoration:none;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+  .etile:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(20,24,28,.07);border-color:#c2cad6}
+  .etile .en{font-family:var(--mono);font-size:11px;color:var(--steel);letter-spacing:.12em;margin-bottom:12px}
+  .etile h3{font-size:15.5px;margin-bottom:6px}
+  .etile p{font-size:12.5px;color:var(--muted);flex:1;margin-bottom:12px}
+  .etile .go{font-family:var(--mono);font-size:11.5px;color:var(--ink)}
+  .etile:hover .go{color:var(--signal)}
+
+  /* ---------- closing line ---------- */
+  .closingline{background:var(--bg);padding:46px 0;border-bottom:1px solid var(--line)}
+  .closingline p{font-size:16.5px;color:var(--ink-2);max-width:640px;line-height:1.55}
+  .closingline p .q{color:var(--muted)}
 
   /* ---------- functional test panel ---------- */
   .test{background:#0f1115;color:#e6eaef;border-radius:14px;padding:26px;font-family:var(--mono);font-size:13.5px;margin-top:24px;border:1px solid #23272e}
@@ -146,13 +170,15 @@
 <header class="hero">
   <div class="wrap">
     <div class="eyebrow"><span class="dot"></span>Initiativbewerbung · WEETECH GmbH · Hafenstraße 1, Wertheim</div>
-    <h1>Sie testen. Ich baue die <span class="hl">Systeme</span>, die Produktion nichts dem Zufall überlassen.</h1>
-    <p class="lede">Deterministisch, offline-fähig, lückenlos dokumentiert, rollenbasiert. Genau die DNA eines Funktionstesters — nur dass ich die Software drumherum baue, die aus Messwerten verlässliche Abläufe macht.</p>
-    <div class="who">
-      <span>Andreas Pelczer</span>
-      <span>Production Systems Engineer</span>
-      <span>Wertheim — vor Ort</span>
-      <span>baumops.com · iMOPS</span>
+    <h1>WEETECH prüft Produkte. Ich entwickle Systeme, damit sie gar nicht erst <span class="hl">unkontrollierbar</span> werden.</h1>
+    <p class="lede">Ich entwickle Software für Produktionsumgebungen, in denen Nachvollziehbarkeit wichtiger ist als Effekte.</p>
+    <div class="chips">
+      <span>Offline</span><span>Audit-Trail</span><span>Determinismus</span><span>Rollenbasiert</span>
+    </div>
+    <div class="identity">
+      <div class="idname">Andreas Pelczer — <b>Systems Engineer</b></div>
+      <div class="idtags">Workflow Systems · Production Systems · Offline-first Software · Technical Documentation</div>
+      <div class="idloc">Wertheim — vor Ort · baumops.com · iMOPS</div>
     </div>
   </div>
 </header>
@@ -163,7 +189,7 @@
     <div class="kicker">Warum ich Ihnen schreibe</div>
     <h2>Wir denken dasselbe — nur an verschiedenen Orten.</h2>
     <p>WEETECH baut seit über 50 Jahren Prüf- und Testsysteme: Kabeltester, Funktionstester, Prüftische. Pass oder Fail, reproduzierbar, nachweisbar, sicherheitskritisch — für Automotive, Luft- und Raumfahrt, Bahn und Industrie. Ihr Motto bringt es auf den Punkt: <strong>We test.</strong></p>
-    <p>Ich baue Software für genau diese Art von Welt: <strong>deterministische, offline-fähige Produktionssteuerung mit lückenlosem Nachweis</strong>. In der Küche heißt das HACCP und ISO 9001. Auf der Baustelle heißt es <strong>baumops</strong> — Nachweise, Lieferketten, Abläufe, die nicht jeden Morgen neu zusammengeflickt werden müssen. Der Prüftisch und die Baustelle sind beides Produktionsumgebungen, die dasselbe brauchen: ein System, das bei jedem Durchlauf das gleiche, belegbare Ergebnis liefert.</p>
+    <p>Ich baue Software für genau diese Art von Welt — <strong>Produktionsumgebungen, in denen Nachvollziehbarkeit wichtiger ist als Effekte.</strong> Offline. Audit-Trail. Determinismus. In der Küche heißt das HACCP und ISO 9001. Auf der Baustelle heißt es <strong>baumops</strong> — Nachweise, Lieferketten, Abläufe, die nicht jeden Morgen neu zusammengeflickt werden müssen. Der Prüftisch und die Baustelle sind beides Produktionsumgebungen, die dasselbe brauchen: ein System, das bei jedem Durchlauf das gleiche, belegbare Ergebnis liefert.</p>
     <p>Ich bewerbe mich nicht, weil ich zufällig in Wertheim wohne. Ich bewerbe mich, weil ich Ihre Produkte als das lese, was ich seit Jahren selbst baue — Werkzeuge, die korrektes Verhalten einfach machen und es beweisen können.</p>
   </div>
 </section>
@@ -256,6 +282,37 @@
   </div>
 </section>
 
+<!-- ===================== ENGINEERING ===================== -->
+<section id="engineering">
+  <div class="wrap body">
+    <div class="kicker">Für die Technik</div>
+    <h2>Wenn Sie tiefer einsteigen möchten</h2>
+    <p>Diese Seite ist die Einladung, nicht das Versteck. Vier Einstiegspunkte für alle, die wissen wollen, wie es unter der Haube aussieht.</p>
+    <div class="grid4">
+      <a class="etile" href="https://pelczer.de/imops-architektur.html" target="_blank" rel="noopener">
+        <span class="en">01</span><h3>Architecture</h3>
+        <p>In-Memory-Kernel, deterministisch, MUMPS-inspiriert. Wie das System aufgebaut ist.</p>
+        <span class="go">ansehen →</span>
+      </a>
+      <a class="etile" href="https://github.com/AndreasPelczer/iMOPS_OS_CORE" target="_blank" rel="noopener">
+        <span class="en">02</span><h3>Event Sourcing</h3>
+        <p>Zustand als Folge von Ereignissen — jeder Schritt rekonstruierbar, jederzeit.</p>
+        <span class="go">Quellcode →</span>
+      </a>
+      <a class="etile" href="https://baumops.com" target="_blank" rel="noopener">
+        <span class="en">03</span><h3>Audit Trail</h3>
+        <p>Lückenlose Nachweise als Kern, nicht als Nachgedanke. Live bei baumops.</p>
+        <span class="go">ansehen →</span>
+      </a>
+      <a class="etile" href="https://pelczer.de/gastro-grid.html" target="_blank" rel="noopener">
+        <span class="en">04</span><h3>Logikpläne</h3>
+        <p>Abläufe als prüfbare Logik, nicht als Bauchgefühl. Vom Plan zum Vollzug.</p>
+        <span class="go">ansehen →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- ===================== KÜCHE ===================== -->
 <section id="herkunft">
   <div class="wrap body">
@@ -281,9 +338,16 @@
       <div class="crow"><div class="k">Portfolio</div><div class="v"><a href="https://pelczer.de" target="_blank" rel="noopener">pelczer.de</a></div></div>
       <div class="crow"><div class="k">LinkedIn</div><div class="v"><a href="https://linkedin.com/in/andreas-pelczer-5b5050160" target="_blank" rel="noopener">andreas-pelczer</a></div></div>
     </div>
-    <a class="cta" href="mailto:a.pelczer@outlook.de?subject=Initiativbewerbung%20—%20Andreas%20Pelczer%20(Production%20Systems%20Engineer)">✉ Gespräch anstoßen</a>
+    <a class="cta" href="mailto:a.pelczer@outlook.de?subject=Initiativbewerbung%20—%20Andreas%20Pelczer%20(Systems%20Engineer)">✉ Gespräch anstoßen</a>
   </div>
 </section>
+
+<!-- ===================== SCHLUSSSATZ ===================== -->
+<div class="closingline">
+  <div class="wrap">
+    <p>Sie prüfen, ob Systeme funktionieren. Ich entwickle Systeme, die funktionieren müssen.<br><span class="q">Vielleicht sollten wir darüber sprechen.</span></p>
+  </div>
+</div>
 
 <footer>
   <div class="wrap">
