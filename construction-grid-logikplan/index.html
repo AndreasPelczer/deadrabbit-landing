@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>iMOPS Construction Grid – Logikpläne &amp; Systemarchitektur</title>
+  <meta name="description" content="Vollständige Logikpläne und Systemarchitektur von iMOPS Construction Grid: Offline-First Core Data, MVVM, Wellen-System, Geländebrücke, Mops-Box-Backend, Exporter-Pipeline.">
+  <meta name="keywords" content="Logikplan, Systemarchitektur, Construction Grid, Baustelle, Core Data, MVVM, Geländebrücke, GAEB, XRechnung, Offline-First">
+  <meta name="author" content="Andreas Pelczer">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #1A1A2E;
+      --accent: #0F3460;
+      --highlight: #E8730C;
+      --bg: #FAFBFC;
+      --card-bg: #FFFFFF;
+      --text: #2D3748;
+      --text-light: #718096;
+      --border: #E2E8F0;
+      --success: #38A169;
+      --warning: #DD6B20;
+      --diagram-bg: #0d1117;
+      --diagram-card: #161b22;
+      --diagram-border: #30363d;
+      --diagram-text: #c9d1d9;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* NAV */
+    .top-nav {
+      position: fixed; top: 0; width: 100%; z-index: 200;
+      background: rgba(26, 26, 46, 0.95); backdrop-filter: blur(10px);
+      padding: 0.8rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .top-nav .logo { color: #fff; font-weight: 800; font-size: 1.1rem; text-decoration: none; letter-spacing: -0.5px; }
+    .top-nav .logo span { color: var(--highlight); }
+    .top-nav ul { list-style: none; display: flex; gap: 2rem; }
+    .top-nav a { color: #CBD5E0; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.2s; }
+    .top-nav a:hover { color: #fff; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: #A0AEC0; text-decoration: none; font-size: 0.85rem;
+      margin-bottom: 1rem; position: relative;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: #fff; }
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, #2a1505 50%, var(--accent) 100%);
+      color: #fff; padding: 8rem 2rem 4rem; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background:
+        radial-gradient(circle at 20% 80%, rgba(232,115,12,0.10) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(15,52,96,0.15) 0%, transparent 50%);
+    }
+    .hero::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 80px;
+      background: linear-gradient(to bottom, transparent, var(--bg));
+    }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 0.5rem; position: relative; }
+    .hero h1 span { color: var(--highlight); }
+    .hero .tagline { font-size: 1.1rem; color: #A0AEC0; max-width: 680px; margin: 0.5rem auto 1.5rem; font-weight: 400; position: relative; }
+    .hero .stats-row {
+      display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;
+      margin-top: 2rem; position: relative;
+    }
+    .hero .stat { text-align: center; }
+    .hero .stat-num { font-size: 2.2rem; font-weight: 800; color: #fff; display: block; line-height: 1; }
+    .hero .stat-label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.3rem; }
+    .hero .badge-row { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem; position: relative; }
+    .hero .badge {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.72rem; font-weight: 500; color: #CBD5E0;
+    }
+    /* TAB NAV */
+    .tab-nav {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; gap: 0; overflow-x: auto;
+      position: sticky; top: 52px; z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .tab-nav button {
+      background: none; border: none;
+      color: var(--text-light);
+      padding: 1rem 1.25rem;
+      font-size: 0.85rem; font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .tab-nav button:hover { color: var(--text); }
+    .tab-nav button.active {
+      color: var(--highlight);
+      border-bottom-color: var(--highlight);
+    }
+    /* SECTIONS */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+    .lp-section { padding: 3rem 0; }
+    .lp-section.hidden { display: none; }
+    .lp-section h2 {
+      font-size: 1.6rem; font-weight: 800; color: var(--primary);
+      margin-bottom: 0.3rem; letter-spacing: -0.5px;
+    }
+    .lp-section > .container > p:first-of-type {
+      color: var(--text-light); font-size: 0.92rem; margin-bottom: 2rem;
+    }
+    /* INFO GRID */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem; margin-bottom: 2rem;
+    }
+    .info-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.5rem;
+      transition: transform 0.2s;
+    }
+    .info-card:hover { transform: translateY(-2px); }
+    .info-card h4 {
+      color: var(--highlight); font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;
+    }
+    .info-card .number { font-size: 2rem; font-weight: 800; color: var(--primary); line-height: 1; }
+    .info-card .label { color: var(--text-light); font-size: 0.8rem; margin-top: 0.3rem; }
+    /* PROSE NOTE */
+    .prose-note {
+      background: #fff; border: 1px solid var(--border); border-left: 3px solid var(--highlight);
+      border-radius: 0 12px 12px 0; padding: 1.2rem 1.5rem; margin-bottom: 1.5rem;
+      font-size: 0.9rem; color: var(--text);
+    }
+    .prose-note strong { color: var(--primary); }
+    /* DIAGRAM CARDS */
+    .diagram-card {
+      background: var(--diagram-bg);
+      border: 1px solid var(--diagram-border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+    .diagram-card h3 {
+      color: #f0f6fc; font-size: 1rem; font-weight: 700;
+      margin-bottom: 1.2rem; padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--diagram-border);
+    }
+    .mermaid { display: flex; justify-content: center; }
+    .mermaid svg { max-width: 100%; height: auto; }
+    /* FOOTER */
+    footer {
+      background: var(--primary); color: #718096;
+      text-align: center; padding: 2rem; font-size: 0.8rem;
+    }
+    footer a { color: #A0AEC0; text-decoration: none; }
+    footer a:hover { color: #fff; }
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .top-nav ul { display: none; }
+      .hero { padding: 7rem 1.5rem 3rem; }
+      .hero h1 { font-size: 1.8rem; }
+      .hero .stats-row { gap: 1.5rem; }
+      .hero .stat-num { font-size: 1.6rem; }
+      .tab-nav { padding: 0 1rem; }
+      .tab-nav button { padding: 0.8rem 0.9rem; font-size: 0.78rem; }
+      .container { padding: 0 1rem; }
+      .diagram-card { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="https://pelczer.de" class="logo">iMOPS <span>Construction Grid</span></a>
+  <ul>
+    <li><a href="#overview">Übersicht</a></li>
+    <li><a href="#architecture">Architektur</a></li>
+    <li><a href="#wellen">Wellen</a></li>
+    <li><a href="https://baumops.com" target="_blank">baumops</a></li>
+    <li><a href="https://github.com/AndreasPelczer/iMOPS-Construction-Grid-Baustellen-Management." target="_blank">GitHub</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <a href="https://pelczer.de" class="back-link">&larr; Zurück zu pelczer.de</a>
+  <h1>Logikpläne &amp; <span>Systemarchitektur</span></h1>
+  <p class="tagline">Die iOS-App des baumops-Systems. Offline-First, Core Data, MVVM — vom Aufmaß über die Kalkulation bis zur Geländebrücke. Hier ist der komplette Bauplan.</p>
+  <div class="stats-row">
+    <div class="stat"><span class="stat-num">~50</span><span class="stat-label">SwiftUI Views</span></div>
+    <div class="stat"><span class="stat-num">6</span><span class="stat-label">Export-Formate</span></div>
+    <div class="stat"><span class="stat-num">5–9</span><span class="stat-label">Entwicklungs-Wellen</span></div>
+    <div class="stat"><span class="stat-num">0</span><span class="stat-label">externe Dependencies</span></div>
+  </div>
+  <div class="badge-row">
+    <span class="badge">Swift / SwiftUI</span>
+    <span class="badge">Core Data</span>
+    <span class="badge">Offline-First</span>
+    <span class="badge">MVVM</span>
+    <span class="badge">Kernel-Guards</span>
+    <span class="badge">FastAPI-Backend</span>
+  </div>
+</section>
+
+<div class="tab-nav" id="tabs">
+  <button class="active" onclick="show('overview')">Übersicht</button>
+  <button onclick="show('architecture')">Architektur</button>
+  <button onclick="show('data')">Datenmodell</button>
+  <button onclick="show('wellen')">Wellen-Lifecycle</button>
+  <button onclick="show('gelaende')">Geländebrücke</button>
+  <button onclick="show('backend')">Mops-Box &amp; Backend</button>
+  <button onclick="show('export')">Export &amp; Nachweise</button>
+</div>
+
+<!-- ===== ÜBERSICHT ===== -->
+<div id="overview" class="lp-section">
+  <div class="container">
+    <h2>System-Übersicht</h2>
+    <p>Construction Grid ist die iOS-App im baumops-System: Sie läuft offline auf dem Gerät und spricht bei Bedarf die Mops-Box im Baustellennetz an.</p>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <h4>Plattform</h4>
+        <div class="number">iOS</div>
+        <div class="label">Swift / SwiftUI · iPhone &amp; iPad</div>
+      </div>
+      <div class="info-card">
+        <h4>Persistenz</h4>
+        <div class="number">Core&nbsp;Data</div>
+        <div class="label">Offline-First · test25B.xcdatamodeld</div>
+      </div>
+      <div class="info-card">
+        <h4>Architektur</h4>
+        <div class="number">MVVM</div>
+        <div class="label">+ Kernel-Schicht (TheBrain, Guards)</div>
+      </div>
+      <div class="info-card">
+        <h4>Dependencies</h4>
+        <div class="number">0</div>
+        <div class="label">Keine externen SPM-Pakete im Frontend</div>
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>baumops — das System, in dem die App lebt</h3>
+      <div class="mermaid">
+graph TB
+  subgraph DEVICE["iPad/iPhone auf der Baustelle"]
+    APP["iMOPS Construction Grid<br/><i>Swift / SwiftUI · Offline-First</i>"]
+    CD[("Core Data<br/>lokal am Gerät")]
+    APP --- CD
+  end
+  subgraph BOX["Mops-Box (lokaler Server im Baustellennetz)"]
+    API["mops-api<br/><i>FastAPI · Python</i>"]
+    MOPS["Mops<br/><i>llama3.2:3b · Ollama</i>"]
+    PROF["Prof<br/><i>Claude Sonnet · Eskalation</i>"]
+    RAG[("Qdrant RAG<br/>Bau-Wissensbasis")]
+    API --- MOPS
+    API --- PROF
+    API --- RAG
+  end
+  CLOUD["mops.baumops.com<br/><i>Cloud</i>"]
+  APP -->|"WLAN, nur wenn vorhanden"| API
+  APP -.->|"optional"| CLOUD
+  style APP fill:#1f3a5f,stroke:#58a6ff,color:#fff
+  style CD fill:#4f3a1f,stroke:#d29922,color:#fff
+  style API fill:#3b1f5e,stroke:#bc8cff,color:#fff
+  style MOPS fill:#1f4f3a,stroke:#56d364,color:#fff
+  style PROF fill:#5f3a1f,stroke:#f0883e,color:#fff
+  style RAG fill:#1f3a4f,stroke:#79c0ff,color:#fff
+  style CLOUD fill:#30363d,stroke:#8b949e,color:#c9d1d9
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>App-Schichtenmodell</h3>
+      <div class="mermaid">
+graph TB
+  subgraph V["View-Schicht (SwiftUI, ~50 Views)"]
+    direction LR
+    EvList["EventListView"]
+    EvDetail["EventDetailView<br/><i>der Hub</i>"]
+    Kalk["LVKalkulationView"]
+    CAD["CADImportView /<br/>CADViewerView"]
+    Aufmass["AufmassSheet"]
+  end
+  subgraph VM["ViewModel-Schicht (MVVM)"]
+    direction LR
+    AddJob["AddJobVM"]
+    EventVM["EventListVM"]
+    JobVM["Job-VMs"]
+    BauWissen["BauWissenVM"]
+  end
+  subgraph SVC["Service-Schicht"]
+    direction LR
+    LVKalk["LVKalkulator"]
+    Mapper["ExtractPlanMapper"]
+    Gen["HouseProject/Generator"]
+    Exp["Exporter"]
+  end
+  subgraph KERN["Kernel-Schicht"]
+    direction LR
+    Brain["TheBrain"]
+    Guards["KernelGuards"]
+  end
+  subgraph PERS["Persistenz"]
+    CoreData[("Core Data<br/>test25B.xcdatamodeld")]
+  end
+  V --> VM
+  VM --> SVC
+  SVC --> KERN
+  KERN --> PERS
+  SVC --> PERS
+  style V fill:#1f3a5f,stroke:#58a6ff,color:#fff
+  style VM fill:#3b1f5e,stroke:#bc8cff,color:#fff
+  style SVC fill:#1f4f3a,stroke:#56d364,color:#fff
+  style KERN fill:#5f1f1f,stroke:#f85149,color:#fff
+  style PERS fill:#4f3a1f,stroke:#d29922,color:#fff
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ARCHITEKTUR ===== -->
+<div id="architecture" class="lp-section">
+  <div class="container">
+    <h2>System-Architektur</h2>
+    <p>Die Ordnerstruktur des Repos spiegelt die Schichten: App, Models, Views, ViewModels, Service, Kernel, Resources.</p>
+
+    <div class="diagram-card">
+      <h3>Projektstruktur — Verantwortlichkeiten</h3>
+      <div class="mermaid">
+graph LR
+  ROOT["iMOPS Construction Grid"]
+  ROOT --> App["App/<br/><i>Einstieg, Szenen-Konfig</i>"]
+  ROOT --> Models["Models/<br/><i>Core-Data-Entities</i>"]
+  ROOT --> Views["Views/<br/><i>~50 SwiftUI-Views</i>"]
+  ROOT --> VMs["ViewModels/<br/><i>MVVM</i>"]
+  ROOT --> Service["Service/<br/><i>Domänen-Logik &amp; Exporter</i>"]
+  ROOT --> Kernel["Kernel/<br/><i>Guard- &amp; Workflow-Engine</i>"]
+  Models --> M1["LVPosition"]
+  Models --> M2["Aufmass"]
+  Models --> M3["GelaendeResult"]
+  Service --> S1["LVKalkulator"]
+  Service --> S2["ExtractPlanMapper"]
+  Service --> S3["HouseProject/Generator"]
+  Kernel --> K1["TheBrain"]
+  Kernel --> K2["KernelGuards"]
+  style ROOT fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style Kernel fill:#5f1f1f,stroke:#f85149,color:#fff
+  style Models fill:#4f3a1f,stroke:#d29922,color:#fff
+  style Service fill:#1f4f3a,stroke:#56d364,color:#fff
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Kernel-Guards — ein Schritt ist erst fertig, wenn er geprüft ist</h3>
+      <div class="mermaid">
+flowchart TD
+  Action["Aktion / Zustandsänderung<br/><i>z.B. Position freigeben</i>"] --> Guard{"KernelGuards<br/>prüfen Regeln"}
+  Guard -->|"Regel verletzt"| Block["Blockiert<br/>Grund wird angezeigt"]
+  Guard -->|"Alle Regeln erfüllt"| Brain["TheBrain<br/>Zustand fortschreiben"]
+  Brain --> Persist["Core Data<br/>persistieren"]
+  Block --> Action
+  style Guard fill:#9e6a03,stroke:#d29922,color:#fff
+  style Block fill:#da3633,stroke:#f85149,color:#fff
+  style Brain fill:#3b1f5e,stroke:#bc8cff,color:#fff
+  style Persist fill:#238636,stroke:#56d364,color:#fff
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DATENMODELL ===== -->
+<div id="data" class="lp-section">
+  <div class="container">
+    <h2>Datenmodell</h2>
+    <p>Core-Data-Modell <code>test25B.xcdatamodeld</code>. Die Beziehungen unten sind mein Verständnis aus dem Code — bitte fachlich gegenprüfen.</p>
+
+    <div class="prose-note">
+      <strong>Bitte prüfen:</strong> Die genauen Entity-Namen und Kardinalitäten (1:n / n:m) habe ich aus README und Ordnerstruktur abgeleitet. Korrigiere Namen, Felder und Beziehungen, wo sie vom echten Modell abweichen.
+    </div>
+
+    <div class="diagram-card">
+      <h3>Kern-Entitäten &amp; Beziehungen (Entwurf)</h3>
+      <div class="mermaid">
+erDiagram
+  EVENT ||--o{ LVPOSITION : "enthält"
+  EVENT ||--o{ GELAENDERESULT : "hat Berechnung"
+  EVENT ||--o{ BAUTAGESBERICHT : "dokumentiert"
+  LVPOSITION ||--o{ AUFMASS : "wird gemessen durch"
+  LVPOSITION {
+    string bezeichnung
+    decimal menge
+    string einheit
+    decimal einheitspreis
+    decimal einkaufspreis
+    string mengenQuelleRaw "gemessen | geschätzt"
+  }
+  AUFMASS {
+    decimal sollMenge
+    decimal istMenge
+    date erfasstAm
+  }
+  EVENT {
+    string name
+    string ort
+    date datum
+    string status
+  }
+  GELAENDERESULT {
+    decimal cutVolumen
+    decimal fillVolumen
+    string dxfQuelle
+  }
+  BAUTAGESBERICHT {
+    date tag
+    string wetter
+    string leistung
+  }
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Fortschritt-Ableitung — gemessen verdrängt geschätzt (Welle 5.2.1)</h3>
+      <div class="mermaid">
+flowchart LR
+  Pos["LV-Position"] --> Q{"mengenQuelleRaw?"}
+  Q -->|"geschätzt"| Est["Fortschritt aus<br/>Schätzwert"]
+  Q -->|"gemessen (Aufmaß)"| Meas["Fortschritt aus<br/>Aufmaß-Istmenge"]
+  Meas --> Win["Gemessen gewinnt<br/><i>verdrängt die Schätzung</i>"]
+  Est -.->|"sobald Aufmaß da ist"| Win
+  style Meas fill:#238636,stroke:#56d364,color:#fff
+  style Win fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style Est fill:#30363d,stroke:#8b949e,color:#c9d1d9
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WELLEN ===== -->
+<div id="wellen" class="lp-section">
+  <div class="container">
+    <h2>Wellen-Lifecycle</h2>
+    <p>Die App wächst in „Wellen". Jede Welle ist erst fertig, wenn Build grün ist und ein Test besteht — nicht wenn jemand „ich denke, das funktioniert" sagt.</p>
+
+    <div class="info-grid">
+      <div class="info-card"><h4>Welle 5.1–5.2.1</h4><div class="number" style="font-size:1.1rem">Aufmaß</div><div class="label">Soll/Ist, Fortschritt aus Messung · gemergt</div></div>
+      <div class="info-card"><h4>Welle 6</h4><div class="number" style="font-size:1.1rem">Kalkulation</div><div class="label">LV-Kalkulation, Live-Summe · gemergt</div></div>
+      <div class="info-card"><h4>Welle 7</h4><div class="number" style="font-size:1.1rem">Geländebrücke</div><div class="label">DXF, Cut/Fill, PDF · gemergt</div></div>
+      <div class="info-card"><h4>Welle 9</h4><div class="number" style="font-size:1.1rem">Ampel</div><div class="label">Voraussetzungs-Ampel · geplant</div></div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Von der Position zur Baufreigabe — der Datenfluss durch die Wellen</h3>
+      <div class="mermaid">
+flowchart TD
+  Import["Plan-Import<br/>ExtractPlanMapper<br/><i>mengenQuelleRaw</i>"] --> LV["LV-Position<br/>angelegt"]
+  LV --> Aufmass["Welle 5: Aufmaß<br/>Soll/Ist erfassen"]
+  Aufmass --> Fortschritt["Welle 5.2.1:<br/>Fortschritt aus Messung"]
+  Fortschritt --> Kalk["Welle 6: Kalkulation<br/>Live-Summe, Einkaufspreise"]
+  Import --> Gelaende["Welle 7: Geländebrücke<br/>DXF → Cut/Fill → LV"]
+  Gelaende --> Kalk
+  Kalk --> Ampel{"Welle 9:<br/>Voraussetzungs-Ampel"}
+  Ampel -->|"alles erfüllt"| Gruen["GRÜN<br/>Baufrei"]
+  Ampel -->|"offen"| Rot["ROT<br/>nicht baufrei"]
+  Gruen --> Freigabe["Polier-Freigabe"]
+  style Aufmass fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style Kalk fill:#3b1f5e,stroke:#bc8cff,color:#fff
+  style Gelaende fill:#1f4f3a,stroke:#56d364,color:#fff
+  style Gruen fill:#238636,stroke:#56d364,color:#fff
+  style Rot fill:#da3633,stroke:#f85149,color:#fff
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Voraussetzungs-Ampel — Zustände (Welle 9, geplant)</h3>
+      <div class="mermaid">
+stateDiagram-v2
+  [*] --> Rot
+  Rot --> Gelb: erste Voraussetzungen erfüllt
+  Gelb --> Gruen: alle Voraussetzungen erfüllt
+  Gruen --> Freigegeben: Polier gibt frei
+  Gelb --> Rot: Voraussetzung entfällt
+  Gruen --> Gelb: Voraussetzung entfällt
+  Freigegeben --> [*]
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GELÄNDEBRÜCKE ===== -->
+<div id="gelaende" class="lp-section">
+  <div class="container">
+    <h2>Geländebrücke (Welle 7)</h2>
+    <p>Vom CAD-Plan zur Erdmassenberechnung: DXF-Upload, Höhen-Interpolation, Cut/Fill, PDF-Report — und die Mengen fließen zurück ins Leistungsverzeichnis.</p>
+
+    <div class="diagram-card">
+      <h3>DXF → Cut/Fill → LV — die Pipeline</h3>
+      <div class="mermaid">
+flowchart LR
+  DXF["DXF-Datei<br/>CADImportView"] --> Parse["Geländepunkte<br/>einlesen"]
+  Parse --> IDW["IDW-Interpolation<br/><i>Höhenmodell</i>"]
+  IDW --> CutFill["Cut/Fill<br/>Erdmassen berechnen"]
+  CutFill --> Result["GelaendeResult<br/>Cut- &amp; Fill-Volumen"]
+  Result --> PDF["PDF-Report"]
+  Result --> Bridge["Brücke ins LV<br/>Mengen → LV-Position"]
+  Bridge --> Kalk["fließt in<br/>Welle-6-Kalkulation"]
+  style IDW fill:#3b1f5e,stroke:#bc8cff,color:#fff
+  style CutFill fill:#9e6a03,stroke:#d29922,color:#fff
+  style Result fill:#1f4f3a,stroke:#56d364,color:#fff
+  style Bridge fill:#1f6feb,stroke:#58a6ff,color:#fff
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Wo gerechnet wird — App und Mops-Box teilen sich die Arbeit</h3>
+      <div class="mermaid">
+sequenceDiagram
+  participant U as Polier (iPad)
+  participant A as Construction Grid
+  participant B as Mops-Box (mops-api)
+  U->>A: DXF hochladen
+  A->>A: Plan parsen, Punkte extrahieren
+  A->>B: POST /gelaendebruecke/calculate
+  B->>B: IDW-Interpolation, Cut/Fill
+  B-->>A: Cut-/Fill-Volumen
+  A->>A: GelaendeResult speichern (Core Data)
+  A->>U: PDF-Report + LV-Mengen
+  Note over A,B: Ohne Mops-Box im Netz bleibt der Rest der App voll nutzbar
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BACKEND ===== -->
+<div id="backend" class="lp-section">
+  <div class="container">
+    <h2>Mops-Box &amp; Backend</h2>
+    <p>Die Mops-Box ist ein einfacher Rechner im Baustellennetz (Ubuntu, CPU-only). Sie hostet mops-api: ein lokales RAG-Backend mit zwei „Köpfen" — Mops und Prof.</p>
+
+    <div class="info-grid">
+      <div class="info-card"><h4>Hardware</h4><div class="number" style="font-size:1.2rem">i5 · 16&nbsp;GB</div><div class="label">Ubuntu 24.04 · CPU-only · :8080</div></div>
+      <div class="info-card"><h4>Mops</h4><div class="number" style="font-size:1.2rem">llama3.2</div><div class="label">lokal · Maurermeister-Persona</div></div>
+      <div class="info-card"><h4>Prof</h4><div class="number" style="font-size:1.2rem">Sonnet</div><div class="label">Claude · Eskalation via /prof</div></div>
+      <div class="info-card"><h4>RAG</h4><div class="number" style="font-size:1.2rem">Qdrant</div><div class="label">Hybrid Vector + Keyword-Boost</div></div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Frage von der Baustelle — Mops zuerst, Prof bei Bedarf</h3>
+      <div class="mermaid">
+flowchart TD
+  Q["Bau-Frage aus der App<br/>POST /chat"] --> Pref{"/prof Prefix?"}
+  Pref -->|"Nein"| RAG["Hybrid-RAG<br/>Qdrant + Keyword-Boost"]
+  RAG --> Mops["Mops antwortet<br/><i>llama3.2, lokal</i>"]
+  Mops --> Ans["Antwort an die App"]
+  Pref -->|"Ja"| Prof["Prof antwortet<br/><i>Claude Sonnet</i>"]
+  Prof --> Echo["Antwort als pending Echo<br/>in Qdrant"]
+  Echo --> Admin{"Admin-UI<br/>Freigabe?"}
+  Admin -->|"approve"| Wissen["wandert ins<br/>approved-Wissen"]
+  Prof --> Ans
+  style Mops fill:#1f4f3a,stroke:#56d364,color:#fff
+  style Prof fill:#5f3a1f,stroke:#f0883e,color:#fff
+  style RAG fill:#1f3a4f,stroke:#79c0ff,color:#fff
+  style Wissen fill:#238636,stroke:#56d364,color:#fff
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Hybrid-RAG — warum exakte Begriffe höher ranken</h3>
+      <div class="mermaid">
+flowchart LR
+  Query["Query"] --> Vec["MiniLM<br/>384-dim Vector"]
+  Vec --> Cand["Qdrant: top_k×4<br/>Cosine-Kandidaten"]
+  Query --> KW["Keywords<br/>extrahieren"]
+  Cand --> Boost["Score-Boost<br/><i>final = vector + 0.15 × hits</i>"]
+  KW --> Boost
+  Boost --> Rank["Re-Ranking<br/>top_k zurück"]
+  style Boost fill:#9e6a03,stroke:#d29922,color:#fff
+  style Rank fill:#238636,stroke:#56d364,color:#fff
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EXPORT ===== -->
+<div id="export" class="lp-section">
+  <div class="container">
+    <h2>Export &amp; Nachweise</h2>
+    <p>Was im System steht, muss raus können — in den Formaten, die Bau-Büros und Behörden lesen. Sechs Exporter, ein gemeinsames Prinzip: belegbar.</p>
+
+    <div class="diagram-card">
+      <h3>Exporter-Pipeline</h3>
+      <div class="mermaid">
+flowchart TD
+  Data[("Core Data<br/>Baustellen-Daten")] --> Export{"Exporter"}
+  Export --> GAEB["GAEB<br/><i>LV-Austausch</i>"]
+  Export --> XR["XRechnung<br/><i>elektr. Rechnung</i>"]
+  Export --> LVPDF["LV-PDF"]
+  Export --> LVCSV["LV-CSV"]
+  Export --> Mangel["Mangel-PDF"]
+  Export --> Tagesbericht["Bautagesbericht-PDF"]
+  style Data fill:#4f3a1f,stroke:#d29922,color:#fff
+  style Export fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style GAEB fill:#238636,stroke:#56d364,color:#fff
+  style XR fill:#238636,stroke:#56d364,color:#fff
+      </div>
+    </div>
+
+    <div class="prose-note">
+      <strong>Git-Disziplin (The Mops Protocol):</strong> Keine direkten Pushes auf <code>main</code> (Hook-blockiert). Workflow: <code>feature/…</code> → Push → PR → Review → Merge. Ein Feature ist erst fertig, wenn der Build grün ist und ein Test besteht.
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>&copy; 2026 Andreas Pelczer &middot; <a href="https://pelczer.de">pelczer.de</a> &middot; <a href="https://baumops.com" target="_blank">baumops.com</a> &middot; <a href="https://github.com/AndreasPelczer/iMOPS-Construction-Grid-Baustellen-Management." target="_blank">GitHub</a></p>
+</footer>
+
+<script>
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'dark',
+  themeVariables: {
+    darkMode: true,
+    background: '#0d1117',
+    primaryColor: '#1f6feb',
+    primaryTextColor: '#c9d1d9',
+    primaryBorderColor: '#30363d',
+    lineColor: '#8b949e',
+    secondaryColor: '#238636',
+    tertiaryColor: '#30363d',
+    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+    fontSize: '13px'
+  },
+  flowchart: { curve: 'basis', useMaxWidth: true },
+  er: { useMaxWidth: true },
+  sequence: { useMaxWidth: true },
+  mindmap: { useMaxWidth: true }
+});
+
+mermaid.run().then(function() {
+  document.querySelectorAll('.lp-section').forEach(function(s) {
+    if (s.id !== 'overview') s.classList.add('hidden');
+  });
+});
+
+function show(id) {
+  document.querySelectorAll('.lp-section').forEach(function(s) {
+    if (s.id === id) {
+      s.classList.remove('hidden');
+    } else {
+      s.classList.add('hidden');
+    }
+  });
+  document.querySelectorAll('#tabs button').forEach(function(b) { b.classList.remove('active'); });
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

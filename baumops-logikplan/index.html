@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>baumops – Logikpläne &amp; Systemarchitektur</title>
+  <meta name="description" content="Systemarchitektur von baumops: lokale Baustellenintelligenz für Nachweise, Lieferketten und Abläufe. Mops-Box, lokales LLM, Hybrid-RAG, Offline-First, Datensouveränität.">
+  <meta name="keywords" content="baumops, Logikplan, Systemarchitektur, Mops-Box, RAG, Offline-First, Baustelle, Nachweise, Lieferketten, Datensouveränität">
+  <meta name="author" content="Andreas Pelczer">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #14202E;
+      --accent: #0F3460;
+      --highlight: #0EA5A4;
+      --bg: #FAFBFC;
+      --card-bg: #FFFFFF;
+      --text: #2D3748;
+      --text-light: #718096;
+      --border: #E2E8F0;
+      --success: #38A169;
+      --warning: #DD6B20;
+      --diagram-bg: #0d1117;
+      --diagram-card: #161b22;
+      --diagram-border: #30363d;
+      --diagram-text: #c9d1d9;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* NAV */
+    .top-nav {
+      position: fixed; top: 0; width: 100%; z-index: 200;
+      background: rgba(20, 32, 46, 0.95); backdrop-filter: blur(10px);
+      padding: 0.8rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .top-nav .logo { color: #fff; font-weight: 800; font-size: 1.1rem; text-decoration: none; letter-spacing: -0.5px; }
+    .top-nav .logo span { color: var(--highlight); }
+    .top-nav ul { list-style: none; display: flex; gap: 2rem; }
+    .top-nav a { color: #CBD5E0; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.2s; }
+    .top-nav a:hover { color: #fff; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: #A0AEC0; text-decoration: none; font-size: 0.85rem;
+      margin-bottom: 1rem; position: relative;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: #fff; }
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, #06302f 50%, var(--accent) 100%);
+      color: #fff; padding: 8rem 2rem 4rem; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background:
+        radial-gradient(circle at 20% 80%, rgba(14,165,164,0.10) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(15,52,96,0.15) 0%, transparent 50%);
+    }
+    .hero::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 80px;
+      background: linear-gradient(to bottom, transparent, var(--bg));
+    }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 0.5rem; position: relative; }
+    .hero h1 span { color: var(--highlight); }
+    .hero .tagline { font-size: 1.1rem; color: #A0AEC0; max-width: 700px; margin: 0.5rem auto 1.5rem; font-weight: 400; position: relative; }
+    .hero .stats-row {
+      display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;
+      margin-top: 2rem; position: relative;
+    }
+    .hero .stat { text-align: center; }
+    .hero .stat-num { font-size: 2.2rem; font-weight: 800; color: #fff; display: block; line-height: 1; }
+    .hero .stat-label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.3rem; }
+    .hero .badge-row { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem; position: relative; }
+    .hero .badge {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.72rem; font-weight: 500; color: #CBD5E0;
+    }
+    /* TAB NAV */
+    .tab-nav {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; gap: 0; overflow-x: auto;
+      position: sticky; top: 52px; z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .tab-nav button {
+      background: none; border: none;
+      color: var(--text-light);
+      padding: 1rem 1.25rem;
+      font-size: 0.85rem; font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .tab-nav button:hover { color: var(--text); }
+    .tab-nav button.active {
+      color: var(--highlight);
+      border-bottom-color: var(--highlight);
+    }
+    /* SECTIONS */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+    .lp-section { padding: 3rem 0; }
+    .lp-section.hidden { display: none; }
+    .lp-section h2 {
+      font-size: 1.6rem; font-weight: 800; color: var(--primary);
+      margin-bottom: 0.3rem; letter-spacing: -0.5px;
+    }
+    .lp-section > .container > p:first-of-type {
+      color: var(--text-light); font-size: 0.92rem; margin-bottom: 2rem;
+    }
+    /* INFO GRID */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem; margin-bottom: 2rem;
+    }
+    .info-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.5rem;
+      transition: transform 0.2s;
+    }
+    .info-card:hover { transform: translateY(-2px); }
+    .info-card h4 {
+      color: var(--highlight); font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;
+    }
+    .info-card .number { font-size: 2rem; font-weight: 800; color: var(--primary); line-height: 1; }
+    .info-card .label { color: var(--text-light); font-size: 0.8rem; margin-top: 0.3rem; }
+    /* PROSE NOTE */
+    .prose-note {
+      background: #fff; border: 1px solid var(--border); border-left: 3px solid var(--highlight);
+      border-radius: 0 12px 12px 0; padding: 1.2rem 1.5rem; margin-bottom: 1.5rem;
+      font-size: 0.9rem; color: var(--text);
+    }
+    .prose-note strong { color: var(--primary); }
+    /* DIAGRAM CARDS */
+    .diagram-card {
+      background: var(--diagram-bg);
+      border: 1px solid var(--diagram-border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+    .diagram-card h3 {
+      color: #f0f6fc; font-size: 1rem; font-weight: 700;
+      margin-bottom: 1.2rem; padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--diagram-border);
+    }
+    .mermaid { display: flex; justify-content: center; }
+    .mermaid svg { max-width: 100%; height: auto; }
+    /* FOOTER */
+    footer {
+      background: var(--primary); color: #718096;
+      text-align: center; padding: 2rem; font-size: 0.8rem;
+    }
+    footer a { color: #A0AEC0; text-decoration: none; }
+    footer a:hover { color: #fff; }
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .top-nav ul { display: none; }
+      .hero { padding: 7rem 1.5rem 3rem; }
+      .hero h1 { font-size: 1.8rem; }
+      .hero .stats-row { gap: 1.5rem; }
+      .hero .stat-num { font-size: 1.6rem; }
+      .tab-nav { padding: 0 1rem; }
+      .tab-nav button { padding: 0.8rem 0.9rem; font-size: 0.78rem; }
+      .container { padding: 0 1rem; }
+      .diagram-card { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="https://baumops.com" class="logo">bau<span>mops</span></a>
+  <ul>
+    <li><a href="#overview">Übersicht</a></li>
+    <li><a href="#komponenten">Komponenten</a></li>
+    <li><a href="#gehirn">Mops &amp; Prof</a></li>
+    <li><a href="https://pelczer.de/construction-grid-logikplan/" target="_blank">Construction Grid</a></li>
+    <li><a href="https://baumops.com" target="_blank">baumops.com</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <a href="https://pelczer.de" class="back-link">&larr; Zurück zu pelczer.de</a>
+  <h1>baumops — <span>Logikpläne</span></h1>
+  <p class="tagline">Lokale Baustellenintelligenz für Nachweise, Lieferketten und Abläufe, die nicht jeden Morgen neu zusammengeflickt werden müssen. Die Box steht auf der Baustelle — die Daten bleiben dort.</p>
+  <div class="stats-row">
+    <div class="stat"><span class="stat-num">3</span><span class="stat-label">Bausteine</span></div>
+    <div class="stat"><span class="stat-num">2</span><span class="stat-label">Köpfe · Mops &amp; Prof</span></div>
+    <div class="stat"><span class="stat-num">~85</span><span class="stat-label">Wissens-Lemmas</span></div>
+    <div class="stat"><span class="stat-num">0</span><span class="stat-label">Pflicht-Cloud</span></div>
+  </div>
+  <div class="badge-row">
+    <span class="badge">Offline-First</span>
+    <span class="badge">Lokales LLM</span>
+    <span class="badge">Hybrid-RAG</span>
+    <span class="badge">Datensouveränität</span>
+    <span class="badge">Audit-Trail</span>
+    <span class="badge">Bin da. 2026</span>
+  </div>
+</section>
+
+<div class="tab-nav" id="tabs">
+  <button class="active" onclick="show('overview')">Übersicht</button>
+  <button onclick="show('komponenten')">Komponenten</button>
+  <button onclick="show('offline')">Offline &amp; Datensouveränität</button>
+  <button onclick="show('gehirn')">Mops &amp; Prof</button>
+  <button onclick="show('rag')">Hybrid-RAG</button>
+  <button onclick="show('nachweise')">Nachweise &amp; Lieferketten</button>
+</div>
+
+<!-- ===== ÜBERSICHT ===== -->
+<div id="overview" class="lp-section">
+  <div class="container">
+    <h2>System-Übersicht</h2>
+    <p>baumops ist kein Cloud-Dienst, der zufällig auf der Baustelle läuft. Es ist ein lokales System: eine Box im Baustellennetz, die Geräte daneben, die Außenwelt nur, wenn nötig.</p>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <h4>Prinzip</h4>
+        <div class="number" style="font-size:1.3rem">Lokal&nbsp;zuerst</div>
+        <div class="label">Verarbeitung &amp; Daten bleiben auf der Baustelle</div>
+      </div>
+      <div class="info-card">
+        <h4>Box</h4>
+        <div class="number" style="font-size:1.3rem">CPU-only</div>
+        <div class="label">Ein normaler Rechner, kein Rechenzentrum</div>
+      </div>
+      <div class="info-card">
+        <h4>Zweck</h4>
+        <div class="number" style="font-size:1.3rem">Nachweis</div>
+        <div class="label">Nachweise, Lieferketten, Abläufe</div>
+      </div>
+      <div class="info-card">
+        <h4>Status</h4>
+        <div class="number" style="font-size:1.3rem">2026</div>
+        <div class="label">Bin da.</div>
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Die Topologie — wer steht wo</h3>
+      <div class="mermaid">
+graph TB
+  subgraph SITE["Baustelle (eigenes Netz)"]
+    BOX["Mops-Box<br/><i>lokaler Server, CPU-only</i>"]
+    D1["iPad — Polier"]
+    D2["iPhone — Bauleiter"]
+    D3["weitere Geräte"]
+    D1 --- BOX
+    D2 --- BOX
+    D3 --- BOX
+  end
+  subgraph OUT["Außenwelt (nur bei Bedarf)"]
+    CLOUD["mops.baumops.com<br/><i>Cloud</i>"]
+    OFFICE["Büro / Kalkulation"]
+    AUTH["Behörde / Auftraggeber"]
+    SUP["Lieferant"]
+  end
+  BOX -.->|"Sync, wenn Netz da ist"| CLOUD
+  BOX -->|"Nachweise &amp; Exporte"| OFFICE
+  OFFICE --> AUTH
+  BOX -->|"Lieferketten"| SUP
+  style BOX fill:#1f4f4e,stroke:#2dd4bf,color:#fff
+  style D1 fill:#1f3a5f,stroke:#58a6ff,color:#fff
+  style D2 fill:#1f3a5f,stroke:#58a6ff,color:#fff
+  style D3 fill:#1f3a5f,stroke:#58a6ff,color:#fff
+  style CLOUD fill:#30363d,stroke:#8b949e,color:#c9d1d9
+  style OFFICE fill:#4f3a1f,stroke:#d29922,color:#fff
+  style AUTH fill:#3b1f5e,stroke:#bc8cff,color:#fff
+  style SUP fill:#1f4f3a,stroke:#56d364,color:#fff
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== KOMPONENTEN ===== -->
+<div id="komponenten" class="lp-section">
+  <div class="container">
+    <h2>Komponenten</h2>
+    <p>baumops besteht aus drei Bausteinen, die zusammenspielen — und einem Backend, das in der Box wohnt.</p>
+
+    <div class="info-grid">
+      <div class="info-card"><h4>Baustein 1</h4><div class="number" style="font-size:1.2rem">Mops-Box</div><div class="label">Hardware im Baustellennetz · Ubuntu · :8080</div></div>
+      <div class="info-card"><h4>Baustein 2</h4><div class="number" style="font-size:1.1rem">Construction&nbsp;Grid</div><div class="label">iOS-App · Offline-First · Core Data</div></div>
+      <div class="info-card"><h4>Baustein 3</h4><div class="number" style="font-size:1.1rem">mops.baumops</div><div class="label">Cloud · optionaler Sync</div></div>
+      <div class="info-card"><h4>In der Box</h4><div class="number" style="font-size:1.2rem">mops-api</div><div class="label">FastAPI · RAG · Mops &amp; Prof</div></div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Wer macht was</h3>
+      <div class="mermaid">
+graph LR
+  subgraph B["Mops-Box"]
+    API["mops-api<br/><i>FastAPI</i>"]
+    M["Mops<br/><i>llama3.2 · lokal</i>"]
+    P["Prof<br/><i>Claude Sonnet · Eskalation</i>"]
+    Q[("Qdrant<br/>Wissensbasis")]
+    API --- M
+    API --- P
+    API --- Q
+  end
+  APP["Construction Grid<br/><i>iOS-App</i>"]
+  CLOUD["mops.baumops.com"]
+  APP -->|"Fragen, Klassifikation,<br/>Geländeberechnung"| API
+  API -.->|"Sync optional"| CLOUD
+  style API fill:#1f4f4e,stroke:#2dd4bf,color:#fff
+  style M fill:#1f4f3a,stroke:#56d364,color:#fff
+  style P fill:#5f3a1f,stroke:#f0883e,color:#fff
+  style Q fill:#1f3a4f,stroke:#79c0ff,color:#fff
+  style APP fill:#1f3a5f,stroke:#58a6ff,color:#fff
+  style CLOUD fill:#30363d,stroke:#8b949e,color:#c9d1d9
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Die Mops-Box von innen</h3>
+      <div class="mermaid">
+graph TB
+  HW["Rechner<br/>Ubuntu 24.04 · i5 · 16 GB · CPU-only"]
+  HW --> Uvicorn["uvicorn :8080"]
+  Uvicorn --> Endpoints["mops-api Endpoints"]
+  Endpoints --> Health["/health · /health/detailed"]
+  Endpoints --> Chat["/chat"]
+  Endpoints --> Classify["/classify<br/><i>File-Klassifikation</i>"]
+  Endpoints --> Admin["/admin-ui<br/><i>Echo-Freigabe</i>"]
+  Uvicorn --> Ollama["Ollama<br/>llama3.2:3b"]
+  Uvicorn --> Qdrant["Qdrant<br/>Vektor-DB"]
+  style HW fill:#1f4f4e,stroke:#2dd4bf,color:#fff
+  style Endpoints fill:#1f3a5f,stroke:#58a6ff,color:#fff
+  style Ollama fill:#1f4f3a,stroke:#56d364,color:#fff
+  style Qdrant fill:#1f3a4f,stroke:#79c0ff,color:#fff
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== OFFLINE ===== -->
+<div id="offline" class="lp-section">
+  <div class="container">
+    <h2>Offline &amp; Datensouveränität</h2>
+    <p>Der Keller hat kein Netz, der Rohbau erst recht nicht. baumops ist nicht „auch offline" — es ist <em>zuerst</em> offline. Die Cloud ist Kür, nicht Pflicht.</p>
+
+    <div class="diagram-card">
+      <h3>Was passiert, wenn das Internet weg ist?</h3>
+      <div class="mermaid">
+flowchart TD
+  Work["Arbeit auf der Baustelle"] --> App["Construction Grid<br/>schreibt lokal (Core Data)"]
+  App --> Net{"Internet da?"}
+  Net -->|"Nein"| Local["Alles läuft weiter<br/>App + Mops-Box im eigenen Netz"]
+  Net -->|"Ja"| Sync["zusätzlich: Sync zur Cloud"]
+  Local --> Later["sobald Netz da ist"]
+  Later --> Sync
+  Sync --> Done["Stand abgeglichen"]
+  style Local fill:#238636,stroke:#56d364,color:#fff
+  style Net fill:#9e6a03,stroke:#d29922,color:#fff
+  style Done fill:#1f6feb,stroke:#58a6ff,color:#fff
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Wo die Daten liegen — und wo nicht</h3>
+      <div class="mermaid">
+flowchart LR
+  subgraph Drin["bleibt auf der Baustelle"]
+    G1["Pläne &amp; Aufmaße"]
+    G2["Kalkulation &amp; Preise"]
+    G3["Bau-Fragen an Mops"]
+  end
+  subgraph Raus["verlässt sie nur bewusst"]
+    R1["Nachweise als Export"]
+    R2["Rechnung (XRechnung)"]
+    R3["Cloud-Sync (optional)"]
+  end
+  Drin -->|"Entscheidung des Nutzers"| Raus
+  style Drin fill:#1f4f4e,stroke:#2dd4bf,color:#fff
+  style Raus fill:#4f3a1f,stroke:#d29922,color:#fff
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GEHIRN ===== -->
+<div id="gehirn" class="lp-section">
+  <div class="container">
+    <h2>Mops &amp; Prof — zwei Köpfe</h2>
+    <p>Das Backend hat zwei „Köpfe": <strong>Mops</strong> antwortet lokal und kostenlos auf der Box. <strong>Prof</strong> ist die Eskalation in die Cloud — und was Prof sagt, kann ins lokale Wissen zurückwandern.</p>
+
+    <div class="info-grid">
+      <div class="info-card"><h4>Mops</h4><div class="number" style="font-size:1.2rem">llama3.2</div><div class="label">lokal · Maurermeister-Persona · Standard</div></div>
+      <div class="info-card"><h4>Prof</h4><div class="number" style="font-size:1.2rem">Sonnet</div><div class="label">Claude · via /prof · für die harten Fragen</div></div>
+      <div class="info-card"><h4>Memory</h4><div class="number" style="font-size:1.2rem">Echos</div><div class="label">Prof-Antworten als pending Echos</div></div>
+      <div class="info-card"><h4>Freigabe</h4><div class="number" style="font-size:1.2rem">Admin</div><div class="label">approve → ins lokale Wissen</div></div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Die Lernschleife — das System wird mit jeder Frage klüger</h3>
+      <div class="mermaid">
+flowchart TD
+  Frage["Bau-Frage"] --> Wer{"/prof Prefix?"}
+  Wer -->|"Nein"| Mops["Mops antwortet lokal<br/><i>llama3.2 + RAG</i>"]
+  Wer -->|"Ja"| Prof["Prof antwortet<br/><i>Claude Sonnet</i>"]
+  Mops --> User["Antwort auf der Baustelle"]
+  Prof --> User
+  Prof --> Echo["Antwort als pending Echo<br/>in Qdrant gespeichert"]
+  Echo --> Admin{"Admin-UI:<br/>fachlich ok?"}
+  Admin -->|"approve"| Grow["wandert ins<br/>approved-Wissen"]
+  Admin -->|"verwerfen"| Drop["bleibt draußen"]
+  Grow --> Mops
+  style Mops fill:#1f4f3a,stroke:#56d364,color:#fff
+  style Prof fill:#5f3a1f,stroke:#f0883e,color:#fff
+  style Grow fill:#238636,stroke:#56d364,color:#fff
+  style Drop fill:#30363d,stroke:#8b949e,color:#c9d1d9
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Wann eskaliert wird</h3>
+      <div class="mermaid">
+sequenceDiagram
+  participant U as Baustelle
+  participant M as Mops (lokal)
+  participant P as Prof (Cloud)
+  U->>M: einfache Bau-Frage
+  M-->>U: Antwort aus lokalem Wissen
+  Note over U,M: kostenlos, offline, sofort
+  U->>P: /prof schwierige Frage
+  P-->>U: fundierte Antwort
+  P->>M: Echo zur Freigabe hinterlegt
+  Note over M,P: Prof-Wissen wird lokal nutzbar
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RAG ===== -->
+<div id="rag" class="lp-section">
+  <div class="container">
+    <h2>Hybrid-RAG</h2>
+    <p>Warum Mops bei DIN-Nummern und Materialcodes nicht daneben greift: die Suche kombiniert Bedeutung (Vektor) mit exakten Begriffen (Keywords).</p>
+
+    <div class="diagram-card">
+      <h3>Das Ranking, Schritt für Schritt</h3>
+      <div class="mermaid">
+flowchart TD
+  Q["Query"] --> V["MiniLM:<br/>Query → 384-dim Vector"]
+  V --> C["Qdrant: top_k × 4<br/>Kandidaten via Cosine"]
+  Q --> K["Keywords extrahieren<br/><i>Stopwörter raus, ≥ 2 Zeichen</i>"]
+  C --> H["pro Kandidat:<br/>Keyword-Treffer zählen"]
+  K --> H
+  H --> Score["Score boosten<br/><i>final = min(1.0, vector + 0.15 × hits)</i>"]
+  Score --> Re["Re-Ranking nach Score"]
+  Re --> Top["top_k zurück an Mops"]
+  style V fill:#1f3a4f,stroke:#79c0ff,color:#fff
+  style Score fill:#9e6a03,stroke:#d29922,color:#fff
+  style Top fill:#238636,stroke:#56d364,color:#fff
+      </div>
+    </div>
+
+    <div class="prose-note">
+      <strong>Der Effekt:</strong> Chunks mit exakten Begriffen — DIN-Nummern, Material-Codes, Festigkeitsklassen — ranken höher, ohne dass rein semantische Treffer verloren gehen. Die Wissensbasis: rund 85 Lemmas, CC-BY-SA aus Wikipedia (Welle 1).
+    </div>
+  </div>
+</div>
+
+<!-- ===== NACHWEISE ===== -->
+<div id="nachweise" class="lp-section">
+  <div class="container">
+    <h2>Nachweise &amp; Lieferketten</h2>
+    <p>Das eigentliche Versprechen: Arbeit, die belegbar ist. Was auf der Baustelle passiert, wird so erfasst, dass am Ende ein prüfbarer Nachweis steht — nicht ein Zettel, der morgen weg ist.</p>
+
+    <div class="diagram-card">
+      <h3>Vom Handgriff zum Beleg</h3>
+      <div class="mermaid">
+flowchart LR
+  Tun["Arbeit / Lieferung<br/>auf der Baustelle"] --> Erfass["erfasst in der App<br/><i>lokal, sofort</i>"]
+  Erfass --> Box["Mops-Box<br/>verarbeitet &amp; legt ab"]
+  Box --> Nachweis["Nachweis<br/>Bautagesbericht, Mangel, Aufmaß"]
+  Box --> Kette["Lieferkette<br/>nachvollziehbar"]
+  Nachweis --> Export["Export:<br/>PDF · GAEB · XRechnung"]
+  Export --> Aussen["Büro · Auftraggeber · Behörde"]
+  style Erfass fill:#1f3a5f,stroke:#58a6ff,color:#fff
+  style Box fill:#1f4f4e,stroke:#2dd4bf,color:#fff
+  style Nachweis fill:#1f4f3a,stroke:#56d364,color:#fff
+  style Export fill:#4f3a1f,stroke:#d29922,color:#fff
+      </div>
+    </div>
+
+    <div class="prose-note">
+      <strong>Bitte prüfen:</strong> Diese Seite beschreibt baumops als Gesamtsystem aus dem Stand der öffentlichen Repos und baumops.com. Wo das Produkt schon weiter ist als die Repos (z. B. konkrete Lieferketten-Funktionen, die „5 Regeln, damit die Baustelle läuft"), sag mir Bescheid — das baue ich gern als eigenen Reiter ein.
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>&copy; 2026 Andreas Pelczer &middot; <a href="https://pelczer.de">pelczer.de</a> &middot; <a href="https://baumops.com" target="_blank">baumops.com</a> &middot; <a href="https://pelczer.de/construction-grid-logikplan/">Construction Grid</a></p>
+</footer>
+
+<script>
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'dark',
+  themeVariables: {
+    darkMode: true,
+    background: '#0d1117',
+    primaryColor: '#1f6feb',
+    primaryTextColor: '#c9d1d9',
+    primaryBorderColor: '#30363d',
+    lineColor: '#8b949e',
+    secondaryColor: '#238636',
+    tertiaryColor: '#30363d',
+    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+    fontSize: '13px'
+  },
+  flowchart: { curve: 'basis', useMaxWidth: true },
+  er: { useMaxWidth: true },
+  sequence: { useMaxWidth: true },
+  mindmap: { useMaxWidth: true }
+});
+
+mermaid.run().then(function() {
+  document.querySelectorAll('.lp-section').forEach(function(s) {
+    if (s.id !== 'overview') s.classList.add('hidden');
+  });
+});
+
+function show(id) {
+  document.querySelectorAll('.lp-section').forEach(function(s) {
+    if (s.id === id) {
+      s.classList.remove('hidden');
+    } else {
+      s.classList.add('hidden');
+    }
+  });
+  document.querySelectorAll('#tabs button').forEach(function(b) { b.classList.remove('active'); });
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>
