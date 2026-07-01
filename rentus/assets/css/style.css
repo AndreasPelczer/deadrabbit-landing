@@ -425,6 +425,68 @@ h1, h2, h3, h4 {
 .wa-float svg { width: 30px; height: 30px; color: #fff; }
 
 /* ======================================================================
+   Cursor-Glanzlicht (folgt der Maus)
+   ====================================================================== */
+.cursor-glow {
+  position: fixed; top: 0; left: 0; z-index: 70;
+  width: 480px; height: 480px; border-radius: 50%;
+  pointer-events: none; opacity: 0;
+  transform: translate3d(-9999px, -9999px, 0) translate(-50%, -50%);
+  background: radial-gradient(circle closest-side,
+    rgba(191, 224, 127, .16),
+    rgba(168, 201, 107, .07) 45%,
+    transparent 72%);
+  mix-blend-mode: screen;
+  transition: opacity .4s var(--ease);
+  will-change: transform, opacity;
+}
+.cursor-glow.on { opacity: 1; }
+/* Kein Effekt auf Touch-Geräten oder bei reduzierter Bewegung */
+@media (hover: none), (prefers-reduced-motion: reduce) {
+  .cursor-glow { display: none; }
+}
+
+/* ======================================================================
+   Eastereggs: Shine-Sweep, Funken, Gruß-Toast
+   ====================================================================== */
+.shine-sweep { position: fixed; inset: 0; z-index: 82; pointer-events: none; overflow: hidden; opacity: 0; }
+.shine-sweep.run { opacity: 1; }
+.shine-sweep .bar {
+  position: absolute; top: -25%; left: -30%; width: 22%; height: 150%;
+  transform: rotate(16deg); filter: blur(6px);
+  background: linear-gradient(90deg, transparent, rgba(191,224,127,.30), rgba(255,255,255,.14), transparent);
+  mix-blend-mode: screen;
+}
+.shine-sweep.run .bar { animation: shinebar 950ms cubic-bezier(.4,0,.2,1) forwards; }
+@keyframes shinebar { from { left: -30%; } to { left: 120%; } }
+
+.spark {
+  position: fixed; z-index: 96; width: 12px; height: 12px; pointer-events: none;
+  color: var(--green-2);
+  animation: sparkfly 750ms ease-out forwards;
+}
+.spark svg { width: 100%; height: 100%; display: block; }
+@keyframes sparkfly {
+  0%   { transform: translate(0,0) scale(.2) rotate(0deg); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1) rotate(140deg); opacity: 0; }
+}
+
+.egg-toast {
+  position: fixed; left: 50%; bottom: 92px; z-index: 95;
+  transform: translateX(-50%) translateY(16px);
+  background: var(--green); color: var(--green-ink);
+  font-family: var(--head); text-transform: uppercase; letter-spacing: .08em;
+  font-size: .82rem; padding: 12px 22px; border-radius: 999px;
+  box-shadow: var(--shadow); opacity: 0; pointer-events: none;
+  transition: opacity .3s var(--ease), transform .3s var(--ease);
+}
+.egg-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .shine-sweep, .spark { display: none; }
+}
+
+/* ======================================================================
    Reveal animation
    ====================================================================== */
 .reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
