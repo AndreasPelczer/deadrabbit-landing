@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>RENT US Glanzgarage — Demo-Übersicht</title>
+<link rel="icon" href="/rentus/assets/img/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0e0d; --surface:#171b18; --line:#2a302b; --line2:#38413a;
+    --text:#f3f6f1; --muted:#a6b0a5; --faint:#6b746a; --green:#a8c96b; --green2:#bfe07f; --ink:#14210a;
+    --head:"Oswald",sans-serif; --body:"Manrope",-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--body);color:var(--text);min-height:100vh;
+    background:radial-gradient(130% 90% at 50% -10%,#161b17,#0c0e0d 60%);
+    display:flex;flex-direction:column;align-items:center;padding:40px 18px 60px}
+  a{text-decoration:none;color:inherit}
+
+  .brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:6px}
+  .brand img{height:84px;width:auto}
+  .brand .name{font-family:var(--head);text-transform:uppercase;letter-spacing:.06em;font-size:22px}
+  .brand .name b{color:var(--green)}
+  .eyebrow{font-family:var(--head);text-transform:uppercase;letter-spacing:.26em;font-size:11px;color:var(--green);margin-top:4px}
+  .lead{color:var(--muted);text-align:center;max-width:560px;margin:14px auto 34px;font-size:15px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;width:100%;max-width:940px}
+  @media(max-width:680px){.grid{grid-template-columns:1fr}}
+
+  .card{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);
+    background:var(--surface);min-height:210px;display:flex;flex-direction:column;justify-content:flex-end;
+    transition:transform .25s cubic-bezier(.22,.61,.36,1),border-color .25s;box-shadow:0 18px 50px rgba(0,0,0,.4)}
+  .card:hover{transform:translateY(-5px);border-color:var(--green)}
+  .card .bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0}
+  .card::after{content:"";position:absolute;inset:0;z-index:1;
+    background:linear-gradient(180deg,rgba(8,10,9,.15) 0%,rgba(8,10,9,.55) 45%,rgba(8,10,9,.94) 100%)}
+  .card .in{position:relative;z-index:2;padding:22px}
+  .card .tag{font-family:var(--head);text-transform:uppercase;letter-spacing:.14em;font-size:10.5px;
+    color:var(--green2);margin-bottom:8px}
+  .card h2{font-family:var(--head);text-transform:uppercase;letter-spacing:.02em;font-size:21px;line-height:1.05}
+  .card p{color:var(--muted);font-size:13.5px;margin-top:7px;max-width:340px}
+  .card .go{display:inline-flex;align-items:center;gap:7px;margin-top:14px;font-family:var(--head);
+    text-transform:uppercase;letter-spacing:.06em;font-size:12.5px;color:var(--green)}
+  .card:hover .go{color:var(--green2)}
+  .card .go svg{width:16px;height:16px}
+
+  .note{margin-top:30px;color:var(--faint);font-size:12.5px;text-align:center;max-width:560px}
+  .foot{margin-top:10px;color:#4b534a;font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+  <div class="brand">
+    <img src="/rentus/assets/img/logo.png" alt="RENT US Glanzgarage">
+    <div class="name">RENT&nbsp;<b>US</b> Glanzgarage</div>
+    <div class="eyebrow">Demo-Übersicht</div>
+  </div>
+  <p class="lead">Alles auf einen Blick – hier geht's zu den vier Vorschauen. Einfach draufklicken.</p>
+
+  <div class="grid">
+    <a class="card" href="/rentus/">
+      <div class="bg" style="background-image:url('/rentus/assets/img/hero-audi.jpg')"></div>
+      <div class="in">
+        <div class="tag">Website</div>
+        <h2>Die neue Seite</h2>
+        <p>Der geplante Web-Auftritt mit Paketen, Preisen, Vorher/Nachher & Kontakt.</p>
+        <span class="go">Öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </div>
+    </a>
+
+    <a class="card" href="/politur/">
+      <div class="bg" style="background-image:url('/rentus/assets/img/lambo-orange.jpg')"></div>
+      <div class="in">
+        <div class="tag">Interaktiv</div>
+        <h2>Polier-Spiel</h2>
+        <p>Matten Lack selbst zu Hochglanz polieren – mit Poliermaschine, Sound & Funken.</p>
+        <span class="go">Öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </div>
+    </a>
+
+    <a class="card" href="/schaden/">
+      <div class="bg" style="background-image:url('/rentus/assets/img/porsche-matte.jpg')"></div>
+      <div class="in">
+        <div class="tag">Werkzeug</div>
+        <h2>Schaden markieren</h2>
+        <p>Auf der Auto-Skizze antippen: Kratzer, Delle, Steinschlag, Rost – als Liste per WhatsApp.</p>
+        <span class="go">Öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </div>
+    </a>
+
+    <a class="card" href="/3d-check/">
+      <div class="bg" style="background-image:url('/rentus/assets/img/ferrari-red.jpg')"></div>
+      <div class="in">
+        <div class="tag">3D</div>
+        <h2>3D-Auto-Check</h2>
+        <p>Auto in 3D drehen und die Stellen markieren, auf die besonders geachtet werden soll.</p>
+        <span class="go">Öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </div>
+    </a>
+  </div>
+
+  <p class="note">Interne Vorschau · nicht öffentlich gelistet (noindex). Am besten am Handy & Desktop ausprobieren.</p>
+  <p class="foot">© RENT US Glanzgarage · Mike Knörzer</p>
+</body>
+</html>
