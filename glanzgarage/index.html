@@ -48,6 +48,11 @@
   .card:hover .go{color:var(--green2)}
   .card .go svg{width:16px;height:16px}
 
+  .stamp{position:absolute;top:14px;right:-4px;z-index:3;transform:rotate(6deg);
+    font-family:var(--head);text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:600;
+    color:#ffd9a6;background:rgba(28,19,7,.7);border:2px solid rgba(224,178,90,.85);
+    padding:6px 12px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+
   .note{margin-top:30px;color:var(--faint);font-size:12.5px;text-align:center;max-width:560px}
   .foot{margin-top:10px;color:#4b534a;font-size:12px;text-align:center}
 </style>
@@ -58,7 +63,7 @@
     <div class="name">RENT&nbsp;<b>US</b> Glanzgarage</div>
     <div class="eyebrow">Demo-Übersicht</div>
   </div>
-  <p class="lead">Alles auf einen Blick – hier geht's zu den vier Vorschauen. Einfach draufklicken.</p>
+  <p class="lead">Alles auf einen Blick – einfach draufklicken. Zwei Sachen sind noch <b>in Arbeit</b> (Stempel).</p>
 
   <div class="grid">
     <a class="card" href="/rentus/">
@@ -102,12 +107,24 @@
     </a>
 
     <a class="card" href="/spiel/">
+      <div class="stamp">In Arbeit</div>
       <div class="bg" style="background-image:url('/rentus/assets/img/wheel-foam.jpg')"></div>
       <div class="in">
         <div class="tag">Spiel</div>
         <h2>Glanzgarage – das Spiel</h2>
         <p>Auto in 3 Schritten selbst aufbereiten: Waschen, Polieren, Versiegeln – mit Werkzeugen, Wasser &amp; Sound.</p>
         <span class="go">Spielen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </div>
+    </a>
+
+    <a class="card" href="/3d-test/">
+      <div class="stamp">Testversion</div>
+      <div class="bg" style="background-image:url('/rentus/assets/img/lambo-aventador.jpg')"></div>
+      <div class="in">
+        <div class="tag">3D · Experiment</div>
+        <h2>3D-Auto putzen</h2>
+        <p>Dreckiges 3D-Auto sauber wischen – der Machbarkeits-Test für die 3D-Aufbereitung.</p>
+        <span class="go">Öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
       </div>
     </a>
   </div>
