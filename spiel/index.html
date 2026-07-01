@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Glanzgarage – das Spiel · RENT US</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0e0d; --surface:#171b18; --surface2:#1e231f; --line:#2a302b; --line2:#38413a;
+    --text:#f3f6f1; --muted:#a6b0a5; --faint:#6b746a; --green:#a8c96b; --green2:#bfe07f; --ink:#14210a;
+    --wash:#4aa3ff; --polish:#a8c96b; --seal:#e6c25a;
+    --head:"Oswald",sans-serif; --body:"Manrope",-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--body);background:radial-gradient(120% 90% at 50% -10%,#141815,#0c0e0d 60%);
+    color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:22px 16px 50px;-webkit-font-smoothing:antialiased}
+  h1{font-family:var(--head);text-transform:uppercase;letter-spacing:.02em;font-size:clamp(21px,4vw,32px);text-align:center}
+  h1 span{color:var(--green)}
+  .sub{color:var(--muted);text-align:center;margin:8px 0 16px;font-size:14px}
+
+  .steps{display:flex;gap:8px;justify-content:center;margin-bottom:14px;flex-wrap:wrap}
+  .step{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);
+    border-radius:999px;padding:8px 15px;opacity:.5;transition:.2s}
+  .step .n{width:22px;height:22px;border-radius:50%;background:var(--surface2);color:var(--muted);
+    display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:13px}
+  .step .lb{font-family:var(--head);text-transform:uppercase;letter-spacing:.05em;font-size:13px;color:var(--muted)}
+  .step.active{opacity:1;border-color:currentColor}
+  .step.active .n{background:currentColor;color:#12140f}
+  .step.active .lb{color:var(--text)}
+  .step.done{opacity:1}
+  .step.done .n{background:var(--green);color:#12140f}
+  #s1.active{color:var(--wash)} #s2.active{color:var(--polish)} #s3.active{color:var(--seal)}
+
+  .stage-wrap{width:min(94vw,880px)}
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .tool{display:flex;align-items:center;gap:10px;font-family:var(--head);text-transform:uppercase;letter-spacing:.04em;font-size:14px}
+  .tool .ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;background:var(--surface2);border:1px solid var(--line)}
+  .barwrap{flex:1;max-width:340px;height:10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);overflow:hidden}
+  .barwrap i{display:block;height:100%;width:0;transition:width .15s}
+  .pct{font-family:var(--head);font-size:15px;min-width:44px;text-align:right}
+
+  .stage{position:relative;width:100%;aspect-ratio:16/10;border-radius:18px;overflow:hidden;cursor:default;
+    border:1px solid var(--line);box-shadow:0 26px 70px rgba(0,0,0,.5);
+    background:radial-gradient(130% 90% at 50% 8%,#232a30,#10141a 55%,#0a0d10 100%)}
+  .stage.has-tool{cursor:none}
+  .stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+  #shinyCv{z-index:1} #midCv{z-index:2} #topCv{z-index:3}
+  .cursor{position:absolute;top:0;left:0;z-index:6;pointer-events:none;transform:translate(-9999px,-9999px) translate(-50%,-50%);opacity:0;transition:opacity .2s}
+  .cursor.on{opacity:1}
+  .cursor .ring{position:relative;width:76px;height:76px;border-radius:50%;border:2px solid rgba(255,255,255,.75);
+    box-shadow:0 0 18px currentColor,inset 0 0 14px rgba(255,255,255,.2)}
+  .cursor .cIc{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+  .hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none;
+    font-family:var(--head);text-transform:uppercase;letter-spacing:.1em;font-size:clamp(13px,2.3vw,18px);color:#fff;
+    text-align:center;text-shadow:0 2px 18px rgba(0,0,0,.8);transition:opacity .35s}
+  .hint.hide{opacity:0}
+  .hint .badge{background:rgba(8,10,9,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);padding:12px 20px;border-radius:999px;border:1px solid rgba(255,255,255,.15)}
+
+  /* Werkbank */
+  .bench{margin-top:14px;background:linear-gradient(#241d15,#15100a);border:1px solid #3a2f1e;border-radius:16px;padding:14px}
+  .bench-top{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .toolitem{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:108px;
+    background:#12100b;border:1px solid #3a2f1e;border-radius:12px;padding:12px 14px;cursor:pointer;transition:.15s;color:#cdbfa6}
+  .toolitem:hover{transform:translateY(-3px);border-color:#6b5a3a}
+  .toolitem .ti-ic{font-size:30px;line-height:1}
+  .toolitem .ti-lb{font-family:var(--head);text-transform:uppercase;letter-spacing:.04em;font-size:12px}
+  .toolitem.active{border-color:var(--green);box-shadow:0 0 0 1px var(--green);color:var(--text)}
+  .toolitem.needed{animation:need 1.3s ease-in-out infinite}
+  @keyframes need{0%,100%{box-shadow:0 0 0 0 rgba(168,201,107,0)}50%{box-shadow:0 0 0 3px rgba(168,201,107,.55)}}
+  .bench-row{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px;flex-wrap:wrap}
+  .bench-label{font-family:var(--head);text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:#8a7c60}
+  .mute{background:#12100b;border:1px solid #3a2f1e;color:#cdbfa6;font-family:var(--head);text-transform:uppercase;letter-spacing:.05em;font-size:11px;padding:7px 12px;border-radius:999px;cursor:pointer}
+  .mute:hover{border-color:#6b5a3a}
+  .bench.shake{animation:shake .3s}
+  @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+  /* Wasser & Schaum & Funken */
+  .drop{position:fixed;z-index:50;pointer-events:none;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.95),rgba(120,180,235,.7) 60%,rgba(70,140,210,.25));
+    animation:dropf .6s ease-in forwards}
+  @keyframes dropf{0%{transform:translate(0,0) scale(.6);opacity:0}15%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1);opacity:0}}
+  .foam{position:fixed;z-index:50;pointer-events:none;border-radius:50%;background:rgba(255,255,255,.85);
+    box-shadow:0 0 6px rgba(255,255,255,.5);animation:foamf .7s ease-out forwards}
+  @keyframes foamf{0%{transform:scale(.2);opacity:0}30%{opacity:.9}100%{transform:scale(1.5);opacity:0}}
+  .spark{position:fixed;z-index:50;pointer-events:none;width:11px;height:11px;animation:sf .7s ease-out forwards}
+  .spark svg{width:100%;height:100%}
+  @keyframes sf{0%{transform:translate(0,0) scale(.2);opacity:0}20%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1) rotate(120deg);opacity:0}}
+
+  /* Abnahme */
+  .result{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;
+    background:rgba(8,10,9,.62);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .4s}
+  .result.show{opacity:1;pointer-events:auto}
+  .card{max-width:420px;margin:0 20px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px 26px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+  .card .stars{font-size:32px;letter-spacing:4px;color:var(--seal);margin-bottom:6px}
+  .card h2{font-family:var(--head);text-transform:uppercase;font-size:23px;margin-bottom:8px}
+  .card p{color:var(--muted);font-size:14px;margin-bottom:20px}
+  .card .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .btn{font-family:var(--head);text-transform:uppercase;letter-spacing:.05em;font-size:13px;border:1px solid var(--line);
+    background:var(--surface2);color:var(--text);padding:11px 20px;border-radius:999px;cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--green);color:var(--green)}
+  .btn.primary{background:var(--green);color:var(--ink);border-color:var(--green)}
+  .btn.primary:hover{background:var(--green2)}
+
+  .foot{color:#5f6870;font-size:12px;margin-top:18px;text-align:center}
+</style>
+</head>
+<body>
+  <h1>Glanzgarage – <span>das Spiel</span></h1>
+  <p class="sub">Nimm dir das Werkzeug vom Tisch und bereite das Auto in 3 Schritten auf.</p>
+
+  <div class="steps">
+    <div class="step active" id="s1"><span class="n">1</span><span class="lb">Waschen</span></div>
+    <div class="step" id="s2"><span class="n">2</span><span class="lb">Polieren</span></div>
+    <div class="step" id="s3"><span class="n">3</span><span class="lb">Versiegeln</span></div>
+  </div>
+
+  <div class="stage-wrap">
+    <div class="toolbar">
+      <div class="tool"><span class="ic" id="toolIc">✋</span><span id="toolName">Kein Werkzeug – vom Tisch nehmen</span></div>
+      <div class="barwrap"><i id="fill"></i></div>
+      <div class="pct" id="pct">0%</div>
+    </div>
+
+    <div class="stage" id="stage">
+      <canvas id="shinyCv"></canvas>
+      <canvas id="midCv"></canvas>
+      <canvas id="topCv"></canvas>
+      <div class="hint" id="hint"><span class="badge">Nimm den Schwamm vom Tisch</span></div>
+      <div class="cursor" id="cursor"><div class="ring"><span class="cIc" id="cIc"></span></div></div>
+      <div class="result" id="result">
+        <div class="card">
+          <div class="stars" id="stars">★★★★★</div>
+          <h2 id="rTitle">Hochglanz!</h2>
+          <p id="rText">Sauber gemacht. So sieht Profi-Aufbereitung aus – und genau das dauert in echt Stunden.</p>
+          <div class="row">
+            <a class="btn primary" href="https://wa.me/4915901606913?text=Hallo%20RENT%20US%2C%20ich%20m%C3%B6chte%20einen%20Termin%20zur%20Fahrzeugaufbereitung%20anfragen." target="_blank" rel="noopener">Termin sichern</a>
+            <button class="btn" id="rAgain" type="button">Nochmal</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bench" id="bench">
+      <div class="bench-top">
+        <button class="toolitem" data-tool="wash"><span class="ti-ic">🧽</span><span class="ti-lb">Schwamm</span></button>
+        <button class="toolitem" data-tool="polish"><span class="ti-ic">✨</span><span class="ti-lb">Poliermaschine</span></button>
+        <button class="toolitem" data-tool="seal"><span class="ti-ic">🛡️</span><span class="ti-lb">Wachs-Pad</span></button>
+      </div>
+      <div class="bench-row">
+        <span class="bench-label">Werkbank – nimm dir das passende Werkzeug</span>
+        <button class="mute" id="mute">🔊 Sound an</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot">Versuchsprojekt (MVP) · RENT US Glanzgarage</p>
+
+<script>
+(function(){
+  const STEPS=[
+    {key:'wash',   label:'Schwamm',        toolLabel:'den Schwamm',       ic:'🧽', color:'#4aa3ff'},
+    {key:'polish', label:'Poliermaschine', toolLabel:'die Poliermaschine',ic:'✨', color:'#a8c96b'},
+    {key:'seal',   label:'Wachs-Pad',      toolLabel:'das Wachs-Pad',     ic:'🛡️', color:'#e6c25a'}
+  ];
+  const stepOf=k=>STEPS.find(s=>s.key===k);
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const stage=document.getElementById('stage');
+  const shinyCv=document.getElementById('shinyCv'), sctx=shinyCv.getContext('2d');
+  const midCv=document.getElementById('midCv'), mctx=midCv.getContext('2d');
+  const topCv=document.getElementById('topCv'), tctx=topCv.getContext('2d');
+  const cursor=document.getElementById('cursor'), ring=cursor.querySelector('.ring'), cIc=document.getElementById('cIc');
+  const hint=document.getElementById('hint');
+  const fill=document.getElementById('fill'), pct=document.getElementById('pct');
+  const toolIc=document.getElementById('toolIc'), toolName=document.getElementById('toolName');
+  const bench=document.getElementById('bench');
+  const result=document.getElementById('result');
+
+  let img=new Image();
+  let W=0,H=0,BRUSH=44,bbox=null;
+  let step=0, baseline=1, working=false, last=null, finished=false, tStart=0, advancing=false;
+  let currentTool=null, wrongT=0;
+
+  // ---------- Bild-Ausschnitt ----------
+  function computeBBox(){
+    const sc=240, r=img.naturalHeight/img.naturalWidth, sh=Math.max(1,Math.round(sc*r));
+    const t=document.createElement('canvas'); t.width=sc; t.height=sh;
+    const c=t.getContext('2d'); c.drawImage(img,0,0,sc,sh);
+    const d=c.getImageData(0,0,sc,sh).data; let mnx=sc,mny=sh,mxx=-1,mxy=-1;
+    for(let y=0;y<sh;y++)for(let x=0;x<sc;x++){ if(d[(y*sc+x)*4+3]>25){ if(x<mnx)mnx=x;if(x>mxx)mxx=x;if(y<mny)mny=y;if(y>mxy)mxy=y; } }
+    if(mxx<0){ bbox={sx:0,sy:0,sw:img.naturalWidth,sh:img.naturalHeight}; return; }
+    const kx=img.naturalWidth/sc, ky=img.naturalHeight/sh;
+    bbox={sx:mnx*kx, sy:mny*ky, sw:(mxx-mnx+1)*kx, sh:(mxy-mny+1)*ky};
+  }
+  function fitParams(){
+    const b=bbox||{sx:0,sy:0,sw:img.naturalWidth,sh:img.naturalHeight};
+    const s=Math.min(W/b.sw,H/b.sh)*0.94, dw=b.sw*s, dh=b.sh*s;
+    return {b,dx:(W-dw)/2,dy:(H-dh)/2,dw,dh};
+  }
+  function drawCar(ctx,filter){
+    const p=fitParams(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='source-over'; ctx.clearRect(0,0,W,H);
+    if(filter)ctx.filter=filter;
+    ctx.drawImage(img,p.b.sx,p.b.sy,p.b.sw,p.b.sh,p.dx,p.dy,p.dw,p.dh); ctx.filter='none';
+    return p;
+  }
+  function specks(ctx,p,n,alpha){
+    ctx.globalCompositeOperation='source-atop'; const k=W/700;
+    for(let i=0;i<n;i++){
+      const x=p.dx+Math.random()*p.dw, y=p.dy+Math.random()*p.dh, rr=(0.5+Math.random()*2)*k;
+      ctx.fillStyle='rgba('+(40+(Math.random()*26|0))+','+(36+(Math.random()*22|0))+','+(30+(Math.random()*18|0))+','+alpha+')';
+      ctx.beginPath(); ctx.arc(x,y,rr,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalCompositeOperation='source-over';
+  }
+  function coverage(ctx,thr){
+    const sw=64, sh=Math.max(1,Math.round(64*H/W));
+    const t=document.createElement('canvas'); t.width=sw; t.height=sh;
+    const c=t.getContext('2d'); c.drawImage(ctx.canvas,0,0,sw,sh);
+    const d=c.getImageData(0,0,sw,sh).data; let n=0;
+    for(let i=3;i<d.length;i+=4) if(d[i]>thr) n++;
+    return n;
+  }
+
+  function fillShiny(){ drawCar(sctx,'saturate(1.15) brightness(1.05) contrast(1.05)'); }
+  function fillDull(){ drawCar(mctx,'grayscale(0.85) brightness(0.58) contrast(0.95)'); }
+  function fillDirt(){ const p=drawCar(tctx,'grayscale(0.7) brightness(0.4) sepia(0.35) contrast(0.9)'); specks(tctx,p,320,0.22); }
+  function fillWax(){
+    const p=fitParams(); mctx.setTransform(1,0,0,1,0,0); mctx.globalCompositeOperation='source-over'; mctx.clearRect(0,0,W,H);
+    mctx.drawImage(img,p.b.sx,p.b.sy,p.b.sw,p.b.sh,p.dx,p.dy,p.dw,p.dh);
+    mctx.globalCompositeOperation='source-in';
+    mctx.fillStyle='rgba(238,242,232,0.55)'; mctx.fillRect(0,0,W,H);
+    mctx.globalCompositeOperation='source-over';
+  }
+  const activeCtx=()=> step===0 ? tctx : mctx;
+  const activeThr=()=> step===2 ? 90 : 200;
+
+  // ---------- Sound ----------
+  let ac=null,noiseG=null,humG=null,bp=null,muted=false,profile='wash';
+  const PROFILES={ wash:{bp:2600,q:0.6,ng:0.06,hg:0}, polish:{bp:1400,q:0.9,ng:0.05,hg:0.045}, seal:{bp:950,q:0.9,ng:0.035,hg:0} };
+  function initAudio(){ if(ac)return; try{
+    const AC=window.AudioContext||window.webkitAudioContext; ac=new AC();
+    const buf=ac.createBuffer(1,Math.floor(ac.sampleRate*1.5),ac.sampleRate);
+    const ch=buf.getChannelData(0); for(let i=0;i<ch.length;i++)ch[i]=Math.random()*2-1;
+    const noise=ac.createBufferSource(); noise.buffer=buf; noise.loop=true;
+    bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=2500; bp.Q.value=0.7;
+    noiseG=ac.createGain(); noiseG.gain.value=0; noise.connect(bp).connect(noiseG).connect(ac.destination); noise.start();
+    const osc=ac.createOscillator(); osc.type='sawtooth'; osc.frequency.value=70;
+    const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=200;
+    humG=ac.createGain(); humG.gain.value=0; osc.connect(lp).connect(humG).connect(ac.destination); osc.start();
+  }catch(e){ ac=null; } }
+  function setSoundProfile(key){ profile=PROFILES[key]?key:'wash'; if(ac&&bp){ const p=PROFILES[profile]; bp.frequency.setTargetAtTime(p.bp,ac.currentTime,0.05); bp.Q.value=p.q; } }
+  function soundOn(){ if(muted)return; initAudio(); if(!ac)return; if(ac.state==='suspended')ac.resume();
+    const p=PROFILES[profile]; noiseG.gain.setTargetAtTime(p.ng,ac.currentTime,0.05); humG.gain.setTargetAtTime(p.hg,ac.currentTime,0.05); }
+  function soundOff(){ if(!ac)return; noiseG.gain.setTargetAtTime(0,ac.currentTime,0.08); humG.gain.setTargetAtTime(0,ac.currentTime,0.08); }
+  const muteBtn=document.getElementById('mute');
+  muteBtn.addEventListener('click',()=>{ muted=!muted; muteBtn.textContent=muted?'🔇 Sound aus':'🔊 Sound an'; if(muted)soundOff(); });
+
+  // ---------- Werkzeug wählen ----------
+  function selectTool(key){
+    currentTool=key; const t=stepOf(key);
+    document.querySelectorAll('.toolitem').forEach(b=>b.classList.toggle('active', b.dataset.tool===key));
+    toolIc.textContent = t?t.ic:'✋';
+    toolName.textContent = t?('Werkzeug: '+t.label):'Kein Werkzeug – vom Tisch nehmen';
+    cIc.textContent = t?t.ic:'';
+    ring.style.color = t?t.color:'#888';
+    stage.classList.toggle('has-tool',!!t);
+    if(t) setSoundProfile(key);
+  }
+  document.querySelectorAll('.toolitem').forEach(b=>b.addEventListener('click',()=>selectTool(b.dataset.tool)));
+
+  // ---------- Schritt ----------
+  function setPct(p){ fill.style.width=p+'%'; pct.textContent=p+'%'; }
+  function setStep(i){
+    step=i; const s=STEPS[i];
+    fill.style.background='linear-gradient(90deg,'+s.color+'88,'+s.color+')';
+    ['s1','s2','s3'].forEach((id,idx)=>{ const el=document.getElementById(id);
+      el.classList.toggle('active',idx===i); el.classList.toggle('done',idx<i); el.style.color=idx===i?s.color:''; });
+    document.querySelectorAll('.toolitem').forEach(b=>b.classList.toggle('needed', b.dataset.tool===s.key));
+    hint.querySelector('.badge').textContent='Nimm '+s.toolLabel+' vom Tisch';
+    hint.classList.remove('hide');
+    if(i===2) fillWax();
+    baseline=coverage(activeCtx(),activeThr())||1;
+    setPct(0); advancing=false;
+    selectTool(null);                    // bei jedem Schritt Werkzeug selbst nehmen
+  }
+
+  function sizeAll(){
+    const r=stage.getBoundingClientRect(); const dpr=Math.min(window.devicePixelRatio||1,2);
+    W=Math.round(r.width*dpr); H=Math.round(r.height*dpr);
+    [shinyCv,midCv,topCv].forEach(cv=>{cv.width=W;cv.height=H;}); BRUSH=Math.round(40*dpr);
+  }
+  function initGame(){
+    if(!(img.complete&&img.naturalWidth)) return;
+    sizeAll(); fillShiny(); fillDull(); fillDirt();
+    finished=false; tStart=0; result.classList.remove('show'); setStep(0);
+  }
+
+  // ---------- Malen ----------
+  function toXY(e){
+    const r=stage.getBoundingClientRect();
+    const cx=(e.touches?e.touches[0].clientX:e.clientX), cy=(e.touches?e.touches[0].clientY:e.clientY);
+    return {x:(cx-r.left)/r.width*W, y:(cy-r.top)/r.height*H, clientX:cx, clientY:cy};
+  }
+  function erase(ctx,x,y){
+    const g=ctx.createRadialGradient(x,y,0,x,y,BRUSH);
+    g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(0.62,'rgba(0,0,0,1)'); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.globalCompositeOperation='destination-out'; ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(x,y,BRUSH,0,Math.PI*2); ctx.fill(); ctx.globalCompositeOperation='source-over';
+  }
+  function stroke(a,b){
+    const ctx=activeCtx(); const dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy);
+    const steps=Math.max(1,Math.floor(dist/(BRUSH*0.35)));
+    for(let i=0;i<=steps;i++) erase(ctx,a.x+dx*i/steps,a.y+dy*i/steps);
+  }
+  function moveCursor(cx,cy){ const r=stage.getBoundingClientRect(); cursor.style.transform='translate('+(cx-r.left)+'px,'+(cy-r.top)+'px) translate(-50%,-50%)'; }
+
+  function water(cx,cy){
+    if(reduced) return;
+    for(let i=0;i<2;i++){ const f=document.createElement('span'); f.className='foam';
+      const s=6+Math.random()*8; f.style.width=f.style.height=s+'px';
+      f.style.left=(cx-6+Math.random()*12)+'px'; f.style.top=(cy-6+Math.random()*12)+'px';
+      document.body.appendChild(f); f.addEventListener('animationend',()=>f.remove()); }
+    for(let i=0;i<3;i++){ const d=document.createElement('span'); d.className='drop';
+      const s=4+Math.random()*5; d.style.width=d.style.height=s+'px'; d.style.left=cx+'px'; d.style.top=cy+'px';
+      d.style.setProperty('--dx',((Math.random()<.5?-1:1)*(10+Math.random()*40))+'px');
+      d.style.setProperty('--dy',(30+Math.random()*55)+'px');
+      document.body.appendChild(d); d.addEventListener('animationend',()=>d.remove()); }
+  }
+  function sparkle(cx,cy,color){
+    if(reduced) return;
+    const star='<svg viewBox="0 0 24 24" fill="'+color+'"><path d="M12 0l2.4 9.6L24 12l-9.6 2.4L12 24l-2.4-9.6L0 12l9.6-2.4z"/></svg>';
+    for(let i=0;i<3;i++){ const s=document.createElement('span'); s.className='spark';
+      const a=Math.random()*6.28,d=18+Math.random()*34; s.style.left=cx+'px'; s.style.top=cy+'px';
+      s.style.setProperty('--dx',Math.cos(a)*d+'px'); s.style.setProperty('--dy',Math.sin(a)*d+'px');
+      s.style.width=s.style.height=(6+Math.random()*7)+'px'; s.innerHTML=star;
+      document.body.appendChild(s); s.addEventListener('animationend',()=>s.remove()); }
+  }
+  function wrongToolHint(){
+    const now=Date.now(); if(now-wrongT<900) return; wrongT=now;
+    hint.querySelector('.badge').textContent='Falsches Werkzeug – nimm '+STEPS[step].toolLabel;
+    hint.classList.remove('hide');
+    bench.classList.remove('shake'); void bench.offsetWidth; bench.classList.add('shake');
+  }
+
+  let sT=0;
+  function progress(force){
+    const now=Date.now(); if(!force && now-sT<110) return; sT=now;
+    const cov=coverage(activeCtx(),activeThr());
+    let p=Math.round((1-cov/baseline)*100); p=Math.max(0,Math.min(100,p));
+    setPct(p);
+    if(p>=95 && !finished && !advancing) completeStep();
+  }
+  function completeStep(){
+    if(advancing || finished) return; advancing=true;
+    const ctx=activeCtx(); ctx.globalCompositeOperation='destination-out'; ctx.fillRect(0,0,W,H); ctx.globalCompositeOperation='source-over';
+    setPct(100); soundOff();
+    if(step<2){ const next=step+1; setTimeout(()=>setStep(next),450); } else finish();
+  }
+  function finish(){
+    finished=true; soundOff();
+    const secs=tStart?((Date.now()-tStart)/1000):999;
+    const stars = secs<=35?5 : secs<=55?4 : 3;
+    document.getElementById('stars').textContent='★★★★★'.slice(0,stars)+'☆☆☆☆☆'.slice(0,5-stars);
+    document.getElementById('rTitle').textContent = stars>=5?'Perfekter Hochglanz!' : 'Sauber gemacht!';
+    result.classList.add('show');
+  }
+
+  // ---------- Events ----------
+  function start(e){
+    if(finished) return;
+    if(!currentTool){ wrongToolHint(); return; }
+    working=true; last=toXY(e); tStart=tStart||Date.now();
+    cursor.classList.add('on'); moveCursor(last.clientX,last.clientY); e.preventDefault&&e.preventDefault();
+  }
+  function move(e){
+    const p=toXY(e); if(currentTool){ cursor.classList.add('on'); moveCursor(p.clientX,p.clientY); }
+    if(working && !finished){
+      if(currentTool===STEPS[step].key){
+        if(!hint.classList.contains('hide')) hint.classList.add('hide');
+        if(last) stroke(last,p); last=p;
+        if(step===0) water(p.clientX,p.clientY); else if(Math.random()<0.5) sparkle(p.clientX,p.clientY,STEPS[step].color);
+        soundOn(); progress(false);
+      } else { last=p; wrongToolHint(); }
+    }
+  }
+  function end(){ working=false; last=null; soundOff(); if(!finished) progress(true); }
+
+  stage.addEventListener('mousedown',start);
+  window.addEventListener('mousemove',move);
+  window.addEventListener('mouseup',end);
+  stage.addEventListener('mouseleave',()=>{ if(!working) cursor.classList.remove('on'); });
+  stage.addEventListener('touchstart',start,{passive:false});
+  stage.addEventListener('touchmove',(e)=>{ move(e); e.preventDefault(); },{passive:false});
+  stage.addEventListener('touchend',end);
+  document.getElementById('rAgain').addEventListener('click',initGame);
+  window.addEventListener('resize',()=>{ clearTimeout(window.__r); window.__r=setTimeout(initGame,160); });
+
+  img.onload=initGame;
+  img.src='img/car.png';
+})();
+</script>
+</body>
+</html>
