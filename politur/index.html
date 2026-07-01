@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Politur-Experiment · RENT US Glanzgarage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0e0d; --surface:#171b18; --line:#2a302b;
+    --text:#f3f6f1; --muted:#a6b0a5; --green:#a8c96b; --green2:#bfe07f; --ink:#14210a;
+    --head:"Oswald",sans-serif; --body:"Manrope",-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--body);background:radial-gradient(120% 90% at 50% -10%,#141815,#0c0e0d 60%);color:var(--text);
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-x:hidden}
+  h1{font-family:var(--head);text-transform:uppercase;letter-spacing:.02em;font-size:clamp(22px,4vw,34px);text-align:center}
+  h1 span{color:var(--green)}
+  .sub{color:var(--muted);text-align:center;margin:8px 0 20px;font-size:14px}
+  .sub b{color:var(--text)}
+
+  .stage-wrap{position:relative;width:min(92vw,880px)}
+  .stage{position:relative;width:100%;border-radius:18px;overflow:hidden;border:1px solid var(--line);
+    box-shadow:0 30px 80px rgba(0,0,0,.55);cursor:none;aspect-ratio:16/10;
+    background:
+      radial-gradient(130% 90% at 50% 8%, #232a30, #10141a 55%, #0a0d10 100%),
+      linear-gradient(#0c0f12,#07090b)}
+  .stage:after{content:"";position:absolute;left:-5%;right:-5%;bottom:0;height:34%;pointer-events:none;z-index:1;
+    background:linear-gradient(rgba(255,255,255,.05),rgba(255,255,255,0));filter:blur(6px)}
+  #bgCv{z-index:1}
+  #shinyCv{z-index:2}
+  #canvas{z-index:3}
+  .stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+  /* Poliermaschine / Lichtkegel */
+  .machine{position:absolute;top:0;left:0;width:150px;height:150px;pointer-events:none;z-index:5;
+    transform:translate(-9999px,-9999px) translate(-50%,-50%);opacity:0;transition:opacity .25s}
+  .machine.on{opacity:1}
+  .machine .light{position:absolute;inset:0;border-radius:50%;
+    background:radial-gradient(circle,rgba(191,224,127,.28),rgba(168,201,107,.10) 45%,transparent 72%);
+    mix-blend-mode:screen}
+  .machine .disc{position:absolute;top:50%;left:50%;width:80px;height:80px;transform:translate(-50%,-50%)}
+  .machine .disc svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 10px rgba(191,224,127,.55));
+    animation:spin 1.4s linear infinite;animation-play-state:paused;transform-origin:50% 50%}
+  .machine.work .disc svg{animation-duration:.35s;animation-play-state:running}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:6;
+    pointer-events:none;color:#fff;font-family:var(--head);text-transform:uppercase;letter-spacing:.14em;
+    font-size:clamp(14px,2.4vw,20px);text-shadow:0 2px 20px rgba(0,0,0,.8);transition:opacity .4s}
+  .hint.hide{opacity:0}
+  .hint .badge{background:rgba(8,10,9,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    padding:12px 20px;border-radius:999px;border:1px solid rgba(255,255,255,.15)}
+
+  /* Fortschritt */
+  .bar-wrap{width:min(92vw,880px);margin-top:16px;display:flex;align-items:center;gap:14px}
+  .bar{flex:1;height:10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#6f9a3a,var(--green2));transition:width .2s}
+  .pct{font-family:var(--head);font-size:16px;color:var(--green);min-width:48px;text-align:right}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:18px}
+  .cars{display:flex;gap:8px}
+  .chip{font-family:var(--head);text-transform:uppercase;letter-spacing:.05em;font-size:12px;
+    background:var(--surface);border:1px solid var(--line);color:var(--muted);padding:9px 14px;border-radius:999px;cursor:pointer;transition:.15s}
+  .chip:hover{color:var(--text);border-color:var(--green)}
+  .chip.active{background:var(--green);color:var(--ink);border-color:var(--green)}
+  .btn{font-family:var(--head);text-transform:uppercase;letter-spacing:.06em;font-size:13px;
+    background:var(--green);color:var(--ink);border:0;padding:11px 20px;border-radius:999px;cursor:pointer;transition:.15s}
+  .btn:hover{background:var(--green2)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .btn.ghost:hover{border-color:var(--green);color:var(--green)}
+
+  .done{position:absolute;top:16px;left:50%;transform:translateX(-50%) translateY(-14px);z-index:7;opacity:0;
+    background:var(--green);color:var(--ink);font-family:var(--head);text-transform:uppercase;letter-spacing:.08em;
+    font-size:14px;padding:10px 20px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.5);transition:.35s;pointer-events:none}
+  .done.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* Punchline-Einblendung mit Termin-Button */
+  .cta-pop{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;
+    background:rgba(8,10,9,.58);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+    opacity:0;pointer-events:none;transition:opacity .35s}
+  .cta-pop.show{opacity:1;pointer-events:auto}
+  .cta-card{max-width:430px;margin:0 20px;background:var(--surface);border:1px solid var(--line);
+    border-radius:16px;padding:28px 26px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+  .cta-card h3{font-family:var(--head);text-transform:uppercase;font-size:21px;letter-spacing:.02em;margin-bottom:10px}
+  .cta-card p{color:var(--muted);font-size:14.5px;margin-bottom:22px}
+  .cta-card .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+  .foot{color:#5f6870;font-size:12px;margin-top:22px;text-align:center}
+  .spark{position:fixed;z-index:50;pointer-events:none;color:var(--green2);width:10px;height:10px;animation:sf .7s ease-out forwards}
+  .spark svg{width:100%;height:100%}
+  @keyframes sf{0%{transform:translate(0,0) scale(.2);opacity:0}20%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1) rotate(120deg);opacity:0}}
+</style>
+</head>
+<body>
+  <h1>Poliere die <span>Motorhaube</span></h1>
+  <p class="sub">Maus <b>gedrückt halten</b> und über den matten Lack fahren – auf dem Handy einfach mit dem Finger wischen.</p>
+
+  <div class="stage-wrap">
+    <div class="stage" id="stage">
+      <canvas class="bg" id="bgCv"></canvas>
+      <canvas class="shiny" id="shinyCv"></canvas>
+      <canvas id="canvas"></canvas>
+      <div class="hint" id="hint"><span class="badge">Zum Polieren gedrückt halten &amp; wischen</span></div>
+      <div class="machine" id="machine">
+        <div class="light"></div>
+        <div class="disc">
+          <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="46" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.75)" stroke-width="3"/>
+            <circle cx="50" cy="50" r="31" fill="none" stroke="rgba(191,224,127,.85)" stroke-width="5" stroke-dasharray="11 9"/>
+            <circle cx="50" cy="50" r="15" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="3" stroke-dasharray="6 6"/>
+            <circle cx="50" cy="50" r="6" fill="rgba(255,255,255,.9)"/>
+          </svg>
+        </div>
+      </div>
+      <div class="done" id="done">Hochglanz! ✨</div>
+      <div class="cta-pop" id="ctaPop">
+        <div class="cta-card">
+          <h3>Ganz schön Arbeit, oder? 😅</h3>
+          <p>Und das war nur ein Stück Motorhaube. Eine komplette Aufbereitung dauert Stunden – das machen wir für dich, mit Profi-Ergebnis und ohne Muskelkater.</p>
+          <div class="row">
+            <a class="btn" href="https://wa.me/4915901606913" target="_blank" rel="noopener">Termin sichern</a>
+            <button class="btn ghost" id="ctaMore" type="button">Weiterpolieren</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bar-wrap">
+    <div class="bar"><i id="fill"></i></div>
+    <div class="pct" id="pct">0%</div>
+  </div>
+
+  <div class="toolbar">
+    <div class="cars" id="cars">
+      <button class="chip active" data-img="img/lambo-lang.png" data-bg="img/lambo-orange.jpg">Lambo</button>
+      <button class="chip" data-img="img/ferrari2.png" data-bg="img/ferrari-red.jpg">Ferrari</button>
+      <button class="chip" data-img="img/porsche.png" data-bg="img/porsche-matte.jpg">Porsche</button>
+    </div>
+    <button class="btn ghost" id="sound">🔊 Sound an</button>
+    <button class="btn ghost" id="reset">Neu / Wieder einstauben</button>
+  </div>
+
+  <p class="foot">Versuchsprojekt · RENT US Glanzgarage</p>
+
+<script>
+(function(){
+  const stage=document.getElementById('stage');
+  const bgCv=document.getElementById('bgCv');
+  const bctx=bgCv.getContext('2d');
+  const shinyCv=document.getElementById('shinyCv');
+  const sctx=shinyCv.getContext('2d');
+  const canvas=document.getElementById('canvas');
+  const ctx=canvas.getContext('2d');
+  const machine=document.getElementById('machine');
+  const hint=document.getElementById('hint');
+  const done=document.getElementById('done');
+  const ctaPop=document.getElementById('ctaPop');
+  const ctaMore=document.getElementById('ctaMore');
+  const fill=document.getElementById('fill');
+  const pct=document.getElementById('pct');
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let img=new Image();
+  let bgImg=new Image();
+  let W=0,H=0,BRUSH=52,baseline=1,bbox=null;
+
+  function drawBg(){
+    // Studio-Ansicht: kein Hintergrundbild – nur der dunkle Verlauf der Bühne
+    bctx.setTransform(1,0,0,1,0,0); bctx.clearRect(0,0,W,H);
+  }
+  let polishing=false, last=null, moved=false, finished=false, ctaShown=false;
+
+  // Leeren (transparenten) Rand des freigestellten PNGs finden -> Auto-Ausschnitt
+  function computeBBox(){
+    const sc=260, r=img.naturalHeight/img.naturalWidth, sh2=Math.max(1,Math.round(sc*r));
+    const t=document.createElement('canvas'); t.width=sc; t.height=sh2;
+    const tc=t.getContext('2d'); tc.drawImage(img,0,0,sc,sh2);
+    let d; try{ d=tc.getImageData(0,0,sc,sh2).data; }catch(e){ bbox=null; return; }
+    let minx=sc,miny=sh2,maxx=-1,maxy=-1;
+    for(let y=0;y<sh2;y++){ for(let x=0;x<sc;x++){ if(d[(y*sc+x)*4+3]>25){ if(x<minx)minx=x; if(x>maxx)maxx=x; if(y<miny)miny=y; if(y>maxy)maxy=y; } } }
+    if(maxx<0){ bbox={sx:0,sy:0,sw:img.naturalWidth,sh:img.naturalHeight}; return; }
+    const kx=img.naturalWidth/sc, ky=img.naturalHeight/sh2;
+    bbox={ sx:minx*kx, sy:miny*ky, sw:(maxx-minx+1)*kx, sh:(maxy-miny+1)*ky };
+  }
+  function fitParams(){
+    const b=bbox||{sx:0,sy:0,sw:img.naturalWidth,sh:img.naturalHeight};
+    const pad=0.94;                                  // etwas Luft am Rand
+    const scale=Math.min(W/b.sw, H/b.sh)*pad;
+    const dw=b.sw*scale, dh=b.sh*scale;
+    return { b:b, dx:(W-dw)/2, dy:(H-dh)/2, dw:dw, dh:dh };
+  }
+  function drawShiny(){
+    const p=fitParams();
+    sctx.setTransform(1,0,0,1,0,0); sctx.clearRect(0,0,W,H);
+    sctx.drawImage(img, p.b.sx,p.b.sy,p.b.sw,p.b.sh, p.dx,p.dy,p.dw,p.dh);
+  }
+  function drawDirt(p){
+    // Alles NUR auf dem Auto (source-atop), moderat
+    ctx.globalCompositeOperation='source-atop';
+    // feiner, leichter Staubfilm (+20%)
+    ctx.fillStyle='rgba(122,116,100,0.085)'; ctx.fillRect(0,0,W,H);
+    // ungleichmäßige Schmutzwolken (+20%)
+    for(let i=0;i<18;i++){
+      const x=p.dx+Math.random()*p.dw, y=p.dy+Math.random()*p.dh;
+      const r=(0.05+Math.random()*0.13)*Math.min(p.dw,p.dh);
+      const g=ctx.createRadialGradient(x,y,0,x,y,r);
+      g.addColorStop(0,'rgba(58,53,44,'+(0.06+Math.random()*0.085)+')');
+      g.addColorStop(1,'rgba(58,53,44,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    }
+    // feine Sprenkel / Staubkörner (+20%)
+    const k=W/700;
+    for(let i=0;i<290;i++){
+      const x=p.dx+Math.random()*p.dw, y=p.dy+Math.random()*p.dh;
+      const rr=(0.4+Math.random()*1.7)*k;
+      ctx.fillStyle='rgba('+(48+(Math.random()*30|0))+','+(44+(Math.random()*24|0))+','+(36+(Math.random()*20|0))+','+(0.12+Math.random()*0.218)+')';
+      ctx.beginPath(); ctx.arc(x,y,rr,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalCompositeOperation='source-over';
+  }
+  function drawDull(){
+    const p=fitParams();
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.globalCompositeOperation='source-over';
+    ctx.clearRect(0,0,W,H);
+    ctx.filter='grayscale(0.8) brightness(0.55) contrast(0.9) blur(0.4px)';
+    ctx.drawImage(img, p.b.sx,p.b.sy,p.b.sw,p.b.sh, p.dx,p.dy,p.dw,p.dh);
+    ctx.filter='none';
+    drawDirt(p);
+    baseline=sampleOpaque()||1;
+  }
+  function redraw(){ drawBg(); if(img.complete&&img.naturalWidth){ drawShiny(); drawDull(); } }
+  function sampleOpaque(){
+    const sw=64, sh=Math.max(1,Math.round(64*H/W));
+    const tmp=document.createElement('canvas'); tmp.width=sw; tmp.height=sh;
+    const tc=tmp.getContext('2d'); tc.drawImage(canvas,0,0,sw,sh);
+    const d=tc.getImageData(0,0,sw,sh).data; let op=0;
+    for(let i=3;i<d.length;i+=4){ if(d[i]>200) op++; }
+    return op;
+  }
+  function resize(){
+    const r=stage.getBoundingClientRect();
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    W=Math.round(r.width*dpr); H=Math.round(r.height*dpr);
+    canvas.width=W; canvas.height=H;
+    shinyCv.width=W; shinyCv.height=H;
+    bgCv.width=W; bgCv.height=H;
+    BRUSH=Math.round(38*dpr);   // fester Polierkopf-Radius (~38 CSS-px)
+    redraw();
+    finished=false; done.classList.remove('show'); updateProgress(true);
+  }
+  function toCanvas(e){
+    const r=canvas.getBoundingClientRect();
+    const cx=(e.touches?e.touches[0].clientX:e.clientX);
+    const cy=(e.touches?e.touches[0].clientY:e.clientY);
+    return { x:(cx-r.left)/r.width*W, y:(cy-r.top)/r.height*H, clientX:cx, clientY:cy };
+  }
+  function brushAt(x,y){
+    const g=ctx.createRadialGradient(x,y,0,x,y,BRUSH);
+    g.addColorStop(0,'rgba(0,0,0,1)');
+    g.addColorStop(0.6,'rgba(0,0,0,1)');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.globalCompositeOperation='destination-out';
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(x,y,BRUSH,0,Math.PI*2); ctx.fill();
+  }
+  function stroke(a,b){
+    const dx=b.x-a.x, dy=b.y-a.y;
+    const dist=Math.hypot(dx,dy);
+    const steps=Math.max(1,Math.floor(dist/(BRUSH*0.35)));
+    for(let i=0;i<=steps;i++){ brushAt(a.x+dx*i/steps, a.y+dy*i/steps); }
+  }
+  function moveMachine(clientX,clientY){
+    const r=stage.getBoundingClientRect();
+    machine.style.transform='translate('+(clientX-r.left)+'px,'+(clientY-r.top)+'px) translate(-50%,-50%)';
+  }
+  function sparkle(clientX,clientY){
+    if(reduced) return;
+    const star='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.4 9.6L24 12l-9.6 2.4L12 24l-2.4-9.6L0 12l9.6-2.4z"/></svg>';
+    for(let i=0;i<3;i++){
+      const s=document.createElement('span'); s.className='spark';
+      const ang=Math.random()*Math.PI*2, d=20+Math.random()*35;
+      s.style.left=clientX+'px'; s.style.top=clientY+'px';
+      s.style.setProperty('--dx',Math.cos(ang)*d+'px');
+      s.style.setProperty('--dy',Math.sin(ang)*d+'px');
+      s.style.width=s.style.height=(6+Math.random()*7)+'px';
+      s.innerHTML=star; document.body.appendChild(s);
+      s.addEventListener('animationend',()=>s.remove());
+    }
+  }
+
+  let sampleT=0;
+  function updateProgress(force){
+    const now=Date.now();
+    if(!force && now-sampleT<120) return;
+    sampleT=now;
+    const op=sampleOpaque();                 // wie viel Mattlack ist noch da
+    let p=Math.round((1 - op/baseline)*100);
+    p=Math.max(0,Math.min(100,p));
+    fill.style.width=p+'%'; pct.textContent=p+'%';
+    if(p>=30 && !ctaShown && !finished){ ctaShown=true; ctaPop.classList.add('show'); }
+    if(p>=92 && !finished){ finish(); }
+  }
+  function finish(){
+    finished=true;
+    ctx.globalCompositeOperation='destination-out';
+    ctx.fillRect(0,0,W,H);           // Rest wegpolieren
+    fill.style.width='100%'; pct.textContent='100%';
+    done.classList.add('show');
+    setTimeout(()=>done.classList.remove('show'),2600);
+  }
+
+  // Sound (komplett im Code erzeugt – Motor-Brummen + Reibung)
+  let ac=null, noiseGain=null, humGain=null, muted=false;
+  function initAudio(){
+    if(ac) return;
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext; ac=new AC();
+      const buf=ac.createBuffer(1, Math.floor(ac.sampleRate*1.5), ac.sampleRate);
+      const ch=buf.getChannelData(0);
+      for(let i=0;i<ch.length;i++) ch[i]=Math.random()*2-1;
+      const noise=ac.createBufferSource(); noise.buffer=buf; noise.loop=true;
+      const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1500; bp.Q.value=0.7;
+      noiseGain=ac.createGain(); noiseGain.gain.value=0;
+      noise.connect(bp).connect(noiseGain).connect(ac.destination); noise.start();
+      const osc=ac.createOscillator(); osc.type='sawtooth'; osc.frequency.value=68;
+      const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=190;
+      humGain=ac.createGain(); humGain.gain.value=0;
+      osc.connect(lp).connect(humGain).connect(ac.destination); osc.start();
+    }catch(e){ ac=null; }
+  }
+  function soundOn(){
+    if(muted) return; initAudio(); if(!ac) return;
+    if(ac.state==='suspended') ac.resume();
+    noiseGain.gain.setTargetAtTime(0.05, ac.currentTime, 0.05);
+    humGain.gain.setTargetAtTime(0.045, ac.currentTime, 0.05);
+  }
+  function soundOff(){
+    if(!ac) return;
+    noiseGain.gain.setTargetAtTime(0, ac.currentTime, 0.08);
+    humGain.gain.setTargetAtTime(0, ac.currentTime, 0.08);
+  }
+  const soundBtn=document.getElementById('sound');
+  soundBtn.addEventListener('click',()=>{
+    muted=!muted;
+    soundBtn.textContent = muted ? '🔇 Sound aus' : '🔊 Sound an';
+    if(muted) soundOff();
+  });
+
+  // Events
+  function start(e){ polishing=true; moved=false; last=toCanvas(e); machine.classList.add('on'); machine.classList.add('work'); soundOn(); moveMachine(last.clientX,last.clientY); e.preventDefault?.(); }
+  function move(e){
+    const p=toCanvas(e);
+    machine.classList.add('on'); moveMachine(p.clientX,p.clientY);
+    if(polishing){
+      if(last) stroke(last,p);
+      last=p; moved=true;
+      if(!hint.classList.contains('hide')) hint.classList.add('hide');
+      if(Math.random()<0.5) sparkle(p.clientX,p.clientY);
+      updateProgress(false);
+    }
+  }
+  function end(){ polishing=false; last=null; machine.classList.remove('work'); soundOff(); updateProgress(true); }
+
+  stage.addEventListener('mousedown',start);
+  window.addEventListener('mousemove',move);
+  window.addEventListener('mouseup',end);
+  stage.addEventListener('mouseenter',()=>machine.classList.add('on'));
+  stage.addEventListener('mouseleave',()=>{ if(!polishing) machine.classList.remove('on'); });
+  stage.addEventListener('touchstart',start,{passive:false});
+  stage.addEventListener('touchmove',(e)=>{ move(e); e.preventDefault(); },{passive:false});
+  stage.addEventListener('touchend',end);
+
+  // Auto wechseln
+  document.getElementById('cars').addEventListener('click',(e)=>{
+    const b=e.target.closest('.chip'); if(!b) return;
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    b.classList.add('active');
+    loadCar(b.dataset.img, b.dataset.bg);
+  });
+  document.getElementById('reset').addEventListener('click',()=>{ drawDull(); finished=false; ctaShown=false; ctaPop.classList.remove('show'); done.classList.remove('show'); hint.classList.remove('hide'); updateProgress(true); });
+  ctaMore.addEventListener('click',()=>{ ctaPop.classList.remove('show'); });
+
+  function loadCar(cut, bg){
+    if(bg){ bgImg=new Image(); bgImg.onload=()=>drawBg(); bgImg.src=bg; }
+    img=new Image();
+    img.onload=()=>{ computeBBox(); resize(); ctaShown=false; ctaPop.classList.remove('show'); hint.classList.remove('hide'); };
+    img.src=cut;
+  }
+
+  window.addEventListener('resize',()=>{ clearTimeout(window.__rt); window.__rt=setTimeout(resize,150); });
+
+  // Start
+  bgImg.onload=()=>drawBg();
+  bgImg.src='img/lambo-orange.jpg';
+  img.onload=()=>{ computeBBox(); resize(); };
+  img.src='img/lambo-lang.png';
+})();
+</script>
+</body>
+</html>
