@@ -14,7 +14,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css?v=4">
-<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
 </head>
 <body>
 
@@ -597,16 +596,14 @@
     <div class="section-head center reveal">
       <span class="eyebrow">3D-Check</span>
       <h2>Dreh dein Auto — zeig uns, worauf wir achten sollen</h2>
-      <p>Anfassen erlaubt: drehen, zoomen, von allen Seiten begutachten. Kratzer oder Dellen? Markiere sie mit unserem Schaden-Tool oder schreib sie unten in die Buchung.</p>
+      <p>Direkt hier markieren: Fahrzeug drehen, Stelle antippen, Notiz ergänzen. Danach kannst du die Liste in die Buchung übernehmen oder als Report-Bild teilen.</p>
     </div>
     <div class="dreid reveal">
-      <model-viewer src="assets/3d/ford-web.glb" alt="Drehbares 3D-Modell eines Oldtimers"
-        camera-controls auto-rotate auto-rotate-delay="1500" shadow-intensity="1"
-        exposure="0.9" interaction-prompt="auto" loading="lazy"></model-viewer>
+      <iframe class="dreid__frame" title="3D-AutoCheck RENT US Glanzgarage" src="/3d-check/?embed=1"></iframe>
       <div class="dreid__actions">
-        <a class="btn btn--primary" href="https://pelczer.de/3d-check/" target="_blank" rel="noopener">In 3D markieren &amp; senden</a>
+        <a class="btn btn--primary" href="#buchung">Zur Buchung</a>
+        <a class="btn btn--ghost" href="https://pelczer.de/3d-check/" target="_blank" rel="noopener">3D-Check einzeln öffnen</a>
         <a class="btn btn--ghost" href="https://pelczer.de/schaden/" target="_blank" rel="noopener">2D-Skizze</a>
-        <a class="btn btn--ghost" href="#buchung">Termin anfragen</a>
       </div>
     </div>
   </div>

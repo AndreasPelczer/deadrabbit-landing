@@ -584,7 +584,10 @@ h1, h2, h3, h4 {
 /* ===== Buchungs-Wizard & 3D-Check (Welle 2) ===== */
 .dreid model-viewer { width: 100%; height: min(62vh, 480px); background: var(--surface);
   border-radius: var(--radius-lg); border: 1px solid var(--line); }
+.dreid__frame { width: 100%; min-height: 760px; background: transparent; border: 1px solid var(--line);
+  border-radius: var(--radius-lg); display: block; }
 .dreid__actions { display: flex; gap: 14px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+@media (max-width: 820px) { .dreid__frame { min-height: 1120px; } }
 .wizard { max-width: 860px; margin: 0 auto; background: var(--surface); border: 1px solid var(--line);
   border-radius: var(--radius-lg); padding: clamp(18px, 4vw, 34px); }
 .wsteps { display: flex; gap: 10px; justify-content: center; margin-bottom: 22px; }
