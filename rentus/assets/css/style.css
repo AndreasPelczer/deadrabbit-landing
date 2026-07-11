@@ -626,3 +626,9 @@ h1, h2, h3, h4 {
 .wsummary b { color: var(--text); }
 .wnav { display: flex; justify-content: space-between; margin-top: 22px; }
 #wSend { width: 100%; text-align: center; }
+/* Icon-Silhouetten v2 */
+.wcard svg { width: 100px; height: 50px; stroke: none; }
+.wcard svg .body { fill: currentColor; }
+.wcard svg .win { fill: var(--surface-2); }
+.wcard svg .hub { fill: var(--surface-2); }
+.wcard.sel svg .win, .wcard.sel svg .hub { fill: var(--surface); }
