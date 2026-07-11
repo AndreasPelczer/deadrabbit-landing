@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex, nofollow">
 <title>RENT US Glanzgarage — Fahrzeugaufbereitung Wertheim · Marktheidenfeld · Würzburg</title>
 <meta name="description" content="Professionelle Fahrzeugaufbereitung mit über 20 Jahren Erfahrung. Pakete, Abos, Lackversiegelung & Sonderleistungen – inkl. kostenlosem Hol- & Bringservice. Bei uns steht der Mensch im Mittelpunkt.">
 <meta property="og:title" content="RENT US Glanzgarage — Fahrzeugaufbereitung">
 <meta property="og:description" content="Detail trifft Leidenschaft. Professionelle Fahrzeugaufbereitung im Raum Würzburg, Wertheim & Marktheidenfeld.">
-<meta property="og:image" content="assets/img/hero-audi.jpg">
+<meta property="og:image" content="assets/img/real/og-hero.jpg">
 <meta property="og:type" content="website">
 <link rel="icon" href="assets/img/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -61,7 +60,10 @@
 <!-- ================= HERO ================= -->
 <section class="hero" id="top">
   <div class="hero__bg">
-    <img src="assets/img/hero-audi.jpg" alt="Frisch aufbereiteter Lack mit Wasserperlen">
+    <picture>
+      <source media="(max-width: 700px)" srcset="assets/img/real/hero-mustang-1024.webp">
+      <img src="assets/img/real/hero-heckflosse-1920.webp" alt="Frisch polierte Heckflosse eines Oldtimers in der Glanzgarage – das RENT-US-Schild spiegelt sich im Lack">
+    </picture>
   </div>
   <div class="container hero__inner">
     <span class="eyebrow">Detail trifft Leidenschaft</span>
@@ -109,7 +111,7 @@
 <section class="section intro">
   <div class="container intro__grid">
     <div class="intro__media reveal">
-      <img src="assets/img/polish-porsche.jpg" alt="Detailer poliert einen Porsche in der Glanzgarage">
+      <img src="assets/img/real/hero-heckflosse-1024.webp" alt="Spiegelglanz nach der Politur – das RENT-US-Schild spiegelt sich im schwarzen Lack" loading="lazy">
       <div class="badge"><strong>100 %</strong><span>Handarbeit, keine Kompromisse</span></div>
     </div>
     <div class="intro reveal">
@@ -445,24 +447,36 @@
       <p>Ziehen Sie den Regler – der Unterschied spricht für sich. Kein Marketing, nur Arbeit, die man sieht.</p>
     </div>
     <div class="ba-wrap reveal">
-      <div class="ba" id="ba">
-        <!-- Nachher = echtes Foto in voller Brillanz -->
-        <div class="ba__layer ba__after" style="background-image:url('assets/img/lambo-orange.jpg')"></div>
-        <!-- Vorher = dasselbe Foto, per CSS-Filter stumpf (Demo). Echtes Vorher-Foto hier einsetzen. -->
-        <div class="ba__layer ba__before" id="baBefore" style="background-image:url('assets/img/lambo-orange.jpg')"></div>
+      <div class="ba" data-ba>
+        <div class="ba__layer ba__after" style="background-image:url('assets/img/real/vn-sitz-nachher.webp')"></div>
+        <div class="ba__layer ba__before" data-ba-before style="background-image:url('assets/img/real/vn-sitz-vorher.webp')"></div>
         <span class="ba__lbl ba__lbl--before">Vorher</span>
         <span class="ba__lbl ba__lbl--after">Nachher</span>
-        <div class="ba__handle" id="baHandle"></div>
-        <div class="ba__grip" id="baGrip">
+        <div class="ba__handle" data-ba-handle></div>
+        <div class="ba__grip" data-ba-grip>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-4 5 4 5M16 7l4 5-4 5"/></svg>
         </div>
       </div>
-      <p class="ba__hint">Regler ziehen · echte Vorher/Nachher-Fotos von Mike lassen sich hier direkt einsetzen</p>
+      <p class="ba__hint">Sitzreinigung — derselbe Sitz, derselbe Tag: morgens angeliefert, abends abgeholt.</p>
+    </div>
+    <div class="ba-wrap reveal" style="margin-top:28px">
+      <div class="ba" data-ba>
+        <div class="ba__layer ba__after" style="background-image:url('assets/img/real/vn-kofferraum-nachher.webp')"></div>
+        <div class="ba__layer ba__before" data-ba-before style="background-image:url('assets/img/real/vn-kofferraum-vorher.webp')"></div>
+        <span class="ba__lbl ba__lbl--before">Vorher</span>
+        <span class="ba__lbl ba__lbl--after">Nachher</span>
+        <div class="ba__handle" data-ba-handle></div>
+        <div class="ba__grip" data-ba-grip>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-4 5 4 5M16 7l4 5-4 5"/></svg>
+        </div>
+      </div>
+      <p class="ba__hint">Kofferraum — von Baustelle auf wie neu.</p>
     </div>
   </div>
 </section>
 
-<!-- ================= GALLERY ================= -->
+<!-- ================= BEWERTUNGEN ================= -->
+<!-- ================= GALERIE ================= -->
 <section class="section section--alt">
   <div class="container">
     <div class="section-head center reveal">
@@ -470,14 +484,14 @@
       <h2>Ergebnisse, die für sich sprechen</h2>
     </div>
     <div class="gallery reveal">
-      <a class="wide tall" href="assets/img/lambo-orange.jpg" target="_blank"><img src="assets/img/lambo-orange.jpg" alt="Orange Lamborghini nach Aufbereitung"></a>
-      <a href="assets/img/wheel-foam.jpg" target="_blank"><img src="assets/img/wheel-foam.jpg" alt="Felgenreinigung mit Schaum"></a>
-      <a href="assets/img/beads-red.jpg" target="_blank"><img src="assets/img/beads-red.jpg" alt="Wasserperlen auf versiegeltem Lack"></a>
-      <a href="assets/img/leather-seats.jpg" target="_blank"><img src="assets/img/leather-seats.jpg" alt="Gereinigte Ledersitze"></a>
-      <a href="assets/img/ferrari-wheel.jpg" target="_blank"><img src="assets/img/ferrari-wheel.jpg" alt="Ferrari Felge mit gelben Bremssätteln"></a>
-      <a class="wide" href="assets/img/polish-taillight.jpg" target="_blank"><img src="assets/img/polish-taillight.jpg" alt="Politur am Heck eines Fahrzeugs"></a>
-      <a href="assets/img/engine.jpg" target="_blank"><img src="assets/img/engine.jpg" alt="Aufbereiteter Motorraum eines Oldtimers"></a>
-      <a href="assets/img/porsche-matte.jpg" target="_blank"><img src="assets/img/porsche-matte.jpg" alt="Matter Porsche 911"></a>
+      <a class="wide tall" href="assets/img/real/g-mustang-aussen-1920.webp" target="_blank"><img src="assets/img/real/g-mustang-aussen-1024.webp" alt="Blauer Klassiker nach der Aufbereitung vor der Glanzgarage" loading="lazy"></a>
+      <a href="assets/img/real/g-politur-detail-1920.webp" target="_blank"><img src="assets/img/real/g-politur-detail-1024.webp" alt="Hochglanzpolitur im Detail – schwarzer Lack" loading="lazy"></a>
+      <a href="assets/img/real/g-lack-glanz-1920.webp" target="_blank"><img src="assets/img/real/g-lack-glanz-1024.webp" alt="Spiegelglanz auf frisch versiegeltem Lack" loading="lazy"></a>
+      <a href="assets/img/real/g-lenkrad-1920.webp" target="_blank"><img src="assets/img/real/g-lenkrad-1024.webp" alt="Aufbereitetes Oldtimer-Interieur mit hellem Leder" loading="lazy"></a>
+      <a href="assets/img/real/g-chrom-1920.webp" target="_blank"><img src="assets/img/real/g-chrom-1024.webp" alt="Polierter Chrom am Kotflügel" loading="lazy"></a>
+      <a class="wide" href="assets/img/real/g-oldtimer-seite-1920.webp" target="_blank"><img src="assets/img/real/g-oldtimer-seite-1024.webp" alt="Schwarzer Oldtimer in der Seitenansicht nach Komplettaufbereitung" loading="lazy"></a>
+      <a href="assets/img/real/g-cockpit-1920.webp" target="_blank"><img src="assets/img/real/g-cockpit-1024.webp" alt="Gereinigtes Cockpit im Detail" loading="lazy"></a>
+      <a href="assets/img/real/g-oldtimer-front-1920.webp" target="_blank"><img src="assets/img/real/g-oldtimer-front-1024.webp" alt="Oldtimer-Front mit Chromstoßstange in der Werkstatt" loading="lazy"></a>
     </div>
   </div>
 </section>
@@ -503,7 +517,6 @@
   </div>
 </section>
 
-<!-- ================= BEWERTUNGEN ================= -->
 <section class="section section--alt" id="bewertungen">
   <div class="container">
     <div class="section-head center reveal">

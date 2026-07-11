@@ -27,13 +27,11 @@ const io = new IntersectionObserver((entries) => {
 }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
 document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
-// Vorher / Nachher – Regler
-(function () {
-  const ba = document.getElementById('ba');
-  if (!ba) return;
-  const before = document.getElementById('baBefore');
-  const handle = document.getElementById('baHandle');
-  const grip = document.getElementById('baGrip');
+// Vorher / Nachher – Regler (mehrfach nutzbar)
+document.querySelectorAll('[data-ba]').forEach((ba) => {
+  const before = ba.querySelector('[data-ba-before]');
+  const handle = ba.querySelector('[data-ba-handle]');
+  const grip   = ba.querySelector('[data-ba-grip]');
   let dragging = false;
 
   const setPct = (pct) => {
@@ -55,7 +53,7 @@ document.querySelectorAll('.reveal').forEach(el => io.observe(el));
   ba.addEventListener('touchmove', (e) => { if (dragging) fromEvent(e); }, { passive: true });
   ba.addEventListener('touchend', () => { dragging = false; });
   setPct(50);
-})();
+});
 
 // Glanzlicht folgt der Maus (mit sanftem Nachziehen)
 (function () {
