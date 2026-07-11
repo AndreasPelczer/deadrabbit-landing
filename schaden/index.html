@@ -79,7 +79,7 @@
   .btn.primary:hover{background:var(--green2);color:var(--ink)}
 
   .foot{color:#5f6870;font-size:12px;margin-top:26px;text-align:center}
-</style>
+.who{width:100%;background:#14161a;border:1px solid #2c313a;border-radius:12px;color:#eef1f5;padding:11px 13px;margin-bottom:10px;font:inherit}\n</style>
 </head>
 <body>
 <div class="wrap">
@@ -126,6 +126,7 @@
         <button class="btn" id="undo">Rückgängig</button>
         <button class="btn" id="clear">Alles löschen</button>
       </div>
+      <input class="who" id="who" placeholder="Fahrzeug &amp; Name (z.&nbsp;B. VW Golf, M&uuml;ller)">
       <div class="actions">
         <a class="btn primary" id="send" href="#">Per WhatsApp senden</a>
       </div>
@@ -175,9 +176,30 @@
     const r=board.getBoundingClientRect();
     const x=(e.clientX-r.left)/r.width*100;
     const y=(e.clientY-r.top)/r.height*100;
-    marks.push({id:++seq, x:x, y:y, type:active, note:''});
+    // Welche Ansicht wurde getroffen? Position relativ zur Ansicht merken.
+    const v=e.target.closest('.view');
+    let view='', vx=50, vy=50;
+    if(v){
+      const vr=v.getBoundingClientRect();
+      vx=(e.clientX-vr.left)/vr.width*100;
+      vy=(e.clientY-vr.top)/vr.height*100;
+      view=v.querySelector('.cap') ? v.querySelector('.cap').textContent.trim() : '';
+    }
+    marks.push({id:++seq, x:x, y:y, type:active, note:'', view:view, vx:vx, vy:vy});
     render();
   });
+
+  // Ungefähre Lage in Worten (Front = rechts in beiden Ansichten)
+  function ort(m){
+    if(!m.view) return '';
+    const laengs = m.vx>60 ? 'vorne' : (m.vx<33 ? 'hinten' : 'Mitte');
+    if(m.view.indexOf('Drauf')>-1){
+      const seite = m.vy<44 ? 'Fahrerseite' : (m.vy>56 ? 'Beifahrerseite' : 'mittig');
+      return laengs+', '+seite+' (Draufsicht)';
+    }
+    const hoehe = m.vy<45 ? 'oben (Dach/Scheibe)' : 'unten (Karosserie)';
+    return laengs+', '+hoehe+' (Seitenansicht)';
+  }
 
   function render(){
     // Pins
@@ -221,11 +243,16 @@
 
   function updateSend(){
     const send=document.getElementById('send');
-    let txt='Hallo RENT US, bitte besonders auf diese Stellen achten:%0A';
-    marks.forEach((m,i)=>{ txt+=(i+1)+'. '+typeOf(m.type).label+(m.note?(' – '+m.note):'')+'%0A'; });
-    if(!marks.length) txt='Hallo RENT US, ich möchte einen Termin zur Fahrzeugaufbereitung anfragen.';
-    send.href='https://wa.me/4915901606913?text='+txt;
+    const who=document.getElementById('who').value.trim();
+    let txt='Hallo RENT US, Schadenmeldung von der Website'+(who?(' — '+who):'')+':\n';
+    marks.forEach((m,i)=>{
+      const o=ort(m);
+      txt+=(i+1)+'. '+typeOf(m.type).label+(o?(' — '+o):'')+(m.note?(' — '+m.note):'')+'\n';
+    });
+    if(!marks.length) txt='Hallo RENT US, ich möchte einen Termin zur Fahrzeugaufbereitung anfragen.'+(who?('\nFahrzeug/Name: '+who):'');
+    send.href='https://wa.me/4915901606913?text='+encodeURIComponent(txt);
   }
+  document.getElementById('who').addEventListener('input', updateSend);
 
   render();
 })();
