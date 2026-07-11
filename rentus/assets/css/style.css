@@ -580,3 +580,49 @@ h1, h2, h3, h4 {
   .hero__actions .btn { flex: 1; }
   .container { padding: 0 18px; }
 }
+
+/* ===== Buchungs-Wizard & 3D-Check (Welle 2) ===== */
+.dreid model-viewer { width: 100%; height: min(62vh, 480px); background: var(--surface);
+  border-radius: var(--radius-lg); border: 1px solid var(--line); }
+.dreid__actions { display: flex; gap: 14px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+.wizard { max-width: 860px; margin: 0 auto; background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-lg); padding: clamp(18px, 4vw, 34px); }
+.wsteps { display: flex; gap: 10px; justify-content: center; margin-bottom: 22px; }
+.wdot { width: 12px; height: 12px; border-radius: 50%; background: var(--line); transition: .25s var(--ease); }
+.wdot.on { background: var(--green); transform: scale(1.25); }
+.wstep { display: none; }
+.wstep.on { display: block; animation: wfade .3s var(--ease); }
+@keyframes wfade { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: none; } }
+.wstep h3 { font-family: var(--head); font-size: 1.25rem; margin: 0 0 16px; }
+.wgrid { display: grid; gap: 12px; }
+.wgrid--typ { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.wgrid--paket { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.wcard { background: var(--surface-2); border: 2px solid var(--line); border-radius: var(--radius);
+  padding: 14px 12px; cursor: pointer; color: var(--text); text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; transition: .2s var(--ease); }
+.wcard:hover { border-color: var(--green-deep); transform: translateY(-2px); }
+.wcard.sel { border-color: var(--green); box-shadow: 0 0 0 3px rgba(159,178,71,.25); }
+.wcard svg { width: 96px; height: 48px; fill: none; stroke: currentColor; stroke-width: 4;
+  stroke-linecap: round; stroke-linejoin: round; color: var(--muted); transition: .2s; }
+.wcard.sel svg, .wcard:hover svg { color: var(--green); }
+.wcard em { color: var(--green); font-style: normal; font-size: .8em; }
+.wcard--p { text-align: left; align-items: flex-start; }
+.wcard--p span { color: var(--muted); font-size: .88rem; }
+.wcard--p b { color: var(--green); font-family: var(--head); font-size: 1.1rem; }
+.wcard--p.pop { border-color: var(--green-deep); }
+.wcard--hund strong::after { content: " 🐶"; }
+.wnote { color: var(--muted-2); font-size: .85rem; margin-top: 14px; text-align: center; }
+.wrow { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.wrow--2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 560px) { .wrow--2 { grid-template-columns: 1fr; } }
+.wopt { display: flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer; }
+.wopt input { accent-color: var(--green); }
+.wizard input[type=text], .wizard input[type=tel], .wizard input[type=date], .wizard textarea {
+  width: 100%; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius);
+  color: var(--text); padding: 12px 14px; font-family: var(--body); font-size: 1rem; }
+.wizard textarea { margin-bottom: 14px; resize: vertical; }
+.wsummary { background: var(--bg-2); border: 1px dashed var(--green-deep); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 14px; color: var(--muted); line-height: 1.6; }
+.wsummary b { color: var(--text); }
+.wnav { display: flex; justify-content: space-between; margin-top: 22px; }
+#wSend { width: 100%; text-align: center; }

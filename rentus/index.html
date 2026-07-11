@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
 </head>
 <body>
 
@@ -35,10 +36,11 @@
       <a href="#ablauf">Ablauf</a>
       <a href="#ueber-uns">Über uns</a>
       <a href="#faq">FAQ</a>
+      <a href="#buchung">Buchung</a>
       <a href="#kontakt">Kontakt</a>
     </nav>
     <div class="header__cta">
-      <a href="#kontakt" class="btn btn--primary">Termin anfragen</a>
+      <a href="#buchung" class="btn btn--primary">Termin anfragen</a>
     </div>
     <button class="burger" id="burger" aria-label="Menü öffnen"><span></span><span></span><span></span></button>
   </div>
@@ -53,7 +55,8 @@
   <a href="#vorher-nachher">Vorher/Nachher</a>
   <a href="#ueber-uns">Über uns</a>
   <a href="#faq">FAQ</a>
-  <a href="#kontakt">Kontakt</a>
+  <a href="#buchung">Buchung</a>
+      <a href="#kontakt">Kontakt</a>
   <a href="tel:+4915901606913" class="btn btn--primary" style="margin-top:20px">Anrufen</a>
 </nav>
 
@@ -588,6 +591,97 @@
 </section>
 
 <!-- ================= KONTAKT ================= -->
+<!-- ================= 3D-CHECK ================= -->
+<section class="section" id="dreid-check">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="eyebrow">3D-Check</span>
+      <h2>Dreh dein Auto — zeig uns, worauf wir achten sollen</h2>
+      <p>Anfassen erlaubt: drehen, zoomen, von allen Seiten begutachten. Kratzer oder Dellen? Markiere sie mit unserem Schaden-Tool oder schreib sie unten in die Buchung.</p>
+    </div>
+    <div class="dreid reveal">
+      <model-viewer src="assets/3d/ford-web.glb" alt="Drehbares 3D-Modell eines Oldtimers"
+        camera-controls auto-rotate auto-rotate-delay="1500" shadow-intensity="1"
+        exposure="0.9" interaction-prompt="auto" loading="lazy"></model-viewer>
+      <div class="dreid__actions">
+        <a class="btn btn--ghost" href="https://pelczer.de/schaden/" target="_blank" rel="noopener">Schaden im Detail markieren</a>
+        <a class="btn btn--primary" href="#buchung">Direkt Termin anfragen</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= BUCHUNG ================= -->
+<section class="section section--alt" id="buchung">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="eyebrow">Buchung</span>
+      <h2>In vier Schritten zur Anfrage</h2>
+      <p>Fahrzeug w&auml;hlen, Leistung aussuchen, Wunschtermin nennen &mdash; die Anfrage geht direkt per WhatsApp an Mike.</p>
+    </div>
+    <div class="wizard reveal" id="wizard">
+      <div class="wsteps"><span class="wdot on" data-d="1"></span><span class="wdot" data-d="2"></span><span class="wdot" data-d="3"></span><span class="wdot" data-d="4"></span></div>
+
+      <div class="wstep on" data-step="1">
+        <h3>1. Dein Fahrzeugtyp</h3>
+        <div class="wgrid wgrid--typ">
+          <button class="wcard" data-typ="Kleinwagen" data-faktor="1"><svg viewBox="0 0 120 60"><path d="M14 44 L18 30 Q22 22 34 21 L56 20 Q70 20 78 30 L100 36 Q106 38 106 44" /><circle cx="34" cy="46" r="8"/><circle cx="88" cy="46" r="8"/></svg><span>Kleinwagen</span></button>
+          <button class="wcard" data-typ="Sport Coup&eacute;/Cabrio" data-faktor="1"><svg viewBox="0 0 120 60"><path d="M8 44 L20 36 Q40 26 58 27 L74 29 Q96 32 110 42" /><circle cx="32" cy="46" r="8"/><circle cx="92" cy="46" r="8"/></svg><span>Coup&eacute;/Cabrio</span></button>
+          <button class="wcard" data-typ="Limousine" data-faktor="1"><svg viewBox="0 0 120 60"><path d="M8 44 L14 36 L34 33 L44 24 Q46 22 52 22 L74 22 Q80 22 84 27 L90 33 L108 38 L110 44" /><circle cx="32" cy="46" r="8"/><circle cx="90" cy="46" r="8"/></svg><span>Limousine</span></button>
+          <button class="wcard" data-typ="Kombi" data-faktor="1"><svg viewBox="0 0 120 60"><path d="M8 44 L14 34 L30 31 L40 23 Q42 21 48 21 L92 21 Q98 21 100 27 L102 34 L110 40 L110 44" /><circle cx="32" cy="46" r="8"/><circle cx="92" cy="46" r="8"/></svg><span>Kombi</span></button>
+          <button class="wcard" data-typ="SUV" data-faktor="1.2"><svg viewBox="0 0 120 60"><path d="M8 42 L12 30 L26 27 L34 19 Q36 17 42 17 L88 17 Q96 17 100 24 L104 30 L112 36 L112 42" /><circle cx="32" cy="45" r="9"/><circle cx="90" cy="45" r="9"/></svg><span>SUV <em>+20%</em></span></button>
+          <button class="wcard" data-typ="Bus/Van" data-faktor="1.2"><svg viewBox="0 0 120 60"><path d="M10 44 L10 22 Q10 16 18 16 L94 16 Q102 16 106 24 L112 36 L112 44" /><circle cx="32" cy="46" r="8"/><circle cx="92" cy="46" r="8"/></svg><span>Bus/Van <em>+20%</em></span></button>
+        </div>
+      </div>
+
+      <div class="wstep" data-step="2">
+        <h3>2. Deine Leistung</h3>
+        <div class="wgrid wgrid--paket">
+          <button class="wcard wcard--p" data-paket="Pro Inside" data-preis="199"><strong>Pro Inside</strong><span>Innenaufbereitung komplett</span><b>ab <i data-base="199">199</i> &euro;</b></button>
+          <button class="wcard wcard--p" data-paket="Pro Outside" data-preis="199"><strong>Pro Outside</strong><span>Au&szlig;enaufbereitung &amp; Politur</span><b>ab <i data-base="199">199</i> &euro;</b></button>
+          <button class="wcard wcard--p pop" data-paket="Pro All in One" data-preis="359"><strong>Pro All in One</strong><span>Innen + Au&szlig;en, wie neu</span><b>ab <i data-base="359">359</i> &euro;</b></button>
+          <button class="wcard wcard--p" data-paket="Pro Deluxe" data-preis="649"><strong>Pro Deluxe</strong><span>Komplett + Motor, Wachs, 3-Stufen-Politur</span><b>ab <i data-base="649">649</i> &euro;</b></button>
+          <button class="wcard wcard--p wcard--hund" data-paket="Der Faule Hund (Samstags-W&auml;sche)" data-preis="0"><strong>Der Faule Hund</strong><span>Wir &uuml;bernehmen deinen Samstagsputz &mdash; regelm&auml;&szlig;ig, ohne dass du dich bewegen musst.</span><b>60&ndash;80 &euro; / W&auml;sche</b></button>
+        </div>
+        <p class="wnote">Alle Preise inkl. MwSt. &middot; ab-Preise bei normaler Verschmutzung &middot; SUV/Bus/Van +20%</p>
+      </div>
+
+      <div class="wstep" data-step="3">
+        <h3>3. Abholung &amp; Termin</h3>
+        <div class="wrow">
+          <label class="wopt"><input type="radio" name="abhol" value="Bitte abholen" checked> Abholen (bis 15 km kostenlos, ab 16. km 1&nbsp;&euro;/km)</label>
+          <label class="wopt"><input type="radio" name="abhol" value="Ich bringe selbst"> Ich bringe das Auto selbst</label>
+        </div>
+        <div class="wrow wrow--2">
+          <input type="text" id="wOrt" placeholder="PLZ / Ort (f&uuml;r Abholung)">
+          <input type="date" id="wDatum">
+        </div>
+        <div class="wrow">
+          <label class="wopt"><input type="radio" name="halbtag" value="Vormittag" checked> Vormittag</label>
+          <label class="wopt"><input type="radio" name="halbtag" value="Nachmittag"> Nachmittag</label>
+        </div>
+      </div>
+
+      <div class="wstep" data-step="4">
+        <h3>4. Deine Anfrage</h3>
+        <div class="wsummary" id="wSummary"></div>
+        <div class="wrow wrow--2">
+          <input type="text" id="wName" placeholder="Dein Name *">
+          <input type="tel" id="wTel" placeholder="Telefon (optional)">
+        </div>
+        <textarea id="wMsg" rows="3" placeholder="Hinweise: Kratzer vorn links, Tierhaare, Marke/Modell &hellip;"></textarea>
+        <a class="btn btn--wa" id="wSend" href="#" target="_blank" rel="noopener">Anfrage per WhatsApp senden</a>
+        <p class="wnote">Kein WhatsApp? <a href="tel:+4915901606913">0159 016 069 13</a> oder <a id="wMail" href="mailto:info.rentus@web.de">E-Mail senden</a>.</p>
+      </div>
+
+      <div class="wnav">
+        <button class="btn btn--ghost" id="wPrev" disabled>Zur&uuml;ck</button>
+        <button class="btn btn--primary" id="wNext">Weiter</button>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="section section--alt" id="kontakt">
   <div class="container">
     <div class="section-head center reveal">

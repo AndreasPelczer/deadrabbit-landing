@@ -177,3 +177,73 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     }
   });
 })();
+
+// ===== Buchungs-Wizard (Welle 2) =====
+(function () {
+  const wiz = document.getElementById('wizard');
+  if (!wiz) return;
+  const state = { typ: null, faktor: 1, paket: null, preis: 0, step: 1 };
+  const steps = wiz.querySelectorAll('.wstep');
+  const dots = wiz.querySelectorAll('.wdot');
+  const prev = document.getElementById('wPrev');
+  const next = document.getElementById('wNext');
+
+  function show(n) {
+    state.step = Math.max(1, Math.min(4, n));
+    steps.forEach(s => s.classList.toggle('on', +s.dataset.step === state.step));
+    dots.forEach(d => d.classList.toggle('on', +d.dataset.d <= state.step));
+    prev.disabled = state.step === 1;
+    next.style.visibility = state.step === 4 ? 'hidden' : 'visible';
+    if (state.step === 4) summary();
+  }
+  function preise() {
+    wiz.querySelectorAll('[data-base]').forEach(el => {
+      el.textContent = Math.round(+el.dataset.base * state.faktor);
+    });
+  }
+  wiz.querySelectorAll('[data-typ]').forEach(b => b.addEventListener('click', () => {
+    wiz.querySelectorAll('[data-typ]').forEach(x => x.classList.remove('sel'));
+    b.classList.add('sel');
+    state.typ = b.dataset.typ; state.faktor = +b.dataset.faktor; preise();
+    setTimeout(() => show(2), 250);
+  }));
+  wiz.querySelectorAll('[data-paket]').forEach(b => b.addEventListener('click', () => {
+    wiz.querySelectorAll('[data-paket]').forEach(x => x.classList.remove('sel'));
+    b.classList.add('sel');
+    state.paket = b.dataset.paket;
+    state.preis = b.dataset.preis === '0' ? '60-80' : Math.round(+b.dataset.preis * state.faktor);
+    setTimeout(() => show(3), 250);
+  }));
+  function val(name) { const el = wiz.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : ''; }
+  function summary() {
+    const d = document.getElementById('wDatum').value;
+    const datum = d ? new Date(d).toLocaleDateString('de-DE') : 'nach Absprache';
+    document.getElementById('wSummary').innerHTML =
+      'Fahrzeug: <b>' + (state.typ || '&ndash;') + '</b><br>' +
+      'Leistung: <b>' + (state.paket || '&ndash;') + '</b> (ab ' + state.preis + ' &euro;)<br>' +
+      'Abholung: <b>' + val('abhol') + '</b> ' + (document.getElementById('wOrt').value || '') + '<br>' +
+      'Wunschtermin: <b>' + datum + ', ' + val('halbtag') + '</b>';
+  }
+  function baueText() {
+    const d = document.getElementById('wDatum').value;
+    const datum = d ? new Date(d).toLocaleDateString('de-DE') : 'nach Absprache';
+    return 'Hallo Mike! Anfrage über die Website:\n'
+      + '– Fahrzeug: ' + (state.typ || '-') + '\n'
+      + '– Leistung: ' + (state.paket || '-') + ' (ab ' + state.preis + ' €)\n'
+      + '– Abholung: ' + val('abhol') + ' ' + (document.getElementById('wOrt').value || '') + '\n'
+      + '– Wunschtermin: ' + datum + ', ' + val('halbtag') + '\n'
+      + '– Name: ' + (document.getElementById('wName').value || '-')
+      + (document.getElementById('wTel').value ? ' · Tel: ' + document.getElementById('wTel').value : '') + '\n'
+      + (document.getElementById('wMsg').value ? '– Hinweise: ' + document.getElementById('wMsg').value : '');
+  }
+  document.getElementById('wSend').addEventListener('click', function () {
+    this.href = 'https://wa.me/4915901606913?text=' + encodeURIComponent(baueText());
+  });
+  document.getElementById('wMail').addEventListener('click', function () {
+    this.href = 'mailto:info.rentus@web.de?subject=' + encodeURIComponent('Terminanfrage Glanzgarage')
+      + '&body=' + encodeURIComponent(baueText());
+  });
+  prev.addEventListener('click', () => show(state.step - 1));
+  next.addEventListener('click', () => show(state.step + 1));
+  show(1);
+})();
