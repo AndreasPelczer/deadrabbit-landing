@@ -609,6 +609,7 @@ h1, h2, h3, h4 {
 .wcard--p { text-align: left; align-items: flex-start; }
 .wcard--p span { color: var(--muted); font-size: .88rem; }
 .wcard--p b { color: var(--green); font-family: var(--head); font-size: 1.1rem; }
+.wcard--p i { font-style: normal; }
 .wcard--p.pop { border-color: var(--green-deep); }
 .wcard--hund strong::after { content: " 🐶"; }
 .wnote { color: var(--muted-2); font-size: .85rem; margin-top: 14px; text-align: center; }

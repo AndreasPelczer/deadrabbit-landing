@@ -200,18 +200,24 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     wiz.querySelectorAll('[data-base]').forEach(el => {
       el.textContent = Math.round(+el.dataset.base * state.faktor);
     });
+    wiz.querySelectorAll('[data-range-min]').forEach(el => {
+      el.textContent = Math.round(+el.dataset.rangeMin * state.faktor) + '-' + Math.round(+el.dataset.rangeMax * state.faktor);
+    });
   }
-  wiz.querySelectorAll('[data-typ]').forEach(b => b.addEventListener('click', () => {
+  function selectTypButton(b) {
     wiz.querySelectorAll('[data-typ]').forEach(x => x.classList.remove('sel'));
     b.classList.add('sel');
     state.typ = b.dataset.typ; state.faktor = +b.dataset.faktor; preise();
+  }
+  wiz.querySelectorAll('[data-typ]').forEach(b => b.addEventListener('click', () => {
+    selectTypButton(b);
     setTimeout(() => show(2), 250);
   }));
   wiz.querySelectorAll('[data-paket]').forEach(b => b.addEventListener('click', () => {
     wiz.querySelectorAll('[data-paket]').forEach(x => x.classList.remove('sel'));
     b.classList.add('sel');
     state.paket = b.dataset.paket;
-    state.preis = b.dataset.preis === '0' ? '60-80' : Math.round(+b.dataset.preis * state.faktor);
+    state.preis = b.dataset.preis === '0' ? (state.faktor > 1 ? '72-96' : '60-80') : Math.round(+b.dataset.preis * state.faktor);
     setTimeout(() => show(3), 250);
   }));
   function val(name) { const el = wiz.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : ''; }
@@ -227,9 +233,11 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
   function baueText() {
     const d = document.getElementById('wDatum').value;
     const datum = d ? new Date(d).toLocaleDateString('de-DE') : 'nach Absprache';
+    const faktorHinweis = state.faktor > 1 ? '– Preis-Hinweis: SUV/Bus/Van +20 % ist eingerechnet\n' : '';
     return 'Hallo Mike! Anfrage über die Website:\n'
       + '– Fahrzeug: ' + (state.typ || '-') + '\n'
       + '– Leistung: ' + (state.paket || '-') + ' (ab ' + state.preis + ' €)\n'
+      + faktorHinweis
       + '– Abholung: ' + val('abhol') + ' ' + (document.getElementById('wOrt').value || '') + '\n'
       + '– Wunschtermin: ' + datum + ', ' + val('halbtag') + '\n'
       + '– Name: ' + (document.getElementById('wName').value || '-')
@@ -248,4 +256,19 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
   prev.addEventListener('click', () => show(state.step - 1));
   next.addEventListener('click', () => show(state.step + 1));
   show(1);
+  (function uebernimmAutoCheck() {
+    let check = null;
+    try { check = JSON.parse(localStorage.getItem('rentusAutoCheck') || 'null'); } catch(e) {}
+    if (!check || !check.text) return;
+    const typ = check.typ || '';
+    const typBtn = typ ? wiz.querySelector('[data-typ="' + typ + '"]') : null;
+    if (typBtn) selectTypButton(typBtn);
+    const msg = document.getElementById('wMsg');
+    const intro = '3D-Check übernommen:\n';
+    if (!msg.value.includes('3D-Check übernommen')) {
+      msg.value = (msg.value ? msg.value + '\n\n' : '') + intro + check.text;
+    }
+    links();
+    if (location.hash === '#buchung') show(typBtn ? 2 : 4);
+  })();
 })();

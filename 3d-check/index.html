@@ -63,11 +63,14 @@
   .row .del{flex:0 0 auto;background:none;border:0;color:var(--faint);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px}
   .row .del:hover{color:#ff6b6b}
   .actions{display:flex;gap:8px;margin-top:14px}
+  .actions--stack{flex-direction:column}
   .btn{flex:1;font-family:var(--head);text-transform:uppercase;letter-spacing:.05em;font-size:12.5px;
     border:1px solid var(--line);background:var(--surface2);color:var(--text);padding:10px;border-radius:11px;cursor:pointer;transition:.15s;text-align:center}
+  .btn[hidden]{display:none}
   .btn:hover{border-color:var(--green);color:var(--green)}
   .btn.primary{background:var(--green);color:var(--ink);border-color:var(--green)}
   .btn.primary:hover{background:var(--green2)}
+  .share-note{color:var(--faint);font-size:12px;line-height:1.45;text-align:center}
   .foot{color:#5f6870;font-size:12px;margin-top:24px;text-align:center}
 </style>
 </head>
@@ -100,9 +103,12 @@
         <button class="btn" id="undo">Rückgängig</button>
         <button class="btn" id="clear">Alles löschen</button>
       </div>
-      <div class="actions">
+      <div class="actions actions--stack">
         <input class="who" id="who" placeholder="Fahrzeug &amp; Name (z.&nbsp;B. VW Golf, M&uuml;ller)" style="width:100%;background:#14161a;border:1px solid #2c313a;border-radius:12px;color:#eef1f5;padding:11px 13px;margin-bottom:10px;font:inherit">
-        <a class="btn primary" id="send" href="#">Per WhatsApp senden</a>
+        <a class="btn primary" id="send" href="#">Liste per WhatsApp</a>
+        <button class="btn" id="share" type="button" hidden>Bild + Liste teilen</button>
+        <a class="btn" id="booking" href="/rentus/#buchung">In Buchung übernehmen</a>
+        <p class="share-note">Auf dem Handy kann WhatsApp über „Bild + Liste teilen” ein aktuelles 3D-Bild mitsenden. Sonst bleibt die saubere Textliste.</p>
       </div>
     </div>
   </div>
@@ -151,7 +157,7 @@ TYPES.forEach(t=>{
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(45,1,0.1,100);
 camera.position.set(4.2,2.6,5.2);
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
 stage.appendChild(renderer.domElement);
 
@@ -180,6 +186,9 @@ window.addEventListener('resize',sizeRenderer); sizeRenderer();
 
 // --- Auto laden ---
 let carGroup=null;
+let selectedModel='auto';
+const MODEL_TYP={auto:'Limousine',auto2:'Limousine',suv:'SUV',sport:'Sport Coupé/Cabrio',taxi:'Limousine'};
+const MODEL_LABEL={auto:'Auto',auto2:'Auto 2',suv:'SUV',sport:'Sportwagen',taxi:'Taxi'};
 function clearMarks(){ marks.forEach(m=>scene.remove(m.sprite)); marks=[]; render(); }
 
 function loadCar(model){
@@ -211,6 +220,7 @@ document.getElementById('cars').addEventListener('click',e=>{
   const b=e.target.closest('.chip'); if(!b) return;
   [...document.querySelectorAll('#cars .chip')].forEach(c=>c.classList.remove('active'));
   b.classList.add('active');
+  selectedModel=b.dataset.model;
   loadCar(b.dataset.model);
 });
 
@@ -303,17 +313,60 @@ function ort(m){
 }
 function updateSend(){
   const send=document.getElementById('send');
-  const whoEl=document.getElementById('who');
-  const who=whoEl?whoEl.value.trim():'';
-  let txt='Hallo RENT US, 3D-Schadenmeldung von der Website'+(who?(' — '+who):'')+':\n';
-  marks.forEach((m,i)=>{
-    const o=ort(m);
-    txt+=(i+1)+'. '+typeOf(m.type).label+(o?(' — '+o):'')+(m.note?(' — '+m.note):'')+'\n';
-  });
-  if(!marks.length) txt='Hallo RENT US, ich möchte einen Termin zur Fahrzeugaufbereitung anfragen.'+(who?('\nFahrzeug/Name: '+who):'');
+  const txt=buildReportText();
+  saveAutoCheck();
   send.href='https://wa.me/4915901606913?text='+encodeURIComponent(txt);
 }
+function damageLines(){
+  return marks.map((m,i)=>{
+    const o=ort(m);
+    return (i+1)+'. '+typeOf(m.type).label+(o?(' — '+o):'')+(m.note?(' — '+m.note):'');
+  });
+}
+function buildReportText(){
+  const whoEl=document.getElementById('who');
+  const who=whoEl?whoEl.value.trim():'';
+  const model=MODEL_LABEL[selectedModel]||selectedModel;
+  if(!marks.length) {
+    return 'Hallo RENT US, ich möchte einen Termin zur Fahrzeugaufbereitung anfragen.'
+      +(who?('\nFahrzeug/Name: '+who):'')
+      +'\nFahrzeugtyp: '+(MODEL_TYP[selectedModel]||model);
+  }
+  let txt='Hallo RENT US, 3D-Check von der Website'+(who?(' — '+who):'')+':\n';
+  txt+='Fahrzeugtyp: '+(MODEL_TYP[selectedModel]||model)+'\n';
+  marks.forEach((m,i)=>{
+    txt+=damageLines()[i]+'\n';
+  });
+  return txt+'Bitte bei der Aufbereitung darauf achten.';
+}
+function saveAutoCheck(){
+  try{
+    localStorage.setItem('rentusAutoCheck',JSON.stringify({
+      version:1,createdAt:new Date().toISOString(),
+      typ:MODEL_TYP[selectedModel]||'',model:selectedModel,
+      fahrzeug:(document.getElementById('who').value||'').trim(),
+      count:marks.length,lines:damageLines(),text:buildReportText()
+    }));
+  }catch(e){}
+}
+async function shareAutoCheck(){
+  saveAutoCheck();
+  const text=buildReportText();
+  if(!navigator.share){ location.href='https://wa.me/4915901606913?text='+encodeURIComponent(text); return; }
+  renderer.render(scene,camera);
+  const blob=await new Promise(resolve=>renderer.domElement.toBlob(resolve,'image/png'));
+  const files=blob?[new File([blob],'rentus-3d-check.png',{type:'image/png'})]:[];
+  if(files.length && navigator.canShare && navigator.canShare({files})){
+    await navigator.share({title:'RENT US 3D-Check',text,files});
+  }else{
+    await navigator.share({title:'RENT US 3D-Check',text});
+  }
+}
 document.getElementById('who').addEventListener('input',updateSend);
+document.getElementById('send').addEventListener('click',saveAutoCheck);
+document.getElementById('booking').addEventListener('click',saveAutoCheck);
+const shareBtn=document.getElementById('share');
+if(navigator.share){ shareBtn.hidden=false; shareBtn.addEventListener('click',()=>shareAutoCheck().catch(()=>{})); }
 document.getElementById('undo').addEventListener('click',()=>{ const m=marks.pop(); if(m){scene.remove(m.sprite); refreshSpriteNumbers();} render(); });
 document.getElementById('clear').addEventListener('click',clearMarks);
 
