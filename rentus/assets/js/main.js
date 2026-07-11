@@ -279,6 +279,9 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     if (!msg.value.includes('3D-Check übernommen')) {
       msg.value = (msg.value ? msg.value + '\n\n' : '') + intro + check.text;
     }
+    // Fahrzeug/Name aus dem 3D-Check ins Namensfeld übernehmen (sonst "Name: -")
+    const nameEl = document.getElementById('wName');
+    if (check.fahrzeug && nameEl && !nameEl.value) nameEl.value = check.fahrzeug;
     links();
     if (location.hash === '#buchung') show(typBtn ? 2 : 4);
   })();
