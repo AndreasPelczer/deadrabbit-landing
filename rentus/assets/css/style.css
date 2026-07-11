@@ -651,6 +651,11 @@ details.mehr p { margin: 10px 0 0; color: var(--muted); font-size: .92rem; line-
 /* Hero-Video Mobil (Einbau 11.07., Desktop behaelt Foto) */
 .hero__video{display:none}
 @media(max-width:700px){
-  .hero__video{display:block;width:100%;height:100%;object-fit:cover}
+  .hero__video{display:block;width:100%;height:100%;object-fit:cover;
+    filter:brightness(1.3) contrast(1.03) saturate(1.05)}
   .hero__pic{display:none}
+  /* Overlay oben/mittig heller (Video sichtbarer), unten dunkel fuer Textlesbarkeit */
+  .hero__bg::after{background:
+    linear-gradient(180deg, rgba(8,10,9,.42) 0%, rgba(8,10,9,.30) 40%, rgba(8,10,9,.88) 100%),
+    radial-gradient(120% 90% at 15% 30%, rgba(8,10,9,.12), rgba(8,10,9,.60));}
 }
