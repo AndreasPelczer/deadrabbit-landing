@@ -55,6 +55,22 @@ const io = new IntersectionObserver((entries) => {
 }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
 document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
+// Kontaktformular -> WhatsApp (statt Formspree-Platzhalter). Pflichtfelder greifen
+// weiter (Browser-Validierung vor submit). Öffnet WhatsApp mit den Angaben.
+const kontaktForm = document.getElementById('kontaktForm');
+if (kontaktForm) {
+  kontaktForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const g = (idv) => (document.getElementById(idv)?.value || '').trim();
+    const t = 'Kontakt über die Website:\n'
+      + '– Name: ' + (g('name') || '-') + '\n'
+      + (g('email') ? '– E-Mail: ' + g('email') + '\n' : '')
+      + (g('phone') ? '– Telefon: ' + g('phone') + '\n' : '')
+      + '– Nachricht: ' + (g('msg') || '-');
+    window.open('https://wa.me/4915901606913?text=' + encodeURIComponent(t), '_blank', 'noopener');
+  });
+}
+
 // Vorher / Nachher – Regler (mehrfach nutzbar)
 document.querySelectorAll('[data-ba]').forEach((ba) => {
   const before = ba.querySelector('[data-ba-before]');
