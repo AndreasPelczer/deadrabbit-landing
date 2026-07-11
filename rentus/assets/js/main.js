@@ -1,9 +1,15 @@
 // RENT US Glanzgarage — Interaktionen
 
-// Beim Laden oben beim Hero starten — nicht an alter Scrollposition (Safari-Restore)
-// und nicht am eingebetteten 3D-Check-iframe. Anker-Links (#buchung) bleiben erhalten.
+// Beim Laden oben beim Hero starten. Safari stellt die alte Scrollposition sonst
+// wieder her — auch NACH 'load' und aus dem bfcache über 'pageshow'. Alle abfangen.
+// Anker-Links (#buchung aus "In Buchung übernehmen") bleiben erhalten.
 try { history.scrollRestoration = 'manual'; } catch (e) {}
-if (!location.hash) window.scrollTo(0, 0);
+(function () {
+  const toTop = () => { if (!location.hash) window.scrollTo(0, 0); };
+  toTop();
+  window.addEventListener('load', toTop);
+  window.addEventListener('pageshow', toTop);
+})();
 
 // Jahr im Footer
 document.getElementById('year').textContent = new Date().getFullYear();
