@@ -101,7 +101,7 @@
         <button class="btn" id="clear">Alles löschen</button>
       </div>
       <div class="actions">
-        <a class="btn primary" id="send" href="#">Per WhatsApp senden</a>
+        <input class="who" id="who" placeholder="Fahrzeug &amp; Name (z.&nbsp;B. VW Golf, M&uuml;ller)" style="width:100%;background:#14161a;border:1px solid #2c313a;border-radius:12px;color:#eef1f5;padding:11px 13px;margin-bottom:10px;font:inherit">\n        <a class="btn primary" id="send" href="#">Per WhatsApp senden</a>
       </div>
     </div>
   </div>
@@ -200,6 +200,7 @@ function loadCar(model){
       o.position.set(-center.x*scale, -box.min.y*scale, -center.z*scale);
       o.traverse(c=>{ if(c.isMesh){ c.castShadow=false; if(c.material){ c.material.side=THREE.DoubleSide; } } });
       carGroup=o; scene.add(o);
+      carBox=new THREE.Box3().setFromObject(o);
       loadingEl.style.display='none';
     },undefined,()=>{ loadingEl.textContent='Modell konnte nicht geladen werden'; });
   },undefined,()=>{ loadingEl.textContent='Material konnte nicht geladen werden'; });
@@ -257,7 +258,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
   const t=typeOf(active);
   const s=makeSprite(marks.length+1,t.color); s.position.copy(p);
   scene.add(s);
-  marks.push({id:++seq,sprite:s,type:active,note:''});
+  marks.push({id:++seq,sprite:s,type:active,note:'',p:hits[0].point.clone()});
   render();
 });
 
@@ -283,14 +284,35 @@ function render(){
   }
   updateSend();
 }
+let carBox=null;
+// Kalibrierung: falls vorne/hinten oder links/rechts vertauscht wirken, hier kippen.
+const FRONT_POSITIV=true, LINKS_POSITIV=true;
+function ort(m){
+  if(!m.p||!carBox) return '';
+  const size=carBox.getSize(new THREE.Vector3());
+  const lenAxis=size.x>=size.z?'x':'z', crossAxis=lenAxis==='x'?'z':'x';
+  let L=m.p[lenAxis]/(size[lenAxis]/2), C=m.p[crossAxis]/(size[crossAxis]/2);
+  if(!FRONT_POSITIV){ L=-L; C=-C; }
+  if(!LINKS_POSITIV){ C=-C; }
+  const H=m.p.y/Math.max(size.y,0.001);
+  const laengs=L>0.25?'vorne':(L<-0.25?'hinten':'Mitte');
+  const seite=C>0.2?'links':(C<-0.2?'rechts':'mittig');
+  const hoehe=H>0.62?'oben':(H<0.32?'unten':'');
+  return [laengs,seite,hoehe].filter(Boolean).join(', ');
+}
 function updateSend(){
   const send=document.getElementById('send');
-  let txt='Hallo RENT US, bitte besonders auf diese Stellen achten:%0A';
-  marks.forEach((m,i)=>{ txt+=(i+1)+'. '+typeOf(m.type).label+(m.note?(' – '+m.note):'')+'%0A'; });
-  if(!marks.length) txt='Hallo RENT US, ich möchte einen Termin zur Fahrzeugaufbereitung anfragen.';
-  send.href='https://wa.me/4915901606913?text='+txt;
+  const whoEl=document.getElementById('who');
+  const who=whoEl?whoEl.value.trim():'';
+  let txt='Hallo RENT US, 3D-Schadenmeldung von der Website'+(who?(' — '+who):'')+':\n';
+  marks.forEach((m,i)=>{
+    const o=ort(m);
+    txt+=(i+1)+'. '+typeOf(m.type).label+(o?(' — '+o):'')+(m.note?(' — '+m.note):'')+'\n';
+  });
+  if(!marks.length) txt='Hallo RENT US, ich möchte einen Termin zur Fahrzeugaufbereitung anfragen.'+(who?('\nFahrzeug/Name: '+who):'');
+  send.href='https://wa.me/4915901606913?text='+encodeURIComponent(txt);
 }
-document.getElementById('undo').addEventListener('click',()=>{ const m=marks.pop(); if(m){scene.remove(m.sprite); refreshSpriteNumbers();} render(); });
+document.getElementById('who').addEventListener('input',updateSend);\ndocument.getElementById('undo').addEventListener('click',()=>{ const m=marks.pop(); if(m){scene.remove(m.sprite); refreshSpriteNumbers();} render(); });
 document.getElementById('clear').addEventListener('click',clearMarks);
 
 function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); }

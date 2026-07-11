@@ -194,7 +194,7 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     dots.forEach(d => d.classList.toggle('on', +d.dataset.d <= state.step));
     prev.disabled = state.step === 1;
     next.style.visibility = state.step === 4 ? 'hidden' : 'visible';
-    if (state.step === 4) summary();
+    if (state.step === 4) { summary(); links(); }
   }
   function preise() {
     wiz.querySelectorAll('[data-base]').forEach(el => {
@@ -236,12 +236,14 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
       + (document.getElementById('wTel').value ? ' · Tel: ' + document.getElementById('wTel').value : '') + '\n'
       + (document.getElementById('wMsg').value ? '– Hinweise: ' + document.getElementById('wMsg').value : '');
   }
-  document.getElementById('wSend').addEventListener('click', function () {
-    this.href = 'https://wa.me/4915901606913?text=' + encodeURIComponent(baueText());
-  });
-  document.getElementById('wMail').addEventListener('click', function () {
-    this.href = 'mailto:info.rentus@web.de?subject=' + encodeURIComponent('Terminanfrage Glanzgarage')
-      + '&body=' + encodeURIComponent(baueText());
+  function links() {
+    const t = baueText();
+    document.getElementById('wSend').href = 'https://wa.me/4915901606913?text=' + encodeURIComponent(t);
+    document.getElementById('wMail').href = 'mailto:info.rentus@web.de?subject=' + encodeURIComponent('Terminanfrage Glanzgarage') + '&body=' + encodeURIComponent(t);
+  }
+  ['wName','wTel','wMsg','wOrt','wDatum'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', links); el.addEventListener('change', links);
   });
   prev.addEventListener('click', () => show(state.step - 1));
   next.addEventListener('click', () => show(state.step + 1));
