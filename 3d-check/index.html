@@ -101,7 +101,8 @@
         <button class="btn" id="clear">Alles löschen</button>
       </div>
       <div class="actions">
-        <input class="who" id="who" placeholder="Fahrzeug &amp; Name (z.&nbsp;B. VW Golf, M&uuml;ller)" style="width:100%;background:#14161a;border:1px solid #2c313a;border-radius:12px;color:#eef1f5;padding:11px 13px;margin-bottom:10px;font:inherit">\n        <a class="btn primary" id="send" href="#">Per WhatsApp senden</a>
+        <input class="who" id="who" placeholder="Fahrzeug &amp; Name (z.&nbsp;B. VW Golf, M&uuml;ller)" style="width:100%;background:#14161a;border:1px solid #2c313a;border-radius:12px;color:#eef1f5;padding:11px 13px;margin-bottom:10px;font:inherit">
+        <a class="btn primary" id="send" href="#">Per WhatsApp senden</a>
       </div>
     </div>
   </div>
@@ -312,7 +313,8 @@ function updateSend(){
   if(!marks.length) txt='Hallo RENT US, ich möchte einen Termin zur Fahrzeugaufbereitung anfragen.'+(who?('\nFahrzeug/Name: '+who):'');
   send.href='https://wa.me/4915901606913?text='+encodeURIComponent(txt);
 }
-document.getElementById('who').addEventListener('input',updateSend);\ndocument.getElementById('undo').addEventListener('click',()=>{ const m=marks.pop(); if(m){scene.remove(m.sprite); refreshSpriteNumbers();} render(); });
+document.getElementById('who').addEventListener('input',updateSend);
+document.getElementById('undo').addEventListener('click',()=>{ const m=marks.pop(); if(m){scene.remove(m.sprite); refreshSpriteNumbers();} render(); });
 document.getElementById('clear').addEventListener('click',clearMarks);
 
 function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); }
