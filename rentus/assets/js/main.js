@@ -211,7 +211,7 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
   }
   wiz.querySelectorAll('[data-typ]').forEach(b => b.addEventListener('click', () => {
     selectTypButton(b);
-    setTimeout(() => show(2), 250);
+    setTimeout(() => show(state.paket ? 3 : 2), 250);
   }));
   wiz.querySelectorAll('[data-paket]').forEach(b => b.addEventListener('click', () => {
     wiz.querySelectorAll('[data-paket]').forEach(x => x.classList.remove('sel'));
@@ -253,6 +253,17 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     const el = document.getElementById(id);
     el.addEventListener('input', links); el.addEventListener('change', links);
   });
+  // Paket-Knöpfe auf der Seite wählen im Wizard vor
+  document.querySelectorAll('a[data-wpaket]').forEach(a => a.addEventListener('click', () => {
+    const btn = wiz.querySelector('[data-paket="' + a.dataset.wpaket + '"]');
+    if (btn) {
+      wiz.querySelectorAll('[data-paket]').forEach(x => x.classList.remove('sel'));
+      btn.classList.add('sel');
+      state.paket = btn.dataset.paket;
+      state.preis = btn.dataset.preis === '0' ? '60-80' : Math.round(+btn.dataset.preis * state.faktor);
+    }
+    show(1);
+  }));
   prev.addEventListener('click', () => show(state.step - 1));
   next.addEventListener('click', () => show(state.step + 1));
   show(1);

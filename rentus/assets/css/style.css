@@ -636,3 +636,14 @@ h1, h2, h3, h4 {
 .wcard svg .win { fill: var(--surface-2); }
 .wcard svg .hub { fill: var(--surface-2); }
 .wcard.sel svg .win, .wcard.sel svg .hub { fill: var(--surface); }
+
+/* Ausklapper & Zusatzinfo (Welle 3) */
+details.mehr { margin-top: 12px; }
+details.mehr summary { cursor: pointer; color: var(--green); font-size: .9rem; list-style: none; }
+details.mehr summary::before { content: "+ "; font-weight: 700; }
+details.mehr[open] summary::before { content: "\2212  "; }
+details.mehr ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: .9rem; line-height: 1.65; }
+details.mehr p { margin: 10px 0 0; color: var(--muted); font-size: .92rem; line-height: 1.7; }
+.zusatzinfo { max-width: 860px; margin: 28px auto 0; background: var(--surface); border: 1px dashed var(--green-deep);
+  border-radius: var(--radius); padding: 16px 20px; color: var(--muted); font-size: .92rem; line-height: 1.7; }
+.zusatzinfo b { color: var(--text); }
