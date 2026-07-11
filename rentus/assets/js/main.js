@@ -1,11 +1,15 @@
 // RENT US Glanzgarage — Interaktionen
 
-// Beim Laden oben beim Hero starten. Safari stellt die alte Scrollposition sonst
-// wieder her — auch NACH 'load' und aus dem bfcache über 'pageshow'. Alle abfangen.
-// Anker-Links (#buchung aus "In Buchung übernehmen") bleiben erhalten.
+// Beim Laden oben beim Hero starten. Safari-Scroll-Restore (auch 'load'/'pageshow'
+// aus dem bfcache) UND ein beim Teilen mitgewanderter Sektions-#anker starten die
+// Seite sonst mitten drin. Nur der funktionale Deep-Link #buchung bleibt erhalten.
 try { history.scrollRestoration = 'manual'; } catch (e) {}
 (function () {
-  const toTop = () => { if (!location.hash) window.scrollTo(0, 0); };
+  const keepHash = location.hash === '#buchung';
+  if (!keepHash && location.hash) {
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  }
+  const toTop = () => { if (!keepHash) window.scrollTo(0, 0); };
   toTop();
   window.addEventListener('load', toTop);
   window.addEventListener('pageshow', toTop);
@@ -29,6 +33,19 @@ const toggleNav = (open) => {
 };
 burger.addEventListener('click', () => toggleNav(!mobileNav.classList.contains('open')));
 mobileNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => toggleNav(false)));
+
+// Anker-Navigation: sanft scrollen, aber die URL sauber halten. Ein hängengebliebener
+// #anker wandert sonst beim Teilen mit und startet die geteilte Seite mitten drin.
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', (e) => {
+    const id = a.getAttribute('href').slice(1);
+    const target = id ? document.getElementById(id) : document.body;
+    if (!target) return;
+    e.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (err) {}
+  });
+});
 
 // Reveal-Animationen beim Scrollen
 const io = new IntersectionObserver((entries) => {
