@@ -651,7 +651,8 @@ details.mehr p { margin: 10px 0 0; color: var(--muted); font-size: .92rem; line-
 /* Hero-Video: Mobil Hochkant + Desktop quadratisch/Querformat (Einbau 11.07.) */
 .hero__video, .hero__video-d{display:none}
 @media(min-width:701px){
-  .hero__video-d{display:block;width:100%;height:100%;object-fit:cover}
+  .hero__video-d{display:block;width:100%;height:100%;object-fit:cover;
+    filter:brightness(1.2) contrast(1.02) saturate(1.03)}
   .hero__pic{display:none}
 }
 @media(max-width:700px){
