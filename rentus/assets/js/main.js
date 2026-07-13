@@ -381,18 +381,34 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     }
   });
 
-  // Finaler Senden-Knopf: sind Report-Bilder da, per native Share (Text + Bilder) an WhatsApp.
-  // Sonst greift der normale wa.me-Textlink (href).
+  // Beide Report-Bilder (außen + innen) zu EINEM Bild stapeln — iOS/WhatsApp nimmt beim
+  // Teilen oft nur eine Datei an, darum ein kombiniertes Bild.
+  async function combineReports() {
+    const blobs = [checkImgAussen, checkImgInnen].filter(Boolean);
+    if (!blobs.length) return null;
+    if (blobs.length === 1) return blobs[0];
+    const imgs = await Promise.all(blobs.map(b => new Promise((res, rej) => {
+      const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = URL.createObjectURL(b);
+    })));
+    const w = Math.max(...imgs.map(i => i.width));
+    const gap = 24;
+    const h = imgs.reduce((s, i) => s + i.height, 0) + gap * (imgs.length - 1);
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d'); ctx.fillStyle = '#0c0e0d'; ctx.fillRect(0, 0, w, h);
+    let y = 0;
+    for (const im of imgs) { ctx.drawImage(im, 0, y, im.width, im.height); y += im.height + gap; }
+    return await new Promise(r => cv.toBlob(r, 'image/png'));
+  }
+  // Finaler Senden-Knopf: Handy = Text + kombiniertes Bild teilen; Desktop = wa.me-Textlink (href).
   document.getElementById('wSend').addEventListener('click', async (e) => {
-    // Bild-Teilen nur auf Touch/Handy (dort ist WhatsApp ein Teilen-Ziel). Am Desktop
-    // fehlt WhatsApp im macOS-Teilen-Menü -> normaler wa.me-Textlink (öffnet WhatsApp Web).
     const isTouch = window.matchMedia('(pointer: coarse)').matches;
-    const files = [];
-    if (checkImgAussen) files.push(new File([checkImgAussen], 'rentus-aussen.png', { type: 'image/png' }));
-    if (checkImgInnen)  files.push(new File([checkImgInnen], 'rentus-innen.png', { type: 'image/png' }));
-    if (isTouch && files.length && navigator.share && navigator.canShare && navigator.canShare({ files })) {
-      e.preventDefault();
-      try { await navigator.share({ title: 'RENT US Anfrage', text: baueText(), files }); } catch (err) {}
+    if (isTouch && navigator.share && navigator.canShare) {
+      const blob = await combineReports();
+      const files = blob ? [new File([blob], 'rentus-check.png', { type: 'image/png' })] : [];
+      if (files.length && navigator.canShare({ files })) {
+        e.preventDefault();
+        try { await navigator.share({ title: 'RENT US Anfrage', text: baueText(), files }); } catch (err) {}
+      }
     }
   });
 })();
