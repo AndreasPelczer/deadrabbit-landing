@@ -226,7 +226,7 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
 (function () {
   const wiz = document.getElementById('wizard');
   if (!wiz) return;
-  const state = { typ: null, faktor: 1, paket: null, preis: 0, step: 1 };
+  const state = { typ: null, faktor: 1, paket: null, preis: 0, sonder: [], step: 1 };
   const steps = wiz.querySelectorAll('.wstep');
   const dots = wiz.querySelectorAll('.wdot');
   const prev = document.getElementById('wPrev');
@@ -285,7 +285,13 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     b.classList.add('sel');
     state.paket = b.dataset.paket;
     state.preis = b.dataset.preis === '0' ? (state.faktor > 1 ? '72-96' : '60-80') : Math.round(+b.dataset.preis * state.faktor);
-    setTimeout(() => show(3), 250);
+    // Kein Auto-Sprung mehr: der Kunde soll erst optional Sonderleistungen wählen können.
+  }));
+  // Sonderleistungen: Mehrfachauswahl (toggle), optional, unabhängig vom Paket.
+  wiz.querySelectorAll('[data-sonder]').forEach(b => b.addEventListener('click', () => {
+    b.classList.toggle('sel');
+    state.sonder = [...wiz.querySelectorAll('[data-sonder].sel')].map(x => ({ name: x.dataset.sonder, preis: x.dataset.preis }));
+    summary(); links();
   }));
   function val(name) { const el = wiz.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : ''; }
   function summary() {
@@ -294,6 +300,7 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     document.getElementById('wSummary').innerHTML =
       'Fahrzeug: <b>' + (state.typ || '&ndash;') + '</b><br>' +
       'Leistung: <b>' + (state.paket || '&ndash;') + '</b> (ab ' + state.preis + ' &euro;)<br>' +
+      (state.sonder.length ? 'Sonderleistungen: <b>' + state.sonder.map(s => s.name).join(', ') + '</b><br>' : '') +
       'Abholung: <b>' + val('abhol') + '</b> ' + (document.getElementById('wOrt').value || '') + '<br>' +
       'Wunschtermin: <b>' + datum + ', ' + val('halbtag') + '</b>';
   }
@@ -312,6 +319,7 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     return 'Hallo Mike! Anfrage über die Website:\n'
       + '– Fahrzeug: ' + (state.typ || '-') + '\n'
       + '– Leistung: ' + (state.paket || '-') + ' (ab ' + state.preis + ' €)\n'
+      + (state.sonder.length ? '– Sonderleistungen: ' + state.sonder.map(s => s.name + ' (' + s.preis + ')').join(', ') + '\n' : '')
       + faktorHinweis
       + '– Abholung: ' + val('abhol') + ' ' + (document.getElementById('wOrt').value || '') + '\n'
       + '– Wunschtermin: ' + datum + ', ' + val('halbtag') + '\n'
