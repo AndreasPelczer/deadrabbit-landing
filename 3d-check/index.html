@@ -393,6 +393,12 @@ function wrapText(ctx,text,x,y,maxWidth,lineHeight,maxLines){
 }
 async function buildReportImage(){
   renderer.render(scene,camera);
+  // WebGL-Canvas robust einfangen (iOS: drawImage(webgl) ist heikel) -> über dataURL + Image.
+  let carImg=null;
+  try{
+    const _u=renderer.domElement.toDataURL('image/png');
+    carImg=await new Promise((r)=>{ const im=new Image(); im.onload=()=>r(im); im.onerror=()=>r(null); im.src=_u; });
+  }catch(e){ carImg=null; }
   const lines=damageLines();
   const who=(document.getElementById('who').value||'').trim();
   const model=MODEL_TYP[selectedModel]||MODEL_LABEL[selectedModel]||selectedModel;
@@ -403,7 +409,7 @@ async function buildReportImage(){
   const grd=ctx.createRadialGradient(600,60,30,600,60,950);
   grd.addColorStop(0,'#26301f'); grd.addColorStop(1,'#0c0e0d');
   ctx.fillStyle=grd; ctx.fillRect(0,0,cv.width,cv.height);
-  ctx.drawImage(renderer.domElement,80,92,1040,780);
+  if(carImg){ ctx.drawImage(carImg,80,92,1040,780); } else { ctx.fillStyle='#14161a'; ctx.fillRect(80,92,1040,780); }
   ctx.strokeStyle='#a8c96b'; ctx.lineWidth=4; ctx.strokeRect(80,92,1040,780);
   ctx.fillStyle='#f3f6f1'; ctx.font='700 48px Oswald, Arial, sans-serif';
   ctx.fillText('RENT US 3D-CHECK',80,62);
