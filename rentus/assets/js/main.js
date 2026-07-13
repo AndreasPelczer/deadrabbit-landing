@@ -354,8 +354,16 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     }
     show(1);
   }));
-  prev.addEventListener('click', () => show(state.step - 1));
-  next.addEventListener('click', () => show(state.step + 1));
+  // Beim Schrittwechsel an den Wizard-Anfang scrollen (mit Versatz für den fixen Header),
+  // sonst bleibt man in einem langen Schritt unten hängen und muss selbst hochscrollen.
+  function scrollWizTop() {
+    const header = document.getElementById('header');
+    const offset = (header ? header.offsetHeight : 0) + 14;
+    const y = wiz.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  }
+  prev.addEventListener('click', () => { show(state.step - 1); scrollWizTop(); });
+  next.addEventListener('click', () => { show(state.step + 1); scrollWizTop(); });
   show(1);
   (function uebernimmAutoCheck() {
     let check = null;
