@@ -83,7 +83,7 @@
   .embed .layout{grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr)}
   .embed .stage,.embed .panel{border-radius:14px}
   @media(max-width:820px){.embed .layout{grid-template-columns:1fr}}
-.embed #send{display:none}
+.embed #send,.embed #share,.embed #download,.embed #cars{display:none}
 </style>
 </head>
 <body>
@@ -433,7 +433,14 @@ async function downloadReportImage(){
 }
 document.getElementById('who').addEventListener('input',updateSend);
 document.getElementById('send').addEventListener('click',saveAutoCheck);
-document.getElementById('booking').addEventListener('click',saveAutoCheck);
+document.getElementById('booking').addEventListener('click',async(e)=>{
+  saveAutoCheck();
+  if(document.documentElement.classList.contains('embed')){
+    e.preventDefault();
+    let img=null; try{ img=await buildReportImage(); }catch(err){}
+    try{ parent.postMessage({rentusCheck:'done', img},'*'); }catch(err){}
+  }
+});
 document.getElementById('download').addEventListener('click',()=>downloadReportImage().catch(()=>{}));
 const shareBtn=document.getElementById('share');
 if(navigator.share){ shareBtn.hidden=false; shareBtn.addEventListener('click',()=>shareAutoCheck().catch(()=>{})); }
@@ -442,7 +449,16 @@ document.getElementById('clear').addEventListener('click',clearMarks);
 
 function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); }
 animate();
-loadCar('auto');
+// Fahrzeugtyp aus der Buchung übernehmen (?typ=…) → passendes Modell vorwählen.
+(function(){
+  const TYP_MODEL={ 'Limousine':'auto','SUV':'suv','Sport Coupé/Cabrio':'sport',
+    'Kombi':'auto2','Kleinwagen':'auto','Bus/Van':'auto' }; // TODO eigene Modelle: Kombi/Kleinwagen/Bus
+  const typ=new URLSearchParams(location.search).get('typ');
+  if(typ && TYP_MODEL[typ]) selectedModel=TYP_MODEL[typ];
+  const chip=document.querySelector('#cars .chip[data-model="'+selectedModel+'"]');
+  if(chip){ document.querySelectorAll('#cars .chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active'); }
+})();
+loadCar(selectedModel);
 render();
 </script>
 </body>

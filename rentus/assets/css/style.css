@@ -664,3 +664,10 @@ details.mehr p { margin: 10px 0 0; color: var(--muted); font-size: .92rem; line-
     linear-gradient(180deg, rgba(8,10,9,.42) 0%, rgba(8,10,9,.30) 40%, rgba(8,10,9,.88) 100%),
     radial-gradient(120% 90% at 15% 30%, rgba(8,10,9,.12), rgba(8,10,9,.60));}
 }
+
+/* Zustand-Panel Tabs (Aussen/Innen) im Buchungs-Wizard */
+.zustand-panel{margin-top:6px}
+.ztabs{display:flex;gap:8px;margin:10px 0}
+.ztab{font-family:var(--head);text-transform:uppercase;letter-spacing:.04em;font-size:13px;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;transition:.2s}
+.ztab:hover{color:var(--text);border-color:var(--green)}
+.ztab.on{background:var(--green);color:var(--green-ink);border-color:var(--green)}

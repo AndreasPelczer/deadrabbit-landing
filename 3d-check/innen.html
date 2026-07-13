@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Innenraum-Check — RENT US Glanzgarage</title>
+<style>
+  :root{--bg:#0c0e0d;--panel:#171b18;--line:#2c313a;--ink:#eef1f5;--muted:#9aa39a;--green:#9fb247;--green2:#b9d055;--head:"Oswald","Arial Narrow",sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:18px}
+  h1{font-family:var(--head);text-transform:uppercase;letter-spacing:.02em;font-size:1.5rem;margin-bottom:4px}
+  h1 span{color:var(--green)}
+  .sub{color:var(--muted);font-size:.95rem;margin-bottom:16px}
+  .wrap{max-width:1100px;margin:0 auto}
+  .layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,.7fr);gap:16px}
+  @media(max-width:820px){.layout{grid-template-columns:1fr}}
+  .stage{position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;touch-action:manipulation}
+  .stage img{width:100%;display:block;user-select:none;-webkit-user-drag:none}
+  .mark{position:absolute;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;background:var(--green);color:#14210a;
+    font-family:var(--head);font-weight:600;display:flex;align-items:center;justify-content:center;font-size:15px;
+    border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:pointer}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .panel h2{font-family:var(--head);text-transform:uppercase;font-size:1rem;margin-bottom:10px}
+  .hint{color:var(--muted);font-size:.85rem;margin-bottom:12px}
+  .row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+  .row .num{width:26px;height:26px;flex:0 0 26px;border-radius:50%;background:var(--green);color:#14210a;font-family:var(--head);display:flex;align-items:center;justify-content:center;font-size:13px}
+  .row input{flex:1;background:#14161a;border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:8px 10px;font:inherit;font-size:.9rem}
+  .row .del{background:none;border:0;color:var(--muted);cursor:pointer;font-size:18px;padding:2px 6px}
+  .empty{color:var(--muted);font-size:.9rem;padding:8px 0}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .btn{flex:1;min-width:130px;font-family:var(--head);text-transform:uppercase;letter-spacing:.04em;font-size:12.5px;
+    padding:11px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+  .btn:hover{border-color:var(--green);color:var(--green)}
+  .btn.primary{background:var(--green);color:#14210a;border-color:var(--green)}
+  .btn[hidden]{display:none}
+  .embed h1,.embed .sub{display:none}
+  .embed #send,.embed #share,.embed #download{display:none}
+  .embed body{padding:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Innenraum-Check: <span>wo sind Flecken?</span></h1>
+  <p class="sub">Tippen Sie auf die Stellen im Innenraum — z.&nbsp;B. Flecken, Tierhaare, Verschmutzung. Marker antippen = entfernen.</p>
+  <div class="layout">
+    <div class="stage" id="stage">
+      <img id="img" src="innenraum.jpg" alt="Innenraum von oben — Stellen markieren">
+    </div>
+    <div class="panel">
+      <h2>Markierte Stellen</h2>
+      <p class="hint">Notiz je Stelle optional (z.&nbsp;B. „Kaffeefleck", „Tierhaare").</p>
+      <div id="list"><p class="empty" id="empty">Noch nichts markiert — ins Bild tippen.</p></div>
+      <div class="btns">
+        <a class="btn primary" id="send" href="#" target="_blank" rel="noopener">WhatsApp-Text öffnen</a>
+        <button class="btn" id="share" type="button" hidden>Bild + Liste teilen</button>
+        <button class="btn" id="download" type="button">Report-Bild speichern</button>
+        <button class="btn" id="uebernehmen" type="button">In Buchung übernehmen</button>
+        <button class="btn" id="clear" type="button">Alles löschen</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const isEmbed = new URLSearchParams(location.search).get('embed')==='1';
+if(isEmbed) document.documentElement.classList.add('embed');
+const WA='4915901606913';
+const stage=document.getElementById('stage'), img=document.getElementById('img'), listEl=document.getElementById('list'), emptyEl=document.getElementById('empty');
+let marks=[], seq=0;
+
+stage.addEventListener('click', e=>{
+  if(e.target.classList.contains('mark')) return; // Marker-Klick = entfernen (eigener Handler)
+  const r=img.getBoundingClientRect();
+  const x=((e.clientX-r.left)/r.width)*100, y=((e.clientY-r.top)/r.height)*100;
+  if(x<0||x>100||y<0||y>100) return;
+  marks.push({id:++seq, x, y, note:''});
+  render();
+});
+
+function render(){
+  // Marker im Bild
+  [...stage.querySelectorAll('.mark')].forEach(m=>m.remove());
+  marks.forEach((m,i)=>{
+    const d=document.createElement('div'); d.className='mark'; d.textContent=i+1;
+    d.style.left=m.x+'%'; d.style.top=m.y+'%';
+    d.addEventListener('click', ev=>{ ev.stopPropagation(); marks=marks.filter(x=>x.id!==m.id); render(); });
+    stage.appendChild(d);
+  });
+  // Liste
+  listEl.innerHTML='';
+  if(!marks.length){ listEl.innerHTML='<p class="empty">Noch nichts markiert — ins Bild tippen.</p>'; }
+  marks.forEach((m,i)=>{
+    const row=document.createElement('div'); row.className='row';
+    row.innerHTML='<span class="num">'+(i+1)+'</span><input placeholder="Notiz (optional) …">'+
+      '<button class="del" title="entfernen">✕</button>';
+    const inp=row.querySelector('input'); inp.value=m.note;
+    inp.addEventListener('input', ()=>{ m.note=inp.value; updateSend(); });
+    row.querySelector('.del').addEventListener('click', ()=>{ marks=marks.filter(x=>x.id!==m.id); render(); });
+    listEl.appendChild(row);
+  });
+  updateSend();
+}
+
+function buildText(){
+  let t='Innenraum-Check von der Website:\n';
+  if(!marks.length) return t+'Keine Stellen markiert.';
+  marks.forEach((m,i)=>{ t+=(i+1)+'. Stelle'+(m.note?(' — '+m.note):'')+'\n'; });
+  return t+'Bitte bei der Aufbereitung darauf achten.';
+}
+function damageLines(){ return marks.map((m,i)=>(i+1)+'. Stelle'+(m.note?(' — '+m.note):'')); }
+
+function saveInnenCheck(){
+  try{ localStorage.setItem('rentusInnenCheck', JSON.stringify({
+    version:1, createdAt:new Date().toISOString(), count:marks.length, lines:damageLines(), text:buildText()
+  })); }catch(e){}
+}
+function updateSend(){
+  document.getElementById('send').href='https://wa.me/'+WA+'?text='+encodeURIComponent(buildText());
+}
+
+// Report-Bild: Innenraum + Marker + Liste auf Canvas
+async function makeReport(){
+  await img.decode().catch(()=>{});
+  const iw=img.naturalWidth||1200, ih=img.naturalHeight||600;
+  const listH=Math.max(120, 40+marks.length*34+70);
+  const cv=document.createElement('canvas'); cv.width=iw; cv.height=ih+listH;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#0c0e0d'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.drawImage(img,0,0,iw,ih);
+  // Marker
+  marks.forEach((m,i)=>{
+    const x=m.x/100*iw, y=m.y/100*ih, r=Math.max(16,iw*0.014);
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle='#9fb247'; ctx.fill();
+    ctx.lineWidth=Math.max(2,r*0.16); ctx.strokeStyle='#fff'; ctx.stroke();
+    ctx.fillStyle='#14210a'; ctx.font='bold '+Math.round(r*1.2)+'px Oswald,Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(String(i+1), x, y+1);
+  });
+  // Liste
+  let y=ih+40; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#9fb247'; ctx.font='bold 30px Oswald,Arial'; ctx.fillText('INNENRAUM-CHECK', 40, y); y+=44;
+  ctx.fillStyle='#eef1f5'; ctx.font='24px Arial';
+  (marks.length?damageLines():['Keine Stellen markiert.']).forEach(l=>{ ctx.fillText(l, 40, y); y+=34; });
+  ctx.fillStyle='#7c857b'; ctx.font='18px Arial';
+  ctx.fillText('Erstellt auf pelczer.de/rentus im Innenraum-Check.', 40, cv.height-24);
+  return new Promise(res=>cv.toBlob(res,'image/png'));
+}
+
+document.getElementById('download').addEventListener('click', async ()=>{
+  const blob=await makeReport(); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='rentus-innenraum-check.png'; a.click();
+});
+document.getElementById('clear').addEventListener('click', ()=>{ marks=[]; render(); });
+document.getElementById('uebernehmen').addEventListener('click', async (e)=>{
+  saveInnenCheck();
+  if(isEmbed){
+    let img=null; try{ img=await makeReport(); }catch(err){}
+    try{ parent.postMessage({rentusCheck:'innen', img}, '*'); }catch(err){}
+  }
+});
+const shareBtn=document.getElementById('share');
+if(navigator.share){ shareBtn.hidden=false; shareBtn.addEventListener('click', async ()=>{
+  saveInnenCheck();
+  try{
+    const blob=await makeReport(); const file=new File([blob],'rentus-innenraum-check.png',{type:'image/png'});
+    if(navigator.canShare && navigator.canShare({files:[file]})) await navigator.share({title:'RENT US Innenraum-Check', text:buildText(), files:[file]});
+    else await navigator.share({title:'RENT US Innenraum-Check', text:buildText()});
+  }catch(err){}
+}); }
+
+render();
+</script>
+</body>
+</html>

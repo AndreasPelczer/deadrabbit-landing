@@ -254,8 +254,31 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     state.typ = b.dataset.typ; state.faktor = +b.dataset.faktor; preise();
   }
   wiz.querySelectorAll('[data-typ]').forEach(b => b.addEventListener('click', () => {
+    // Frische Buchung: alte Check-Daten löschen, sonst schleppt sich ein alter Check mit.
+    try { localStorage.removeItem('rentusAutoCheck'); localStorage.removeItem('rentusInnenCheck'); } catch (e) {}
+    checkImgAussen = null; checkImgInnen = null;
+    const cs = document.getElementById('checkStatus'); if (cs) cs.textContent = '';
     selectTypButton(b);
-    setTimeout(() => show(state.paket ? 3 : 2), 250);
+    showZustand(b.dataset.typ);
+  }));
+  function showZustand(typ) {
+    const panel = document.getElementById('zustandPanel');
+    const fa = document.getElementById('frameAussen');
+    const fi = document.getElementById('frameInnen');
+    if (!panel || !fa || !fi) return;
+    const wantA = '/3d-check/?embed=1&typ=' + encodeURIComponent(typ);
+    if (fa.getAttribute('src') !== wantA) fa.setAttribute('src', wantA);
+    if (!fi.getAttribute('src')) fi.setAttribute('src', '/3d-check/innen.html?embed=1');
+    panel.hidden = false;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  // Tabs Außen / Innen im Zustand-Panel
+  document.querySelectorAll('.ztab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.ztab').forEach(x => x.classList.remove('on'));
+    t.classList.add('on');
+    const innen = t.dataset.zt === 'innen';
+    document.getElementById('frameAussen').hidden = innen;
+    document.getElementById('frameInnen').hidden = !innen;
   }));
   wiz.querySelectorAll('[data-paket]').forEach(b => b.addEventListener('click', () => {
     wiz.querySelectorAll('[data-paket]').forEach(x => x.classList.remove('sel'));
@@ -274,6 +297,14 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
       'Abholung: <b>' + val('abhol') + '</b> ' + (document.getElementById('wOrt').value || '') + '<br>' +
       'Wunschtermin: <b>' + datum + ', ' + val('halbtag') + '</b>';
   }
+  // Zustand-Check aus dem Speicher lesen (nur frische Daten, < 6 h) -> Zeilen für die Anfrage
+  function checkZeilen(key, label) {
+    let c = null;
+    try { c = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}
+    if (!c || !c.lines || !c.lines.length) return '';
+    if (c.createdAt) { const age = Date.now() - new Date(c.createdAt).getTime(); if (!(age >= 0 && age < 6 * 3600 * 1000)) return ''; }
+    return '– ' + label + ':\n' + c.lines.join('\n') + '\n';
+  }
   function baueText() {
     const d = document.getElementById('wDatum').value;
     const datum = d ? new Date(d).toLocaleDateString('de-DE') : 'nach Absprache';
@@ -286,11 +317,18 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
       + '– Wunschtermin: ' + datum + ', ' + val('halbtag') + '\n'
       + '– Name: ' + (document.getElementById('wName').value || '-')
       + (document.getElementById('wTel').value ? ' · Tel: ' + document.getElementById('wTel').value : '') + '\n'
-      + (document.getElementById('wMsg').value ? '– Hinweise: ' + document.getElementById('wMsg').value : '');
+      + (document.getElementById('wMsg').value ? '– Hinweise: ' + document.getElementById('wMsg').value + '\n' : '')
+      + checkZeilen('rentusAutoCheck', 'Zustand außen (Lack)')
+      + checkZeilen('rentusInnenCheck', 'Zustand innen');
   }
   function links() {
     const t = baueText();
-    document.getElementById('wSend').href = 'https://wa.me/4915901606913?text=' + encodeURIComponent(t);
+    // Desktop -> WhatsApp Web (kein App-Zwang); Handy -> wa.me (öffnet die App/Share).
+    const isTouch = window.matchMedia('(pointer: coarse)').matches;
+    const waUrl = isTouch
+      ? 'https://wa.me/4915901606913?text=' + encodeURIComponent(t)
+      : 'https://web.whatsapp.com/send?phone=4915901606913&text=' + encodeURIComponent(t);
+    document.getElementById('wSend').href = waUrl;
     document.getElementById('wMail').href = 'mailto:info.rentus@web.de?subject=' + encodeURIComponent('Terminanfrage Glanzgarage') + '&body=' + encodeURIComponent(t);
   }
   ['wName','wTel','wMsg','wOrt','wDatum'].forEach(id => {
@@ -318,15 +356,43 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     const typ = check.typ || '';
     const typBtn = typ ? wiz.querySelector('[data-typ="' + typ + '"]') : null;
     if (typBtn) selectTypButton(typBtn);
-    const msg = document.getElementById('wMsg');
-    const intro = '3D-Check übernommen:\n';
-    if (!msg.value.includes('3D-Check übernommen')) {
-      msg.value = (msg.value ? msg.value + '\n\n' : '') + intro + check.text;
-    }
-    // Fahrzeug/Name aus dem 3D-Check ins Namensfeld übernehmen (sonst "Name: -")
+    // Fahrzeug/Name aus dem 3D-Check ins Namensfeld übernehmen (baueText hängt die Mängel selbst an)
     const nameEl = document.getElementById('wName');
     if (check.fahrzeug && nameEl && !nameEl.value) nameEl.value = check.fahrzeug;
     links();
     if (location.hash === '#buchung') show(typBtn ? 2 : 4);
   })();
+
+  // Zustand-Checks (Außen/Innen) melden sich per postMessage: Report-Bild + Daten aufnehmen.
+  let checkImgAussen = null, checkImgInnen = null;
+  window.addEventListener('message', (e) => {
+    if (!e.data || (e.data.rentusCheck !== 'done' && e.data.rentusCheck !== 'innen')) return;
+    if (e.data.rentusCheck === 'done' && e.data.img) checkImgAussen = e.data.img;
+    if (e.data.rentusCheck === 'innen' && e.data.img) checkImgInnen = e.data.img;
+    let ext = null;
+    try { ext = JSON.parse(localStorage.getItem('rentusAutoCheck') || 'null'); } catch (err) {}
+    const nameEl = document.getElementById('wName');
+    if (ext && ext.fahrzeug && nameEl && !nameEl.value) nameEl.value = ext.fahrzeug;
+    links();
+    const cs = document.getElementById('checkStatus');
+    if (cs) {
+      const cnt = (k) => { try { const c = JSON.parse(localStorage.getItem(k) || 'null'); return (c && c.lines) ? c.lines.length : 0; } catch (e) { return 0; } };
+      cs.textContent = '✓ übernommen — Außen: ' + cnt('rentusAutoCheck') + ' Stelle(n) · Innen: ' + cnt('rentusInnenCheck') + ' Stelle(n)';
+    }
+  });
+
+  // Finaler Senden-Knopf: sind Report-Bilder da, per native Share (Text + Bilder) an WhatsApp.
+  // Sonst greift der normale wa.me-Textlink (href).
+  document.getElementById('wSend').addEventListener('click', async (e) => {
+    // Bild-Teilen nur auf Touch/Handy (dort ist WhatsApp ein Teilen-Ziel). Am Desktop
+    // fehlt WhatsApp im macOS-Teilen-Menü -> normaler wa.me-Textlink (öffnet WhatsApp Web).
+    const isTouch = window.matchMedia('(pointer: coarse)').matches;
+    const files = [];
+    if (checkImgAussen) files.push(new File([checkImgAussen], 'rentus-aussen.png', { type: 'image/png' }));
+    if (checkImgInnen)  files.push(new File([checkImgInnen], 'rentus-innen.png', { type: 'image/png' }));
+    if (isTouch && files.length && navigator.share && navigator.canShare && navigator.canShare({ files })) {
+      e.preventDefault();
+      try { await navigator.share({ title: 'RENT US Anfrage', text: baueText(), files }); } catch (err) {}
+    }
+  });
 })();
