@@ -357,10 +357,12 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
   // Beim Schrittwechsel an den Wizard-Anfang scrollen (mit Versatz für den fixen Header),
   // sonst bleibt man in einem langen Schritt unten hängen und muss selbst hochscrollen.
   function scrollWizTop() {
-    const header = document.getElementById('header');
-    const offset = (header ? header.offsetHeight : 0) + 14;
-    const y = wiz.getBoundingClientRect().top + window.scrollY - offset;
-    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    // Einen Frame warten, damit der neue Schritt (display:block + wfade) im Layout steht,
+    // dann den AKTIVEN Schritt anspringen. Der Header-Versatz kommt aus CSS scroll-margin-top.
+    requestAnimationFrame(() => {
+      const active = wiz.querySelector('.wstep.on') || wiz;
+      active.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
   prev.addEventListener('click', () => { show(state.step - 1); scrollWizTop(); });
   next.addEventListener('click', () => { show(state.step + 1); scrollWizTop(); });

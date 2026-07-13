@@ -593,7 +593,7 @@ h1, h2, h3, h4 {
 .wsteps { display: flex; gap: 10px; justify-content: center; margin-bottom: 22px; }
 .wdot { width: 12px; height: 12px; border-radius: 50%; background: var(--line); transition: .25s var(--ease); }
 .wdot.on { background: var(--green); transform: scale(1.25); }
-.wstep { display: none; }
+.wstep { display: none; scroll-margin-top: 96px; }
 .wstep.on { display: block; animation: wfade .3s var(--ease); }
 @keyframes wfade { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: none; } }
 .wstep h3 { font-family: var(--head); font-size: 1.25rem; margin: 0 0 16px; }
