@@ -439,12 +439,14 @@ async function downloadReportImage(){
 }
 document.getElementById('who').addEventListener('input',updateSend);
 document.getElementById('send').addEventListener('click',saveAutoCheck);
-document.getElementById('booking').addEventListener('click',async(e)=>{
+document.getElementById('booking').addEventListener('click',(e)=>{
   saveAutoCheck();
   if(document.documentElement.classList.contains('embed')){
     e.preventDefault();
-    let img=null; try{ img=await buildReportImage(); }catch(err){}
-    try{ parent.postMessage({rentusCheck:'done', img},'*'); }catch(err){}
+    // Nur die Liste übernehmen (localStorage rentusAutoCheck) — KEIN Bild.
+    // Das WebGL-Report-Bild kam auf iOS nicht zuverlaessig durch; Aussen liefert daher
+    // nur die Schadensliste, das eine Report-Bild kommt vom 2D-Innenraum-Check.
+    try{ parent.postMessage({rentusCheck:'done'},'*'); }catch(err){}
   }
 });
 document.getElementById('download').addEventListener('click',()=>downloadReportImage().catch(()=>{}));
