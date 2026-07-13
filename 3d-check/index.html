@@ -92,11 +92,14 @@
   <p class="sub">Auto mit der Maus/dem Finger drehen · Typ wählen · auf die Stelle tippen. Marker antippen = entfernen.</p>
 
   <div class="cars" id="cars">
-    <button class="chip active" data-model="auto">Auto</button>
-    <button class="chip" data-model="auto2">Auto 2</button>
+    <button class="chip active" data-model="limousine">Limousine</button>
+    <button class="chip" data-model="kleinwagen">Kleinwagen</button>
+    <button class="chip" data-model="kombi">Kombi</button>
     <button class="chip" data-model="suv">SUV</button>
-    <button class="chip" data-model="sport">Sportwagen</button>
-    <button class="chip" data-model="taxi">Taxi</button>
+    <button class="chip" data-model="bus">Bus/Van</button>
+    <button class="chip" data-model="coupe">Coupé/Cabrio</button>
+    <button class="chip" data-model="pickup">Pickup</button>
+    <button class="chip" data-model="oldtimer">Oldtimer</button>
   </div>
 
   <div class="types" id="types"></div>
@@ -137,8 +140,8 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
-import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 const TYPES=[
   {key:'kratzer',label:'Kratzer',color:'#f4c542'},
@@ -199,34 +202,33 @@ window.addEventListener('resize',sizeRenderer); sizeRenderer();
 
 // --- Auto laden ---
 let carGroup=null;
-let selectedModel='auto';
-const MODEL_TYP={auto:'Limousine',auto2:'Limousine',suv:'SUV',sport:'Sport Coupé/Cabrio',taxi:'Limousine'};
-const MODEL_LABEL={auto:'Auto',auto2:'Auto 2',suv:'SUV',sport:'Sportwagen',taxi:'Taxi'};
+let selectedModel='limousine';
+const MODEL_TYP={kleinwagen:'Kleinwagen',limousine:'Limousine',kombi:'Kombi',suv:'SUV',bus:'Bus/Van',coupe:'Sport Coupé/Cabrio',pickup:'Pickup',oldtimer:'Oldtimer'};
+const MODEL_LABEL={kleinwagen:'Kleinwagen',limousine:'Limousine',kombi:'Kombi',suv:'SUV',bus:'Bus/Van',coupe:'Coupé/Cabrio',pickup:'Pickup',oldtimer:'Oldtimer'};
 function clearMarks(){ marks.forEach(m=>scene.remove(m.sprite)); marks=[]; render(); }
 
+// GLB-Loader (Modelle sind Draco-komprimiert -> DRACOLoader noetig)
+const _draco=new DRACOLoader().setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+const _gltf=new GLTFLoader(); _gltf.setDRACOLoader(_draco);
+
 function loadCar(model){
-  loadingEl.style.display='flex';
+  loadingEl.style.display='flex'; loadingEl.textContent='Modell wird geladen …';
   if(carGroup){ scene.remove(carGroup); carGroup=null; }
   clearMarks();
-  const base='models/'+model+'/';
-  const mtl=new MTLLoader().setPath(base);
-  mtl.load('car.mtl',(materials)=>{
-    materials.preload();
-    const obj=new OBJLoader().setMaterials(materials).setPath(base);
-    obj.load('car.obj',(o)=>{
-      // zentrieren + skalieren + auf den Boden
-      const box=new THREE.Box3().setFromObject(o);
-      const size=box.getSize(new THREE.Vector3());
-      const center=box.getCenter(new THREE.Vector3());
-      const scale=3.2/Math.max(size.x,size.y,size.z);
-      o.scale.setScalar(scale);
-      o.position.set(-center.x*scale, -box.min.y*scale, -center.z*scale);
-      o.traverse(c=>{ if(c.isMesh){ c.castShadow=false; if(c.material){ c.material.side=THREE.DoubleSide; } } });
-      carGroup=o; scene.add(o);
-      carBox=new THREE.Box3().setFromObject(o);
-      loadingEl.style.display='none';
-    },undefined,()=>{ loadingEl.textContent='Modell konnte nicht geladen werden'; });
-  },undefined,()=>{ loadingEl.textContent='Material konnte nicht geladen werden'; });
+  _gltf.load('models-web/'+model+'.glb',(gltf)=>{
+    const o=gltf.scene;
+    // zentrieren + skalieren + auf den Boden
+    const box=new THREE.Box3().setFromObject(o);
+    const size=box.getSize(new THREE.Vector3());
+    const center=box.getCenter(new THREE.Vector3());
+    const scale=3.2/Math.max(size.x,size.y,size.z);
+    o.scale.setScalar(scale);
+    o.position.set(-center.x*scale, -box.min.y*scale, -center.z*scale);
+    o.traverse(c=>{ if(c.isMesh){ c.castShadow=false; } });
+    carGroup=o; scene.add(o);
+    carBox=new THREE.Box3().setFromObject(o);
+    loadingEl.style.display='none';
+  },undefined,()=>{ loadingEl.textContent='Modell konnte nicht geladen werden'; });
 }
 
 document.getElementById('cars').addEventListener('click',e=>{
@@ -459,8 +461,8 @@ function animate(){ requestAnimationFrame(animate); controls.update(); renderer.
 animate();
 // Fahrzeugtyp aus der Buchung übernehmen (?typ=…) → passendes Modell vorwählen.
 (function(){
-  const TYP_MODEL={ 'Limousine':'auto','SUV':'suv','Sport Coupé/Cabrio':'sport',
-    'Kombi':'auto2','Kleinwagen':'auto','Bus/Van':'auto' }; // TODO eigene Modelle: Kombi/Kleinwagen/Bus
+  const TYP_MODEL={ 'Kleinwagen':'kleinwagen','Limousine':'limousine','Kombi':'kombi',
+    'SUV':'suv','Bus/Van':'bus','Sport Coupé/Cabrio':'coupe' };
   const typ=new URLSearchParams(location.search).get('typ');
   if(typ && TYP_MODEL[typ]) selectedModel=TYP_MODEL[typ];
   const chip=document.querySelector('#cars .chip[data-model="'+selectedModel+'"]');
