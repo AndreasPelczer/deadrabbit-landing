@@ -313,6 +313,8 @@ h1, h2, h3, h4 {
 /* "Vorher": echtes Foto, per Filter matt/stumpf gemacht (Demo).
    → Sobald ein echtes Vorher-Foto da ist: background-image tauschen und Filter entfernen. */
 .ba__before { clip-path: inset(0 50% 0 0); filter: grayscale(.55) brightness(.6) contrast(.9); }
+/* Lack-Slider: echten Matt-vs-Glanz zeigen, kein Grau/Dunkel-Filter. */
+.ba__before--lack { filter: none; }
 .ba__lbl {
   position: absolute; bottom: 16px; z-index: 2;
   font-family: var(--head); text-transform: uppercase; letter-spacing: .12em;
