@@ -71,6 +71,22 @@ if (kontaktForm) {
   });
 }
 
+// Abo-Buchen-Knöpfe -> WhatsApp mit vorbefülltem Text. Ein Abo ist ein Dauervertrag und
+// braucht ein kurzes Gespräch (Rhythmus/Start/Abrechnung) -> Rückruf statt Wizard-Sackgasse.
+// Desktop -> WhatsApp Web (kein App-Zwang), Handy -> wa.me.
+document.querySelectorAll('.js-abo').forEach(a => {
+  a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const abo = a.dataset.abo || 'Abo';
+    const text = 'Hallo Mike! Ich interessiere mich für das ' + abo + '. Bitte um kurzen Rückruf zur Beratung.';
+    const isTouch = window.matchMedia('(pointer: coarse)').matches;
+    const url = isTouch
+      ? 'https://wa.me/4915901606913?text=' + encodeURIComponent(text)
+      : 'https://web.whatsapp.com/send?phone=4915901606913&text=' + encodeURIComponent(text);
+    window.open(url, '_blank', 'noopener');
+  });
+});
+
 // Vorher / Nachher – Regler (mehrfach nutzbar)
 document.querySelectorAll('[data-ba]').forEach((ba) => {
   const before = ba.querySelector('[data-ba-before]');
