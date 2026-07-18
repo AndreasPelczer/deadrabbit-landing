@@ -246,6 +246,32 @@ h1, h2, h3, h4 {
 .pkg__price { font-family: var(--head); font-size: 2.4rem; color: var(--green); line-height: 1; }
 .pkg__price small { font-size: .8rem; color: var(--muted); letter-spacing: .05em; display: block; margin-bottom: 4px; text-transform: uppercase; font-weight: 400; }
 .pkg__price .unit { font-size: 1rem; color: var(--muted); }
+
+/* Der Faule Hund — eigener Blickfang (Mikes Renner) */
+.faulhund { display: grid; grid-template-columns: 1.5fr 1fr; gap: 28px; align-items: center;
+  margin-top: 32px; padding: 32px 34px; border-radius: var(--radius-lg);
+  background: linear-gradient(125% 100% at 0% 0%, rgba(159,178,71,.15), var(--surface));
+  border: 1px solid var(--green-deep); }
+@media (max-width: 760px) { .faulhund { grid-template-columns: 1fr; gap: 18px; padding: 26px 22px; } }
+.faulhund__eyebrow { color: var(--green); font-family: var(--head); text-transform: uppercase; letter-spacing: .08em; font-size: .85rem; }
+.faulhund__name { font-family: var(--head); font-size: 2rem; margin: 6px 0 10px; }
+.faulhund__pitch { color: var(--muted); line-height: 1.55; margin-bottom: 14px; }
+.faulhund__list { list-style: none; display: grid; gap: 6px; padding: 0; }
+.faulhund__list li { padding-left: 22px; position: relative; color: var(--text); font-size: .95rem; }
+.faulhund__list li::before { content: "✓"; position: absolute; left: 0; color: var(--green); font-weight: 700; }
+.faulhund__aside { text-align: center; display: grid; gap: 12px; justify-items: center; }
+.faulhund__price { font-family: var(--head); font-size: 2.6rem; color: var(--green); line-height: 1; }
+.faulhund__price small { display: block; font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+.faulhund__price .unit { font-size: 1rem; color: var(--muted); }
+.faulhund__note { font-size: .78rem; color: var(--muted-2); }
+/* „Der Faule Hund" — Coming-Soon-Zustand (noch nicht aktiviert, kein Preis) */
+.faulhund { position: relative; overflow: hidden; }
+.faulhund__badge { position: absolute; top: 14px; right: -4px; transform: rotate(6deg);
+  font-family: var(--head); text-transform: uppercase; letter-spacing: .1em; font-size: 11px;
+  color: var(--ink); background: var(--green); padding: 6px 12px; border-radius: 7px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+.faulhund__soon { font-family: var(--head); text-transform: uppercase; letter-spacing: .05em;
+  font-size: 1.5rem; color: var(--green); }
 .pkg__list { list-style: none; margin: 22px 0 26px; display: flex; flex-direction: column; gap: 11px; flex: 1; }
 .pkg__list li { display: flex; gap: 10px; font-size: .9rem; color: var(--text); align-items: flex-start; }
 .pkg__list li svg { width: 16px; height: 16px; color: var(--green); flex-shrink: 0; margin-top: 4px; }
