@@ -394,13 +394,9 @@ function wrapText(ctx,text,x,y,maxWidth,lineHeight,maxLines){
   return y;
 }
 async function buildReportImage(){
-  renderer.render(scene,camera);
-  // WebGL-Canvas robust einfangen (iOS: drawImage(webgl) ist heikel) -> über dataURL + Image.
-  let carImg=null;
-  try{
-    const _u=renderer.domElement.toDataURL('image/png');
-    carImg=await new Promise((r)=>{ const im=new Image(); im.onload=()=>r(im); im.onerror=()=>r(null); im.src=_u; });
-  }catch(e){ carImg=null; }
+  // 2D-Draufsicht statt WebGL-Screenshot: das iPhone kann die 3D-WebGL-Ansicht nicht
+  // zuverlaessig abfotografieren. Die Marker-Weltpositionen (m.p) werden anhand der
+  // Fahrzeug-Bounding-Box (carBox) in eine schematische Draufsicht projiziert -> reines 2D, iOS-sicher.
   const lines=damageLines();
   const who=(document.getElementById('who').value||'').trim();
   const model=MODEL_TYP[selectedModel]||MODEL_LABEL[selectedModel]||selectedModel;
@@ -411,10 +407,39 @@ async function buildReportImage(){
   const grd=ctx.createRadialGradient(600,60,30,600,60,950);
   grd.addColorStop(0,'#26301f'); grd.addColorStop(1,'#0c0e0d');
   ctx.fillStyle=grd; ctx.fillRect(0,0,cv.width,cv.height);
-  if(carImg){ ctx.drawImage(carImg,80,92,1040,780); } else { ctx.fillStyle='#14161a'; ctx.fillRect(80,92,1040,780); }
-  ctx.strokeStyle='#a8c96b'; ctx.lineWidth=4; ctx.strokeRect(80,92,1040,780);
+
+  // --- Draufsicht ---
+  const roundRectPath=(x,y,w,h,r)=>{ r=Math.min(r,w/2,h/2); ctx.beginPath(); ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); };
+  const area={x:80,y:120,w:1040,h:740};
+  let lenX=1,lenZ=1,minX=-0.5,minZ=-0.5;
+  if(carBox){ lenX=Math.max(carBox.max.x-carBox.min.x,0.001); lenZ=Math.max(carBox.max.z-carBox.min.z,0.001); minX=carBox.min.x; minZ=carBox.min.z; }
+  const longIsZ=lenZ>=lenX;
+  const lenLong=longIsZ?lenZ:lenX, lenShort=longIsZ?lenX:lenZ;
+  const minLong=longIsZ?minZ:minX, minShort=longIsZ?minX:minZ;
+  let sw=area.w, sh=sw/(lenLong/lenShort);
+  if(sh>area.h){ sh=area.h; sw=sh*(lenLong/lenShort); }
+  const sx=area.x+(area.w-sw)/2, sy=area.y+(area.h-sh)/2;
+  ctx.fillStyle='#14171a'; ctx.strokeStyle='#a8c96b'; ctx.lineWidth=5;
+  roundRectPath(sx,sy,sw,sh,Math.min(sw,sh)*0.30); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle='rgba(168,201,107,.4)'; ctx.lineWidth=3;
+  roundRectPath(sx+sw*0.30,sy+sh*0.17,sw*0.40,sh*0.66,Math.min(sw,sh)*0.16); ctx.stroke();
+  marks.forEach((m,i)=>{
+    const pl=longIsZ?m.p.z:m.p.x, ps=longIsZ?m.p.x:m.p.z;
+    let nl=Math.max(0,Math.min(1,(pl-minLong)/lenLong)), ns=Math.max(0,Math.min(1,(ps-minShort)/lenShort));
+    const mx=sx+nl*sw, my=sy+ns*sh, t=typeOf(m.type)||{color:'#a8c96b'};
+    ctx.beginPath(); ctx.arc(mx,my,25,0,Math.PI*2); ctx.fillStyle=t.color; ctx.fill();
+    ctx.lineWidth=4; ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.stroke();
+    ctx.fillStyle='#12140f'; ctx.font='bold 28px Oswald, Arial, sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(i+1),mx,my+1);
+    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  });
+  ctx.fillStyle='#6b746a'; ctx.font='22px Manrope, Arial, sans-serif'; ctx.textAlign='center';
+  ctx.fillText('Draufsicht · Position der Markierungen (schematisch)', 600, area.y+area.h+30);
+  ctx.textAlign='left';
+
   ctx.fillStyle='#f3f6f1'; ctx.font='700 48px Oswald, Arial, sans-serif';
-  ctx.fillText('RENT US 3D-CHECK',80,62);
+  ctx.fillText('RENT US · AUSSEN-CHECK',80,62);
   ctx.fillStyle='#a8c96b'; ctx.font='600 31px Oswald, Arial, sans-serif';
   ctx.fillText(model+(who?' · '+who:''),80,930);
   ctx.fillStyle='#a6b0a5'; ctx.font='26px Manrope, Arial, sans-serif';
@@ -426,7 +451,7 @@ async function buildReportImage(){
     if(lines.length>10) y=wrapText(ctx,'+'+(lines.length-10)+' weitere Markierung(en) in der WhatsApp-Nachricht.',80,y,1040,38,2);
   }
   ctx.fillStyle='#6b746a'; ctx.font='22px Manrope, Arial, sans-serif';
-  wrapText(ctx,'Hinweis: Dieser Report wurde direkt auf pelczer.de/rentus im 3D-Check erstellt.',80,1420,1040,32,2);
+  wrapText(ctx,'Hinweis: Dieser Report wurde direkt auf pelczer.de/rentus im Außen-Check erstellt.',80,1420,1040,32,2);
   return await new Promise(resolve=>cv.toBlob(resolve,'image/png'));
 }
 async function downloadReportImage(){
