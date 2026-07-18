@@ -415,10 +415,9 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     }
   });
 
-  // Beide Report-Bilder (außen + innen) zu EINEM Bild stapeln — iOS/WhatsApp nimmt beim
-  // Teilen oft nur eine Datei an, darum ein kombiniertes Bild.
-  async function combineReports() {
-    const blobs = [checkImgAussen, checkImgInnen].filter(Boolean);
+  // Mehrere Bild-Blobs untereinander zu EINEM Bild stapeln (auf gemeinsame Breite skaliert).
+  async function stackBlobs(blobs) {
+    blobs = blobs.filter(Boolean);
     if (!blobs.length) return null;
     if (blobs.length === 1) return blobs[0];
     const imgs = await Promise.all(blobs.map(b => new Promise((res, rej) => {
@@ -426,23 +425,68 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     })));
     const w = Math.max(...imgs.map(i => i.width));
     const gap = 24;
-    const h = imgs.reduce((s, i) => s + i.height, 0) + gap * (imgs.length - 1);
+    const scaledH = imgs.map(i => i.height * (w / i.width));
+    const h = scaledH.reduce((a, b) => a + b, 0) + gap * (imgs.length - 1);
     const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
     const ctx = cv.getContext('2d'); ctx.fillStyle = '#0c0e0d'; ctx.fillRect(0, 0, w, h);
     let y = 0;
-    for (const im of imgs) { ctx.drawImage(im, 0, y, im.width, im.height); y += im.height + gap; }
+    imgs.forEach((im, i) => { ctx.drawImage(im, 0, y, w, scaledH[i]); y += scaledH[i] + gap; });
     return await new Promise(r => cv.toBlob(r, 'image/png'));
   }
-  // Finaler Senden-Knopf: Handy = Text + kombiniertes Bild teilen; Desktop = wa.me-Textlink (href).
+  // Buchungsdaten als "Deckblatt"-Bild rendern. Grund: iOS-WhatsApp verwirft beim Teilen von
+  // Text + Bild den Text — darum muss die komplette Anfrage INS Bild, damit nichts verloren geht.
+  async function buildCoverImage(text) {
+    const W = 1200, pad = 60, fs = 32, lh = 46, headH = 120;
+    const measure = document.createElement('canvas').getContext('2d');
+    measure.font = fs + 'px Manrope, Arial, sans-serif';
+    const maxW = W - pad * 2;
+    const lines = [];
+    text.split('\n').forEach(raw => {
+      if (raw === '') { lines.push(''); return; }
+      if (measure.measureText(raw).width <= maxW) { lines.push(raw); return; }
+      let cur = '';
+      raw.split(' ').forEach(word => {
+        const t = cur ? cur + ' ' + word : word;
+        if (measure.measureText(t).width > maxW && cur) { lines.push(cur); cur = word; }
+        else cur = t;
+      });
+      if (cur) lines.push(cur);
+    });
+    const H = headH + pad + lines.length * lh + pad;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#0c0e0d'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#a8c96b'; ctx.fillRect(0, 0, W, headH);
+    ctx.fillStyle = '#0c0e0d'; ctx.font = '700 46px Oswald, Arial, sans-serif';
+    ctx.fillText('RENT US · BUCHUNGSANFRAGE', pad, 78);
+    ctx.font = fs + 'px Manrope, Arial, sans-serif';
+    let y = headH + pad + fs;
+    lines.forEach(line => {
+      ctx.fillStyle = line.startsWith('–') ? '#f3f6f1' : '#a6b0a5';
+      ctx.fillText(line, pad, y);
+      y += lh;
+    });
+    return await new Promise(r => cv.toBlob(r, 'image/png'));
+  }
+  // Finaler Senden-Knopf.
+  // Handy MIT Zustand-Check: Deckblatt (Buchungsdaten) + Außen-/Innen-Report zu EINEM Bild
+  // stapeln und NUR die Bild-Datei teilen (kein text-Feld) — sonst verwirft iOS-WhatsApp das Bild.
+  // Sonst (Desktop, oder gar kein Check): wa.me-Textlink über href (Mikes Nummer vorausgefüllt).
   document.getElementById('wSend').addEventListener('click', async (e) => {
     const isTouch = window.matchMedia('(pointer: coarse)').matches;
-    if (isTouch && navigator.share && navigator.canShare) {
-      const blob = await combineReports();
-      const files = blob ? [new File([blob], 'rentus-check.png', { type: 'image/png' })] : [];
-      if (files.length && navigator.canShare({ files })) {
-        e.preventDefault();
-        try { await navigator.share({ title: 'RENT US Anfrage', text: baueText(), files }); } catch (err) {}
+    const hasCheckImg = !!(checkImgAussen || checkImgInnen);
+    if (isTouch && navigator.share && navigator.canShare && hasCheckImg) {
+      const cover = await buildCoverImage(baueText());
+      const blob = await stackBlobs([cover, checkImgAussen, checkImgInnen]);
+      if (blob) {
+        const files = [new File([blob], 'rentus-anfrage.png', { type: 'image/png' })];
+        if (navigator.canShare({ files })) {
+          e.preventDefault();
+          try { await navigator.share({ files }); } catch (err) {}
+          return;
+        }
       }
     }
+    // sonst: Standard-Textlink (href) greift — Text enthält auch die Schadensliste
   });
 })();
