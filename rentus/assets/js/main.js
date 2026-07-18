@@ -282,9 +282,9 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     const fa = document.getElementById('frameAussen');
     const fi = document.getElementById('frameInnen');
     if (!panel || !fa || !fi) return;
-    const wantA = '/3d-check/?embed=1&cb=21&typ=' + encodeURIComponent(typ);
+    const wantA = '/3d-check/aussen.html?embed=1&cb=28&typ=' + encodeURIComponent(typ);
     if (fa.getAttribute('src') !== wantA) fa.setAttribute('src', wantA);
-    if (!fi.getAttribute('src')) fi.setAttribute('src', '/3d-check/innen.html?embed=1&cb=21');
+    if (!fi.getAttribute('src')) fi.setAttribute('src', '/3d-check/innen.html?embed=1&cb=28');
     panel.hidden = false;
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
