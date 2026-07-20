@@ -255,6 +255,13 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     prev.disabled = state.step === 1;
     next.style.visibility = state.step === 4 ? 'hidden' : 'visible';
     if (state.step === 4) { summary(); links(); }
+    updateNext();
+  }
+  // Weiter-Button in Schritt 2 (Leistung) nur aktiv, wenn genau ein Paket gewählt ist.
+  function updateNext() {
+    const ok = !(state.step === 2 && !state.paket);
+    next.disabled = !ok;
+    next.classList.toggle('wbtn-off', !ok);
   }
   function preise() {
     wiz.querySelectorAll('[data-base]').forEach(el => {
@@ -297,10 +304,17 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     document.getElementById('frameInnen').hidden = !innen;
   }));
   wiz.querySelectorAll('[data-paket]').forEach(b => b.addEventListener('click', () => {
+    // Exklusiv (Radio): jedes andere Paket abwählen. Erneuter Klick aufs aktive Paket = abwählen.
+    const schonGewaehlt = b.classList.contains('sel');
     wiz.querySelectorAll('[data-paket]').forEach(x => x.classList.remove('sel'));
-    b.classList.add('sel');
-    state.paket = b.dataset.paket;
-    state.preis = b.dataset.preis === '0' ? (state.faktor > 1 ? '72-96' : '60-80') : Math.round(+b.dataset.preis * state.faktor);
+    if (schonGewaehlt) {
+      state.paket = null; state.preis = 0;
+    } else {
+      b.classList.add('sel');
+      state.paket = b.dataset.paket;
+      state.preis = b.dataset.preis === '0' ? (state.faktor > 1 ? '72-96' : '60-80') : Math.round(+b.dataset.preis * state.faktor);
+    }
+    updateNext();
     // Kein Auto-Sprung mehr: der Kunde soll erst optional Sonderleistungen wählen können.
   }));
   // Sonderleistungen: Mehrfachauswahl (toggle), optional, unabhängig vom Paket.
@@ -381,7 +395,7 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     });
   }
   prev.addEventListener('click', () => { show(state.step - 1); scrollWizTop(); });
-  next.addEventListener('click', () => { show(state.step + 1); scrollWizTop(); });
+  next.addEventListener('click', () => { if (state.step === 2 && !state.paket) return; show(state.step + 1); scrollWizTop(); });
   show(1);
   (function uebernimmAutoCheck() {
     let check = null;

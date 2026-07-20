@@ -631,11 +631,18 @@ h1, h2, h3, h4 {
 .wcard { background: var(--surface-2); border: 2px solid var(--line); border-radius: var(--radius);
   padding: 14px 12px; cursor: pointer; color: var(--text); text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 8px; transition: .2s var(--ease); }
-.wcard:hover { border-color: var(--green-deep); transform: translateY(-2px); }
-.wcard.sel { border-color: var(--green); box-shadow: 0 0 0 3px rgba(159,178,71,.25); }
+/* Hover nur auf echten Zeigergeraeten — auf Touch bleibt der Rahmen nach dem Tippen sonst
+   kleben und sieht aus wie eine zweite Auswahl (Mike-Bug 19.07.). */
+@media (hover: hover) and (pointer: fine) {
+  .wcard:hover { border-color: var(--green-deep); transform: translateY(-2px); }
+  .wcard:hover svg { color: var(--green); }
+}
+/* Aktive Auswahl unmissverstaendlich: getoenter Hintergrund + kraeftiger Ring (klar anders als Hover). */
+.wcard.sel { border-color: var(--green); background: rgba(159,178,71,.14); box-shadow: 0 0 0 3px rgba(159,178,71,.4); }
 .wcard svg { width: 96px; height: 48px; fill: none; stroke: currentColor; stroke-width: 4;
   stroke-linecap: round; stroke-linejoin: round; color: var(--muted); transition: .2s; }
-.wcard.sel svg, .wcard:hover svg { color: var(--green); }
+.wcard.sel svg { color: var(--green); }
+.wbtn-off { opacity: .45; pointer-events: none; }
 .wcard em { color: var(--green); font-style: normal; font-size: .8em; }
 .wcard--p { text-align: left; align-items: flex-start; }
 .wcard--p span { color: var(--muted); font-size: .88rem; }
