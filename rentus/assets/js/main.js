@@ -488,19 +488,41 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
   // Sonst (Desktop, oder gar kein Check): wa.me-Textlink über href (Mikes Nummer vorausgefüllt).
   document.getElementById('wSend').addEventListener('click', async (e) => {
     const isTouch = window.matchMedia('(pointer: coarse)').matches;
-    const hasCheckImg = !!(checkImgAussen || checkImgInnen);
-    if (isTouch && navigator.share && navigator.canShare && hasCheckImg) {
+    // IMMER ein Bild bauen: Deckblatt (alle Buchungsdaten) + Außen-/Innen-Report, falls vorhanden.
+    // Grund: iOS-WhatsApp verwirft beim Teilen von Text+Bild den Text -> alles muss INS Bild.
+    // So gibt es auch OHNE Zustand-Check ein Bild (nur das Deckblatt).
+    let blob = null;
+    try {
       const cover = await buildCoverImage(baueText());
-      const blob = await stackBlobs([cover, checkImgAussen, checkImgInnen]);
-      if (blob) {
-        const files = [new File([blob], 'rentus-anfrage.png', { type: 'image/png' })];
-        if (navigator.canShare({ files })) {
-          e.preventDefault();
-          try { await navigator.share({ files }); } catch (err) {}
-          return;
+      blob = await stackBlobs([cover, checkImgAussen, checkImgInnen]);
+    } catch (err) { blob = null; }
+
+    // Handy: die Bilddatei per Web Share teilen (ohne text-Feld). Bricht der Nutzer den
+    // Teilen-Dialog ab, passiert nichts; nur bei echtem Fehler auf den Textlink zurückfallen.
+    if (isTouch && blob && navigator.canShare) {
+      const files = [new File([blob], 'rentus-anfrage.png', { type: 'image/png' })];
+      if (navigator.canShare({ files })) {
+        e.preventDefault();
+        try {
+          await navigator.share({ files });
+        } catch (err) {
+          if (err && err.name === 'AbortError') return; // Nutzer hat abgebrochen -> nichts tun
+          window.open(document.getElementById('wSend').href, '_blank', 'noopener');
         }
+        return;
       }
     }
-    // sonst: Standard-Textlink (href) greift — Text enthält auch die Schadensliste
+
+    // Mac / Desktop: WhatsApp Web kann aus einem Link keine Datei anhängen. Deshalb das Bild
+    // herunterladen (zum Reinziehen in den Chat); WhatsApp Web mit Text öffnet parallel über
+    // den href (target="_blank"). So hat man beides: Text-Chat + das Anfrage-Bild als Datei.
+    if (!isTouch && blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'rentus-anfrage.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 15000);
+    }
+    // sonst: Standard-Textlink (href) greift — Text enthält auch die Schadensliste.
   });
 })();
