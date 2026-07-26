@@ -520,6 +520,11 @@ h1, h2, h3, h4 {
 .reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
 .reveal.in { opacity: 1; transform: none; }
 
+/* Bewertungen ausgeblendet bis echte Google-Reviews vorliegen — 26.07.2026 */
+#bewertungen[hidden] {
+  display: none !important;
+}
+
 /* Legal pages */
 .legal { padding: 130px 0 80px; max-width: 820px; }
 .legal h1 { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 12px; }
