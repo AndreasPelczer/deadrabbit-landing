@@ -254,7 +254,8 @@ h1, h2, h3, h4 {
   border: 1px solid var(--green-deep); }
 @media (max-width: 760px) { .faulhund { grid-template-columns: 1fr; gap: 18px; padding: 26px 22px; } }
 .faulhund__eyebrow { color: var(--green); font-family: var(--head); text-transform: uppercase; letter-spacing: .08em; font-size: .85rem; }
-.faulhund__name { font-family: var(--head); font-size: 2rem; margin: 6px 0 10px; }
+.faulhund__name { font-family: var(--head); font-size: 2rem; margin: 6px 0 4px; }
+.faulhund__claim { color: var(--green); font-family: var(--head); font-size: 1.1rem; font-style: italic; margin: 0 0 12px; }
 .faulhund__pitch { color: var(--muted); line-height: 1.55; margin-bottom: 14px; }
 .faulhund__list { list-style: none; display: grid; gap: 6px; padding: 0; }
 .faulhund__list li { padding-left: 22px; position: relative; color: var(--text); font-size: .95rem; }
