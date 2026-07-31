@@ -1,3 +1,7 @@
 # macOS / INTENSO-Platte (exFAT) erzeugt AppleDouble-Reste
 ._*
 .DS_Store
+
+# Patch-Backups bleiben lokal liegen, gehören nicht ins Repo
+# (Regel wie in Glanzgarage — 31.07.2026 nachgezogen)
+*.backup_*
