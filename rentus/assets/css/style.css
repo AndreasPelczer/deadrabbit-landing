@@ -133,11 +133,13 @@ h1, h2, h3, h4 {
 .brand__txt strong { font-family: var(--head); font-size: 1.15rem; letter-spacing: .04em; }
 .brand__txt span { font-size: .62rem; letter-spacing: .24em; color: var(--green); text-transform: uppercase; margin-top: 3px; }
 
-.nav { display: flex; align-items: center; gap: 30px; }
+/* gap 30→22 seit 31.07.2026: mit dem zehnten Link (Bewertungen) reichte 30px nicht mehr —
+   Flexbox stauchte „Über uns" auf zwei Zeilen. nowrap ist die Notbremse dagegen. */
+.nav { display: flex; align-items: center; gap: 20px; }
 .nav a {
   font-family: var(--head); text-transform: uppercase; font-weight: 400;
   letter-spacing: .06em; font-size: .9rem; color: var(--muted);
-  transition: color .2s; position: relative;
+  transition: color .2s; position: relative; white-space: nowrap;
 }
 .nav a:hover { color: var(--text); }
 .header__cta { display: flex; align-items: center; gap: 14px; }
@@ -521,7 +523,9 @@ h1, h2, h3, h4 {
 .reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
 .reveal.in { opacity: 1; transform: none; }
 
-/* Bewertungen ausgeblendet bis echte Google-Reviews vorliegen — 26.07.2026 */
+/* Sicherheitsnetz: Sektion bleibt weg, falls jemand das hidden-Attribut wieder setzt.
+   Seit 31.07.2026 steht kein hidden mehr im HTML — die Sektion ist mit echten
+   Google-Rezensionen befüllt und sichtbar. Regel bleibt als Notbremse stehen. */
 #bewertungen[hidden] {
   display: none !important;
 }
@@ -556,10 +560,19 @@ h1, h2, h3, h4 {
 /* ======================================================================
    BEWERTUNGEN
    ====================================================================== */
-.reviews { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; }
-.review { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 26px; display: flex; flex-direction: column; }
+/* Schnitt + Anzahl über den Karten (echte Zahlen aus dem Google-Profil) */
+.reviews-score { text-align: center; margin: -10px 0 26px; color: var(--muted); font-size: .95rem; }
+.reviews-score__stars { color: #e6c25a; letter-spacing: 2px; margin-right: 6px; }
+
+/* Spalten-Layout statt Grid: echte Bewertungen sind unterschiedlich lang —
+   im Grid würden kurze Karten auf die Höhe der längsten gezogen. Mit columns
+   sitzt jede Karte in ihrer natürlichen Höhe. Funktioniert auch bei 1–2 Karten:
+   max-width hält sie mittig zusammen statt sie über die volle Breite zu zerren. */
+.reviews { columns: 3 300px; column-gap: 18px; max-width: 1120px; margin: 0 auto; }
+.review { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 26px;
+  display: block; break-inside: avoid; -webkit-column-break-inside: avoid; margin: 0 0 18px; }
 .review__stars { color: #e6c25a; letter-spacing: 3px; font-size: 1rem; margin-bottom: 12px; }
-.review__text { color: var(--text); font-size: .95rem; line-height: 1.6; flex: 1; }
+.review__text { color: var(--text); font-size: .95rem; line-height: 1.6; }
 .review__by { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
 .review__av { width: 36px; height: 36px; border-radius: 50%; background: var(--green-deep); color: var(--green-ink);
   display: flex; align-items: center; justify-content: center; font-family: var(--head); font-size: .9rem; }
@@ -587,8 +600,13 @@ h1, h2, h3, h4 {
 /* ======================================================================
    RESPONSIVE
    ====================================================================== */
-/* Nav früher in den Burger klappen, damit die Kopfzeile nicht eng wird */
-@media (max-width: 1120px) {
+/* Nav früher in den Burger klappen, damit die Kopfzeile nicht eng wird.
+   1120→1240 seit 31.07.2026. Gemessen, nicht geschätzt: die Kopfzeile braucht mit
+   „Bewertungen" statt „Kontakt" 1062px (Logo 159 + Nav 725 + Button 178). Der Container
+   hat 90px Rand je Seite, liefert also erst ab ~1242px Fensterbreite genug.
+   Die alten 1120px waren schon vorher zu niedrig — dort war die Kopfzeile bereits
+   auf Kante genäht. Darunter greift der Burger, der alle Links hat (inkl. Kontakt). */
+@media (max-width: 1240px) {
   .nav { display: none; }
   .burger { display: block; }
 }

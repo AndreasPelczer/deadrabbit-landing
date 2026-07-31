@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=36">
+<link rel="stylesheet" href="assets/css/style.css?v=37">
 <link rel="canonical" href="https://info-rentus.de/">
 <meta name="google-site-verification" content="P7G9s4SNvKYvSyrIhcFRIgZmrUCR_eBl94WK5s-kL44">
 <script type="application/ld+json">
@@ -81,9 +81,12 @@
       <a href="#sonderleistungen">Sonderleistungen</a>
       <a href="#ablauf">Ablauf</a>
       <a href="#ueber-uns">Über uns</a>
+      <a href="#bewertungen">Bewertungen</a>
       <a href="#faq">FAQ</a>
       <a href="#buchung">Buchung</a>
-      <a href="#kontakt">Kontakt</a>
+      <!-- „Kontakt" 31.07.2026 bewusst aus der Desktop-Navi genommen: zehn Links passen
+           nicht in die Kopfzeile. Kontakt bleibt im Burger-Menü, im Fußbereich und über
+           den Button „Termin anfragen" erreichbar. Nicht versehentlich wieder einfügen. -->
     </nav>
     <div class="header__cta">
       <a href="#buchung" class="btn btn--primary">Termin anfragen</a>
@@ -100,6 +103,7 @@
   <a href="#ablauf">Ablauf</a>
   <a href="#vorher-nachher">Vorher/Nachher</a>
   <a href="#ueber-uns">Über uns</a>
+  <a href="#bewertungen">Bewertungen</a>
   <a href="#faq">FAQ</a>
   <a href="#buchung">Buchung</a>
       <a href="#kontakt">Kontakt</a>
@@ -611,19 +615,51 @@
   </div>
 </section>
 
-<!-- Bewertungen (26.07.2026): erfundene Platzhalter-Reviews aus dem Quelltext ENTFERNT (§5 UWG). Sektion doppelt verriegelt: hidden-Attribut + CSS #bewertungen[hidden]{display:none!important}. Erst mit ECHTEN Google-Reviews wieder befüllen und hidden entfernen. -->
-<section class="section section--alt" id="bewertungen" hidden>
+<!-- Bewertungen (31.07.2026): ECHTE Google-Rezensionen, wörtlich übernommen aus Mikes
+     Google-Unternehmensprofil (Stand 31.07.2026: 5,0 ★ bei 11 Rezensionen).
+     ⚠️ REGEL: Hier steht NUR, was ein Kunde tatsächlich geschrieben hat. Texte und Namen
+     nicht umformulieren, kürzen oder "verbessern" — auch Tippfehler bleiben stehen (§5 UWG).
+     Neue Bewertungen nur nach Copy-Paste aus dem echten Profil ergänzen. -->
+<section class="section section--alt" id="bewertungen">
   <div class="container">
     <div class="section-head center reveal">
       <span class="eyebrow">Kundenstimmen</span>
       <h2>Das sagen unsere Kunden</h2>
       <p>Ehrliche Aufbereitung, die man sieht – und weiterempfiehlt.</p>
     </div>
-    <!-- Bewertungen: erst einblenden, wenn echte Google-Reviews vorliegen.
-         Section-Wrapper #bewertungen bleibt für späteres Wiedereinsetzen. -->
-    <div class="reviews reveal"></div>
+    <p class="reviews-score reveal"><span class="reviews-score__stars">★★★★★</span> 5,0 · 11&nbsp;Bewertungen auf Google</p>
+    <div class="reviews reveal">
+      <div class="review">
+        <div class="review__stars" aria-label="5 von 5 Sternen">★★★★★</div>
+        <p class="review__text">Ich hatte eine Innen- und Außenaufbereitung mit Lackversiegelung.<br>Bin mit dem Ergebnis total zufrieden - das Auto sah hierbei von Innen und Außen wie neu aus, auch die schlecht erreichbaren Stellen wurden top sauber gemacht und das mit gutriechendem Innenraumduft obendrauf.<br>Die Beratung danach zur Autopflege und die Kommunikation mit Mike selber war ebenfalls sehr angenehm und top! Kann ihn zu 100% weiterempfehlen und komme gerne wieder.</p>
+        <div class="review__by"><div class="review__av">F</div><div><b>Fabio</b><span>Google-Bewertung</span></div></div>
+      </div>
+      <div class="review">
+        <div class="review__stars" aria-label="5 von 5 Sternen">★★★★★</div>
+        <p class="review__text">Auf Grund einer Empfehlung, eines sehr zufriedenen US Car Fahrers mit seinem Ford Galaxy 500, war ich auch mit meinem Oldtimer, einen 65er Ford Mustang Fastback, mit einem über 50 Jahre alten Lackkleid bei Mike in seiner Glanzgarage.<br>Solch einen alten Nitro Lack aufzubereiten ist keine Ruck Zuck Arbeit, die man mal so schnell nebenbei macht.<br>Der Lack wurde gereinigt, mehrfach geschliffen, gewachst, poliert und Keramikversiegelt.<br>Weitere Arbeiten, waren noch die 60 Jahre alte Heckscheibe zu schleifen, mit super Ergebnis und polieren und versiegeln aller Chromteile und Glasscheiben.<br>Was soll ich sagen, das Ergebnis war eine absolute Glanzleistung und der Lack strahlt und glänzt jetzt wieder in seiner ursprünglichen Pracht und Schönheit.<br>Top Arbeit lieber Mike, unkompliziert, super freundlicher und feiner Typ, der weiß was er macht. Und dass zu einem, absolut fairen Preis!!!!!!! 👏🏻💪🏼<br><br>Danke dafür Mike, mach weiter so, ich komme wieder 100% 👍🏼</p>
+        <div class="review__by"><div class="review__av">CS</div><div><b>Chris S.</b><span>Google-Bewertung</span></div></div>
+      </div>
+      <div class="review">
+        <div class="review__stars" aria-label="5 von 5 Sternen">★★★★★</div>
+        <p class="review__text">Ich bekam eine professionelle Außenaufbereitung mit Keramikversieglung, da ich am ganzen Auto flugrost hatte.<br>Der ganze Rost ist verschwunden, man sieht wirklich nichts mehr!<br>Das Auto glänzt wie neu, so tolle und professionelle Arbeit! ⭐️</p>
+        <div class="review__by"><div class="review__av">AK</div><div><b>Ashley knoerzer</b><span>Google-Bewertung</span></div></div>
+      </div>
+      <div class="review">
+        <div class="review__stars" aria-label="5 von 5 Sternen">★★★★★</div>
+        <p class="review__text">Wort wörtlich Glanzleistung. Habe meine Auto zur Innenreinigung gebracht und habe seit ich meine Auto habe es noch nie so sauber gesehen. Wird gerne weiterempfohlen so eine mega Leistung🙏</p>
+        <div class="review__by"><div class="review__av">MH</div><div><b>Mattis Hiske</b><span>Google-Bewertung</span></div></div>
+      </div>
+      <div class="review">
+        <div class="review__stars" aria-label="5 von 5 Sternen">★★★★★</div>
+        <p class="review__text">🔟/🔟 Fahrzeug zur Aufbereitung bei Rent us Glanzgarage ⭐️⭐️⭐️⭐️⭐️<br>Telefonisch vereinbarte ich im Voraus einen Termin zur Aufbereitung mit Herr Knörzer. Zeitnahe erhielt ich einen Termin.<br>Herr Knörzer war sehr freundlich und kompetent. Als ich mein Fahrzeug wieder abholen konnte, glänzte mein Fahrzeug wieder wie am ersten Tag. Von den Kratzern war nichts mehr zu sehen.<br>Herr Knörzer versteht etwas von seinem Handwerk und kann ihn jedem besten Gewissens empfehlen.<br>Preis - Leistungsverhältnis top 👍🏼 ⭐️⭐️⭐️⭐️⭐️</p>
+        <div class="review__by"><div class="review__av">G</div><div><b>Gina</b><span>Google-Bewertung</span></div></div>
+      </div>
+    </div>
     <div class="reviews-note reveal">
-      <a href="#" class="btn btn--ghost" target="_blank" rel="noopener">
+      <!-- ÜBERGANGSLÖSUNG 31.07.: Mikes direkter Bewertungslink (g.page/r/…) liegt noch nicht vor.
+           Dieser Link öffnet das Google-Profil, von dort ist "Rezension schreiben" einen Klick entfernt.
+           Sobald der echte g.page-Link da ist: hier ersetzen, sonst nichts ändern. -->
+      <a href="https://www.google.com/maps/search/?api=1&amp;query=Rent%20Us%20Glanzgarage%2C%20Am%20Karussell%204%2C%2097280%20Remlingen" class="btn btn--ghost" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.6 7-6.2-3.8L5.8 21l1.6-7L2 9.5l7.1-.6z"/></svg>
         Jetzt bei Google bewerten
       </a>
@@ -861,6 +897,6 @@
 
 <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
 
-<script src="assets/js/main.js?v=36"></script>
+<script src="assets/js/main.js?v=37"></script>
 </body>
 </html>
