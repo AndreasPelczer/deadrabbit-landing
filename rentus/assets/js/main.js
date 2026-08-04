@@ -527,3 +527,179 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     // sonst: Standard-Textlink (href) greift — Text enthält auch die Schadensliste.
   });
 })();
+
+/* ==========================================================================
+   AKTION — monatswechselnde Werbung
+   Die Inhalte stehen in assets/js/aktionen.js. Hier steht nur, wann und wie
+   sie gezeigt werden: am Rechner als Karte in der Mitte, am Handy als
+   Streifen unten. Jede Aktion sieht ein Besucher genau einmal.
+   ========================================================================== */
+(function () {
+  const LISTE = window.RENTUS_AKTIONEN;
+  if (!Array.isArray(LISTE) || !LISTE.length) return;
+
+  const testModus = new URLSearchParams(location.search).get('aktion') === 'test';
+
+  // Heutiges Datum als JJJJ-MM-TT nach lokaler Uhr. Als Text verglichen —
+  // das ist bei diesem Format richtig sortiert und kennt keine Zeitzonenfallen.
+  const d = new Date();
+  const heute = d.getFullYear() + '-' +
+                String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                String(d.getDate()).padStart(2, '0');
+
+  const aktion = testModus
+    ? LISTE[0]
+    : LISTE.find(a => a && a.von && a.bis && a.von <= heute && heute <= a.bis);
+  if (!aktion) return;                       // kein Zeitraum passt -> Seite bleibt sauber
+
+  // Schon gesehen? Dann Ruhe. (Privater Modus kann localStorage sperren -> egal.)
+  const kennung = 'rentus_aktion_gesehen';
+  const id = (aktion.von || '') + '|' + (aktion.titel || '');
+  const merker = {
+    gesehen() { try { return localStorage.getItem(kennung) === id; } catch (e) { return false; } },
+    merken()  { try { localStorage.setItem(kennung, id); } catch (e) {} }
+  };
+  if (!testModus && merker.gesehen()) return;
+
+  // --- Aufbau -------------------------------------------------------------
+  const box = document.createElement('div');
+  box.className = 'aktion';
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  box.setAttribute('aria-labelledby', 'aktionTitel');
+  box.hidden = true;
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'aktion__backdrop';
+  box.appendChild(backdrop);
+
+  const card = document.createElement('div');
+  card.className = 'aktion__card';
+
+  const zu = document.createElement('button');
+  zu.type = 'button';
+  zu.className = 'aktion__close';
+  zu.setAttribute('aria-label', 'Hinweis schließen');
+  zu.textContent = '×';
+  card.appendChild(zu);
+
+  if (aktion.bild) {
+    const media = document.createElement('div');
+    media.className = 'aktion__media';
+    const img = document.createElement('img');
+    img.src = aktion.bild;
+    img.alt = aktion.bildAlt || '';
+    if (aktion.bildFokus) img.style.objectPosition = aktion.bildFokus;
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    media.appendChild(img);
+    card.appendChild(media);
+  }
+
+  const body = document.createElement('div');
+  body.className = 'aktion__body';
+
+  const zeile = (tag, klasse, text) => {
+    if (!text) return;
+    const el = document.createElement(tag);
+    el.className = klasse;
+    el.textContent = text;                   // reiner Text — kein HTML aus der Datenfile
+    body.appendChild(el);
+    return el;
+  };
+
+  zeile('span', 'aktion__eyebrow', aktion.eyebrow);
+  const h = zeile('h2', 'aktion__titel', aktion.titel || '');
+  if (h) h.id = 'aktionTitel';
+  zeile('p', 'aktion__claim', aktion.claim);
+  zeile('p', 'aktion__text', aktion.text);
+
+  const foot = document.createElement('div');
+  foot.className = 'aktion__foot';
+
+  if (aktion.preis) {
+    const preis = document.createElement('div');
+    preis.className = 'aktion__preis';
+    if (aktion.preisLabel) {
+      const small = document.createElement('small');
+      small.textContent = aktion.preisLabel;
+      preis.appendChild(small);
+    }
+    preis.appendChild(document.createTextNode(aktion.preis));
+    foot.appendChild(preis);
+  }
+
+  if (aktion.ctaLink && aktion.ctaText) {
+    const cta = document.createElement('a');
+    cta.className = 'btn btn--primary aktion__cta';
+    cta.href = aktion.ctaLink;
+    cta.textContent = aktion.ctaText;
+    if (/^https?:/i.test(aktion.ctaLink)) { cta.target = '_blank'; cta.rel = 'noopener'; }
+    else { cta.addEventListener('click', () => schliessen()); }  // Seiten-Anker: erst zumachen
+    foot.appendChild(cta);
+  }
+  if (foot.children.length) body.appendChild(foot);
+
+  zeile('span', 'aktion__hinweis', aktion.hinweis);
+
+  card.appendChild(body);
+  box.appendChild(card);
+
+  // --- Auf- und Zumachen ---------------------------------------------------
+  let vorherFokussiert = null;
+
+  const schliessen = () => {
+    box.classList.remove('is-in');
+    document.body.classList.remove('aktion-offen');
+    document.removeEventListener('keydown', aufTaste);
+    const weg = () => { box.classList.remove('is-open'); box.hidden = true; };
+    // Nach der Ausblendung wirklich verschwinden, damit nichts die Seite blockiert
+    setTimeout(weg, 400);
+    if (vorherFokussiert && vorherFokussiert.focus) vorherFokussiert.focus();
+  };
+
+  function aufTaste(e) {
+    if (e.key === 'Escape') { schliessen(); return; }
+    if (e.key !== 'Tab') return;
+    // Tastatur im Fenster halten, solange es offen ist
+    const ziele = card.querySelectorAll('button, a[href]');
+    if (!ziele.length) return;
+    const erste = ziele[0], letzte = ziele[ziele.length - 1];
+    if (e.shiftKey && document.activeElement === erste) { e.preventDefault(); letzte.focus(); }
+    else if (!e.shiftKey && document.activeElement === letzte) { e.preventDefault(); erste.focus(); }
+  }
+
+  zu.addEventListener('click', schliessen);
+  backdrop.addEventListener('click', schliessen);
+
+  const zeigen = () => {
+    // Liegt die Seite in einem Hintergrund-Tab, warten wir. Sonst würde die
+    // Aktion als "gesehen" abgehakt, ohne dass sie je jemand gesehen hat.
+    if (document.visibilityState === 'hidden') {
+      document.addEventListener('visibilitychange', function nochmal() {
+        if (document.visibilityState !== 'visible') return;
+        document.removeEventListener('visibilitychange', nochmal);
+        zeigen();
+      });
+      return;
+    }
+
+    // Nicht dazwischenfunken, wenn gerade das Handy-Menü offen ist
+    const nav = document.getElementById('mobileNav');
+    if (nav && nav.classList.contains('open')) { setTimeout(zeigen, 2000); return; }
+
+    vorherFokussiert = document.activeElement;
+    document.body.appendChild(box);
+    box.hidden = false;
+    box.classList.add('is-open');
+    document.body.classList.add('aktion-offen');   // schiebt den WhatsApp-Knopf hoch
+    // Einblenden per Zeitgeber, nicht per requestAnimationFrame: Letzteres ruht
+    // in unsichtbaren Tabs, die Karte bliebe dann durchsichtig hängen.
+    setTimeout(() => box.classList.add('is-in'), 30);
+    document.addEventListener('keydown', aufTaste);
+    zu.focus({ preventScroll: true });
+    if (!testModus) merker.merken();          // gesehen ist gesehen
+  };
+
+  setTimeout(zeigen, 1500);
+})();
