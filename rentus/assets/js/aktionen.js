@@ -16,6 +16,13 @@
      titel       die Überschrift
      claim       ein Satz drunter, grün und kursiv (darf leer sein: "")
      text        zwei, drei Sätze. Kein HTML — reiner Text.
+     kurz        DIE WICHTIGSTE ZEILE FÜRS HANDY. Dort ist kein Platz für
+                 "text", deshalb steht hier in einem Halbsatz, worum es
+                 überhaupt geht. Faustregel: verständlich für jemanden, der
+                 den Namen der Aktion noch nie gehört hat — also die Sache
+                 nennen ("außen waschen, innen saugen"), nicht die Stimmung.
+                 Am Rechner wird "kurz" nicht angezeigt (da steht "text").
+                 Fehlt das Feld, springt "claim" ein.
      preisLabel  kleine Zeile über dem Preis, z. B. "Festpreis"
      preis       z. B. "99,90 €". Leer lassen ("") blendet den Preis aus.
      hinweis     Kleingedrucktes unter dem Preis (darf leer sein: "")
@@ -44,6 +51,7 @@ window.RENTUS_AKTIONEN = [
     titel:      "Der Faule Hund",
     claim:      "Für kleines Geld wieder wie geleckt.",
     text:       "Die schnelle Auffrischung für zwischendurch: außen von Hand gewaschen, innen gesaugt, Matten und Einstiege sauber. Ohne großes Programm.",
+    kurz:       "Außen waschen, innen saugen — schnell und günstig.",
     preisLabel: "Festpreis",
     preis:      "99,90 €",
     hinweis:    "Kleine Aufbereitung – keine Vollaufbereitung.",
@@ -68,6 +76,7 @@ window.RENTUS_AKTIONEN = [
     titel:      "Hier steht der Name",
     claim:      "Ein Satz, der Lust macht.",
     text:       "Zwei, drei Sätze, was drin ist und für wen es gedacht ist.",
+    kurz:       "Worum es geht, in einem Halbsatz — fürs Handy.",
     preisLabel: "Festpreis",
     preis:      "0,00 €",
     hinweis:    "Kleingedrucktes.",

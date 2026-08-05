@@ -612,6 +612,10 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
   const h = zeile('h2', 'aktion__titel', aktion.titel || '');
   if (h) h.id = 'aktionTitel';
   zeile('p', 'aktion__claim', aktion.claim);
+  // Kurzfassung: am Handy ist für "text" kein Platz, dort steht nur der Name.
+  // Ohne diese Zeile liest jemand, der die Aktion nicht kennt, bloß einen
+  // Namen und einen Preis. Am Rechner ausgeblendet, da steht der volle Text.
+  zeile('p', 'aktion__kurz', aktion.kurz || aktion.claim);
   zeile('p', 'aktion__text', aktion.text);
 
   const foot = document.createElement('div');

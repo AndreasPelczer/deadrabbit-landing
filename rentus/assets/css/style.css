@@ -790,6 +790,8 @@ details.mehr p { margin: 10px 0 0; color: var(--muted); font-size: .92rem; line-
 .aktion__titel { font-family: var(--head); font-size: 2.1rem; line-height: 1.02; margin-bottom: 8px; }
 .aktion__claim { font-family: var(--head); font-size: 1.05rem; font-style: italic; color: var(--green); margin-bottom: 12px; }
 .aktion__text { color: var(--muted); font-size: .95rem; line-height: 1.55; margin-bottom: 18px; }
+/* Kurzfassung: nur am Handy sichtbar, siehe Media Query weiter unten */
+.aktion__kurz { display: none; }
 
 .aktion__foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
 .aktion__preis { font-family: var(--head); font-size: 2.3rem; color: var(--green); line-height: 1; }
@@ -838,11 +840,18 @@ details.mehr p { margin: 10px 0 0; color: var(--muted); font-size: .92rem; line-
   }
   .aktion.is-in .aktion__card { transform: translateY(0); }
   .aktion__media { min-height: 100%; }
-  .aktion__body { padding: 14px 44px 14px 16px; }
+  .aktion__body { padding: 13px 44px 13px 15px; }
   .aktion__eyebrow { font-size: .62rem; letter-spacing: .16em; margin-bottom: 3px; }
-  .aktion__titel { font-size: 1.15rem; margin-bottom: 2px; }
+  .aktion__titel { font-size: 1.15rem; margin-bottom: 3px; }
   .aktion__claim { display: none; }
   .aktion__text { display: none; }
+  /* Trägt hier die ganze Erklärung — ohne sie steht am Handy nur ein Name.
+     Zwei Zeilen sind das Budget, danach wird abgeschnitten statt zu wachsen. */
+  .aktion__kurz {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+    color: var(--muted); font-size: .8rem; line-height: 1.35; margin-bottom: 2px;
+  }
   .aktion__foot { align-items: center; gap: 10px; margin-top: 6px; }
   .aktion__preis { font-size: 1.35rem; }
   .aktion__preis small { display: none; }
