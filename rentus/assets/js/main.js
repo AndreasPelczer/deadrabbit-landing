@@ -343,10 +343,56 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     if (c.createdAt) { const age = Date.now() - new Date(c.createdAt).getTime(); if (!(age >= 0 && age < 6 * 3600 * 1000)) return ''; }
     return '– ' + label + ':\n' + c.lines.join('\n') + '\n';
   }
+  // "Termin eintragen"-Link (Google-Kalender-Vorlage). Öffnet ein vorausgefülltes
+  // Termin-Formular, das mit einem Tipp gespeichert wird — kein Zugriff auf Mikes
+  // Kalender, keine Zugangsdaten, nichts wird automatisch eingetragen. Wer den Link
+  // antippt, trägt es in SEINEN Kalender ein; für den Kunden ist das genauso nützlich.
+  // Halbtags-Zeiten aus den Öffnungszeiten abgeleitet (Mo–Fr 8–18 Uhr). Wenn Mike
+  // anders schneidet: nur diese eine Zeile ändern (offene Frage K3).
+  const HALBTAG_ZEIT = { Vormittag: ['0800', '1200'], Nachmittag: ['1300', '1800'] };
+  const WERKSTATT = 'Am Karussell 4, 97280 Remlingen';
+
+  function kalenderLink() {
+    const d = document.getElementById('wDatum').value;        // JJJJ-MM-TT
+    if (!d) return '';                                        // ohne Datum kein Termin
+    const zeit = HALBTAG_ZEIT[val('halbtag')] || HALBTAG_ZEIT.Vormittag;
+    const tag = d.replace(/-/g, '');
+    // Ortszeit + ctz statt UTC — sonst verschiebt die Sommerzeit den Termin.
+    const spanne = tag + 'T' + zeit[0] + '00/' + tag + 'T' + zeit[1] + '00';
+
+    // "ANGEFRAGT" gehört in den Titel: der Termin ist NICHT bestätigt. Ein Eintrag,
+    // der wie ein fester Termin aussieht, wäre schlimmer als gar keiner.
+    const titel = 'ANGEFRAGT: ' + (state.typ || 'Fahrzeug') + ' – ' + (state.paket || 'Aufbereitung');
+    const name = document.getElementById('wName').value || '';
+    const tel  = document.getElementById('wTel').value || '';
+    const ort  = document.getElementById('wOrt').value || '';
+    const abholung = val('abhol');
+
+    const details = [
+      name ? 'Kunde: ' + name : '',
+      tel  ? 'Telefon: ' + tel : '',
+      'Leistung: ' + (state.paket || '-') + ' (ab ' + state.preis + ' €)',
+      state.sonder.length ? 'Zusatz: ' + state.sonder.map(s => s.name).join(', ') : '',
+      abholung + (ort ? ' – ' + ort : ''),
+      'Anfrage über info-rentus.de – noch nicht bestätigt.'
+    ].filter(Boolean).join('\n');
+
+    // Bei Abholung ist der Kundenort der relevante Ort, sonst die Werkstatt.
+    const ortFeld = (abholung === 'Bitte abholen' && ort) ? ort : WERKSTATT;
+
+    return 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+      + '&text=' + encodeURIComponent(titel)
+      + '&dates=' + spanne
+      + '&ctz=Europe/Berlin'
+      + '&details=' + encodeURIComponent(details)
+      + '&location=' + encodeURIComponent(ortFeld);
+  }
+
   function baueText() {
     const d = document.getElementById('wDatum').value;
     const datum = d ? new Date(d).toLocaleDateString('de-DE') : 'nach Absprache';
     const faktorHinweis = state.faktor > 1 ? '– Preis-Hinweis: SUV/Bus/Van +20 % ist eingerechnet\n' : '';
+    const kal = kalenderLink();
     return 'Hallo Mike! Anfrage über die Website:\n'
       + '– Fahrzeug: ' + (state.typ || '-') + '\n'
       + '– Leistung: ' + (state.paket || '-') + ' (ab ' + state.preis + ' €)\n'
@@ -358,7 +404,8 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
       + (document.getElementById('wTel').value ? ' · Tel: ' + document.getElementById('wTel').value : '') + '\n'
       + (document.getElementById('wMsg').value ? '– Hinweise: ' + document.getElementById('wMsg').value + '\n' : '')
       + checkZeilen('rentusAutoCheck', 'Zustand außen (Lack)')
-      + checkZeilen('rentusInnenCheck', 'Zustand innen');
+      + checkZeilen('rentusInnenCheck', 'Zustand innen')
+      + (kal ? '\n📅 Termin eintragen: ' + kal + '\n' : '');
   }
   function links() {
     const t = baueText();
@@ -370,10 +417,17 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     document.getElementById('wSend').href = waUrl;
     document.getElementById('wMail').href = 'mailto:info.rentus@web.de?subject=' + encodeURIComponent('Terminanfrage Glanzgarage') + '&body=' + encodeURIComponent(t);
   }
+  const aktualisieren = () => { summary(); links(); };
   ['wName','wTel','wMsg','wOrt','wDatum'].forEach(id => {
     const el = document.getElementById(id);
-    el.addEventListener('input', links); el.addEventListener('change', links);
+    el.addEventListener('input', aktualisieren); el.addEventListener('change', aktualisieren);
   });
+  // Halbtag und Abholung sind Auswahlknöpfe und lösten bisher nichts aus: Wer nach dem
+  // Ausfüllen auf "Nachmittag" oder "Ich bringe selbst" wechselte, verschickte trotzdem
+  // die Voreinstellung ("Vormittag" / "Bitte abholen"). Gefunden 05.08. beim Test des
+  // Kalender-Links — betrifft auch die Zusammenfassung, die der Kunde vor dem Senden sieht.
+  document.querySelectorAll('input[name="halbtag"], input[name="abhol"]')
+    .forEach(el => el.addEventListener('change', aktualisieren));
   // Paket-Knöpfe auf der Seite wählen im Wizard vor
   document.querySelectorAll('a[data-wpaket]').forEach(a => a.addEventListener('click', () => {
     const btn = wiz.querySelector('[data-paket="' + a.dataset.wpaket + '"]');
