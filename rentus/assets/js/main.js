@@ -56,6 +56,18 @@ const io = new IntersectionObserver((entries) => {
 // Elemente in ausgeblendeten Sektionen (z.B. #bewertungen[hidden]) nie sichtbar schalten
 document.querySelectorAll('.reveal').forEach(el => { if (!el.closest('[hidden]')) io.observe(el); });
 
+// "Route starten": Ziel als ADRESSE übergeben, nicht als Koordinaten — dann sucht die
+// Navi-App selbst und findet auch die Hausnummer, die in der Karte noch nicht steckt.
+// Im HTML steht Google Maps als Grundlage (läuft überall); auf Apple-Geräten schalten
+// wir auf Apple Karten um, damit sich die App öffnet statt einer Browserseite.
+(function () {
+  const link = document.getElementById('routeLink');
+  if (!link) return;
+  const ziel = 'Am Karussell 4, 97280 Remlingen';
+  const istApple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent);
+  if (istApple) link.href = 'https://maps.apple.com/?daddr=' + encodeURIComponent(ziel) + '&dirflg=d';
+})();
+
 // Kontaktformular -> WhatsApp (statt Formspree-Platzhalter). Pflichtfelder greifen
 // weiter (Browser-Validierung vor submit). Öffnet WhatsApp mit den Angaben.
 const kontaktForm = document.getElementById('kontaktForm');

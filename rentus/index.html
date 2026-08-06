@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=40">
+<link rel="stylesheet" href="assets/css/style.css?v=41">
 <link rel="canonical" href="https://info-rentus.de/">
 <meta name="google-site-verification" content="P7G9s4SNvKYvSyrIhcFRIgZmrUCR_eBl94WK5s-kL44">
 <script type="application/ld+json">
@@ -833,9 +833,17 @@
           <div class="cinfo__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
           <div><strong>Öffnungszeiten</strong><br><span>Mo&ndash;Fr 8&ndash;18 Uhr · Sa nach Vereinbarung</span></div>
         </div>
+        <!-- Marker/Ausschnitt korrigiert 06.08.2026: stand auf 49.756/9.962 — das ist eine
+             Mariengrotte in Würzburg-Heidingsfeld, rund 20 km entfernt; Remlingen lag nicht
+             einmal im Kartenausschnitt. Jetzt Mitte der Straße "Am Karussell" (49.80273/9.69900,
+             über Nominatim bestimmt). Die genaue Einfahrt muss Mike noch bestätigen. -->
         <div class="map-wrap">
-          <iframe title="Standort RENT US Glanzgarage" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=9.9%2C49.72%2C10.02%2C49.79&layer=mapnik&marker=49.756%2C9.962"></iframe>
+          <iframe title="Standort RENT US Glanzgarage in Remlingen" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=9.6935%2C49.7992%2C9.7045%2C49.8062&layer=mapnik&marker=49.80273%2C9.69900"></iframe>
         </div>
+        <a href="https://www.google.com/maps/dir/?api=1&amp;destination=Am%20Karussell%204%2C%2097280%20Remlingen" id="routeLink" class="btn btn--ghost" target="_blank" rel="noopener" style="margin-top:14px">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+          Route starten
+        </a>
       </div>
 
       <div class="form reveal">
@@ -898,7 +906,7 @@
 <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
 
 <!-- Aktion des Monats: Inhalte in aktionen.js pflegen, Anzeige regelt main.js -->
-<script src="assets/js/aktionen.js?v=40"></script>
-<script src="assets/js/main.js?v=40"></script>
+<script src="assets/js/aktionen.js?v=41"></script>
+<script src="assets/js/main.js?v=41"></script>
 </body>
 </html>
