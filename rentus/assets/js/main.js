@@ -427,7 +427,7 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
       ? 'https://wa.me/4915901606913?text=' + encodeURIComponent(t)
       : 'https://web.whatsapp.com/send?phone=4915901606913&text=' + encodeURIComponent(t);
     document.getElementById('wSend').href = waUrl;
-    document.getElementById('wMail').href = 'mailto:info.rentus@web.de?subject=' + encodeURIComponent('Terminanfrage Glanzgarage') + '&body=' + encodeURIComponent(t);
+    document.getElementById('wMail').href = 'mailto:info@glanzgarage-rentus.de?subject=' + encodeURIComponent('Terminanfrage Glanzgarage') + '&body=' + encodeURIComponent(t);
   }
   const aktualisieren = () => { summary(); links(); };
   ['wName','wTel','wMsg','wOrt','wDatum'].forEach(id => {
