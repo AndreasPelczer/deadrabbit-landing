@@ -636,6 +636,7 @@
       if (e.neu.u) name[namePos] = (name[namePos] + ABC.length - 1) % ABC.length;
       if (e.neu.l && namePos > 0) namePos--;
       if (e.neu.r || e.neu.a) nameWeiter();
+      if (e.klick && e.klick.y > 144 && e.klick.x > 90 && e.klick.x < 230) { namePos = 0; setzeModus('intro'); return; }   // FERTIG-Knopf
       if (e.klick) {
         var spalte = Math.round((e.klick.x - 130) / 30);
         if (spalte >= 0 && spalte <= 2) namePos = spalte;
@@ -1694,7 +1695,7 @@
       return;
     }
     if (modus === 'name') {
-      landschaft(); kasten(60, 60, 200, 110);
+      landschaft(); kasten(60, 60, 200, 126);
       text('DEIN NAME', 160, 80, 12, COL.rosa);
       for (var i = 0; i < 3; i++) {
         var px = 130 + i * 30, aktiv = i === namePos;
@@ -1702,7 +1703,9 @@
         if (aktiv && Math.floor(zeit / 300) % 2) { x.fillStyle = COL.feuer; x.fillRect(px - 7, 130, 14, 2); }
         if (aktiv) { text('▲', px, 96, 8, COL.grau); text('▼', px, 140, 8, COL.grau); }
       }
-      text('▲/▼ antippen oder Stick · Buchstabe antippen: weiter', 160, 158, 7, COL.grau);
+      x.fillStyle = COL.feuer; x.fillRect(105, 147, 110, 18); x.fillStyle = '#111'; x.fillRect(107, 149, 106, 14);   // FERTIG-Knopf
+      text('FERTIG – LOS!', 160, 156, 10, COL.feuer);
+      text('▲/▼ antippen ändert den Buchstaben', 160, 176, 7, COL.grau);
       return;
     }
     if (modus === 'intro') { introZeichnen(); return; }
