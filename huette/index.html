@@ -602,9 +602,11 @@
 
   // ---------- Eingabe ----------
   var tasten = {}, vorher = {};
+  var AUTOMAT = false; try { AUTOMAT = /automat/.test(location.search); } catch (err) {}
   window.addEventListener('keydown', function (e) {
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].indexOf(e.key) >= 0) e.preventDefault();
     tasten[e.key] = true;
+    if (e.key === 'Escape' && AUTOMAT) location.href = '../arcade/index.html';   // aus dem Automaten gestartet: zurück ins Menü
     if (modus === 'name' && /^[a-zA-Z0-9]$/.test(e.key)) { name[namePos] = ABC.indexOf(e.key.toUpperCase()); nameWeiter(); }
   });
   window.addEventListener('keyup', function (e) { tasten[e.key] = false; });
@@ -629,6 +631,7 @@
       if (ax < -0.5) e.l = true; if (ax > 0.5) e.r = true; if (ay < -0.5) e.o = true; if (ay > 0.5) e.u = true;
       if (pad.buttons[0] && pad.buttons[0].pressed) e.a = true;
       if (pad.buttons[1] && pad.buttons[1].pressed) e.b = true;
+      if (AUTOMAT && pad.buttons[9] && pad.buttons[9].pressed) location.href = '../arcade/index.html';
     }
     if (e.l) e.ax = -1; if (e.r) e.ax = 1; if (e.o) e.ay = -1; if (e.u) e.ay = 1;
     var neu = {}; ['l','r','o','u','a','b'].forEach(function (k) { neu[k] = e[k] && !vorher[k]; vorher[k] = e[k]; });
@@ -1360,8 +1363,9 @@
       if (alter > 0) grabstein(px, py, g, alter);
     });
     if (ti > 1200 + s.graeber.length * 350) {
-      text('RUHET IN FRIEDEN, JUNGS.', 160, 206, 10, COL.feuer);
-      if (Math.floor(zeit / 500) % 2) text('KLICKEN ODER KNOPF – WEITER', 160, 224, 8, COL.hell);
+      text('DU BIST SO EIN MIESER KUMPEL.', 160, 203, 10, COL.feuer);
+      text('ALLE DEINE FREUNDE FÜR BIER UND KOHLE VERHEIZT.', 160, 215, 7, COL.hell);
+      text('GEH HEIM UND SCHÄM DICH, ' + name.map(function (i) { return ABC[i]; }).join('') + '!', 160, 229, 10, COL.rosa);
     }
   }
   function landschaft() {
