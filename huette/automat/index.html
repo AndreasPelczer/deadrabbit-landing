@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SUMPF-ARCADE</title>
+<style>
+  body { margin: 0; padding-inline: 16px; box-sizing: border-box; min-height: 100vh; display: grid; place-items: center; background: #10131b; color: #f1eee4; font-family: system-ui, sans-serif; }
+  main { width: 100%; max-width: 960px; }
+  #kopf { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 12px 0; font-size: 15px; }
+  canvas { cursor: none; touch-action: none; width: 100%; display: block; aspect-ratio: 4 / 3; background: #10131b; border: 2px solid #f1eee4; image-rendering: pixelated; }
+  .hilfe { opacity: .7; }
+  /* Handy hochkant: kein Rand verschenken, die Maus-Hilfe braucht dort keiner */
+  @media (max-width: 700px) and (orientation: portrait) {
+    body { padding-inline: 4px; }
+    .hilfe { display: none; }
+    canvas { border-width: 1px; }
+  }
+  /* Handy quer: das Spielfeld so gross wie der Bildschirm hoch ist, nichts abgeschnitten */
+  @media (orientation: landscape) and (max-height: 700px) {
+    body { padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); min-height: 100vh; min-height: 100dvh; }
+    main { width: auto; max-width: none; }
+    #kopf { display: none; }
+    canvas { border: 0; width: calc(100vh * 4 / 3); width: min(calc(100dvh * 4 / 3), calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))); height: auto; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div id="kopf">
+    <strong>SUMPF-ARCADE</strong>
+    <span class="hilfe">Stick/Pfeile wählen · Knopf A/Leertaste/Enter oder antippen: los · im Spiel Escape/Start: zurück</span>
+  </div>
+  <canvas id="spiel" width="320" height="240"></canvas>
+</main>
+<script src="gemeinsam/arcade.js"></script>
+<script>
+(function () {
+  var A = ARCADE, COL = A.COL, W = A.W, H = A.H, x, text = A.text;
+  // Die Spiele im Automaten. Das Autorennen baut Andreas an einem langweiligen Sonntag selbst.
+  var SPIELE = [
+    { id: 'urphaed',  name: 'URPHAED',     unter: 'DIE HÜTTE IM SUMPF',         url: '../index.html?automat=1', liste: 'urphaed-bestenliste' },
+    { id: 'invasion', name: 'KNOLLENALARM', unter: 'KARTOFFELKÄFER ÜBER WERTHEIM', url: 'invasion/index.html',  liste: 'sumpf-invasion' },
+    { id: 'mampf',    name: 'HÜTTENMAMPF', unter: 'POMMES-PANIK IM SUMPF',        url: 'mampf/index.html',     liste: 'sumpf-mampf' },
+    { id: 'sprung',   name: 'HÜTTENLAUF',  unter: 'DER WEG ZUR HÜTTE',          url: 'sprung/index.html',    liste: 'sumpf-sprung' },
+    { id: 'snake',    name: 'RINGELNATTER', unter: 'SNAKE VOM MAIN',  url: 'snake/index.html',     liste: 'sumpf-snake' },
+    { id: 'rennen',   name: 'AUTORENNEN',  unter: 'KOMMT AN EINEM LANGWEILIGEN SONNTAG', gesperrt: true }
+  ];
+  var GRUESSE = '+++ SUMPF-ARCADE +++ DER AUTOMAT AUS DER HÜTTE BEI WERDÖ A MOH +++ EINEN JOYSTICK, ZWEI KNÖPFE, KEINE AUSREDEN +++ KARTOFFELN WURDEN BEI DER HERSTELLUNG VERLETZT +++ ŞEREFE +++ ¡VAMOS! +++          ';
+  var modus = 'laden', seit = 0, wahl = 0, zeit = 0, gesehen = false;
+  try { gesehen = sessionStorage.getItem('sumpf-arcade-gesehen') === '1'; } catch (e) {}
+  if (gesehen) modus = 'menue';
+  function setze(m) { modus = m; seit = zeit; }
+  var LADEN = { tippen: 2600, streifen: 4200, bild: 7600, fertig: 8600 };
+  var BEFEHL = 'LOAD"SUMPF",8,1';
+
+  function schritt(dt, e) {
+    zeit = A.zeit;
+    if (!seit) seit = zeit;
+    var irgendwas = e.neu.a || e.neu.b || e.klick || e.neu.o || e.neu.u;
+    if (modus === 'laden') {
+      if (irgendwas || zeit - seit > LADEN.fertig + 4000) { setze('menue'); try { sessionStorage.setItem('sumpf-arcade-gesehen', '1'); } catch (er) {} }
+      return;
+    }
+    if (e.neu.o) wahl = (wahl + SPIELE.length - 1) % SPIELE.length;
+    if (e.neu.u) wahl = (wahl + 1) % SPIELE.length;
+    if (e.klick) {
+      var i = Math.floor((e.klick.y - ZEILE0 + ZEILE_H / 2) / ZEILE_H);
+      if (i >= 0 && i < SPIELE.length) { if (i === wahl) e.neu.a = true; else wahl = i; }
+    }
+    if (e.neu.a && zeit - seit > 300) {
+      var s = SPIELE[wahl];
+      if (s.gesperrt) { s.wackeln = zeit; return; }
+      location.href = s.url;
+    }
+  }
+
+  // ---------- Das Laden wie am C64: blauer Bildschirm, LOAD, Streifen im Rand, das Bild baut sich auf ----------
+  var C64BLAU = '#352879', C64HELL = '#6c5eb5';
+  function ladenZeichnen() {
+    var t = zeit - seit;
+    if (t < LADEN.tippen) {
+      x.fillStyle = C64HELL; x.fillRect(0, 0, W, H); x.fillStyle = C64BLAU; x.fillRect(16, 16, W - 32, H - 32);
+      x.font = '8px monospace'; x.textAlign = 'left'; x.textBaseline = 'top'; x.fillStyle = C64HELL;
+      x.fillText('    **** SUMPF 64 BASIC V2 ****', 20, 22);
+      x.fillText(' 64K RAM SYSTEM  38911 BASIC BYTES FREE', 20, 34);
+      x.fillText('READY.', 20, 52);
+      var n = Math.max(0, Math.min(BEFEHL.length, Math.floor((t - 500) / 90)));
+      x.fillText(BEFEHL.slice(0, n), 20, 62);
+      if (t > 500 + BEFEHL.length * 90 + 200) { x.fillText('', 20, 72); x.fillText('SEARCHING FOR SUMPF', 20, 82); }
+      if (t > 2000) x.fillText('LOADING', 20, 92);
+      if (Math.floor(t / 300) % 2) x.fillRect(20 + (t > 2000 ? 0 : n * 4.8), t > 2000 ? 102 : 62, 5, 8);   // Cursor
+      return;
+    }
+    // Rand flimmert in Streifen, wie beim Turbo-Loader
+    var farben = A.C64;
+    for (var y = 0; y < H; y += 3) { x.fillStyle = farben[(Math.floor(y / 3) * 7 + Math.floor(zeit / 40)) % 16]; x.fillRect(0, y, W, 3); }
+    x.fillStyle = '#000'; x.fillRect(16, 16, W - 32, H - 32);
+    if (t > LADEN.streifen) {
+      var anteil = Math.min(1, (t - LADEN.streifen) / (LADEN.bild - LADEN.streifen));
+      x.save(); x.beginPath(); x.rect(16, 16, W - 32, Math.floor((H - 32) * anteil)); x.clip();
+      x.drawImage(burgKlein(), 16, 16); x.restore();
+    }
+    if (t > LADEN.bild) {
+      x.fillStyle = '#000'; x.fillRect(0, 0, W, H); A.burg(0);
+      A.logo('SUMPF-ARCADE', 28, 26);
+      if (t > LADEN.fertig && Math.floor(zeit / 500) % 2) text('KNOPF DRÜCKEN', 160, 188, 10, COL.feuer);
+      A.laufschrift(GRUESSE, 224);
+    }
+  }
+  var BK = null;
+  function burgKlein() {            // die Burg passend in den Rahmen (288x208)
+    if (BK) return BK;
+    BK = document.createElement('canvas'); BK.width = W - 32; BK.height = H - 32;
+    var g = BK.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(A.burgBild(), 0, 0, 320, 200, 0, 0, W - 32, H - 32);
+    return BK;
+  }
+
+  // ---------- Das Menü ----------
+  var ZEILE0 = 66, ZEILE_H = 26;
+  function symbol(id, px, py) {      // kleine Bildchen je Spiel, alles aus dem Fundus
+    var r = Math.round;
+    if (id === 'urphaed') { x.drawImage(A.dorfSprite(1, 0, false), px - 6, py - 10, 12, 20); }
+    else if (id === 'invasion') { x.fillStyle = '#c9a25a'; x.fillRect(px - 6, py - 4, 12, 8); x.fillStyle = '#1b1612'; for (var i = 0; i < 3; i++) x.fillRect(px - 5 + i * 4, py - 4, 1, 8); x.fillRect(px - 8, py - 2, 2, 1); x.fillRect(px + 6, py - 2, 2, 1); x.fillRect(px - 8, py + 2, 2, 1); x.fillRect(px + 6, py + 2, 2, 1); }
+    else if (id === 'mampf') { x.fillStyle = '#ffd25a'; for (var p = 0; p < 4; p++) x.fillRect(px - 8 + p * 3, py - 6 + (p % 2) * 2, 2, 9); x.fillStyle = '#c8302a'; x.fillRect(px - 9, py + 2, 13, 5); }
+    else if (id === 'sprung') { x.drawImage(A.figurBild('kumpel', 1, 'kumpel', false), px - 6, py - 12, 12, 20); x.fillStyle = '#6b4a2c'; x.fillRect(px + 4, py + 6, 6, 3); }
+    else if (id === 'snake') { x.fillStyle = '#7fd06a'; for (var k = 0; k < 6; k++) x.fillRect(px - 9 + k * 3, r(py + Math.sin(k + zeit / 200) * 3), 3, 3); x.fillStyle = '#ffd25a'; x.fillRect(px + 9, r(py + Math.sin(6 + zeit / 200) * 3), 3, 3); }
+    else if (id === 'rennen') { x.fillStyle = '#6b6f78'; x.fillRect(px - 5, py - 1, 10, 8); x.strokeStyle = '#6b6f78'; x.lineWidth = 2; x.beginPath(); x.arc(px, py - 2, 4, Math.PI, 0); x.stroke(); x.lineWidth = 1; }
+  }
+  function menueZeichnen() {
+    x.fillStyle = '#000'; x.fillRect(0, 0, W, H); A.burg(0);
+    x.fillStyle = 'rgba(8,10,22,.78)'; x.fillRect(0, 0, W, H);
+    A.logo('SUMPF-ARCADE', 24, 24);
+    text('WÄHL DEIN SPIEL', 160, 48, 8, COL.grau);
+    SPIELE.forEach(function (s, i) {
+      var y = ZEILE0 + i * ZEILE_H, aktiv = i === wahl, wack = s.wackeln && zeit - s.wackeln < 400 ? Math.sin((zeit - s.wackeln) / 25) * 3 : 0;
+      x.fillStyle = aktiv ? 'rgba(255,79,163,.18)' : 'rgba(16,19,27,.7)'; x.fillRect(30 + wack, y - 11, 260, 22);
+      if (aktiv) { x.strokeStyle = s.gesperrt ? COL.grau : COL.rosa; x.strokeRect(30.5 + wack, y - 10.5, 259, 21); }
+      symbol(s.id, 46 + wack, y);
+      text(s.name, 64 + wack, y - 4, 11, s.gesperrt ? COL.grau : aktiv ? COL.feuer : COL.hell, 'left');
+      text(s.unter, 64 + wack, y + 6, 6, s.gesperrt ? COL.grau : '#a9aeb6', 'left');
+      if (!s.gesperrt) { var l = A.liste(s.liste, s.id === 'urphaed' ? [{ n: 'AND', p: 3000 }] : null).lesen()[0]; if (l) text(l.n + ' ' + l.p, 284 + wack, y, 7, aktiv ? COL.rosa : COL.grau, 'right'); }
+      if (aktiv && Math.floor(zeit / 400) % 2) text('▶', 24, y, 9, COL.feuer);
+    });
+    A.laufschrift(GRUESSE, 230);
+  }
+  function zeichnen() { if (modus === 'laden') ladenZeichnen(); else menueZeichnen(); }
+  x = A.start({ schritt: schritt, zeichnen: zeichnen });
+  window.__arcade = function () { return { modus: modus, wahl: wahl, SPIELE: SPIELE }; };   // nur zum Testen
+}());
+</script>
+</body>
+</html>

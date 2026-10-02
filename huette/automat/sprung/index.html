@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HÜTTENLAUF</title>
+<style>
+  body { margin: 0; padding-inline: 16px; box-sizing: border-box; min-height: 100vh; display: grid; place-items: center; background: #10131b; color: #f1eee4; font-family: system-ui, sans-serif; }
+  main { width: 100%; max-width: 960px; }
+  #kopf { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 12px 0; font-size: 15px; }
+  canvas { cursor: none; touch-action: none; width: 100%; display: block; aspect-ratio: 4 / 3; background: #10131b; border: 2px solid #f1eee4; image-rendering: pixelated; }
+  .hilfe { opacity: .7; }
+  /* Handy hochkant: kein Rand verschenken */
+  @media (max-width: 700px) and (orientation: portrait) {
+    body { padding-inline: 4px; }
+    .hilfe { display: none; }
+    canvas { border-width: 1px; }
+  }
+  /* Handy quer: das Spielfeld so gross wie der Bildschirm hoch ist, nichts abgeschnitten */
+  @media (orientation: landscape) and (max-height: 700px) {
+    body { padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); min-height: 100vh; min-height: 100dvh; }
+    main { width: auto; max-width: none; }
+    #kopf { display: none; }
+    canvas { border: 0; width: calc(100vh * 4 / 3); width: min(calc(100dvh * 4 / 3), calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))); height: auto; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div id="kopf">
+    <strong>HÜTTENLAUF – DER WEG ZUR HÜTTE</strong>
+    <span class="hilfe">Stick/Pfeile: laufen · A/Leertaste: springen (halten = höher) · B/Shift: rennen · Handy: links halten = laufen, rechts tippen = springen · Esc: Menü</span>
+  </div>
+  <canvas id="spiel" width="320" height="240"></canvas>
+</main>
+<script src="../gemeinsam/arcade.js"></script>
+<script>
+(function () {
+  'use strict';
+  var A = window.ARCADE, W = 320, H = 240, COL = A.COL, text = A.text;
+
+  // ---------- Einstellbar ----------
+  var LEBEN = 3, KASTEN = 20, LEBEN_MAX = 6;          // 20 Flaschen = 1 Kasten = 1 Leben
+  var LAUF = 92, RENN = 148;                          // px/s
+  var BESCHL_BODEN = 900, BREMSE = 1100, BESCHL_LUFT = 560;
+  var SCHWERE = 1100, SPRUNG_V = 375, KURZ = 3.2, FALL_MAX = 430;   // A loslassen = Schwerkraft x KURZ
+  var KOYOTE = 110, PUFFER = 130;                     // ms: Sprung noch kurz nach der Kante / kurz vor der Landung
+  var STAMPF_V = 250, STAMPF_V_HOCH = 360;
+  var UNVERWUNDBAR = 1600, NASS_MS = 1800, TOD_MS = 1500;
+  var KB = 8, KH = 22;                                // Körper des Läufers
+  var GY = 200, WASSER_Y = 214, ERTRUNKEN_Y = 234;
+  var P_FERN = 0.15, P_MITTE = 0.5;                   // Parallax
+  var LEN = 5900, ZIEL_X = 5680, HUETTE_X = 5720;
+  var ZEIT_SOLL = 240;                                // Sekunden – bis dahin ist das Bier noch kalt
+  var PUNKTE = { korken: 10, flasche: 100, kartoffel: 50, bauer: 200, kaefer: 100, kasten: 500, leben: 500, sekunde: 20 };
+  var ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var LISTE = A.liste('sumpf-sprung');
+
+  // ---------- Sprüche ----------
+  var PUEREE = ['PÜREE!', 'POMMES!', 'BREI!', 'GRATIN!', 'KLOSS!', 'RÖSTI!', 'CHIPS!'];
+  var AUA = { kartoffel: ['KARTOFFEL 1 – DU 0', 'DIE KNOLLE HAT DICH!', 'ÜBERROLLT!'], bauer: ['MISTGABEL! AUA!', 'DER BAUER VERSTEHT KEINEN SPASS'],
+    dackel: ['WADENBEISSER!', 'DER DACKEL HAT ZUGEBISSEN!'], nessel: ['BRENNNESSELN! JUCKT BIS MORGEN', 'AUTSCH! BRENNNESSELN'], kaefer: ['KARTOFFELKÄFER IM GESICHT!'] };
+  var NASS = { main: 'PLATSCH! DER MAIN IST KALT!', bach: 'NASSE FÜSSE DE LUXE', sumpf: 'BLUBB. DER SUMPF BEHÄLT DEN SCHUH.' };
+  var LAUFSCHRIFT = '   DIE JUNGS WARTEN IN DER HÜTTE   ***   BRING BIER MIT   ***   20 FLASCHEN = 1 KASTEN = 1 LEBEN   ***   KARTOFFELN SIND NICHT DEINE FREUNDE   ***   DACKEL TRITT MAN NICHT   ***   ¿DÓNDE ESTÁ ALF?   ***   ŞEREFE!   ***   WERDÖ A MOH   ';
+  function eins(l) { return l[Math.floor(Math.random() * l.length)]; }
+
+  // ---------- Das Level ----------
+  function zufall(saat) { var z = saat; return function () { z = (z * 16807) % 2147483647; return (z - 1) / 2147483646; }; }
+  function baue() {
+    var L = { fest: [], beweger: [], gegner: [], sachen: [], deko: [], nesseln: [], pfuetzen: [], punkte: [] };
+    function boden(x0, x1, art) { L.fest.push({ x: x0, y: GY, w: x1 - x0, h: 80, art: art, weg: true }); }
+    function block(x0, y, w, h, art) { L.fest.push({ x: x0, y: y, w: w, h: h, art: art, hindernis: y + h >= GY }); }
+    function steg(x0, y, w, art, weg) { L.fest.push({ x: x0, y: y, w: w, h: 4, art: art || 'holz', einweg: true, weg: !!weg }); }
+    function beweger(art, x0, y0, x1, y1, w, h, periode, weg) { var b = { art: art, x0: x0, y0: y0, x1: x1, y1: y1, x: x0, y: y0, w: w, h: h, periode: periode, dx: 0, dy: 0, tol: 1, weg: !!weg }; L.beweger.push(b); L.fest.push(b); }
+    function korken(x0, y, n, ab, bogen) { for (var i = 0; i < n; i++) L.sachen.push({ art: 'korken', x: x0 + i * (ab || 14), y: y - (bogen ? Math.round(Math.sin(i / Math.max(1, n - 1) * Math.PI) * bogen) : 0) }); }
+    function flasche(x0, y) { L.sachen.push({ art: 'flasche', x: x0, y: y }); }
+    function gegner(art, x0, xa, xb, extra) { var g = { art: art, x: x0, y: GY, xa: xa, xb: xb, vx: 0, vy: 0, richtung: -1, start: x0 }; for (var k in extra) g[k] = extra[k]; L.gegner.push(g); }
+    function deko(art, x0, extra) { var d = { art: art, x: x0 }; for (var k in extra) d[k] = extra[k]; L.deko.push(d); }
+    function punkt(x0, name, zeile, schildX) { L.punkte.push({ x: x0, name: name, zeile: zeile }); deko('ortsschild', schildX || x0 + 14, { name: name }); }
+
+    // --- WERTHEIM: unter der Burg ---
+    boden(0, 1300, 'pflaster');
+    punkt(10, 'WERTHEIM', 'AUF ZUR HÜTTE! DIE JUNGS WARTEN.', 36);
+    deko('schild', 112, { zeilen: ['A = SPRINGEN', 'HALTEN = HÖHER'] });
+    [150, 470, 790, 1110].forEach(function (lx) { deko('laterne', lx); });
+    korken(124, 186, 6, 14);
+    L.pfuetzen.push({ x: 240, w: 26 }); korken(240, 168, 3, 12);
+    block(320, 188, 16, 12, 'kiste'); block(336, 176, 16, 24, 'kiste'); block(352, 164, 16, 36, 'kiste'); flasche(360, 148);
+    block(404, 188, 16, 12, 'kiste'); deko('dreher', 412, { y: 188, spruch: 'ICH DREH NOCH EINE. GEH SCHON VOR!' });
+    gegner('kartoffel', 560);
+    deko('schild', 610, { zeilen: ['B = RENNEN', '(WENN DU KANNST)'] });
+    L.pfuetzen.push({ x: 660, w: 34 });
+    steg(720, 162, 44, 'balkon'); korken(726, 150, 3, 14); flasche(742, 120);
+    beweger('lift', 800, 186, 800, 132, 20, 10, 3200); flasche(810, 110);
+    gegner('kartoffel', 900); gegner('kartoffel', 950);
+    deko('schild', 990, { zeilen: ['STADTGÄRTNEREI', 'NICHT BETRETEN'] });
+    L.nesseln.push({ x: 1012, w: 22 }); korken(1010, 172, 3, 10, 6);
+    gegner('bauer', 1170, 1090, 1290, { variante: 0 }); flasche(1230, 160);
+
+    // --- MAINBRÜCKE ---
+    boden(1300, 1640, 'bruecke');
+    punkt(1310, 'MAINBRÜCKE', 'NICHT RUNTERFALLEN. DER MAIN IST NASS.');
+    deko('schild', 1360, { zeilen: ['URPHAR 3 KM', 'ZU FUSS: 1 KASTEN'] });
+    korken(1400, 186, 5, 14); gegner('kartoffel', 1580);
+    deko('bake', 1630); deko('schild', 1600, { zeilen: ['BAUSTELLE', 'SEIT 1987'] });
+    korken(1646, 176, 3, 14, 10); flasche(1660, 150);
+    boden(1690, 1830, 'bruecke'); korken(1730, 186, 4, 14);
+    beweger('stamm', 1840, WASSER_Y, 1940, WASSER_Y, 44, 8, 4200, true);
+    korken(1850, 196, 6, 18); flasche(1905, 170);
+    boden(1990, 2300, 'bruecke');
+    gegner('bauer', 2120, 2000, 2290, { variante: 1 }); korken(2030, 186, 4, 14); flasche(2250, 176);
+
+    // --- URPHAR ---
+    boden(2300, 2720, 'wiese');
+    punkt(2320, 'URPHAR', 'VORSICHT: DIE BAUERN SIND WACH.');
+    block(2420, 170, 50, 30, 'container'); flasche(2445, 150); deko('klaus', 2445, { spruch: 'KLAUS: HEUTE NUR KARTOFFELPIZZA!' });
+    gegner('dackel', 2580, 2490, 2715);
+    block(2640, 190, 26, 10, 'zaun'); korken(2600, 186, 3, 12);
+    korken(2722, 176, 3, 16, 10);
+    boden(2768, 3600, 'wiese');
+    block(2830, 184, 24, 16, 'heu'); block(2854, 168, 24, 32, 'heu'); flasche(2866, 150); korken(2800, 186, 2, 12);
+    gegner('bauer', 2960, 2895, 3040, { variante: 2 }); gegner('bauer', 3110, 3050, 3190, { variante: 0 });
+    korken(2900, 186, 8, 14);
+    block(3200, 186, 60, 14, 'mauer'); deko('dreher', 3236, { y: 186, spruch: 'SCHON DA. ABKÜRZUNG ÜBERN FRIEDHOF.' }); flasche(3215, 168);
+    deko('toni', 3300, { spruch: '¡OLÉ! ¿DÓNDE ESTÁ ALF?' });
+    deko('hanf', 3335); deko('hanf', 3352); deko('hanf', 3370); deko('hanf', 3388); deko('schild', 3404, { zeilen: ['TOMATEN', 'BIO'] });
+    block(3330, 191, 70, 9, 'zaun');
+    L.nesseln.push({ x: 3440, w: 20 }); korken(3436, 170, 3, 10, 6);
+    deko('schild', 3490, { zeilen: ['KARTOFFELACKER', 'ERNTE LÄUFT (WEG)'] });
+    gegner('kartoffel', 3560); gegner('kartoffel', 3600); gegner('kartoffel', 3650);
+
+    // --- WALD ---
+    boden(3600, 3840, 'wald');
+    punkt(3620, 'WALD', 'HIER WACHSEN DIE KARTOFFELN WILD.');
+    block(3700, 188, 14, 12, 'stumpf'); deko('alf', 3740);
+    korken(3760, 186, 4, 14); korken(3844, 172, 3, 14, 12);
+    boden(3890, 4060, 'wald');
+    steg(3930, 160, 40, 'ast'); korken(3934, 148, 3, 14); flasche(3990, 118); steg(3980, 132, 30, 'ast');
+    gegner('kaefer', 4020, 0, 0, { y0: 150 });
+    beweger('stamm', 4070, 212, 4150, 212, 40, 8, 3600, true); korken(4080, 196, 5, 18);
+    boden(4200, 4680, 'wald');
+    L.nesseln.push({ x: 4280, w: 24 }); korken(4276, 170, 3, 12, 6);
+    gegner('kaefer', 4350, 0, 0, { y0: 150 });
+    deko('schild', 4380, { zeilen: ['VORSICHT', 'KARTOFFELN AM HANG'] });
+    gegner('kartoffel', 4440); gegner('kartoffel', 4480);
+    block(4500, 180, 14, 20, 'stumpf'); flasche(4507, 160);
+    gegner('bauer', 4590, 4525, 4675, { variante: 1, fackel: true });
+    deko('schild', 4640, { zeilen: ['ZUR HÜTTE', '------>'] });
+
+    // --- SUMPF ---
+    boden(4680, 4800, 'sumpf');
+    punkt(4700, 'SUMPF', 'FAST DA. WERDÖ A MOH!');
+    korken(4802, 178, 3, 14, 10);
+    boden(4840, 4920, 'sumpf'); korken(4922, 178, 3, 14, 10);
+    boden(4964, 5050, 'sumpf'); gegner('kaefer', 5010, 0, 0, { y0: 152 });
+    beweger('stamm', 5060, WASSER_Y, 5200, WASSER_Y, 44, 8, 5000, true); korken(5070, 196, 7, 20); flasche(5150, 172);
+    boden(5250, 5330, 'sumpf'); flasche(5290, 176);
+    korken(5332, 176, 3, 16, 10);
+    boden(5378, 5450, 'sumpf');
+    steg(5470, 196, 30, 'steg', true); steg(5520, 190, 30, 'steg', true); steg(5570, 196, 30, 'steg', true); korken(5480, 178, 6, 20);
+    boden(5620, LEN, 'wiese');
+    deko('huette', HUETTE_X); deko('feuer', 5831); deko('jungs', 5640);
+    deko('dreher', 5655, { y: GY - 12, kiste: true, spruch: 'WO BLEIBST DU DENN?' });
+    block(5649, 188, 16, 12, 'kiste');
+    return L;
+  }
+
+  // ---------- Zustand ----------
+  var L = null, s = null, modus = 'titel', modusSeit = 0, zeit = 0, cam = 0;
+  var name = [0, 11, 5], namePos = 0, platz = -1, endeWahl = 0;
+  var finger = { benutzt: false, liste: [], sprungNeu: false };
+  function setzeModus(m) { modus = m; modusSeit = zeit; }
+
+  function neuerLaeufer(px) { return { x: px, y: GY, vx: 0, vy: 0, b: KB, h: KH, boden: true, auf: null, koyote: 0, puffer: 0, blick: 1, phase: 0, unverwundbar: 0, nass: 0, yAlt: GY }; }
+  function neuesSpiel() {
+    L = baue();
+    s = { p: neuerLaeufer(40), leben: LEBEN, punkte: 0, flaschen: 0, korken: 0, zeit: 0, punkt: 0, funken: [], schwebe: [], comic: [], meldung: null,
+          gegner: L.gegner, sachen: L.sachen, geplaettet: 0, tod: null, geschafft: false, zeitBonus: 0, lebenBonus: 0, blasen: {} };
+    s.gegner.forEach(function (g) { g.b = g.art === 'kartoffel' ? 10 : g.art === 'dackel' ? 16 : g.art === 'kaefer' ? 10 : 10; g.h = g.art === 'kartoffel' ? 9 : g.art === 'dackel' ? 8 : g.art === 'kaefer' ? 8 : 24;
+      g.tempo = g.art === 'kartoffel' ? 55 : g.art === 'dackel' ? 70 : g.art === 'kaefer' ? 30 : 26; g.aktiv = false; g.dreh = 0; g.schritt = 0; });
+    cam = 0; melden(L.punkte[0].name, L.punkte[0].zeile);
+  }
+  function melden(t, zeile) { s.meldung = { t: t, zeile: zeile || '', seit: zeit }; }
+  function schweben(t, wx, wy, farbe) { s.schwebe.push({ t: t, x: wx, y: wy, seit: zeit, farbe: farbe || COL.feuer }); }
+  function comic(t, wx, wy, gr) { s.comic.push({ t: t, x: wx, y: wy, gr: gr || 10, seit: zeit }); }
+  function funken(wx, wy, n, farbe, kraft) { for (var i = 0; i < n; i++) s.funken.push({ x: wx, y: wy, dx: (Math.random() - .5) * kraft, dy: -Math.random() * kraft, leben: 30 + Math.random() * 20, farbe: farbe }); }
+
+  // ---------- Physik ----------
+  function bewegen(k, sek, fest) {
+    var hb = k.b / 2, i, f;
+    k.wand = false;
+    k.x += k.vx * sek;
+    for (i = 0; i < fest.length; i++) {
+      f = fest[i]; if (f.einweg) continue;
+      if (k.x - hb < f.x + f.w && k.x + hb > f.x && k.y - k.h < f.y + f.h && k.y > f.y + 0.5) {
+        if (k.x < f.x + f.w / 2) k.x = f.x - hb; else k.x = f.x + f.w + hb;
+        k.vx = 0; k.wand = true;
+      }
+    }
+    var alt = k.y, oben = null;
+    k.y += k.vy * sek; k.boden = false; k.auf = null;
+    for (i = 0; i < fest.length; i++) {
+      f = fest[i];
+      if (!(k.x - hb < f.x + f.w && k.x + hb > f.x)) continue;
+      if (k.vy >= 0 && alt <= f.y + (f.tol || 0) + 0.5 && k.y >= f.y) { if (!oben || f.y < oben.y) oben = f; }
+      else if (!f.einweg && k.vy < 0 && alt - k.h >= f.y + f.h - 0.5 && k.y - k.h < f.y + f.h) { k.y = f.y + f.h + k.h; k.vy = 0; }
+    }
+    if (oben) { k.y = oben.y; k.vy = 0; k.boden = true; k.auf = oben; }
+  }
+  function bodenDa(px, py, fest) { for (var i = 0; i < fest.length; i++) { var f = fest[i]; if (px >= f.x && px <= f.x + f.w && Math.abs(f.y - py) < 3) return true; } return false; }
+
+  // Ein Schritt des Läufers. ein = { l, r, neu (Sprung gerade gedrückt), halten, rennen }
+  function spielerSchritt(p, dt, ein, fest) {
+    var n = Math.max(1, Math.ceil(dt / 17)), d = dt / n;
+    if (ein.neu) p.puffer = PUFFER;
+    for (var i = 0; i < n; i++) {
+      var sek = d / 1000;
+      p.puffer = Math.max(0, p.puffer - d);
+      p.koyote = p.boden ? KOYOTE : Math.max(0, p.koyote - d);
+      var richtung = (ein.r ? 1 : 0) - (ein.l ? 1 : 0);
+      var ziel = richtung * (ein.rennen ? RENN : LAUF) * (p.nass > 0 ? .55 : 1);
+      var a = p.boden ? (richtung ? BESCHL_BODEN : BREMSE) : BESCHL_LUFT;
+      if (p.taumel > 0) { p.taumel -= d; a = 0; }          // nach einem Treffer fliegt man erst mal zurück
+      if (p.vx < ziel) p.vx = Math.min(ziel, p.vx + a * sek); else if (p.vx > ziel) p.vx = Math.max(ziel, p.vx - a * sek);
+      if (richtung) p.blick = richtung;
+      if (p.puffer > 0 && p.koyote > 0) { p.vy = -SPRUNG_V; p.boden = false; p.koyote = 0; p.puffer = 0; p.auf = null; p.gesprungen = true; }
+      var g = SCHWERE; if (p.vy < 0 && !ein.halten) g *= KURZ;
+      p.vy = Math.min(FALL_MAX, p.vy + g * sek);
+      bewegen(p, sek, fest);
+      p.nass = Math.max(0, p.nass - d);
+    }
+    if (p.boden) p.phase += Math.abs(p.vx) * dt / 1000 / 7; else p.phase = 0;
+  }
+
+  function beweger(dt) {
+    L.beweger.forEach(function (b) {
+      var t = (1 - Math.cos((zeit / b.periode) * Math.PI * 2)) / 2, nx = b.x0 + (b.x1 - b.x0) * t, ny = b.y0 + (b.y1 - b.y0) * t;
+      b.dx = nx - b.x; b.dy = ny - b.y; b.x = nx; b.y = ny; b.tol = Math.abs(b.dy) + 1;
+    });
+  }
+
+  // ---------- Eingabe ----------
+  function eingabe(e) {
+    var ein = { l: e.l, r: e.r, neu: e.neu.a, halten: e.a, rennen: e.b };
+    var zonen = [];
+    if (finger.benutzt) zonen = finger.liste;
+    else if (e.maus && e.maus.unten) zonen = [{ x: e.maus.x, y: e.maus.y }];
+    zonen.forEach(function (f) {
+      if (f.x < W / 2) { if (f.x < W / 4) ein.l = true; else ein.r = true; if (f.x < 30 || f.x > W / 2 - 30) ein.rennen = true; }
+      else ein.halten = true;
+    });
+    if (finger.sprungNeu) { ein.neu = true; finger.sprungNeu = false; }
+    if (!finger.benutzt && e.klick && e.klick.x >= W / 2) ein.neu = true;
+    return ein;
+  }
+
+  // ---------- Spiel-Ablauf ----------
+  function treffer(grund, wx, wy) {
+    var p = s.p; if (p.unverwundbar > 0 || modus !== 'spiel') return;
+    s.leben--;
+    comic('AUTSCH!', wx, wy - 14, 9);
+    if (s.leben <= 0) { tod(grund, eins(AUA[grund] || ['ERWISCHT!'])); return; }
+    melden(eins(AUA[grund] || ['ERWISCHT!']), 'NOCH ' + s.leben + (s.leben === 1 ? ' LEBEN' : ' LEBEN'));
+    p.unverwundbar = UNVERWUNDBAR; p.vy = -220; p.vx = -p.blick * 110; p.boden = false; p.taumel = 380;
+  }
+  function wasserArt(wx) { return wx < 2300 ? 'main' : wx < 4680 ? 'bach' : 'sumpf'; }
+  function tod(grund, t) {
+    var p = s.p;
+    if (grund === 'wasser') { s.leben--; var art = wasserArt(p.x); t = NASS[art]; comic(art === 'sumpf' ? 'BLUBB!' : 'PLATSCH!', p.x, WASSER_Y - 22, 11); funken(p.x, WASSER_Y, 18, art === 'sumpf' ? '#6a7a3a' : '#9fd0ff', 3); }
+    s.tod = { grund: grund, t: t };
+    setzeModus('tod');
+  }
+  function wiederbeleben() {
+    var cp = L.punkte[s.punkt], p = neuerLaeufer(cp.x + 30);
+    p.unverwundbar = 2000; s.p = p; s.tod = null; cam = Math.max(0, Math.min(LEN - W, p.x - 130));
+    melden('WEITER GEHT\'S', 'NOCH ' + s.leben + ' LEBEN');
+    setzeModus('spiel');
+  }
+  function stampfen(g) {
+    var p = s.p;
+    p.vy = -(p.halten ? STAMPF_V_HOCH : STAMPF_V); p.boden = false;
+    if (g.art === 'dackel') { g.flucht = true; g.richtung = p.x < g.x ? 1 : -1; schweben('WAU?!', g.x, g.y - 14, COL.rosa); if (!s.dackelGetreten) { s.dackelGetreten = true; melden('DACKEL TRITT MAN NICHT!', 'ER IST JETZT BELEIDIGT'); } return; }
+    g.platt = zeit; s.geplaettet++;
+    var pk = PUNKTE[g.art] || 50; s.punkte += pk;
+    if (g.art === 'kartoffel') { schweben(eins(PUEREE), g.x, g.y - 12); funken(g.x, g.y - 4, 8, '#e8d8a0', 2); }
+    else if (g.art === 'bauer') { comic(eins(['AUA!', 'MEI GABEL!', 'HILFE!']), g.x, g.y - 34, 9); schweben('+' + pk, g.x, g.y - 20); }
+    else { schweben('+' + pk, g.x, g.y - 10); funken(g.x, g.y - 4, 6, '#ffd25a', 2); }
+  }
+
+  function spielSchritt(dt, e) {
+    var p = s.p, ein = eingabe(e);
+    s.zeit += dt;
+    beweger(dt);
+    if (p.boden && p.auf && p.auf.periode) { p.x += p.auf.dx; p.y = p.auf.y; }
+    p.yAlt = p.y; p.halten = ein.halten;
+    spielerSchritt(p, dt, ein, L.fest);
+    if (p.x < 6) { p.x = 6; p.vx = 0; }
+    if (p.x > LEN - 6) p.x = LEN - 6;
+    p.unverwundbar = Math.max(0, p.unverwundbar - dt);
+    if (p.y > ERTRUNKEN_Y) { tod('wasser'); return; }
+
+    // Kamera schaut ein Stück voraus
+    var zielCam = Math.max(0, Math.min(LEN - W, p.x - 130 + p.blick * 24));
+    cam += (zielCam - cam) * Math.min(1, dt * 0.006);
+    cam = Math.max(0, Math.min(LEN - W, cam));
+
+    // Checkpunkte (Ortsschilder)
+    for (var c = s.punkt + 1; c < L.punkte.length; c++) if (p.x >= L.punkte[c].x) { s.punkt = c; melden(L.punkte[c].name, L.punkte[c].zeile); }
+
+    // Einsammeln
+    s.sachen.forEach(function (it) {
+      if (it.weg || Math.abs(it.x - p.x) > 9 || it.y < p.y - KH - 6 || it.y > p.y + 4) return;
+      it.weg = true;
+      if (it.art === 'korken') { s.korken++; s.punkte += PUNKTE.korken; funken(it.x, it.y, 3, '#d8c27a', 1.2); }
+      else {
+        s.flaschen++; s.punkte += PUNKTE.flasche; schweben('+' + PUNKTE.flasche, it.x, it.y - 6);
+        if (s.flaschen % KASTEN === 0) { s.leben = Math.min(LEBEN_MAX, s.leben + 1); s.punkte += PUNKTE.kasten; comic('KASTEN VOLL!', p.x, p.y - 40, 9); melden(KASTEN + ' FLASCHEN = 1 KASTEN', '= 1 LEBEN EXTRA'); }
+      }
+    });
+
+    // Pfützen und Brennnesseln
+    L.pfuetzen.forEach(function (pf) {
+      var drin = p.boden && p.y === GY && p.x > pf.x && p.x < pf.x + pf.w;
+      if (drin && !pf.drin) { p.nass = NASS_MS; funken(p.x, GY - 1, 10, '#9fd0ff', 2); schweben('NASSE SOCKEN', p.x, GY - 30, COL.blau); }
+      pf.drin = drin;
+    });
+    L.nesseln.forEach(function (n) { if (p.x + KB / 2 > n.x + 2 && p.x - KB / 2 < n.x + n.w - 2 && p.y > GY - 8) treffer('nessel', p.x, p.y - KH); });
+
+    // Gegner
+    s.gegner.forEach(function (g) {
+      if (g.weg) return;
+      if (g.platt) { if (zeit - g.platt > 1400) g.weg = true; return; }
+      if (!g.aktiv) { if (g.x - cam < W + 30) { g.aktiv = true; if (g.art === 'bauer' && !s.blasen.bauer) { s.blasen.bauer = true; g.ruf = zeit; } } else return; }
+      var sek = dt / 1000;
+      if (g.art === 'kaefer') {
+        g.x -= g.tempo * sek; g.schritt += dt; g.y = g.y0 + Math.sin(g.schritt / 300) * 12;
+        if (g.x < cam - 60) g.weg = true;
+      } else {
+        var tempo = g.tempo * (g.flucht ? 2.4 : 1);
+        g.vx = g.richtung * tempo; g.vy = Math.min(FALL_MAX, g.vy + SCHWERE * sek);
+        bewegen(g, sek, L.fest);
+        if (g.wand) g.richtung *= -1;
+        if (g.art !== 'kartoffel' && g.boden && !g.flucht && !bodenDa(g.x + g.richtung * (g.b / 2 + 2), g.y, L.fest)) g.richtung *= -1;
+        if (!g.flucht && g.xa !== undefined && g.xb) { if (g.x < g.xa) g.richtung = 1; if (g.x > g.xb) g.richtung = -1; }
+        g.dreh += g.vx * sek / 5; g.schritt += Math.abs(g.vx) * sek;
+        if (g.y > H + 30 || (g.flucht && Math.abs(g.x - p.x) > 400)) g.weg = true;
+      }
+      // Berührung
+      if (Math.abs(p.x - g.x) < (KB + g.b) / 2 - 1 && p.y > g.y - g.h + 1 && p.y - KH < g.y - 1) {
+        if (p.vy > 30 && p.yAlt <= g.y - g.h + 7) stampfen(g);
+        else if (!g.flucht) treffer(g.art, p.x, p.y - KH);
+      }
+    });
+    s.gegner = s.gegner.filter(function (g) { return !g.weg; });
+
+    if (p.x >= ZIEL_X && p.boden) zielErreicht();
+  }
+  function zielErreicht() {
+    var sek = Math.floor(s.zeit / 1000);
+    s.zeitBonus = Math.max(0, ZEIT_SOLL - sek) * PUNKTE.sekunde;
+    s.lebenBonus = s.leben * PUNKTE.leben;
+    s.punkte += s.zeitBonus + s.lebenBonus; s.geschafft = true;
+    setzeModus('ziel');
+  }
+  function zumEnde() {
+    platz = LISTE.eintragen(name.map(function (i) { return ABC[i]; }).join(''), s.punkte);
+    endeWahl = 0; setzeModus('ende');
+  }
+
+  function effekte(dt) {
+    if (!s) return;
+    s.funken.forEach(function (f) { f.x += f.dx; f.y += f.dy; f.dy += 0.12; f.leben--; });
+    s.funken = s.funken.filter(function (f) { return f.leben > 0; });
+    s.schwebe = s.schwebe.filter(function (b) { return zeit - b.seit < 1100; });
+    s.comic = s.comic.filter(function (b) { return zeit - b.seit < 1100; });
+  }
+
+  function nameWeiter() { namePos++; if (namePos > 2) { namePos = 0; neuesSpiel(); setzeModus('auftrag'); } }
+
+  function schritt(dt, e) {
+    zeit += dt;
+    if (modus === 'titel') { if (e.neu.a || e.klick) setzeModus('name'); return; }
+    if (modus === 'name') {
+      if (e.neu.o) name[namePos] = (name[namePos] + 1) % ABC.length;
+      if (e.neu.u) name[namePos] = (name[namePos] + ABC.length - 1) % ABC.length;
+      if (e.neu.l && namePos > 0) namePos--;
+      if (e.neu.r || e.neu.a) nameWeiter();
+      if (e.klick && e.klick.y > 144 && e.klick.x > 90 && e.klick.x < 230) { namePos = 0; neuesSpiel(); setzeModus('auftrag'); return; }   // FERTIG-Knopf
+      if (e.klick) {
+        var spalte = Math.round((e.klick.x - 130) / 30);
+        if (spalte >= 0 && spalte <= 2) namePos = spalte;
+        if (e.klick.y < 106) name[namePos] = (name[namePos] + 1) % ABC.length;
+        else if (e.klick.y > 126) name[namePos] = (name[namePos] + ABC.length - 1) % ABC.length;
+        else nameWeiter();
+      }
+      return;
+    }
+    if (modus === 'auftrag') { finger.sprungNeu = false; if (((e.neu.a || e.klick) && zeit - modusSeit > 500) || zeit - modusSeit > 4500) setzeModus('spiel'); return; }
+    if (modus === 'ende') {
+      if (e.neu.o || e.neu.u || e.neu.l || e.neu.r) endeWahl = 1 - endeWahl;
+      if (e.klick && zeit - modusSeit > 600 && e.klick.y > 188) { endeWahl = e.klick.y < 203 ? 0 : 1; e.neu.a = true; }
+      if (e.neu.a && zeit - modusSeit > 600) { if (endeWahl === 0) { neuesSpiel(); setzeModus('auftrag'); } else location.href = '../index.html'; }
+      return;
+    }
+    effekte(dt);
+    if (modus === 'tod') {
+      beweger(dt);
+      if (zeit - modusSeit > TOD_MS) { if (s.leben > 0) wiederbeleben(); else zumEnde(); }
+      return;
+    }
+    if (modus === 'ziel') {
+      beweger(dt);
+      var p = s.p, t = zeit - modusSeit;
+      if (p.x < HUETTE_X + 22) { p.vx = LAUF * .8; p.x += p.vx * dt / 1000; p.phase += p.vx * dt / 1000 / 7; p.blick = 1; } else { p.vx = 0; p.phase = 0; }
+      cam += (Math.min(LEN - W, HUETTE_X - 150) - cam) * Math.min(1, dt * 0.004);
+      if (t > 900 && !s.prost) { s.prost = true; comic('ŞEREFE!', HUETTE_X - 20, 120, 12); }
+      if (((e.neu.a || e.klick) && t > 2500) || t > 7600) zumEnde();
+      return;
+    }
+    if (modus === 'spiel') spielSchritt(dt, e);
+  }
+
+  // ---------- Hintergrund: einmal vorgemalt ----------
+  function leinwand(b, h) { var hc = document.createElement('canvas'); hc.width = b; hc.height = h; return hc; }
+  var FERN = null, MITTE = null, HANF = null, HUETTE = null;
+
+  // Ferne Ebene: die C64-Burg im Abendrot, rechts daneben wird es Nacht – im selben Pixelstil weitergemalt
+  function fernMalen() {
+    var B = Math.ceil((LEN - W) * P_FERN) + W, hc = leinwand(B, 200), g = hc.getContext('2d'), r = zufall(1983);
+    function R(px, py, b, h, f) { g.fillStyle = f; g.fillRect(Math.round(px), Math.round(py), Math.round(b), Math.round(h)); }
+    var burg = A.burgBild(); g.drawImage(burg, 0, 0);
+    var reihen = [];
+    try {
+      var d = burg.getContext('2d').getImageData(0, 0, 48, 200).data;
+      for (var y = 0; y < 200; y++) {
+        var l = []; for (var xx = 0; xx < 48; xx += 2) { var i = (y * 48 + xx) * 4; l.push([d[i] + d[i + 1] + d[i + 2], 'rgb(' + d[i] + ',' + d[i + 1] + ',' + d[i + 2] + ')']); }
+        l.sort(function (p1, p2) { return p1[0] - p2[0]; }); reihen.push(l.map(function (e) { return e[1]; }));   // dunkel → hell
+      }
+    } catch (err) { reihen = []; }
+    var ersatz = ['#553800', '#8e5029', '#c46c71', '#c46c71', '#edf171'];
+    function nacht(gx) { return Math.min(1, Math.max(0, (gx - 340) / 460)); }
+    for (var y2 = 0; y2 < 200; y2++) {
+      var lauf = 0, farbe = '#000';
+      for (var gx = 320; gx < B; gx += 2) {
+        if (lauf <= 0) {
+          var n = nacht(gx), z = r(), reihe = reihen[y2] && reihen[y2].length ? reihen[y2] : ersatz;
+          if (z < n) farbe = r() < (y2 < 110 ? .93 : .8 - (y2 - 110) / 400) ? '#000000' : '#2e2c9b';
+          else if (z < n + n * (1 - n) * 1.2) farbe = r() < .6 ? '#8e3c97' : '#c46c71';
+          else {                                            // Wolkenbänder statt Rauschen: hell/dunkel folgt einer weichen Welle
+            var v = .5 + .28 * Math.sin(gx / 41 + y2 / 11) + .18 * Math.sin(gx / 17 - y2 / 6 + 1.3) + .2 * (r() - .5);
+            farbe = reihe[Math.max(0, Math.min(reihe.length - 1, Math.floor(v * reihe.length)))];
+          }
+          lauf = 1 + Math.floor(r() * (8 + n * 10));
+        }
+        R(gx, y2, 2, 1, farbe); lauf--;
+      }
+    }
+    for (var st = 0; st < 260; st++) { var sx = 320 + r() * (B - 320), sy = r() * 150; if (r() < nacht(sx) * nacht(sx)) R(sx, sy, 1, 1, r() < .3 ? '#ffffff' : '#b2b2b2'); }
+    g.fillStyle = '#f3ecd2'; g.beginPath(); g.arc(B - 100, 36, 9, 0, Math.PI * 2); g.fill();
+    R(B - 104, 33, 3, 2, '#d8cfae'); R(B - 98, 38, 2, 2, '#d8cfae');
+    // Spessart-Silhouette, schließt an den Burgberg an
+    for (var hx = 320; hx < B; hx += 2) {
+      var t = Math.min(1, (hx - 320) / 90), basis = 150 - Math.sin(hx / 53) * 10 - Math.sin(hx / 17) * 3;
+      var hy = Math.round(92 * (1 - t) + basis * t - r() * 2);
+      R(hx, hy, 2, 200 - hy, '#000000');
+      if (r() < .05 && hx > 400) R(hx, hy + 6 + r() * 20, 1, 1, '#edf171');            // Lichter ferner Dörfer
+    }
+    return hc;
+  }
+
+  // Mittlere Ebene: Altstadt, Main, Urphar mit Kirche, Wald, Sumpf
+  function mitteMalen() {
+    var B = Math.ceil((LEN - W) * P_MITTE) + W, hc = leinwand(B, 200), g = hc.getContext('2d'), r = zufall(77);
+    function R(px, py, b, h, f) { g.fillStyle = f; g.fillRect(Math.round(px), Math.round(py), Math.round(b), Math.round(h)); }
+    function poly(f, pts) { g.fillStyle = f; g.beginPath(); g.moveTo(pts[0], pts[1]); for (var i = 2; i < pts.length; i += 2) g.lineTo(pts[i], pts[i + 1]); g.closePath(); g.fill(); }
+    function m(wx) { return (wx - 160) * P_MITTE + 160; }
+    function eins2(l) { return l[Math.floor(r() * l.length)]; }
+
+    // --- Wertheimer Altstadt ---
+    function altstadtHaus(hx, b, h, dachF) {
+      var putz = eins2(['#b89a74', '#a87a64', '#c4b28c', '#96a07e', '#b4806e', '#c8bc9c']), y0 = 200 - h;
+      R(hx, y0, b, h, putz); R(hx + b - 2, y0, 2, h, 'rgba(0,0,0,.2)');
+      var fw = r() < .4;
+      if (fw) { for (var fy = y0; fy < 200; fy += 11) R(hx, fy, b, 1, '#4a3424'); for (var fx = hx; fx < hx + b; fx += 6) R(fx, y0, 1, h, '#4a3424'); }
+      var dach = eins2(['#4a2e2a', '#3a3e4c', '#5a3426']);
+      poly(dach, [hx - 1, y0, hx + b + 1, y0, hx + b / 2, y0 - Math.round(b * dachF)]);
+      poly('rgba(0,0,0,.25)', [hx + b / 2, y0 - Math.round(b * dachF), hx + b + 1, y0, hx + b / 2, y0]);
+      if (dachF > .5) R(hx + b / 2 - 1, y0 - Math.round(b * dachF * .5), 2, 3, r() < .5 ? '#ffd25a' : '#22262e');   // Gaube
+      for (var wy = y0 + 4; wy < 200 - 12; wy += 11) for (var wx = hx + 3; wx < hx + b - 4; wx += 7) R(wx, wy, 3, 4, r() < .4 ? '#ffd25a' : '#262a34');
+      R(hx + Math.round(b / 2) - 2, 192, 4, 8, '#3b2a1c');
+    }
+    var hx = 0;
+    // vorn klein, damit die Burg auf dem Berg zu sehen bleibt; später wird die Altstadt höher
+    while (hx < m(1290)) { var b = 18 + Math.floor(r() * 14), h = hx < 420 ? 14 + r() * 8 : 22 + r() * 22; altstadtHaus(hx, b, h, hx < 420 ? .45 : .7); hx += b + (r() < .3 ? 2 : 0); }
+    // Der Spitze Turm – schief, aber er steht
+    var tx = m(760), ty = 200;
+    for (var ts = 0; ts < 72; ts += 4) { var lean = Math.round(ts * .07); R(tx + lean, ty - ts - 4, 14, 4, ts % 8 ? '#a8604a' : '#9a5442'); if (ts % 20 === 8) R(tx + lean + 6, ty - ts - 3, 2, 3, '#1a1a1a'); }
+    poly('#3a3e4c', [tx + 4, ty - 72, tx + 20, ty - 72, tx + 17, ty - 94]);
+    R(tx + 17, ty - 98, 1, 5, '#d8c27a');
+
+    // --- Der Main (unter der Brücke) mit dem anderen Ufer ---
+    var m0 = m(1270), m1 = m(2330);
+    R(m0, 178, m1 - m0, 22, '#1b3456'); R(m0, 178, m1 - m0, 1, '#2a4a78');
+    for (var wl = 0; wl < 140; wl++) R(m0 + r() * (m1 - m0), 180 + r() * 19, 3 + r() * 7, 1, r() < .5 ? '#24426b' : '#2f5584');
+    R(m0, 172, m1 - m0, 6, '#14201a');
+    for (var kh = m0 + 6; kh < m1 - 20; kh += 10 + r() * 14) { var kb = 6 + r() * 8, kht = 4 + r() * 5; R(kh, 172 - kht, kb, kht, '#202a30'); poly('#181c24', [kh - 1, 172 - kht, kh + kb + 1, 172 - kht, kh + kb / 2, 168 - kht - 2]); if (r() < .6) R(kh + 2, 174 - kht, 1, 1, '#ffd25a'); }
+    // Schiff auf dem Main
+    var sx = m(1900); R(sx, 184, 40, 5, '#2a2a30'); R(sx + 28, 179, 8, 5, '#3a3a44'); R(sx + 30, 180, 2, 2, '#ffd25a'); R(sx + 2, 182, 24, 2, '#4a3424');
+
+    // --- Urphar: Fachwerk, Wiese, Kirche auf der Anhöhe ---
+    var u0 = m(2300), u1 = m(3600);
+    R(u0, 188, u1 - u0, 12, '#1d2f22');
+    function fachwerk(fx, b, h, rot) {
+      var y0 = 200 - h; R(fx, y0, b, h, '#cbbf9f');
+      for (var yy = y0; yy < 200; yy += Math.round(h / 2)) R(fx, yy, b, 1, '#4a3424');
+      for (var bx = fx; bx <= fx + b - 1; bx += 5) R(bx, y0, 1, h, '#4a3424');
+      for (var bx2 = fx; bx2 < fx + b - 5; bx2 += 10) for (var k = 0; k < 5; k++) { R(bx2 + k, y0 + k + 1, 1, 1, '#4a3424'); R(bx2 + 4 - k, y0 + k + 1, 1, 1, '#4a3424'); }
+      poly(rot, [fx - 2, y0, fx + b + 2, y0, fx + b / 2, y0 - Math.round(b * .55)]);
+      poly('rgba(0,0,0,.25)', [fx + b / 2, y0 - Math.round(b * .55), fx + b + 2, y0, fx + b / 2, y0]);
+      for (var wx = fx + 3; wx < fx + b - 3; wx += 6) R(wx, y0 + Math.round(h * .6), 2, 3, r() < .55 ? '#ffd25a' : '#2a2a2a');
+      R(fx + Math.round(b * .7), y0 - Math.round(b * .4), 3, 5, '#5a3a2a');
+    }
+    function laubbaum(bx, by, gr) { R(bx - gr * .15, by - gr * .6, gr * .3, gr * .6, '#3a2a1c'); g.fillStyle = '#1d3a25'; g.beginPath(); g.arc(bx, by - gr, gr * .7, 0, Math.PI * 2); g.fill(); g.fillStyle = '#28502f'; g.beginPath(); g.arc(bx - gr * .2, by - gr * 1.15, gr * .4, 0, Math.PI * 2); g.fill(); }
+    function tanne(bx, by, gr, f1, f2) { R(bx - 1, by - gr * .3, 2, gr * .3, '#3a2a1c'); poly(f1 || '#163020', [bx, by - gr * 1.8, bx + gr * .55, by - gr * .3, bx - gr * .55, by - gr * .3]); poly(f2 || '#1f4029', [bx, by - gr * 1.8, bx + gr * .3, by - gr * .9, bx - gr * .1, by - gr * .9]); }
+    var fxx = u0 + 10;
+    while (fxx < m(3150)) { if (r() < .25) { laubbaum(fxx + 6, 200, 10 + r() * 6); fxx += 14; continue; } var fb = 22 + Math.floor(r() * 14); fachwerk(fxx, fb, 16 + Math.floor(r() * 10), eins2(['#8a3b2a', '#7a3424', '#6f2f22'])); fxx += fb + 6; }
+    var kx = m(3260);
+    poly('#223a27', [kx - 70, 200, kx - 40, 176, kx + 50, 172, kx + 90, 200]);
+    R(kx - 44, 168, 92, 6, '#8f877a'); for (var zm = kx - 44; zm < kx + 48; zm += 5) R(zm, 165, 3, 3, '#8f877a');     // Wehrmauer
+    R(kx - 26, 138, 46, 30, '#c9c2b0'); poly('#3e4a5c', [kx - 29, 138, kx + 23, 138, kx + 14, 126, kx - 20, 126]);    // Schiff
+    R(kx - 14, 150, 4, 8, '#ffd25a'); R(kx, 150, 4, 8, '#ffd25a');
+    R(kx + 20, 104, 16, 64, '#d2cbb8'); R(kx + 20, 104, 2, 64, '#b3ac9a');                                                   // Turm
+    poly('#2f3a4a', [kx + 18, 104, kx + 38, 104, kx + 28, 74]);
+    R(kx + 27, 68, 2, 7, '#d8c27a'); R(kx + 25, 70, 6, 2, '#d8c27a');
+    R(kx + 25, 112, 5, 5, '#e8e0c8'); R(kx + 27, 113, 1, 3, '#1d1d1d');                                                       // Uhr
+    R(kx + 26, 126, 4, 6, '#2a2a2a');
+    for (var lb = m(3360); lb < u1; lb += 12 + r() * 10) laubbaum(lb, 200, 12 + r() * 8);
+
+    // --- Wald ---
+    var w0 = m(3600), w1 = m(4700);
+    R(w0, 186, w1 - w0, 14, '#121f17');
+    for (var tb = 0; tb < 70; tb++) { var bx = w0 + r() * (w1 - w0), gr = 18 + r() * 26; tanne(bx, 200, gr, r() < .5 ? '#10261a' : '#163020', '#1b3a25'); }
+    for (var tb2 = 0; tb2 < 30; tb2++) { var bx3 = w0 + r() * (w1 - w0); tanne(bx3, 202, 12 + r() * 10, '#1a3a22', '#24502e'); }
+
+    // --- Sumpf ---
+    var s0 = m(4700), s1 = B;
+    R(s0, 190, s1 - s0, 10, '#1a2216');
+    for (var tp = 0; tp < 14; tp++) { var px = s0 + r() * (s1 - s0), pw = 20 + r() * 40; g.fillStyle = '#22382e'; g.beginPath(); g.ellipse(px, 194, pw / 2, 3, 0, 0, Math.PI * 2); g.fill(); R(px - pw / 4, 193, pw / 3, 1, '#3a5a4a'); }
+    function toterBaum(bx, gr) {
+      g.strokeStyle = '#2a2620'; g.lineWidth = 3; g.beginPath(); g.moveTo(bx, 200); g.lineTo(bx + 2, 200 - gr); g.stroke();
+      g.lineWidth = 1.5;
+      for (var a = 0; a < 5; a++) { var ay = 200 - gr * (.45 + a * .12), sl = (a % 2 ? 1 : -1); g.beginPath(); g.moveTo(bx + 1, ay); g.lineTo(bx + sl * gr * .35, ay - gr * .18); g.lineTo(bx + sl * gr * .45, ay - gr * .3); g.stroke(); }
+      g.lineWidth = 1;
+    }
+    for (var tb3 = 0; tb3 < 16; tb3++) toterBaum(s0 + 20 + r() * (s1 - s0 - 40), 30 + r() * 40);
+    for (var sf = 0; sf < 200; sf++) { var rx = s0 + r() * (s1 - s0), rh = 4 + r() * 10; R(rx, 200 - rh, 1, rh, r() < .5 ? '#3a4a24' : '#2a3a1c'); if (r() < .2) R(rx - 1, 200 - rh - 3, 2, 3, '#5a3a1c'); }   // Schilf mit Kolben
+    return hc;
+  }
+
+  // Hanfpflanze aus URPHAED, klein vorgemalt
+  function hanfMalen() {
+    var hc = leinwand(30, 36), g = hc.getContext('2d');
+    function blatt(bx, by, len, winkel, hell) {
+      for (var f = -3; f <= 3; f++) {
+        var w2 = winkel + f * .38, l2 = len * (1 - Math.abs(f) * .2), b2 = l2 * .2;
+        var ex = bx + Math.cos(w2) * l2, ey = by + Math.sin(w2) * l2, nx = -Math.sin(w2) * b2, ny = Math.cos(w2) * b2;
+        g.fillStyle = (f % 2) ? (hell ? '#7ccf5e' : '#4f9a3f') : (hell ? '#5fb84a' : '#3f8a32');
+        g.beginPath(); g.moveTo(bx, by); g.lineTo(bx + Math.cos(w2) * l2 * .5 + nx, by + Math.sin(w2) * l2 * .5 + ny); g.lineTo(ex, ey); g.lineTo(bx + Math.cos(w2) * l2 * .5 - nx, by + Math.sin(w2) * l2 * .5 - ny); g.fill();
+      }
+    }
+    var hx = 15, hy = 36, gr = 30;
+    g.fillStyle = '#3f7a32'; g.fillRect(hx, hy - gr, 1.5, gr);
+    for (var e = 0; e < 3; e++) { var ey = hy - gr * (.25 + e * .3), eg = gr * (.5 - e * .1); blatt(hx, ey, eg, -Math.PI / 2 - .9, e % 2 === 0); blatt(hx, ey, eg, -Math.PI / 2 + .9, e % 2 === 1); }
+    blatt(hx, hy - gr, gr * .35, -Math.PI / 2, true);
+    return hc;
+  }
+
+  // Die Hütte im Sumpf
+  function huetteMalen() {
+    var hc = leinwand(90, 70), g = hc.getContext('2d');
+    function R(px, py, b, h, f) { g.fillStyle = f; g.fillRect(Math.round(px), Math.round(py), Math.round(b), Math.round(h)); }
+    R(8, 26, 74, 44, '#6b4a2c'); for (var pl = 26; pl < 70; pl += 5) R(8, pl, 74, 1, '#553a22');
+    g.fillStyle = '#3a2418'; g.beginPath(); g.moveTo(0, 28); g.lineTo(45, 2); g.lineTo(90, 28); g.closePath(); g.fill();
+    g.fillStyle = '#2a180e'; g.beginPath(); g.moveTo(45, 2); g.lineTo(90, 28); g.lineTo(45, 28); g.closePath(); g.fill();
+    R(62, 0, 7, 14, '#4a2f20');
+    R(36, 44, 16, 26, '#2a1a10'); R(48, 56, 2, 2, '#d8c27a');                  // Tür
+    R(14, 36, 14, 11, '#ffd25a'); R(20, 36, 1, 11, '#6b4a2c'); R(14, 41, 14, 1, '#6b4a2c');   // Fenster, erleuchtet
+    R(62, 36, 14, 11, '#ffb040'); R(68, 36, 1, 11, '#6b4a2c'); R(62, 41, 14, 1, '#6b4a2c');
+    R(28, 17, 34, 8, '#d8c27a'); g.fillStyle = '#3a2418'; g.font = 'bold 7px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('HÜTTE', 45, 21.5);
+    return hc;
+  }
+
+  // ---------- Zeichnen ----------
+  var x = null;
+  var BILDER = {};
+  function figurEigen(nameF, bild, pal, key, spiegel) {
+    var k = nameF + bild + key + (spiegel ? 's' : ''); if (BILDER[k]) return BILDER[k];
+    var z = A.FIGUREN[nameF][bild % 4], hc = leinwand(16, 26), g = hc.getContext('2d');
+    for (var yy = 0; yy < 26; yy++) for (var xx = 0; xx < 16; xx++) { var ch = z[yy].charAt(spiegel ? 15 - xx : xx); if (ch === '.') continue; g.fillStyle = pal[ch] || A.HAUT[ch] || '#ff00ff'; g.fillRect(xx, yy, 1, 1); }
+    BILDER[k] = hc; return hc;
+  }
+  var R = function (px, py, b, h, f) { x.fillStyle = f; x.fillRect(Math.round(px), Math.round(py), Math.round(b), Math.round(h)); };
+  function sx(wx) { return Math.round(wx - cam); }
+  function sichtbar(wx, b) { return wx + (b || 0) > cam - 20 && wx < cam + W + 20; }
+  function schatten(t, px, py, gr, farbe) { text(t, px + 1, py + 1, gr, '#000'); text(t, px, py, gr, farbe); }
+  var BLASEN = [];
+  function blase(t, px, py) { BLASEN.push([t, px, py]); }
+  function blasenMalen() { BLASEN.forEach(function (b) { blaseJetzt(b[0], b[1], b[2]); }); BLASEN = []; }
+  function blaseJetzt(t, px, py) {
+    var b = Math.round(t.length * 4.3 + 8);
+    var l = Math.max(2, Math.min(W - b - 2, Math.round(px - b / 2)));
+    R(l, py - 6, b, 12, '#f1eee4'); R(l, py + 6, b, 1, '#9a9488'); R(Math.round(px) - 1, py + 6, 3, 3, '#f1eee4');
+    text(t, l + b / 2, py, 7, '#1b1612');
+  }
+
+  function himmel() {
+    if (!FERN) FERN = fernMalen();
+    if (!MITTE) MITTE = mitteMalen();
+    var fx = Math.round(cam * P_FERN), mx = Math.round(cam * P_MITTE);
+    x.drawImage(FERN, fx, 0, W, 200, 0, 0, W, 200);
+    x.drawImage(MITTE, mx, 0, W, 200, 0, 0, W, 200);
+    R(0, 200, W, 40, '#0b100c');
+    // Wasser in den Lücken
+    for (var px = 0; px < W; px += 16) {
+      var art = wasserArt(cam + px), f = art === 'main' ? ['#1b3456', '#2f5584'] : art === 'bach' ? ['#1d3a4a', '#3a6a7a'] : ['#24301c', '#4a5a2a'];
+      R(px, WASSER_Y, 16, H - WASSER_Y, f[0]);
+      var welle = Math.floor((zeit / 140 + px) % 16);
+      R(px + welle % 12, WASSER_Y + 3 + (px % 3) * 5, 4, 1, f[1]);
+    }
+    R(0, WASSER_Y, W, 1, 'rgba(160,200,255,.25)');
+  }
+
+  // Boden und Klötze
+  function hash(n) { n = (n * 374761393) | 0; n = (n ^ (n >>> 13)) * 1274126177 | 0; return (n ^ (n >>> 16)) >>> 0; }
+  function festMalen(f) {
+    if (!sichtbar(f.x, f.w)) return;
+    var l = Math.max(f.x, cam - 4), rr = Math.min(f.x + f.w, cam + W + 4), x0 = sx(l), b = Math.round(rr - l), y = Math.round(f.y), wx;
+    if (f.art === 'pflaster') {
+      R(x0, y, b, 40, '#57514a'); R(x0, y, b, 2, '#8c8473');
+      for (var j = 0; j < 4; j++) { var off = (j % 2) * 5; for (wx = Math.floor((l - off) / 10) * 10 + off; wx < rr; wx += 10) { R(sx(wx), y + 2 + j * 5, 1, 5, '#3a362f'); R(sx(wx) + 1, y + 2 + j * 5, 7, 1, '#6e675c'); } R(x0, y + 6 + j * 5, b, 1, '#3a362f'); }
+      R(x0, y + 22, b, 18, '#3a352f');
+    } else if (f.art === 'bruecke') {
+      R(x0, y, b, 12, '#8a4a3a'); R(x0, y, b, 2, '#b06850'); R(x0, y + 11, b, 1, '#5a2e24');
+      for (wx = Math.floor(l / 12) * 12; wx < rr; wx += 12) R(sx(wx), y + 3, 1, 8, '#6e3a2e');
+      // Bögen und Pfeiler
+      R(x0, y + 12, b, 10, '#7a4032');
+      for (wx = Math.floor(l / 64) * 64; wx < rr + 64; wx += 64) {
+        var mx = sx(wx + 32);
+        x.fillStyle = '#0d1828'; x.beginPath(); x.arc(mx, y + 24, 24, Math.PI, 0); x.fill();
+        if (wx >= f.x && wx <= f.x + f.w - 10) { R(sx(wx) - 6, y + 12, 12, 40, '#7a4032'); R(sx(wx) - 6, y + 12, 2, 40, '#9a5a44'); }
+      }
+      if (f.x >= cam - 10) { R(sx(f.x), y + 12, 6, 40, '#7a4032'); }
+      if (f.x + f.w <= cam + W + 10) { R(sx(f.x + f.w) - 6, y + 12, 6, 40, '#7a4032'); }
+    } else if (f.art === 'wiese' || f.art === 'wald' || f.art === 'sumpf') {
+      var erde = f.art === 'wiese' ? '#3a2a1c' : f.art === 'wald' ? '#2a2016' : '#2a2a1a', gras = f.art === 'wiese' ? '#3f6a34' : f.art === 'wald' ? '#2f4a2a' : '#4a5226', halm = f.art === 'wiese' ? '#5a8a44' : f.art === 'wald' ? '#3f6a34' : '#6a7a3a';
+      R(x0, y, b, 40, erde); R(x0, y, b, 4, gras); R(x0, y + 4, b, 2, 'rgba(0,0,0,.25)'); R(x0, y + 24, b, 16, 'rgba(0,0,0,.22)');
+      for (wx = Math.floor(l / 3) * 3; wx < rr; wx += 3) { var hs = hash(wx); R(sx(wx), y - 1 - (hs & 1), 1, 2 + (hs & 1), halm); if ((hs & 15) === 3) R(sx(wx), y + 8 + (hs >> 5 & 15), 2 + (hs >> 9 & 1), 1, '#6a5a44'); if ((hs & 63) === 9) R(sx(wx), y + 12 + (hs >> 6 & 7), 1, 3, '#1b140c'); if (f.art === 'sumpf' && (hs & 15) === 5) { R(sx(wx), y - 8, 1, 8, '#4a5a2a'); R(sx(wx) - 1, y - 11, 2, 3, '#5a3a1c'); } }
+      if (f.x >= cam - 4) R(sx(f.x), y, 1, 40, 'rgba(0,0,0,.35)');
+    } else if (f.art === 'kiste') {
+      for (var ky = 0; ky < f.h; ky += 12) {
+        R(sx(f.x), y + ky, f.w, 12, '#a8302a'); R(sx(f.x), y + ky, f.w, 1, '#c84a3a'); R(sx(f.x), y + ky + 11, f.w, 1, '#6a1810');
+        R(sx(f.x) + 5, y + ky + 3, 6, 2, '#3a100c'); R(sx(f.x) + 1, y + ky + 7, f.w - 2, 1, '#8a2420');
+      }
+      for (var fl = 0; fl < 4; fl++) { R(sx(f.x) + 1 + fl * 4, y - 3, 2, 3, '#2a5a24'); R(sx(f.x) + 1 + fl * 4, y - 4, 2, 1, '#d8c27a'); }
+    } else if (f.art === 'lift') {
+      R(sx(f.x) + 3, 0, 1, y, '#6b6f78'); R(sx(f.x) + f.w - 4, 0, 1, y, '#6b6f78');
+      R(sx(f.x), y, f.w, f.h, '#2a6a3a'); R(sx(f.x), y, f.w, 1, '#3a8a4a'); R(sx(f.x) + 6, y + 3, 8, 2, '#123018');
+      for (var fl2 = 0; fl2 < 5; fl2++) { R(sx(f.x) + 1 + fl2 * 4, y - 3, 2, 3, '#6a3a14'); R(sx(f.x) + 1 + fl2 * 4, y - 4, 2, 1, '#d8c27a'); }
+    } else if (f.art === 'stamm') {
+      R(sx(f.x), y, f.w, f.h, '#6b4a2c'); R(sx(f.x), y, f.w, 2, '#8a6440'); R(sx(f.x) + 4, y + 4, f.w - 10, 1, '#4e3420');
+      R(sx(f.x), y + 1, 3, f.h - 2, '#a8804a'); R(sx(f.x + f.w) - 3, y + 1, 3, f.h - 2, '#a8804a'); R(sx(f.x + f.w) - 2, y + 3, 1, 2, '#6b4a2c');
+      R(sx(f.x) - 2, y + f.h - 1, f.w + 4, 1, 'rgba(200,230,255,.4)');
+    } else if (f.art === 'holz' || f.art === 'balkon' || f.art === 'steg' || f.art === 'ast') {
+      var holz = f.art === 'ast' ? '#5a3a22' : '#7d5935';
+      R(sx(f.x), y, f.w, 4, holz); R(sx(f.x), y, f.w, 1, '#a07a50');
+      if (f.art === 'steg') { R(sx(f.x) + 3, y + 4, 2, 40, '#4e3420'); R(sx(f.x + f.w) - 5, y + 4, 2, 40, '#4e3420'); }
+      if (f.art === 'balkon') { for (var gl = 2; gl < f.w; gl += 4) R(sx(f.x) + gl, y - 7, 1, 7, '#2a2a30'); R(sx(f.x), y - 8, f.w, 1, '#2a2a30'); R(sx(f.x) + 4, y + 4, 2, 6, '#2a2a30'); R(sx(f.x + f.w) - 6, y + 4, 2, 6, '#2a2a30'); }
+      if (f.art === 'ast') { R(sx(f.x + f.w) - 4, y - 3, 4, 2, '#2f4a2a'); R(sx(f.x) + 8, y - 2, 3, 2, '#2f4a2a'); }
+    } else if (f.art === 'heu') {
+      R(sx(f.x), y, f.w, f.h, '#c8a84a'); for (var hz = 2; hz < f.h; hz += 3) R(sx(f.x) + 1, y + hz, f.w - 2, 1, '#a8883a');
+      R(sx(f.x) + 6, y, 1, f.h, '#7a5a2a'); R(sx(f.x) + f.w - 7, y, 1, f.h, '#7a5a2a'); R(sx(f.x), y, f.w, 1, '#e0c868');
+    } else if (f.art === 'container') {
+      R(sx(f.x), y, f.w, f.h, '#d8d4c8'); R(sx(f.x), y, f.w, 2, '#f0ece0'); R(sx(f.x), y + 18, f.w, 4, '#c8302a');
+      for (var cr = 4; cr < f.w; cr += 5) R(sx(f.x) + cr, y + 2, 1, 16, '#bcb8ac');
+      R(sx(f.x) + 6, y + 5, 22, 10, '#4a4f5a'); R(sx(f.x) + 7, y + 6, 20, 8, '#6a7080');   // Klappe zu
+      text('PIZZA', sx(f.x) + 39, y + 7, 6, '#c8302a'); text('BLITZ', sx(f.x) + 39, y + 13, 6, '#c8302a');
+      x.fillStyle = '#ffd25a'; x.beginPath(); x.moveTo(sx(f.x) + 36, y + 22); x.lineTo(sx(f.x) + 42, y + 22); x.lineTo(sx(f.x) + 38, y + 26); x.lineTo(sx(f.x) + 41, y + 26); x.lineTo(sx(f.x) + 34, y + 30); x.lineTo(sx(f.x) + 37, y + 26); x.lineTo(sx(f.x) + 34, y + 26); x.fill();
+      R(sx(f.x) + 3, y + f.h - 1, 6, 1, '#1a1a1a'); R(sx(f.x) + f.w - 9, y + f.h - 1, 6, 1, '#1a1a1a');
+    } else if (f.art === 'zaun') {
+      for (var zp = 1; zp < f.w; zp += 8) R(sx(f.x) + zp, y - 1, 2, f.h + 1, '#6b4a2c');
+      R(sx(f.x), y + 1, f.w, 2, '#7d5935'); R(sx(f.x), y + 6, f.w, 2, '#7d5935');
+    } else if (f.art === 'mauer') {
+      R(sx(f.x), y, f.w, f.h, '#8f877a'); R(sx(f.x), y, f.w, 2, '#aaa292');
+      for (var mz = 0; mz < f.h; mz += 5) for (var mxx = ((mz / 5) % 2) * 4; mxx < f.w; mxx += 9) R(sx(f.x) + mxx, y + 2 + mz, 1, 4, '#6f685c');
+    } else if (f.art === 'stumpf') {
+      R(sx(f.x), y, f.w, f.h, '#5a3a22'); R(sx(f.x) + 2, y + 3, 1, f.h - 3, '#4a2e1a'); R(sx(f.x) + f.w - 4, y + 3, 1, f.h - 3, '#4a2e1a');
+      R(sx(f.x), y, f.w, 3, '#a8804a'); R(sx(f.x) + 4, y + 1, f.w - 8, 1, '#8a6440');
+    }
+  }
+  // Brückengeländer hinter dem Läufer
+  function gelaender() {
+    L.fest.forEach(function (f) {
+      if (f.art !== 'bruecke' || !sichtbar(f.x, f.w)) return;
+      var l = Math.max(f.x, cam - 4), rr = Math.min(f.x + f.w, cam + W + 4);
+      R(sx(l), f.y - 12, Math.round(rr - l), 2, '#9a5a44');
+      for (var wx = Math.ceil(l / 8) * 8; wx < rr; wx += 8) R(sx(wx), f.y - 10, 2, 10, '#7a4032');
+    });
+  }
+
+  function dekoMalen(d) {
+    if (!sichtbar(d.x - 40, 80)) return;
+    var px = sx(d.x), p = s ? s.p : null, nah = p && Math.abs(p.x - d.x) < 80;
+    if (d.art === 'schild') {
+      R(px - 1, GY - 22, 2, 22, '#5a3a22');
+      var b = Math.max.apply(null, d.zeilen.map(function (z) { return z.length; })) * 4.3 + 8;
+      R(px - b / 2, GY - 40, b, 20, '#7d5935'); R(px - b / 2, GY - 40, b, 1, '#a07a50'); R(px - b / 2, GY - 21, b, 1, '#4e3420');
+      d.zeilen.forEach(function (z, i) { text(z, px, GY - 34 + i * 8, 7, '#f1e6c8'); });
+    } else if (d.art === 'ortsschild') {
+      R(px - 1, GY - 20, 2, 20, '#9aa0a8');
+      var b2 = Math.max(44, d.name.length * 6 + 10);
+      R(px - b2 / 2, GY - 38, b2, 18, '#1b1612'); R(px - b2 / 2 + 1, GY - 37, b2 - 2, 16, '#f0c419');
+      text(d.name, px, GY - 31, 8, '#1b1612');
+      text(d.name === 'WERTHEIM' ? 'Große Kreisstadt' : d.name === 'URPHAR' ? 'Stadt Wertheim' : d.name === 'SUMPF' ? 'Werdö a Moh' : 'Main-Tauber', px, GY - 24, 5, '#1b1612');
+    } else if (d.art === 'laterne') {
+      x.globalAlpha = .13; x.fillStyle = '#ffd25a'; x.beginPath(); x.arc(px, GY - 40, 18, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1;
+      R(px - 1, GY - 40, 2, 40, '#2a2a30'); R(px - 4, GY - 46, 8, 2, '#2a2a30'); R(px - 3, GY - 44, 6, 5, '#ffd25a'); R(px - 3, GY - 39, 6, 1, '#2a2a30');
+    } else if (d.art === 'bake') {
+      for (var bk = 0; bk < 4; bk++) R(px - 3, GY - 24 + bk * 6, 6, 6, bk % 2 ? '#f1eee4' : '#e2283a');
+      R(px - 4, GY - 1, 8, 1, '#1a1a1a');
+      if (Math.floor(zeit / 400) % 2) R(px - 1, GY - 28, 3, 3, '#ffb040');
+    } else if (d.art === 'dreher') {
+      var dy = d.y;
+      R(px - 4, dy - 6, 9, 6, '#3a5a2a'); R(px - 4, dy - 2, 4, 2, '#2a3a5a'); R(px + 1, dy - 2, 5, 2, '#2a3a5a');     // sitzt: Jacke, Beine
+      R(px + 4, dy - 2, 2, 6, '#2a3a5a'); R(px - 4, dy - 2, 2, 6, '#2a3a5a'); R(px + 3, dy + 4, 4, 2, '#1b1612'); R(px - 5, dy + 4, 4, 2, '#1b1612');
+      R(px - 3, dy - 14, 7, 8, '#e3b98f'); R(px - 4, dy - 15, 9, 3, '#c8302a'); R(px + 2, dy - 11, 1, 1, '#1b1612');  // Kopf, Mütze
+      var dreh = Math.floor(zeit / 260) % 2;
+      R(px + 1, dy - 7 - dreh, 5, 2, '#e3b98f'); R(px + 2, dy - 8 - dreh, 4, 1, '#f4efe0');                           // Hände drehen
+      if (Math.floor(zeit / 1700) % 2) { x.globalAlpha = .5; R(px + 6, dy - 18 - (zeit / 120) % 8, 2, 2, '#9aa3ad'); x.globalAlpha = 1; }
+      if (nah) blase(d.spruch, px, dy - 26);
+    } else if (d.art === 'klaus') {
+      if (nah) blase(d.spruch, px, 150);
+    } else if (d.art === 'toni') {
+      var bild = figurEigen('kumpel', Math.floor(zeit / 500) % 2 ? 1 : 3, { c: '#e2283a', b: '#2a4a8a', B: '#1a3a6a', j: '#2a4a8a', W: '#1b1612' }, 'toni', true);
+      x.drawImage(bild, px - 8, GY - 26);
+      var hau = Math.floor(zeit / 300) % 2;
+      R(px - 10, GY - 13 - hau * 2, 6, 2, '#9aa0a8'); R(px - 11, GY - 15 - hau * 2, 2, 4, '#9aa0a8');                // Rohrzange
+      R(px - 22, GY - 10, 3, 10, '#6b6f78'); R(px - 24, GY - 11, 7, 2, '#9aa0a8');                                  // Rohr aus dem Boden
+      if (hau && Math.floor(zeit / 900) % 3 === 0) A.comicStern(px - 18, GY - 24, 'TOCK!', 6, 400);
+      text('TONI', px, GY - 32, 6, COL.hell);
+      if (nah) blase(d.spruch, px, GY - 44);
+    } else if (d.art === 'hanf') {
+      if (!HANF) HANF = hanfMalen();
+      x.drawImage(HANF, px - 15, GY - 34);
+    } else if (d.art === 'alf') {
+      // ALF ist unsichtbar – man sieht nur seine Fußspuren
+      var t = (zeit % 5000) / 5000, vorn = d.x + t * 120;
+      for (var fs = 0; fs < 8; fs++) { var fx2 = vorn - fs * 12; if (fx2 < d.x) break; x.globalAlpha = 1 - fs / 8; R(sx(fx2), GY - 1 + (fs % 2), 3, 1, '#14100a'); }
+      x.globalAlpha = 1;
+      if (nah) blase('¡HOLA! SOY ALF.', sx(vorn), GY - 34);
+    } else if (d.art === 'huette') {
+      if (!HUETTE) HUETTE = huetteMalen();
+      x.drawImage(HUETTE, px - 45, GY - 70);
+    } else if (d.art === 'feuer') {
+      R(px - 8, GY - 3, 16, 3, '#3a2a1c'); R(px - 6, GY - 5, 12, 2, '#5a3a22');
+      for (var fl = 0; fl < 6; fl++) { var hh = 4 + ((Math.floor(zeit / 90) + fl * 3) % 7); R(px - 6 + fl * 2, GY - 5 - hh, 2, hh, fl % 2 ? '#ffd25a' : '#ff7a2a'); }
+      x.globalAlpha = .12; x.fillStyle = '#ff9a3a'; x.beginPath(); x.arc(px, GY - 10, 30, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1;
+    } else if (d.art === 'jungs') {
+      var JUNGS = [{ n: 'KURT', b: '#c8a030', dx: 0 }, { n: 'ALI', b: '#2a8a5a', dx: 26 }, { n: 'MURAT', b: '#c8302a', dx: 142 }, { n: 'AHMED', b: '#8a3a8a', dx: 170 }, { n: 'GERD', b: '#5a6a7a', dx: 212 }, { n: 'RAFFI', b: '#3a7ac0', dx: 234 }];
+      var jubel = modus === 'ziel';
+      JUNGS.forEach(function (j, i) {
+        var jx = px + j.dx, hop = jubel && Math.floor(zeit / 160 + i) % 2 ? -3 : 0;
+        x.drawImage(figurEigen('kumpel', 1, { c: '#2a2a2a', b: j.b, B: '#1b1612', j: '#34508a', W: '#f4f4f4' }, 'j' + i, i % 2 === 1), jx - 8, GY - 26 + hop);
+        if (j.n === 'KURT') { R(jx + 6, GY - 15 + hop, 3, 7, '#ffd25a'); R(jx + 6, GY - 16 + hop, 3, 2, '#f8f4e8'); }             // Weizen
+        if (j.n === 'AHMED') { R(jx + 5, GY - 14 + hop, 10, 1, '#8a6440'); R(jx + 13, GY - 15 + hop, 5, 3, '#a85a2a'); }          // Bratwurst am Stock übers Feuer
+        text(j.n, jx, GY - 31 + hop, 5, COL.hell);
+      });
+      if (jubel) {
+        var t2 = zeit - modusSeit, sprueche = [{ ab: 300, wer: 1, t: 'DA IST ER JA!' }, { ab: 1500, wer: 0, t: 'HAST DU BIER DABEI?' },
+          { ab: 2800, wer: 2, t: s.flaschen >= 17 ? s.flaschen + ' FLASCHEN! AFİYET OLSUN!' : 'NUR ' + s.flaschen + ' FLASCHEN? FÜR 17 MANN?' }, { ab: 4300, wer: 5, t: 'EGAL. ŞEREFE, ASLANIM!' }];
+        sprueche.forEach(function (sp, k) { if (t2 > sp.ab && t2 < sp.ab + 2200) blase(sp.t, px + JUNGS[sp.wer].dx, GY - 44 - (k % 2) * 14); });
+      }
+    }
+  }
+
+  function sacheMalen(it) {
+    if (it.weg || !sichtbar(it.x, 4)) return;
+    var px = sx(it.x), py = Math.round(it.y + Math.sin(zeit / 260 + it.x) * 1.5);
+    if (it.art === 'korken') {
+      // Kronkorken: dreht sich, gezackter dunkler Rand, rote Mitte
+      var br = [6, 4, 2, 4][Math.floor(zeit / 140 + it.x / 7) % 4];
+      R(px - br / 2, py - 3, br, 6, '#5a4a1a'); R(px - br / 2 + 1, py - 2, Math.max(1, br - 2), 4, '#e8c84a');
+      if (br > 3) { R(px - 1, py - 1, 2, 2, '#c8302a'); R(px - br / 2, py - 3, 1, 1, '#1b1612'); R(px + br / 2 - 1, py + 2, 1, 1, '#1b1612'); }
+    } else {
+      R(px - 2, py - 6, 4, 9, '#6a3a14'); R(px - 1, py - 9, 2, 3, '#6a3a14'); R(px - 1, py - 10, 2, 1, '#d8c27a');
+      R(px - 2, py - 3, 4, 3, '#e8dcc0'); R(px - 1, py - 5, 1, 7, 'rgba(255,255,255,.35)');
+    }
+  }
+
+  function gegnerMalen(g) {
+    if (!sichtbar(g.x - 16, 32)) return;
+    var px = sx(g.x), py = Math.round(g.y);
+    if (g.platt) {
+      var alter = zeit - g.platt; x.globalAlpha = Math.max(0, 1 - alter / 1400);
+      if (g.art === 'bauer') A.liegendMalen(A.dorfSprite(1, g.variante || 0, g.fackel), px, py, 26, g.richtung < 0);
+      else if (g.art === 'kartoffel') { R(px - 7, py - 3, 14, 3, '#c8a06a'); R(px - 5, py - 4, 10, 1, '#e8d8a0'); }
+      else { R(px - 4, py - 3, 8, 3, '#e8c23a'); }
+      x.globalAlpha = 1; return;
+    }
+    if (g.art === 'kartoffel') {
+      x.save(); x.translate(px, py - 5); x.rotate(g.dreh);
+      x.fillStyle = '#7a5a30'; x.beginPath(); x.ellipse(0, 0, 6, 5, 0, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#b8905a'; x.beginPath(); x.ellipse(-.5, -.5, 5.2, 4.2, 0, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#8a6a3a'; x.fillRect(2, 1, 1, 1); x.fillRect(-4, 2, 1, 1); x.fillRect(1, -3, 1, 1);
+      x.restore();
+      // böses Gesicht dreht nicht mit – sonst sieht man es ja nicht
+      var r2 = g.richtung < 0 ? -1 : 1, ax = px + r2;
+      R(ax - 3, py - 7, 2, 2, '#f8f4e8'); R(ax + 1, py - 7, 2, 2, '#f8f4e8');
+      R(ax - 3 + (r2 > 0 ? 1 : 0), py - 6, 1, 1, '#111'); R(ax + 1 + (r2 > 0 ? 1 : 0), py - 6, 1, 1, '#111');
+      R(ax - 3, py - 9, 2, 1, '#3a2a14'); R(ax - 1, py - 8, 1, 1, '#3a2a14'); R(ax + 1, py - 8, 1, 1, '#3a2a14'); R(ax + 2, py - 9, 2, 1, '#3a2a14');   // böse Brauen
+    } else if (g.art === 'bauer') {
+      var bild = A.dorfSprite(Math.floor(g.schritt / 6) % 4 === 3 ? 1 : Math.floor(g.schritt / 6) % 3, g.variante || 0, g.fackel);
+      x.save(); x.imageSmoothingEnabled = false;
+      if (g.richtung < 0) { x.translate(px, 0); x.scale(-1, 1); x.drawImage(bild, -8, py - 26); }
+      else x.drawImage(bild, px - 8, py - 26);
+      x.restore();
+      if (g.fackel) { var fz = g.richtung < 0 ? px - 7 : px + 6; R(fz - 1, py - 29, 3, 3, '#ff7a2a'); R(fz, py - 31 - (Math.floor(zeit / 90) % 2), 1, 2, '#ffd25a'); x.globalAlpha = .12; x.fillStyle = '#ff9a3a'; x.beginPath(); x.arc(fz, py - 28, 16, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1; }
+      if (g.ruf && zeit - g.ruf < 1800) blase('HALT! KARTOFFELDIEB!', px, py - 38);
+    } else if (g.art === 'dackel') {
+      var u = 1, rechts = g.richtung > 0, rr = Math.round;
+      var pxl = function (a, b, w, h, col) { var lx = rechts ? px - 8 + a : px + 8 - (a + w); x.fillStyle = col; x.fillRect(rr(lx), rr(py + b), Math.max(1, rr(w)), Math.max(1, rr(h))); };
+      var s1 = Math.sin(g.schritt / 2), s2 = -s1, wedel = Math.sin(zeit / 60) > 0 ? 0 : 1;
+      pxl(3, -2 + (s1 > 0 ? -1 : 0), 1, 2, '#7a3a14'); pxl(5, -2 + (s2 > 0 ? -1 : 0), 1, 2, '#7a3a14'); pxl(10, -2 + (s2 > 0 ? -1 : 0), 1, 2, '#7a3a14'); pxl(12, -2 + (s1 > 0 ? -1 : 0), 1, 2, '#7a3a14');
+      pxl(2, -5, 11, 3, '#c06a2c'); pxl(3, -3, 9, 1, '#9a5222'); pxl(0, -7 - wedel, 1, 2 + wedel, '#c06a2c');
+      pxl(11, -8, 4, 3, '#c06a2c'); pxl(15, -6, 2, 2, '#c06a2c'); pxl(16, -6, 1, 1, '#111'); pxl(11, -7 + (g.flucht ? -1 : 0), 1, 3, '#6a3410'); pxl(14, -7, 1, 1, '#111'); pxl(11, -5, 1, 3, '#c8302a');
+      if (g.flucht) text('JAUL!', px, py - 14, 6, COL.rosa);
+      else if (Math.floor(zeit / 900) % 3 === 0) text('WAU!', px + (rechts ? 10 : -10), py - 12, 6, COL.hell);
+    } else if (g.art === 'kaefer') {
+      var fl = Math.floor(zeit / 60) % 2;
+      x.globalAlpha = .6; R(px - 5, py - 7 - fl * 2, 4, 2, '#d8e0f0'); R(px + 1, py - 7 - fl * 2, 4, 2, '#d8e0f0'); x.globalAlpha = 1;
+      R(px - 4, py - 6, 8, 5, '#e8c23a'); for (var st = -3; st < 4; st += 2) R(px + st, py - 6, 1, 5, '#1b1612');
+      R(px - 6, py - 5, 2, 3, '#c8602a'); R(px - 6, py - 4, 1, 1, '#111');
+    }
+  }
+
+  function laeuferMalen(p) {
+    if (p.unverwundbar > 0 && Math.floor(zeit / 80) % 2 && modus === 'spiel') return;
+    var bild = !p.boden ? 0 : Math.abs(p.vx) < 5 ? 1 : Math.floor(p.phase) % 4;
+    var spr = figurEigen('kumpel', bild, A.PAL.kumpel, 'held', p.blick < 0);
+    var py = Math.round(p.y) - 26 + (modus === 'tod' && s.tod && s.tod.grund === 'wasser' ? Math.min(20, (zeit - modusSeit) / 40) : 0);
+    x.drawImage(spr, sx(p.x) - 8, py);
+    if (p.nass > 0 && Math.floor(zeit / 120) % 2) R(sx(p.x) + (p.blick > 0 ? -5 : 4), Math.round(p.y) - 2, 1, 1, '#9fd0ff');
+  }
+
+  function welt() {
+    himmel();
+    // Deko hinter allem
+    L.deko.forEach(function (d) { if (d.art !== 'dreher' && d.art !== 'toni' && d.art !== 'klaus' && d.art !== 'alf' && d.art !== 'jungs') dekoMalen(d); });
+    gelaender();
+    L.fest.forEach(festMalen);
+    L.pfuetzen.forEach(function (pf) { if (!sichtbar(pf.x, pf.w)) return; x.fillStyle = '#24405e'; x.beginPath(); x.ellipse(sx(pf.x + pf.w / 2), GY + 1, pf.w / 2, 2.5, 0, 0, Math.PI * 2); x.fill(); R(sx(pf.x) + 4 + Math.floor(zeit / 300) % 4, GY, 5, 1, '#6a94c8'); });
+    L.nesseln.forEach(function (n) {
+      if (!sichtbar(n.x, n.w)) return;
+      for (var i = 0; i < n.w; i += 3) { var hh = 5 + (hash(n.x + i) % 5); R(sx(n.x + i), GY - hh, 1, hh, '#2a5a24'); R(sx(n.x + i) - 1, GY - hh + 1, 3, 2, i % 2 ? '#3a7a32' : '#4a8a3a'); R(sx(n.x + i) + 1, GY - hh + 3, 1, 1, '#d8f0c0'); }
+    });
+    L.deko.forEach(function (d) { if (d.art === 'dreher' || d.art === 'toni' || d.art === 'klaus' || d.art === 'alf' || d.art === 'jungs') dekoMalen(d); });
+    s.sachen.forEach(sacheMalen);
+    s.gegner.forEach(gegnerMalen);
+    if (!(modus === 'tod' && s.tod && s.tod.grund === 'wasser' && zeit - modusSeit > 500)) laeuferMalen(s.p);
+    // Irrlichter im Sumpf
+    if (cam > 4400) for (var i = 0; i < 6; i++) { var ix = (i * 71 + 4700) - cam + Math.sin(zeit / 900 + i) * 20, iy = 150 + Math.sin(zeit / 700 + i * 2) * 14; if (ix > 0 && ix < W && Math.floor(zeit / 300 + i) % 4) R(ix, iy, 2, 2, i % 2 ? '#9cf58a' : '#d8ff9a'); }
+    s.funken.forEach(function (f) { x.globalAlpha = Math.min(1, f.leben / 30); R(sx(f.x), f.y, 2, 2, f.farbe); });
+    x.globalAlpha = 1;
+    s.schwebe.forEach(function (b) { var a = (zeit - b.seit) / 1100; x.globalAlpha = 1 - a; text(b.t, sx(b.x), b.y - a * 14, 7, b.farbe); x.globalAlpha = 1; });
+    blasenMalen();
+    s.comic.forEach(function (c) { A.comicStern(sx(c.x), Math.max(30, c.y), c.t, c.gr, zeit - c.seit); });
+  }
+
+  function anzeige() {
+    R(0, 0, W, 13, 'rgba(11,16,32,.85)');
+    for (var i = 0; i < s.leben; i++) { R(4 + i * 9, 3, 3, 2, COL.rosa); R(8 + i * 9 - 1, 3, 3, 2, COL.rosa); R(4 + i * 9, 5, 7, 2, COL.rosa); R(5 + i * 9, 7, 5, 2, COL.rosa); R(7 + i * 9, 9, 1, 1, COL.rosa); }
+    var fx = 66;
+    R(fx, 3, 3, 7, '#8a4a1c'); R(fx + 1, 1, 1, 2, '#8a4a1c'); R(fx, 5, 3, 2, '#e8dcc0');
+    text('×' + s.flaschen, fx + 5, 7, 8, COL.hell, 'left');
+    R(fx + 33, 4, 6, 6, '#5a4a1a'); R(fx + 34, 5, 4, 4, '#e8c84a'); R(fx + 35, 6, 2, 2, '#c8302a'); text('×' + s.korken, fx + 40, 7, 8, COL.hell, 'left');
+    text(('000000' + s.punkte).slice(-6), 200, 7, 9, COL.feuer);
+    var sek = Math.floor(s.zeit / 1000);
+    text(Math.floor(sek / 60) + ':' + ('0' + sek % 60).slice(-2), 316, 7, 8, sek > ZEIT_SOLL ? COL.rot : COL.hell, 'right');
+    // Weg zur Hütte: Burg … Hütte
+    R(20, 14, 280, 1, 'rgba(241,238,228,.25)');
+    R(20 + Math.round(s.p.x / LEN * 280), 13, 2, 3, COL.blau); R(298, 12, 3, 4, '#d8c27a');
+    if (s.meldung && zeit - s.meldung.seit < 2400) {
+      var a = Math.min(1, (2400 - (zeit - s.meldung.seit)) / 400);
+      x.globalAlpha = a; R(0, 26, W, 30, 'rgba(11,16,32,.6)');
+      text(s.meldung.t, 160, 36, s.meldung.t.length > 18 ? 10 : 14, COL.feuer); text(s.meldung.zeile, 160, 49, 8, COL.hell); x.globalAlpha = 1;
+    }
+    if (finger.benutzt && modus === 'spiel') {
+      x.globalAlpha = .28;
+      R(4, 214, 72, 22, COL.hell); R(84, 214, 72, 22, COL.hell); R(244, 214, 72, 22, COL.hell);
+      x.globalAlpha = .7; text('◀', 40, 225, 12, COL.nacht); text('▶', 120, 225, 12, COL.nacht); text('SPRUNG', 280, 225, 8, COL.nacht); x.globalAlpha = 1;
+    }
+  }
+
+  // Titel/Name/Auftrag: die Startszene unter der Burg
+  function startSzene() {
+    var c0 = cam; cam = 0;
+    if (!L) L = baue();
+    himmel(); L.fest.forEach(function (f) { if (f.x < W + 20) festMalen(f); });
+    cam = c0;
+  }
+
+  function zeichnen() {
+    x = A.ctx(); x.imageSmoothingEnabled = false;
+    if (modus === 'titel') {
+      startSzene();
+      x.fillStyle = 'rgba(11,16,32,.55)'; x.fillRect(0, 0, W, H);
+      A.logo('HÜTTENLAUF', 24, 28);
+      schatten('DER WEG ZUR HÜTTE', 160, 45, 10, COL.hell);
+      schatten('WERTHEIM · BRÜCKE · URPHAR · WALD · SUMPF', 160, 57, 7, '#d8c27a');
+      var n = LISTE.lesen().length; A.kasten(90, 66, 140, 24 + n * 10); LISTE.malen(78, -1);
+      if (Math.floor(zeit / 500) % 2) text('KNOPF DRÜCKEN ODER TIPPEN', 160, 180 + Math.max(0, n - 6) * 4, 9, COL.feuer);
+      // Einer rennt, die Kartoffel hinterher
+      var rx = (zeit / 9) % 420 - 50, ph = zeit / 90;
+      x.drawImage(figurEigen('kumpel', Math.floor(ph) % 4, A.PAL.kumpel, 'held', false), Math.round(rx) - 8, 188);
+      x.save(); x.translate(Math.round(rx - 34), 209); x.rotate(zeit / 120); x.fillStyle = '#b8905a'; x.beginPath(); x.ellipse(0, 0, 6, 5, 0, 0, Math.PI * 2); x.fill(); x.restore();
+      R(Math.round(rx - 36), 206, 2, 2, '#f8f4e8'); R(Math.round(rx - 32), 206, 2, 2, '#f8f4e8');
+      A.laufschrift(LAUFSCHRIFT, 228);
+      return;
+    }
+    if (modus === 'name') {
+      startSzene(); A.kasten(60, 60, 200, 126);
+      text('DEIN NAME', 160, 80, 12, COL.rosa);
+      for (var i = 0; i < 3; i++) {
+        var px = 130 + i * 30, aktiv = i === namePos;
+        text(ABC[name[i]], px, 116, 20, aktiv ? COL.feuer : COL.hell);
+        if (aktiv && Math.floor(zeit / 300) % 2) R(px - 7, 130, 14, 2, COL.feuer);
+        if (aktiv) { text('▲', px, 96, 8, COL.grau); text('▼', px, 140, 8, COL.grau); }
+      }
+      R(105, 147, 110, 18, COL.feuer); R(107, 149, 106, 14, '#111');
+      text('FERTIG – LOS!', 160, 156, 10, COL.feuer);
+      text('▲/▼ antippen ändert den Buchstaben', 160, 176, 7, COL.grau);
+      return;
+    }
+    if (modus === 'ende') { endeZeichnen(); return; }
+    welt(); anzeige();
+    if (modus === 'auftrag') {
+      A.kasten(40, 64, 240, 92);
+      text('AUFTRAG', 160, 78, 12, COL.rosa);
+      text('BRING BIER ZUR HÜTTE IM SUMPF.', 160, 96, 9, COL.hell);
+      text('DIE JUNGS WARTEN SCHON. (SAGEN SIE.)', 160, 108, 8, COL.grau);
+      text('20 FLASCHEN = 1 KASTEN = 1 LEBEN', 160, 122, 8, COL.feuer);
+      text('A SPRINGEN · B RENNEN · DRAUFSPRINGEN HILFT', 160, 136, 7, COL.hell);
+      if (Math.floor(zeit / 400) % 2) text('¡VAMOS!', 160, 148, 9, COL.feuer);
+    }
+    if (modus === 'tod') {
+      A.kasten(30, 92, 260, 46, COL.rot);
+      text(s.tod.t, 160, 108, s.tod.t.length > 30 ? 8 : 10, COL.hell);
+      text(s.leben > 0 ? 'NOCH ' + s.leben + ' LEBEN – ZURÜCK ZUM ORTSSCHILD' : 'BİTTİ – DIE JUNGS TRINKEN OHNE DICH', 160, 124, 8, s.leben > 0 ? COL.feuer : COL.rosa);
+    }
+    if (modus === 'ziel') {
+      var t = zeit - modusSeit;
+      if (t > 4800) {
+        A.kasten(60, 30, 200, 70, COL.feuer);
+        text('ANGEKOMMEN!', 160, 44, 12, COL.feuer);
+        text('BIER NOCH KALT: +' + s.zeitBonus, 160, 62, 8, COL.blau);
+        text('LEBEN ÜBRIG: +' + s.lebenBonus, 160, 74, 8, COL.hell);
+        text('PUNKTE: ' + s.punkte, 160, 88, 9, COL.feuer);
+      }
+    }
+  }
+
+  function endeZeichnen() {
+    startSzeneEnde();
+    A.kasten(40, 10, 240, 222, s.geschafft ? COL.feuer : COL.rosa);
+    text(s.geschafft ? 'ŞEREFE! DU BIST DA!' : 'BİTTİ – KEINER KAM AN', 160, 24, 11, s.geschafft ? COL.feuer : COL.rosa);
+    var sek = Math.floor(s.zeit / 1000);
+    text(s.punkte + ' Punkte · ' + s.flaschen + ' Flaschen · ' + Math.floor(sek / 60) + ':' + ('0' + sek % 60).slice(-2), 160, 39, 9);
+    text(s.geschafft ? (s.flaschen >= 17 ? 'GENUG BIER FÜR ALLE. LEGENDE.' : 'DIE JUNGS TEILEN. WIE IMMER.') : 'DIE JUNGS TRINKEN OHNE DICH.', 160, 51, 7, COL.stahl);
+    if (platz >= 0) text('NEU IN DER BESTENLISTE: PLATZ ' + (platz + 1), 160, 64, 9, COL.feuer);
+    LISTE.malen(78, platz);
+    var opt = ['NOCHMAL – TEKRAR?', 'ZUM HÜTTEN-MENÜ – GÖRÜŞÜRÜZ!'];
+    for (var j = 0; j < 2; j++) text((endeWahl === j ? '▶ ' : '  ') + opt[j], 160, 196 + j * 14, 10, endeWahl === j ? COL.feuer : COL.hell);
+  }
+  function startSzeneEnde() {
+    if (s && s.geschafft) { welt(); x.fillStyle = 'rgba(11,16,32,.7)'; x.fillRect(0, 0, W, H); }
+    else { x.fillStyle = 'rgba(120,10,20,1)'; x.fillRect(0, 0, W, H); }
+  }
+
+  // ---------- Finger: links halten = laufen, rechts tippen = springen ----------
+  function fingerLesen(ev) {
+    var c = document.getElementById('spiel'), r = c.getBoundingClientRect(); finger.liste = [];
+    for (var i = 0; i < ev.touches.length; i++) { var t = ev.touches[i]; finger.liste.push({ x: (t.clientX - r.left) / r.width * W, y: (t.clientY - r.top) / r.height * H }); }
+    return r;
+  }
+  var leinwandEl = document.getElementById('spiel');
+  leinwandEl.addEventListener('touchstart', function (ev) {
+    finger.benutzt = true; var r = fingerLesen(ev);
+    for (var i = 0; i < ev.changedTouches.length; i++) if ((ev.changedTouches[i].clientX - r.left) / r.width * W >= W / 2) finger.sprungNeu = true;
+  }, { passive: true });
+  ['touchmove', 'touchend', 'touchcancel'].forEach(function (n) { leinwandEl.addEventListener(n, function (ev) { fingerLesen(ev); }, { passive: true }); });
+
+  A.start({
+    schritt: schritt, zeichnen: zeichnen, zurueck: '../index.html',
+    taste: function (k) { if (modus === 'name' && /^[a-zA-Z0-9]$/.test(k)) { name[namePos] = ABC.indexOf(k.toUpperCase()); nameWeiter(); } }
+  });
+  window.__sprung = function () {   // nur zum Testen
+    return { modus: modus, s: s, L: L, name: name, cam: cam, setzeModus: setzeModus, spielerSchritt: spielerSchritt, neuerLaeufer: neuerLaeufer,
+      zielErreicht: zielErreicht, k: { LAUF: LAUF, KB: KB, KH: KH, GY: GY, ZIEL_X: ZIEL_X, LEN: LEN, LEBEN: LEBEN, KASTEN: KASTEN, TOD_MS: TOD_MS, SPRUNG_V: SPRUNG_V, SCHWERE: SCHWERE },
+      setzCam: function (c) { cam = c; } };
+  };
+}());
+</script>
+</body>
+</html>

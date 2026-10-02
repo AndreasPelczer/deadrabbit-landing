@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HÜTTENMAMPF</title>
+<style>
+  body { margin: 0; padding-inline: 16px; box-sizing: border-box; min-height: 100vh; display: grid; place-items: center; background: #10131b; color: #f1eee4; font-family: system-ui, sans-serif; }
+  main { width: 100%; max-width: 960px; }
+  #kopf { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 12px 0; font-size: 15px; }
+  canvas { cursor: none; touch-action: none; width: 100%; display: block; aspect-ratio: 4 / 3; background: #10131b; border: 2px solid #f1eee4; image-rendering: pixelated; }
+  .hilfe { opacity: .7; }
+  /* Handy hochkant: kein Rand verschenken */
+  @media (max-width: 700px) and (orientation: portrait) {
+    body { padding-inline: 4px; }
+    .hilfe { display: none; }
+    canvas { border-width: 1px; }
+  }
+  /* Handy quer: das Spielfeld so gross wie der Bildschirm hoch ist, nichts abgeschnitten */
+  @media (orientation: landscape) and (max-height: 700px) {
+    body { padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); min-height: 100vh; min-height: 100dvh; }
+    main { width: auto; max-width: none; }
+    #kopf { display: none; }
+    canvas { border: 0; width: calc(100vh * 4 / 3); width: min(calc(100dvh * 4 / 3), calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))); height: auto; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div id="kopf">
+    <strong>HÜTTENMAMPF – POMMES-PANIK IM SUMPF</strong>
+    <span class="hilfe">Stick/Pfeile: laufen · Handy: wischen oder neben die Figur tippen · Escape: zurück zum Menü</span>
+  </div>
+  <canvas id="spiel" width="320" height="240"></canvas>
+</main>
+<script src="../gemeinsam/arcade.js"></script>
+<script>
+(function () {
+  'use strict';
+  var A = window.ARCADE, COL = A.COL, W = 320, H = 240, x = null;
+
+  // ---------- Einstellbar ----------
+  var T = 8, MX = 48, MY = 22;            // Kachelgroesse, Lage des Labyrinths auf der Leinwand
+  // # Hecke  ~ Sumpf  H Huette  . Pommes  o Kurts Weizen  ' ' Weg ohne Futter  - Gartentor  P Dorfplatz (Start der Dorfbewohner)
+  var KARTE = [
+    '############################',
+    '#............##............#',
+    '#.####.#####.##.#####.####.#',
+    '#o#~~#.#~~~#.##.#~~~#.#~~#o#',
+    '#.####.#####.##.#####.####.#',
+    '#..........................#',
+    '#.####.##.HHHHHHHH.##.####.#',
+    '#......##.HHHHHHHH.##......#',
+    '######.##.HHHHHHHH.##.######',
+    '~~~~~#.##          ##.#~~~~~',
+    '~~~~~#.## ###--### ##.#~~~~~',
+    '~~~~~#.## #PPPPPP# ##.#~~~~~',
+    '      .   #PPPPPP#   .      ',
+    '~~~~~#.## #PPPPPP# ##.#~~~~~',
+    '~~~~~#.## ######## ##.#~~~~~',
+    '~~~~~#.##          ##.#~~~~~',
+    '######.## ######## ##.######',
+    '#......#.....##.....#......#',
+    '#.####.#.###.##.###.#.####.#',
+    '#o#~~#.......  .......#~~#o#',
+    '#.####.##.########.##.####.#',
+    '#......##....##....##......#',
+    '#.##########.##.##########.#',
+    '#..........................#',
+    '############################'
+  ];
+  var SP = 28, ZE = KARTE.length, TUNNEL_R = 12, BREITE = 30 * T;   // Tunnel: Kachel -1 und 28 liegen unter den Seitenleisten
+  var START = { x: 14 * T, y: 19 * T + 4 }, TUER = { x: 14 * T, y: 9 * T + 4 }, MITTE_Y = 12 * T + 4;
+  var BONUS_POS = { x: 14 * T, y: 15 * T + 4 };
+  var VOLL = 0.08;                          // Pixel pro ms bei 100 % Tempo
+  var LEBEN = 3, EXTRA_BEI = 10000, BONUS_BEI = [70, 170], BONUS_MS = 9500;
+  var P_POMMES = 10, P_WEIZEN = 50, P_DORF = [200, 400, 800, 1600];
+  var PHASEN = [7000, 20000, 7000, 20000, 5000, 20000, 5000, 1e12];   // abwechselnd: heim in die Ecke / jagen
+  var STUFEN = [
+    { kumpel: .80, dorf: .75, angst: .50, tunnel: .40, angstMs: 6000, elroy: 20, raus: [0, 0, 30, 60] },
+    { kumpel: .88, dorf: .82, angst: .55, tunnel: .45, angstMs: 5000, elroy: 30, raus: [0, 0, 0, 50] },
+    { kumpel: .92, dorf: .87, angst: .55, tunnel: .45, angstMs: 4000, elroy: 40, raus: [0, 0, 0, 0] },
+    { kumpel: .96, dorf: .92, angst: .58, tunnel: .48, angstMs: 3000, elroy: 40, raus: [0, 0, 0, 0] },
+    { kumpel: 1.0, dorf: .97, angst: .60, tunnel: .50, angstMs: 2200, elroy: 50, raus: [0, 0, 0, 0] }
+  ];
+  var BEREIT_MS = 2200, TOT_MS = 2600, GESCHAFFT_MS = 4600, RAUS_OHNE_POMMES = 4000, GEFRESSEN_PAUSE = 500;
+  var WISCH = 10;                          // ab so vielen Pixeln ist es ein Wischer und kein Tippen
+  var ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var LISTE = A.liste('sumpf-mampf');
+
+  // ---------- Die vier vom Dorf ----------
+  var DORF = [
+    { id: 'rudi',   name: 'RUDI',   spitz: 'DER SCHNELLE', info: 'IMMER DIR NACH',   farbe: '#ff4a3a', ecke: { c: 25, r: -3 }, sx: 14 * T, sy: 9 * T + 4, sdir: 'l',
+      kopf: { k1: 'N', k2: 'R' }, pal: { N: '#2a1a10', R: '#e2283a', v: '#d8302a', V: '#8a1a14', p: '#33333f' },
+      sagt: ['HALT, KNOLLE!', 'ZU LANGSAM!', 'HER MIT DEN POMMES!'], hau: 'ZACK!' },
+    { id: 'manni',  name: 'MANNI',  spitz: 'MISTGABEL',    info: 'SCHNEIDET DEN WEG AB', farbe: '#ff7ab8', ecke: { c: 2, r: -3 }, sx: 14 * T, sy: 12 * T + 4, sdir: 'u',
+      kopf: { k1: 'h', k2: 'H' }, pal: { h: '#e8c860', H: '#b8963a', v: '#ff4fa3', V: '#b83070', p: '#4a4a5c' },
+      sagt: ['MEINE POMMES!', 'SCHÄL DICH!', 'ICH GABEL DICH!'], hau: 'GEGABELT!' },
+    { id: 'frieda', name: 'FRIEDA', spitz: 'FACKEL',       info: 'UNBERECHENBAR',     farbe: '#5fd0e0', ecke: { c: 27, r: 25 }, sx: 12 * T, sy: 12 * T + 4, sdir: 'o',
+      kopf: { k1: 'h', k2: 'H' }, pal: { h: '#3a4a6b', H: '#283350', v: '#5fd0e0', V: '#2a8a9a', p: '#5a4a3a' },
+      sagt: ['GLEICH WIRD GEGRILLT!', 'BRATKARTOFFEL!', 'FEUER FREI!'], hau: 'ANGEBRATEN!' },
+    { id: 'oma',    name: 'OMA HILDE', spitz: 'HAT ZEIT',  info: 'ACH, IHRE HÜFTE',   farbe: '#ffa04a', ecke: { c: 0, r: 25 }, sx: 16 * T, sy: 12 * T + 4, sdir: 'o',
+      kopf: { k1: 'L', k2: 'L' }, pal: { L: '#9a4aa8', v: '#ff9a3a', V: '#b8601a', p: '#4a3a2a' },
+      sagt: ['ACH, MEINE HÜFTE', 'JUNGE, ISS WAS!', 'FRÜHER GAB ES MEHR KARTOFFELN'], hau: 'HAB DICH!' }
+  ];
+  var BESOFFEN_SAGT = ['HICKS!', 'NOCH EINS, KURT!', 'ŞEREFE…', 'MIR IS SCHLECHT', 'WO IS MEIN HAUS?'];
+  var BONUS = [
+    { id: 'wurst',  name: 'BRATWURST',      von: 'AHMED',     p: 100,  ruf: 'AFİYET OLSUN!' },
+    { id: 'paella', name: 'PAELLA',         von: 'TONI',      p: 300,  ruf: '¡OLÉ!' },
+    { id: 'pizza',  name: 'PIZZA',          von: 'DER PIZZA-BLITZ', p: 500, ruf: 'BLITZ!' },
+    { id: 'salat',  name: 'KARTOFFELSALAT', von: 'ALI',       p: 700,  ruf: 'BIO!' },
+    { id: 'tuete',  name: 'TÜTE',           von: 'ALF (ANGEBLICH)', p: 1000, ruf: 'FRISCH GEDREHT!' }
+  ];
+  var WITZE = [
+    ['ALI FRAGT: WAS SAGT DIE KARTOFFEL', 'ZUM PÜREE? „DU WARST AUCH MAL WAS!"'],
+    ['KURT: WARUM IST EINE KARTOFFEL', 'NIE ALLEIN? SIE HAT ÜBERALL AUGEN.'],
+    ['MURAT: POMMES SIND AUCH NUR', 'KARTOFFELN MIT AMBITIONEN.'],
+    ['TONI: ¡OLÉ! DAS DORF HAT', 'WIEDER NUR KNOLLEN IM KOPF.'],
+    ['AHMED: ERST DIE POMMES,', 'DANN DIE WURST. AFİYET OLSUN!'],
+    ['¿DÓNDE ESTÁ ALF? KEINER WEISS ES.', 'DIE POMMES SIND AUCH WEG.'],
+    ['GERD: WER IM SUMPF POMMES SUCHT,', 'FINDET MEISTENS KARTOFFELKÄFER.']
+  ];
+  var PLATT = ['IST PLATT WIE EIN RÖSTI', 'IST JETZT PÜREE', 'LIEGT IM KARTOFFELSACK', 'WURDE ZERSTAMPFT'];
+  var TIPPS = ['KURTS WEIZEN MACHT DAS DORF MÜDE', 'TUNNEL LINKS UND RECHTS', 'POMMES SIND BIO, SAGT ALI', 'ALI HAT DIE KARTOFFELWITZE ABGESEGNET'];
+  var LAUF = '+++ HÜTTENMAMPF +++ DAS DORF WILL SEINE POMMES ZURÜCK +++ KURTS WEIZEN MACHT DIE LEUTE MÜDE – PROST! ŞEREFE! +++ ' +
+             'AHMEDS BRATWURST IN DER MITTE – AFİYET OLSUN! +++ TONIS PAELLA – ¡VAMOS! +++ WAS SAGT DIE KARTOFFEL ZUM PÜREE? DU WARST AUCH MAL WAS! +++ ' +
+             '¿DÓNDE ESTÁ ALF? +++ WERDÖ A MOH +++ ';
+
+  // ---------- Hilfen ----------
+  var DX = { l: -1, r: 1, o: 0, u: 0 }, DY = { l: 0, r: 0, o: -1, u: 1 }, GEGEN = { l: 'r', r: 'l', o: 'u', u: 'o' };
+  var REIHE = ['o', 'l', 'u', 'r'];                                     // Gleichstand: oben vor links vor unten vor rechts
+  function feld(c, r) {
+    if (r < 0 || r >= ZE) return '#';
+    if (c < 0 || c >= SP) return r === TUNNEL_R ? ' ' : '#';
+    return KARTE[r].charAt(c);
+  }
+  function offen(c, r) { var ch = feld(c, r); return ch === '.' || ch === 'o' || ch === ' '; }
+  function kachel(v) { return Math.floor(v / T); }
+  function annaehern(v, ziel, schritt) { return Math.abs(ziel - v) <= schritt ? ziel : v + (ziel > v ? schritt : -schritt); }
+  function mischen(l) { for (var i = l.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = l[i]; l[i] = l[j]; l[j] = t; } return l; }
+  function stufe(l) { var st = STUFEN[Math.min(l, STUFEN.length) - 1], extra = Math.max(0, l - STUFEN.length);
+    return { kumpel: st.kumpel, dorf: Math.min(1.05, st.dorf + extra * .01), angst: st.angst, tunnel: st.tunnel,
+             angstMs: Math.max(1200, st.angstMs - extra * 200), elroy: st.elroy, raus: st.raus }; }
+  function richtung(dx, dy) { return Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'l' : 'r') : (dy < 0 ? 'o' : 'u'); }
+
+  // ---------- Zustand ----------
+  var modus = 'titel', modusSeit = 0, uhr = 0, name = [12, 0, 12], namePos = 0, endeWahl = 0, platz = -1, s = null;
+  function setzeModus(m) {
+    modus = m; modusSeit = uhr;
+    if (m === 'ende') { platz = LISTE.eintragen(name.map(function (i) { return ABC[i]; }).join(''), s.punkte); endeWahl = 0; }
+  }
+
+  function neuesSpiel() {
+    var truppe = mischen(A.TRUPPE.slice());
+    s = { punkte: 0, level: 0, kumpels: truppe.slice(0, LEBEN), reserve: truppe.slice(LEBEN), gefallen: [], extraDa: false,
+          stats: { pommes: 0, weizen: 0, dorf: 0, dorfPunkte: 0, bonus: 0, bonusPunkte: 0 }, teller: [], sterne: [],
+          meldung: null, witz: 0, ersterStart: true };
+    naechstesLevel();
+  }
+  function naechstesLevel() {
+    s.level++; s.uebrig = 0;
+    s.futter = KARTE.map(function (z) { return z.split('').map(function (ch) { var f = ch === '.' ? 1 : ch === 'o' ? 2 : 0; if (f) s.uebrig++; return f; }); });
+    s.imLevel = 0; s.elroyGesagt = false;
+    lebenStart();
+  }
+  function lebenStart() {
+    s.k = { x: START.x, y: START.y, dir: 'l', letzte: 'l', blick: 'r', weg: 0, ziehtZiel: null };
+    s.will = 'l';
+    s.dorf = DORF.map(function (d, i) { return { i: i, x: d.sx, y: d.sy, dir: d.sdir, zustand: i === 0 ? 'frei' : 'drin', angst: false, umkehren: false, bob: d.sdir === 'u' ? -1 : 1, weg: 0, augenSeit: 0 }; });
+    s.phase = 0; s.phaseZeit = 0; s.angstBis = 0; s.angstVoll = 1; s.combo = 0; s.seitPommes = 0; s.pommesLeben = 0;
+    s.bonus = null; s.sprech = null; s.sprechPause = 5000; s.wisch = null; s.pause = 0; s.taeter = -1;
+    setzeModus('bereit');
+  }
+
+  // ---------- Bewegung auf dem Raster ----------
+  // Figur f {x,y,dir}: laeuft weg Pixel; an jeder Kachelmitte darf entscheide(f,c,r) die Richtung setzen (oder null = stehen).
+  function laufen(f, weg, entscheide, nachher) {
+    var sicher = 0;
+    while (weg > 1e-6 && sicher++ < 40) {
+      var c = kachel(f.x), r = kachel(f.y), cx = c * T + T / 2, cy = r * T + T / 2;
+      if (Math.abs(f.x - cx) < 1e-4 && Math.abs(f.y - cy) < 1e-4) {
+        f.x = cx; f.y = cy; entscheide(f, c, r);
+        if (!f.dir) return;
+      }
+      var d = f.dir, n = d === 'r' ? cx - f.x : d === 'l' ? f.x - cx : d === 'u' ? cy - f.y : f.y - cy;
+      if (n <= 1e-4) n += T;
+      var st = Math.min(weg, n), vx = f.x;
+      if (st >= n - 1e-9) { f.x += DX[d] * n; f.y += DY[d] * n; f.x = Math.round(f.x * 2) / 2; f.y = Math.round(f.y * 2) / 2; }   // genau auf die Mitte
+      else { f.x += DX[d] * st; f.y += DY[d] * st; }
+      weg -= st; f.weg += st;
+      if (f.x < -T) f.x += BREITE; else if (f.x >= SP * T + T) f.x -= BREITE;   // Tunnel
+      if (nachher && nachher(f, vx)) return;
+    }
+  }
+  function kumpelEntscheidet(f, c, r) {
+    if (s.will && offen(c + DX[s.will], r + DY[s.will])) f.dir = s.will;
+    else if (f.dir && !offen(c + DX[f.dir], r + DY[f.dir])) f.dir = null;
+    if (f.dir) f.letzte = f.dir;
+  }
+  function dorfZiel(g) {
+    if (g.zustand === 'augen') return { c: 13, r: 9 };
+    var k = s.k, kc = kachel(k.x), kr = kachel(k.y), d = k.dir || k.letzte;
+    var jagd = s.phase % 2 === 1 || (g.i === 0 && s.elroy);
+    if (!jagd) return DORF[g.i].ecke;
+    if (g.i === 0) return { c: kc, r: kr };
+    if (g.i === 1) return { c: kc + 4 * DX[d], r: kr + 4 * DY[d] };
+    if (g.i === 2) { var ru = s.dorf[0], rc = kachel(ru.x), rr = kachel(ru.y), mc = kc + 2 * DX[d], mr = kr + 2 * DY[d]; return { c: mc + (mc - rc), r: mr + (mr - rr) }; }
+    var ab = (kc - kachel(g.x)) * (kc - kachel(g.x)) + (kr - kachel(g.y)) * (kr - kachel(g.y));
+    return ab > 64 ? { c: kc, r: kr } : DORF[3].ecke;
+  }
+  function dorfEntscheidet(g, c, r) {
+    var moegl = REIHE.filter(function (d) { return d !== GEGEN[g.dir] && offen(c + DX[d], r + DY[d]); });
+    if (!moegl.length) { g.dir = GEGEN[g.dir]; return; }
+    if (g.angst) { g.dir = moegl[Math.floor(Math.random() * moegl.length)]; return; }
+    var z = dorfZiel(g), best = moegl[0], bd = Infinity;
+    moegl.forEach(function (d) { var dc = c + DX[d] - z.c, dr = r + DY[d] - z.r, ab = dc * dc + dr * dr; if (ab < bd) { bd = ab; best = d; } });
+    g.dir = best;
+  }
+  function augenAmTor(g, vx) {
+    if (g.zustand === 'augen' && Math.abs(g.y - TUER.y) < .01 && (vx - TUER.x) * (g.x - TUER.x) <= 0) { g.x = TUER.x; g.zustand = 'rein'; return true; }
+    return false;
+  }
+  function imTunnel(f) { return kachel(f.y) === TUNNEL_R && (kachel(f.x) <= 4 || kachel(f.x) >= 23); }
+
+  // ---------- Punkte, Sterne, Meldungen ----------
+  function punkte(p) {
+    var vorher = s.punkte; s.punkte += p;
+    if (vorher < EXTRA_BEI && s.punkte >= EXTRA_BEI && s.reserve.length) { var neu = s.reserve.shift(); s.kumpels.push(neu); melden(neu + ' KOMMT DAZU – KARDEŞİM!', COL.blau); }
+  }
+  function stern(px, py, wort, zusatz) {
+    s.sterne.push({ x: Math.max(MX + 30, Math.min(MX + SP * T - 30, MX + px)), y: Math.max(MY + 14, Math.min(MY + ZE * T - 14, MY + py - 10)), wort: wort, zusatz: zusatz, alter: 0 });
+    while (s.sterne.length > 2) s.sterne.shift();                       // nie mehr als zwei Comic-Sterne
+  }
+  function melden(t, farbe, ms) { s.meldung = { t: t, farbe: farbe || COL.hell, bis: uhr + (ms || 2600) }; }
+  function kumpelName() { return s && s.kumpels[0] || ''; }
+
+  // ---------- Spiel-Schritt ----------
+  function spielSchritt(dt) {
+    var st = stufe(s.level), k = s.k;
+    s.sterne.forEach(function (z) { z.alter += dt; }); s.sterne = s.sterne.filter(function (z) { return z.alter < 1100; });
+    if (s.pause > 0) { s.pause -= dt; return; }                         // kurz stehen, wenn einer eingesammelt wurde
+    if (s.angstBis > 0) { s.angstBis -= dt; if (s.angstBis <= 0) { s.angstBis = 0; s.dorf.forEach(function (g) { g.angst = false; }); } }
+    else {
+      s.phaseZeit += dt;
+      if (s.phaseZeit >= PHASEN[s.phase]) { s.phaseZeit = 0; s.phase = Math.min(s.phase + 1, PHASEN.length - 1); s.dorf.forEach(function (g) { if (g.zustand === 'frei') g.umkehren = true; }); }
+    }
+    s.seitPommes += dt;
+    freilassen(st);
+    // der Kumpel
+    if (k.dir && s.will === GEGEN[k.dir]) { k.dir = s.will; k.letzte = k.dir; }
+    laufen(k, VOLL * st.kumpel * (imTunnel(k) ? .9 : 1) * dt, kumpelEntscheidet);
+    if (k.dir === 'l' || k.dir === 'r') k.blick = k.dir;
+    fressen(st);
+    if (modus !== 'spiel') return;
+    kollision(); if (modus !== 'spiel') return;
+    // das Dorf
+    if (!s.elroy && s.uebrig <= st.elroy) { s.elroy = true; if (!s.elroyGesagt) { s.elroyGesagt = true; melden('RUDI DREHT DURCH!', COL.rot); } }
+    s.dorf.forEach(function (g) { dorfSchritt(g, dt, st); });
+    kollision(); if (modus !== 'spiel') return;
+    // Bonus-Futter in der Mitte
+    if (s.bonus) {
+      s.bonus.bis -= dt;
+      if (s.bonus.bis <= 0) s.bonus = null;
+      else if (Math.abs(k.y - BONUS_POS.y) < 3 && Math.abs(k.x - BONUS_POS.x) < 6) {
+        var b = s.bonus.art; punkte(b.p); s.stats.bonus++; s.stats.bonusPunkte += b.p; s.teller.push(b.id);
+        stern(BONUS_POS.x, BONUS_POS.y, b.ruf, '+' + b.p); melden(b.von + ': ' + b.name + '!', COL.feuer); s.bonus = null;
+      }
+    }
+    // ab und zu meckert einer
+    s.sprechPause -= dt;
+    if (s.sprech && uhr > s.sprech.bis) s.sprech = null;
+    if (s.sprechPause <= 0) {
+      s.sprechPause = 6000 + Math.random() * 5000;
+      var frei = s.dorf.filter(function (g) { return g.zustand === 'frei'; });
+      if (frei.length) { var g = frei[Math.floor(Math.random() * frei.length)], l = g.angst ? BESOFFEN_SAGT : DORF[g.i].sagt; s.sprech = { i: g.i, t: l[Math.floor(Math.random() * l.length)], bis: uhr + 1700 }; }
+    }
+    if (s.uebrig <= 0) { s.bonus = null; s.sprech = null; setzeModus('geschafft'); }
+  }
+  function freilassen(st) {
+    var drin = s.dorf.filter(function (g) { return g.zustand === 'drin'; });
+    if (!drin.length) return;
+    var g = drin[0];
+    if (s.pommesLeben >= st.raus[g.i] || s.seitPommes > RAUS_OHNE_POMMES) { g.zustand = 'raus'; s.seitPommes = 0; }
+  }
+  function fressen(st) {
+    var k = s.k, c = kachel(k.x), r = kachel(k.y);
+    if (r < 0 || r >= ZE || c < 0 || c >= SP) return;
+    var f = s.futter[r][c];
+    if (!f || Math.abs(k.x - (c * T + 4)) > 3 || Math.abs(k.y - (r * T + 4)) > 3) return;
+    s.futter[r][c] = 0; s.uebrig--; s.imLevel++; s.pommesLeben++; s.seitPommes = 0;
+    if (f === 1) { s.stats.pommes++; punkte(P_POMMES); }
+    else {
+      s.stats.weizen++; punkte(P_WEIZEN);
+      s.angstBis = st.angstMs; s.angstVoll = st.angstMs; s.combo = 0;
+      s.dorf.forEach(function (g) { if (g.zustand === 'augen' || g.zustand === 'rein') return; g.angst = true; if (g.zustand === 'frei') g.umkehren = true; });
+      stern(k.x, k.y, s.stats.weizen % 2 ? 'PROST!' : 'ŞEREFE!');
+      melden('KURT GIBT EINE RUNDE WEIZEN AUS!', COL.feuer);
+    }
+    if (BONUS_BEI.indexOf(s.imLevel) >= 0) {
+      var art = BONUS[Math.min(s.level, BONUS.length) - 1];
+      s.bonus = { art: art, bis: BONUS_MS };
+      melden(art.von + ' BRINGT ' + art.name, COL.feuer, 3200);
+    }
+  }
+  function dorfSchritt(g, dt, st) {
+    if (g.zustand === 'drin') {
+      g.y += g.bob * .03 * dt;
+      if (g.y < MITTE_Y - 4) { g.y = MITTE_Y - 4; g.bob = 1; } else if (g.y > MITTE_Y + 4) { g.y = MITTE_Y + 4; g.bob = -1; }
+      g.dir = g.bob < 0 ? 'o' : 'u'; return;
+    }
+    if (g.zustand === 'raus') {
+      var v = .045 * dt;
+      if (Math.abs(g.x - TUER.x) > .01) { g.dir = g.x > TUER.x ? 'l' : 'r'; g.x = annaehern(g.x, TUER.x, v); }
+      else if (Math.abs(g.y - MITTE_Y) > .01 && g.y > MITTE_Y) { g.dir = 'o'; g.y = annaehern(g.y, MITTE_Y, v); }
+      else { g.dir = 'o'; g.y = annaehern(g.y, TUER.y, v); if (g.y === TUER.y) { g.zustand = 'frei'; g.dir = 'l'; } }
+      return;
+    }
+    if (g.zustand === 'rein') {
+      g.dir = 'u'; g.y = annaehern(g.y, MITTE_Y, .12 * dt);
+      if (g.y === MITTE_Y) { g.zustand = 'raus'; g.angst = false; }
+      return;
+    }
+    if (g.umkehren) { g.dir = GEGEN[g.dir]; g.umkehren = false; }
+    var tempo;
+    if (g.zustand === 'augen') { tempo = 1.7; g.augenSeit += dt; if (g.augenSeit > 9000) { g.x = TUER.x; g.y = TUER.y; g.zustand = 'rein'; return; } }   // Notausgang, falls die Augen sich verlaufen
+    else if (g.angst) tempo = st.angst;
+    else if (imTunnel(g)) tempo = st.tunnel;
+    else tempo = st.dorf + (g.i === 0 && s.elroy ? .06 : 0);
+    laufen(g, VOLL * tempo * dt, dorfEntscheidet, augenAmTor);
+  }
+  function kollision() {
+    var k = s.k;
+    for (var i = 0; i < s.dorf.length; i++) {
+      var g = s.dorf[i];
+      if (g.zustand !== 'frei' || Math.abs(g.x - k.x) >= 6 || Math.abs(g.y - k.y) >= 6) continue;
+      if (g.angst) {
+        var p = P_DORF[Math.min(s.combo, 3)]; s.combo++; punkte(p); s.stats.dorf++; s.stats.dorfPunkte += p;
+        g.zustand = 'augen'; g.angst = false; g.augenSeit = 0;
+        stern(g.x, g.y, ['PROST!', 'ŞEREFE!', 'HICKS!', 'PÜREE!'][Math.min(s.combo - 1, 3)], '+' + p);
+        s.pause = GEFRESSEN_PAUSE;
+      } else {
+        s.taeter = g.i; s.gefallen.push(kumpelName()); s.sprech = null; s.bonus = null;
+        stern(k.x, k.y, DORF[g.i].hau);
+        setzeModus('tot'); return;
+      }
+    }
+  }
+
+  // ---------- Ablauf ----------
+  function steuern(e) {
+    ['l', 'r', 'o', 'u'].forEach(function (d) { if (e.neu[d]) s.will = d; });
+    if (!e.neu.l && !e.neu.r && !e.neu.o && !e.neu.u && !e[s.will]) { var gehalten = ['l', 'r', 'o', 'u'].filter(function (d) { return e[d]; }); if (gehalten.length) s.will = gehalten[0]; }
+    // Finger/Maus: wischen = Richtung, tippen = Richtung von der Figur aus gesehen
+    if (e.klick) s.wisch = { x: e.klick.x, y: e.klick.y, fertig: false };
+    if (s.wisch && e.maus.unten && !s.wisch.fertig) {
+      var dx = e.maus.x - s.wisch.x, dy = e.maus.y - s.wisch.y;
+      if (dx * dx + dy * dy > WISCH * WISCH) { s.will = richtung(dx, dy); s.wisch.fertig = true; }
+    }
+    if (s.wisch && !e.maus.unten) {
+      if (!s.wisch.fertig) { var tx = s.wisch.x - (MX + s.k.x), ty = s.wisch.y - (MY + s.k.y); if (tx * tx + ty * ty > 16) s.will = richtung(tx, ty); }
+      s.wisch = null;
+    }
+  }
+  function schritt(dt, e) {
+    uhr += dt;
+    if (modus === 'titel') { if (e.neu.a || e.klick) setzeModus('name'); return; }
+    if (modus === 'name') {
+      if (e.neu.o) name[namePos] = (name[namePos] + 1) % ABC.length;
+      if (e.neu.u) name[namePos] = (name[namePos] + ABC.length - 1) % ABC.length;
+      if (e.neu.l && namePos > 0) namePos--;
+      if (e.neu.r || e.neu.a) nameWeiter();
+      if (e.klick && e.klick.y > 144 && e.klick.x > 90 && e.klick.x < 230) { namePos = 0; neuesSpiel(); return; }   // FERTIG-Knopf
+      if (e.klick) {
+        var spalte = Math.round((e.klick.x - 130) / 30);
+        if (spalte >= 0 && spalte <= 2) namePos = spalte;
+        if (e.klick.y < 106) name[namePos] = (name[namePos] + 1) % ABC.length;
+        else if (e.klick.y > 126) name[namePos] = (name[namePos] + ABC.length - 1) % ABC.length;
+        else nameWeiter();
+      }
+      return;
+    }
+    if (modus === 'ende') {
+      if (e.neu.o || e.neu.u || e.neu.l || e.neu.r) endeWahl = 1 - endeWahl;
+      if (e.klick && uhr - modusSeit > 600 && e.klick.y > 193) { endeWahl = e.klick.y < 208 ? 0 : 1; e.neu.a = true; }
+      if (e.neu.a && uhr - modusSeit > 600) { if (endeWahl === 0) neuesSpiel(); else if (typeof location !== 'undefined') location.href = '../index.html'; else setzeModus('titel'); }
+      return;
+    }
+    if (modus === 'bereit') {
+      steuern(e);
+      if (uhr - modusSeit > (s.ersterStart ? BEREIT_MS + 600 : BEREIT_MS)) { s.ersterStart = false; setzeModus('spiel'); }
+      return;
+    }
+    if (modus === 'tot') {
+      s.sterne.forEach(function (z) { z.alter += dt; }); s.sterne = s.sterne.filter(function (z) { return z.alter < 1100; });
+      if (uhr - modusSeit > TOT_MS) {
+        var wer = s.kumpels.shift();
+        if (s.kumpels.length) { lebenStart(); melden(wer + ' ' + PLATT[s.gefallen.length % PLATT.length] + '. JETZT: ' + kumpelName() + '!', COL.blau, 3000); }
+        else setzeModus('ende');
+      }
+      return;
+    }
+    if (modus === 'geschafft') {
+      var ti = uhr - modusSeit;
+      if (ti > GESCHAFFT_MS || ((e.neu.a || e.klick) && ti > 2400)) { s.witz++; naechstesLevel(); }
+      return;
+    }
+    if (modus === 'spiel') {
+      steuern(e);
+      var rest = dt;
+      while (rest > 0 && modus === 'spiel') { var stueck = Math.min(rest, 10); spielSchritt(stueck); rest -= stueck; }
+    }
+  }
+  function nameWeiter() { namePos++; if (namePos > 2) { namePos = 0; neuesSpiel(); } }
+
+  // =====================================================================
+  // ---------- Zeichnen (alles prozedural in Pixeln) ----------
+  // =====================================================================
+  var BILD = {};
+  function pixelBild(schluessel, zeilen, pal, spiegel) {
+    var key = schluessel + (spiegel ? 's' : ''); if (BILD[key]) return BILD[key];
+    var b = zeilen[0].length, h = zeilen.length, hc = document.createElement('canvas'); hc.width = b; hc.height = h;
+    var g = hc.getContext('2d');
+    for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < b; xx++) {
+      var ch = zeilen[yy].charAt(spiegel ? b - 1 - xx : xx); if (ch === '.' || !pal[ch]) continue;
+      g.fillStyle = pal[ch]; g.fillRect(xx, yy, 1, 1);
+    }
+    BILD[key] = hc; return hc;
+  }
+  var HAUT = { k: '#1b1612', s: '#e3b98f', S: '#b8875e', e: '#1b1612', m: '#7a2a2a', M: '#2a0606', w: '#f4f4f4', b: '#2a1a10' };
+  function pal(extra) { var p = {}, n; for (n in HAUT) p[n] = HAUT[n]; for (n in extra) p[n] = extra[n]; return p; }
+  // Der Kumpel: 11x12, schaut nach rechts (gespiegelt nach links). Bild 0 Mund zu, Bild 1 Mund auf.
+  var KUMPEL = [
+    ['...kkkkk...', '..kcccccck.', '..kcccccccc', '..ksssssek.', '..kssssssk.', '..ksssmmk..', '...kssk....', '.kkbbbbbkk.', 'kbbbbbbbbsk', 'kbBbbbbbBbk', '.kjjjkjjjk.', '.kWWk.kWWk.'],
+    ['...kkkkk...', '..kcccccck.', '..kcccccccc', '..ksssssek.', '..ksssskkk.', '..ksssMMMk.', '...ksMMMk..', '.kkbbbbbkk.', 'kbbbbbbbbsk', 'kbBbbbbbBbk', 'kjjjk.kjjjk', 'kWWk...kWWk']
+  ];
+  var KUMPEL_PAL = pal({ c: '#1f3f8a', b: '#5fb4ff', B: '#3a7ac0', j: '#34508a', W: '#f4f4f4' });
+  // Dorfbewohner: 11x12 von vorn; Augen kommen extra (sie schauen, wohin sie laufen).
+  var LEUTE = ['...kkkkk...', '..k11111k..', '.k2222222k.', '.ksssssssk.', '.ksssssssk.', '.kssmmmssk.', '..ksssssk..', '.kvvvvvvvk.', 'kvvvvvvvvvk', 'ksvVvvvVvsk', '.kpppkpppk.', '.kbbk.kbbk.'];
+  var LEUTE_LAUF = ['kppk...kppk', 'kbbk...kbbk'];
+  function leuteBild(i, art, bild) {      // art: '' normal, 'b' besoffen, 'w' weiss blinkend
+    var d = DORF[i], z = LEUTE.slice();
+    z[1] = z[1].replace(/1/g, d.kopf.k1); z[2] = z[2].replace(/2/g, d.kopf.k2);
+    if (bild) { z[10] = LEUTE_LAUF[0]; z[11] = LEUTE_LAUF[1]; }
+    if (art) z[5] = '.ksssmsssk.';                                        // besoffen: kleines „HICKS“-Mäulchen
+    var p = pal(d.pal);
+    if (art === 'b') { p.v = '#4a6ad8'; p.V = '#2a3a9a'; p.s = '#f0b0a8'; p.p = '#2a3a6a'; }
+    if (art === 'w') { p.v = '#f4f4f4'; p.V = '#c8c8d8'; p.s = '#ffd8d0'; p.p = '#9a9ab8'; }
+    return pixelBild('leute' + i + art + bild, z, p);
+  }
+  function leuteMalen(g, px, py) {      // px/py = Mitte auf der Leinwand
+    var d = DORF[g.i], laeuft = g.zustand === 'frei' || g.zustand === 'raus', bild = laeuft ? Math.floor(g.weg / 4) % 2 : 0;
+    var l = Math.round(px - 5), o = Math.round(py - 8);
+    if (g.zustand === 'augen' || g.zustand === 'rein') { augenMalen(g, l, o); return; }
+    var art = '';
+    if (g.angst) art = s.angstBis < 2000 && Math.floor(uhr / 180) % 2 ? 'w' : 'b';
+    if (art) l += Math.round(Math.sin(uhr / 140 + g.i) * 1);              // schwankt
+    // was sie in der Hand haben
+    if (g.i === 1 && !art) { x.fillStyle = '#8a6440'; x.fillRect(l + 10, o + 1, 1, 11); x.fillStyle = '#b7bcc4'; x.fillRect(l + 9, o - 2, 1, 3); x.fillRect(l + 11, o - 2, 1, 3); x.fillRect(l + 10, o - 3, 1, 4); x.fillRect(l + 9, o + 1, 3, 1); }
+    if (g.i === 2 && !art) { x.fillStyle = '#8a6440'; x.fillRect(l + 10, o + 3, 1, 9); var fl = Math.floor(uhr / 90) % 2; x.fillStyle = '#ff7a2a'; x.fillRect(l + 9, o, 3, 3); x.fillStyle = '#ffd25a'; x.fillRect(l + 10, o - 1 + fl, 1, 2); x.fillStyle = '#e2283a'; x.fillRect(l + 9 + fl * 2, o + 2, 1, 1); }
+    if (g.i === 3 && !art) { x.fillStyle = '#6b4a2c'; x.fillRect(l + 10, o + 6, 1, 6); x.fillRect(l + 9, o + 6, 2, 1); }
+    if (g.i === 0 && !art && laeuft && g.dir) { x.fillStyle = 'rgba(241,238,228,.5)'; var hx = g.dir === 'l' ? l + 12 : g.dir === 'r' ? l - 3 : l + 1; if (g.dir === 'l' || g.dir === 'r') { x.fillRect(hx, o + 6, 2, 1); x.fillRect(hx + (g.dir === 'l' ? 1 : -1), o + 9, 2, 1); } }
+    if (art === 'b') { x.fillStyle = '#ffd25a'; x.fillRect(l + 10, o + 5, 2, 3); x.fillStyle = '#f4f4f4'; x.fillRect(l + 10, o + 4, 2, 1); }   // halbes Weizen in der Hand
+    x.drawImage(leuteBild(g.i, art, bild), l, o);
+    if (art) {                                                               // Augen zu, rote Baeckchen
+      x.fillStyle = '#1b1612'; x.fillRect(l + 3, o + 4, 2, 1); x.fillRect(l + 6, o + 4, 2, 1);
+      x.fillStyle = '#ff6a8a'; x.fillRect(l + 2, o + 5, 1, 1); x.fillRect(l + 8, o + 5, 1, 1);
+      if (Math.floor(uhr / 400 + g.i) % 3 === 0) { x.fillStyle = '#9fd0ff'; x.fillRect(l + 11, o - 2, 1, 1); x.fillRect(l + 12, o - 4, 2, 1); }
+    } else augen(l, o, g.dir);
+  }
+  function augen(l, o, dir) {
+    x.fillStyle = '#f4f4f4'; x.fillRect(l + 3, o + 3, 2, 2); x.fillRect(l + 6, o + 3, 2, 2);
+    var ax = dir === 'r' ? 1 : 0, ay = dir === 'o' ? 0 : 1; if (dir === 'o' || dir === 'u') ax = dir === 'u' ? 1 : 0;
+    x.fillStyle = '#1b1612'; x.fillRect(l + 3 + ax, o + 3 + ay, 1, 1); x.fillRect(l + 6 + ax, o + 3 + ay, 1, 1);
+    x.fillRect(l + 2, o + 2, 2, 1); x.fillRect(l + 7, o + 2, 2, 1);        // boese Augenbrauen
+  }
+  function augenMalen(g, l, o) {
+    var d = DORF[g.i];
+    x.fillStyle = d.pal[d.kopf.k2] || '#555'; x.fillRect(l + 2, o + 1, 7, 2);   // nur noch der Hut …
+    x.fillStyle = d.pal[d.kopf.k1] || '#555'; x.fillRect(l + 3, o, 5, 1);
+    augen(l, o + 1, g.dir);                                                 // … und die Augen, die heimlaufen
+  }
+  function kumpelMalen(px, py, k, platt) {
+    var bild = k.dir ? Math.floor(k.weg / 3) % 2 : 0, l = Math.round(px - 5), o = Math.round(py - 8);
+    if (kumpelName() === 'ALF') x.globalAlpha = .4 + .2 * Math.sin(uhr / 200);   // ALF ist unsichtbar. Fast.
+    var img = pixelBild('kumpel' + bild, KUMPEL[bild], KUMPEL_PAL, k.blick === 'l');
+    if (platt === undefined) x.drawImage(img, l, o);
+    else if (platt < 1) { var hh = Math.max(2, Math.round(12 * (1 - platt))); x.drawImage(img, l - Math.round(platt * 3), o + 12 - hh, 11 + Math.round(platt * 6), hh); }
+    else { x.fillStyle = '#c8902a'; x.fillRect(l - 3, o + 9, 17, 3); x.fillStyle = '#e8b84a'; x.fillRect(l - 1, o + 9, 13, 1); x.fillStyle = '#8a5a1a'; x.fillRect(l + 1, o + 11, 3, 1); x.fillRect(l + 8, o + 10, 2, 1); }
+    x.globalAlpha = 1;
+  }
+
+  // ----- das Labyrinth einmal vorzeichnen -----
+  var KARTE_BILD = {};
+  function zufall(c, r, n) { var h = (c * 374761393 + r * 668265263 + n * 2147483647) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+  function istWand(c, r) { var ch = feld(c, r); return ch === '#' || ch === '~' || ch === 'H'; }
+  function karteBild(blitz) {
+    var key = blitz ? 'b' : 'n'; if (KARTE_BILD[key]) return KARTE_BILD[key];
+    var hc = document.createElement('canvas'); hc.width = SP * T; hc.height = ZE * T; var g = hc.getContext('2d');
+    for (var r = 0; r < ZE; r++) for (var c = 0; c < SP; c++) {
+      var ch = feld(c, r), l = c * T, o = r * T;
+      if (ch === '#' || ch === 'H') {
+        g.fillStyle = blitz ? '#5aa04f' : '#1d3a24'; g.fillRect(l, o, T, T);
+        for (var n = 0; n < 4; n++) { g.fillStyle = blitz ? '#9fd87f' : (n % 2 ? '#28502f' : '#15291a'); g.fillRect(l + Math.floor(zufall(c, r, n) * 7), o + Math.floor(zufall(c, r, n + 9) * 7), 2, 1); }
+        var kante = blitz ? '#f1eee4' : '#5aa04f', innen = blitz ? '#cfeebe' : '#3a6e3a';
+        if (!istWand(c, r - 1)) { g.fillStyle = kante; g.fillRect(l, o, T, 1); g.fillStyle = innen; g.fillRect(l, o + 1, T, 1); }
+        if (!istWand(c, r + 1)) { g.fillStyle = innen; g.fillRect(l, o + T - 1, T, 1); }
+        if (!istWand(c - 1, r)) { g.fillStyle = kante; g.fillRect(l, o, 1, T); }
+        if (!istWand(c + 1, r)) { g.fillStyle = innen; g.fillRect(l + T - 1, o, 1, T); }
+      } else if (ch === '~') {
+        g.fillStyle = '#10262e'; g.fillRect(l, o, T, T);
+        g.fillStyle = '#1d4652'; g.fillRect(l + Math.floor(zufall(c, r, 1) * 5), o + Math.floor(zufall(c, r, 2) * 7), 3, 1);
+        if (zufall(c, r, 3) < .22) { g.fillStyle = '#5d6b3a'; var sx = l + Math.floor(zufall(c, r, 4) * 6); g.fillRect(sx, o + 2, 1, 5); g.fillStyle = '#8a5a2b'; g.fillRect(sx, o + 1, 1, 2); }   // Schilf
+        else if (zufall(c, r, 5) < .12) { g.fillStyle = '#3c7a3a'; g.fillRect(l + 2, o + 3, 4, 2); g.fillStyle = '#ff9ad0'; g.fillRect(l + 3, o + 3, 1, 1); }  // Seerose
+        if (!istWand(c, r - 1) || !istWand(c, r + 1) || !istWand(c - 1, r) || !istWand(c + 1, r)) {
+          g.fillStyle = '#4a3a22';
+          if (!istWand(c, r - 1)) g.fillRect(l, o, T, 1); if (!istWand(c, r + 1)) g.fillRect(l, o + T - 1, T, 1);
+          if (!istWand(c - 1, r)) g.fillRect(l, o, 1, T); if (!istWand(c + 1, r)) g.fillRect(l + T - 1, o, 1, T);
+        }
+      } else if (ch === 'P') { g.fillStyle = '#2e2418'; g.fillRect(l, o, T, T); if ((c + r) % 2) { g.fillStyle = '#372b1c'; g.fillRect(l + 2, o + 3, 3, 2); } }
+      else if (ch === '-') { g.fillStyle = '#191510'; g.fillRect(l, o, T, T); g.fillStyle = '#d8cfb6'; g.fillRect(l, o + 3, T, 2); g.fillStyle = '#8a6440'; g.fillRect(l + (c % 2 ? T - 1 : 0), o + 1, 1, 6); }
+      else { g.fillStyle = '#191510'; g.fillRect(l, o, T, T); if (zufall(c, r, 7) < .5) { g.fillStyle = '#211c14'; g.fillRect(l + Math.floor(zufall(c, r, 8) * 7), o + Math.floor(zufall(c, r, 6) * 7), 1, 1); } }
+    }
+    huetteMalen(g, blitz);
+    KARTE_BILD[key] = hc; return hc;
+  }
+  function huetteMalen(g, blitz) {   // die Huette auf dem Block H (Spalte 10-17, Zeile 6-8)
+    var l = 10 * T, o = 6 * T;
+    g.fillStyle = blitz ? '#5aa04f' : '#263c2f'; g.fillRect(l, o, 64, 24);
+    g.fillStyle = blitz ? '#f1eee4' : '#5aa04f'; g.fillRect(l, o, 64, 1);
+    for (var i = 0; i < 10; i++) { g.fillStyle = i < 2 ? '#7a3a2a' : '#5a2a1a'; g.fillRect(l + 12 - i, o + 2 + i, 40 + i * 2, 1); }   // Dach
+    g.fillStyle = '#3a1a10'; g.fillRect(l + 3, o + 11, 58, 1);
+    g.fillStyle = '#555a62'; g.fillRect(l + 42, o + 1, 4, 5);                // Kamin
+    g.fillStyle = '#8a5a2b'; g.fillRect(l + 6, o + 12, 52, 11);              // Bretter
+    g.fillStyle = '#5e3c1a'; for (var b = 0; b < 52; b += 4) g.fillRect(l + 6 + b, o + 12, 1, 11);
+    g.fillStyle = '#3a2416'; g.fillRect(l + 29, o + 15, 6, 8);               // Tuer
+    g.fillStyle = '#ffd25a'; g.fillRect(l + 12, o + 14, 7, 5); g.fillRect(l + 45, o + 14, 7, 5);   // Licht an
+    g.fillStyle = '#5e3c1a'; g.fillRect(l + 15, o + 14, 1, 5); g.fillRect(l + 12, o + 16, 7, 1); g.fillRect(l + 48, o + 14, 1, 5); g.fillRect(l + 45, o + 16, 7, 1);
+    g.fillStyle = '#c8302a'; g.fillRect(l + 59, o + 19, 4, 4); g.fillStyle = '#8a1a14'; g.fillRect(l + 59, o + 21, 4, 1);   // Bierkiste
+    g.fillStyle = '#8a5a2b'; g.fillRect(l + 1, o + 21, 5, 2); g.fillRect(l + 5, o + 20, 2, 2); g.fillStyle = '#5e3c1a'; g.fillRect(l + 6, o + 20, 1, 1);   // der Dackel schlaeft
+  }
+  function huetteLebt() {            // Rauch und der Dreher auf der Bierkiste
+    var l = MX + 10 * T, o = MY + 6 * T;
+    for (var i = 0; i < 3; i++) { var a = ((uhr / 1400) + i / 3) % 1; x.globalAlpha = .6 * (1 - a); x.fillStyle = '#b8bcc4'; x.fillRect(Math.round(l + 43 + Math.sin(a * 6 + i) * 2 + a * 4), Math.round(o - a * 10), 2, 2); }
+    x.globalAlpha = 1;
+    x.fillStyle = '#5fb4ff'; x.fillRect(l + 60, o + 16, 2, 3); x.fillStyle = '#e3b98f'; x.fillRect(l + 60, o + 14, 2, 2);
+    x.fillStyle = Math.floor(uhr / 300) % 3 ? '#ff7a2a' : '#ffd25a'; x.fillRect(l + 62, o + 15, 1, 1);
+  }
+
+  // ----- Futter -----
+  function pommes(px, py) { x.fillStyle = '#e8b030'; x.fillRect(px - 1, py - 1, 1, 3); x.fillStyle = '#ffe080'; x.fillRect(px + 1, py - 2, 1, 3); }
+  function weizen(px, py, an) {
+    if (!an) return;                                                       // blinkt wie im Original
+    x.fillStyle = '#f0a020'; x.fillRect(px - 2, py - 2, 4, 6); x.fillStyle = '#ffc850'; x.fillRect(px - 1, py, 1, 3);
+    x.fillStyle = '#f4f4f4'; x.fillRect(px - 2, py - 4, 4, 2); x.fillRect(px - 3, py - 3, 1, 1);
+  }
+  function bonusMalen(id, px, py) {
+    var l = Math.round(px), o = Math.round(py);
+    if (id === 'wurst') { x.fillStyle = '#d8a860'; x.fillRect(l - 5, o - 1, 10, 4); x.fillStyle = '#8a3a1a'; x.fillRect(l - 6, o - 2, 12, 2); x.fillStyle = '#ffd25a'; x.fillRect(l - 4, o - 2, 1, 1); x.fillRect(l - 1, o - 2, 1, 1); x.fillRect(l + 2, o - 2, 1, 1); }
+    else if (id === 'paella') { x.fillStyle = '#333'; x.fillRect(l - 5, o - 1, 10, 4); x.fillRect(l + 5, o, 3, 1); x.fillStyle = '#f0c030'; x.fillRect(l - 4, o - 2, 8, 3); x.fillStyle = '#e2283a'; x.fillRect(l - 3, o - 2, 1, 1); x.fillRect(l + 1, o - 1, 1, 1); x.fillStyle = '#5a9a3a'; x.fillRect(l - 1, o - 2, 1, 1); x.fillRect(l + 3, o - 1, 1, 1); }
+    else if (id === 'pizza') { for (var i = 0; i < 6; i++) { x.fillStyle = i === 0 ? '#c88a3a' : '#ffd25a'; x.fillRect(l - 5 + i, o - 3 + i, 10 - i * 2, 1); } x.fillStyle = '#c8302a'; x.fillRect(l - 2, o - 1, 2, 1); x.fillRect(l + 1, o, 1, 1); }
+    else if (id === 'salat') { x.fillStyle = '#f4f4f4'; x.fillRect(l - 5, o, 10, 3); x.fillRect(l - 4, o + 3, 8, 1); x.fillStyle = '#e8d090'; x.fillRect(l - 4, o - 2, 8, 2); x.fillStyle = '#5a9a3a'; x.fillRect(l - 2, o - 2, 1, 1); x.fillRect(l + 2, o - 3, 1, 1); }
+    else if (id === 'tuete') { A.tuete(l - 2, o - 7, true, true); }
+  }
+
+  // ----- Leisten -----
+  function zeilen(t, max) { return A.zeilenUmbruch(t, max).filter(function (z) { return z; }); }
+  var KURZ = { 'DER BULLE': 'BULLE', 'DER ANDERE THORSTEN': 'THORST.2' };
+  function leisten() {
+    x.fillStyle = COL.nacht; x.fillRect(0, 0, W, MY); x.fillRect(0, 0, MX, H); x.fillRect(MX + SP * T, 0, W - MX - SP * T, H); x.fillRect(0, MY + ZE * T, W, H - MY - ZE * T);
+    A.text('PUNKTE', 90, 6, 7, COL.grau); A.text(String(s.punkte), 90, 15, 9, COL.hell);
+    A.text('HÜTTENMAMPF', 160, 10, 9, COL.rosa);
+    var rek = Math.max(s.punkte, (LISTE.lesen()[0] || { p: 0 }).p);
+    A.text('REKORD', 230, 6, 7, COL.grau); A.text(String(rek), 230, 15, 9, COL.hell);
+    // links: wer gerade mampft
+    A.text('ES MAMPFT', 24, 30, 7, COL.grau);
+    zeilen(kumpelName(), 9).forEach(function (z, i) { A.text(z, 24, 41 + i * 9, 8, COL.blau); });
+    var laeuft = modus === 'spiel' && s.k.dir;
+    if (kumpelName() === 'ALF') x.globalAlpha = .35;
+    A.figurMalen('kumpel', 'kumpel', 24, 92, .67, laeuft ? uhr / 120 : 0, s.k.blick === 'l');
+    x.globalAlpha = 1;
+    if (kumpelName() === 'ALF') A.text('¿DÓNDE ESTÁ?', 24, 98, 6, COL.feuer);
+    A.text('RESERVE', 24, 110, 7, COL.grau);
+    s.kumpels.slice(1, 6).forEach(function (n, i) { x.drawImage(pixelBild('kumpel0', KUMPEL[0], KUMPEL_PAL), 2, 116 + i * 14); A.text(KURZ[n] || n, 15, 122 + i * 14, 6, COL.hell, 'left'); });
+    if (s.kumpels.length < 2) A.text('KEINER MEHR', 24, 124, 6, COL.rot);
+    A.text('LEVEL', 24, 192, 7, COL.grau); A.text(String(s.level), 24, 203, 12, COL.feuer);
+    // rechts: das Dorf
+    var rx = MX + SP * T, mitte = rx + (W - rx) / 2;
+    A.text('DAS DORF', mitte, 30, 7, COL.grau);
+    s.dorf.forEach(function (g, i) {
+      var d = DORF[i], oy = 40 + i * 33;
+      x.drawImage(leuteBild(i, g.angst ? 'b' : '', 0), mitte - 6, oy);
+      if (g.angst) { x.fillStyle = '#1b1612'; x.fillRect(mitte - 3, oy + 4, 2, 1); x.fillRect(mitte, oy + 4, 2, 1); }
+      else augen(mitte - 6, oy, 'u');
+      A.text(d.name, mitte, oy + 18, 6, d.farbe);
+      A.text(g.zustand === 'augen' || g.zustand === 'rein' ? 'HEIMWEG' : g.angst ? 'BESOFFEN' : g.zustand === 'drin' ? 'MOTZT' : (i === 0 && s.elroy ? 'RASEND' : d.spitz), mitte, oy + 26, 5, COL.grau);
+    });
+    if (s.angstBis > 0) {                                                   // wie lange Kurts Runde noch wirkt
+      A.text('WEIZEN', mitte, 178, 6, COL.feuer);
+      x.fillStyle = '#3a2a10'; x.fillRect(rx + 6, 184, 36, 4);
+      x.fillStyle = s.angstBis < 2000 && Math.floor(uhr / 180) % 2 ? '#f4f4f4' : '#f0a020'; x.fillRect(rx + 6, 184, Math.max(1, Math.round(36 * s.angstBis / s.angstVoll)), 4);
+    }
+    s.teller.slice(-4).forEach(function (id, i) { bonusMalen(id, rx + 12 + (i % 2) * 22, 202 + Math.floor(i / 2) * 12); });
+    // unten: Meldung oder Tipp
+    var m = s.meldung && uhr < s.meldung.bis ? s.meldung : null;
+    if (m) A.text(m.t, 160, MY + ZE * T + 9, 8, m.farbe);
+    else A.text(TIPPS[Math.floor(uhr / 6000) % TIPPS.length], 160, MY + ZE * T + 9, 7, COL.grau);
+  }
+
+  function spielfeld(blitz) {
+    x.fillStyle = COL.nacht; x.fillRect(0, 0, W, H);
+    x.drawImage(karteBild(blitz), MX, MY);
+    huetteLebt();
+    var an = Math.floor(uhr / 220) % 4 !== 0 || modus !== 'spiel';
+    for (var r = 0; r < ZE; r++) for (var c = 0; c < SP; c++) {
+      var f = s.futter[r][c]; if (!f) continue;
+      if (f === 1) pommes(MX + c * T + 4, MY + r * T + 4); else weizen(MX + c * T + 4, MY + r * T + 4, an);
+    }
+    if (s.bonus && (s.bonus.bis > 2000 || Math.floor(uhr / 150) % 2)) bonusMalen(s.bonus.art.id, MX + BONUS_POS.x, MY + BONUS_POS.y);
+  }
+  function figuren() {
+    x.save(); x.beginPath(); x.rect(MX, MY, SP * T, ZE * T); x.clip();
+    var tot = modus === 'tot', ti = uhr - modusSeit;
+    s.dorf.forEach(function (g) { if (tot && ti > 700) return; leuteMalen(g, MX + g.x, MY + g.y); });
+    if (tot) kumpelMalen(MX + s.k.x, MY + s.k.y, s.k, ti < 700 ? 0 : Math.min(1.01, (ti - 700) / 900));
+    else kumpelMalen(MX + s.k.x, MY + s.k.y, s.k);
+    x.restore();
+    if (s.sprech && modus === 'spiel') {                                    // Sprechblase
+      var g = s.dorf[s.sprech.i], b = s.sprech.t.length * 4 + 6, bx = Math.max(MX + 2, Math.min(MX + SP * T - b - 2, MX + g.x - b / 2)), by = Math.max(MY + 1, MY + g.y - 22);
+      x.fillStyle = '#f1eee4'; x.fillRect(Math.round(bx), Math.round(by), Math.round(b), 9); x.fillRect(Math.round(MX + g.x - 1), Math.round(by + 9), 2, 2);
+      A.text(s.sprech.t, Math.round(bx + b / 2), Math.round(by + 5), 6, '#1b1612');
+    }
+    s.sterne.forEach(function (z) { A.comicStern(z.x, z.y, z.wort, 8, z.alter); if (z.zusatz && z.alter > 150) A.text(z.zusatz, z.x, z.y + 16, 7, COL.feuer); });
+  }
+  function mitteText(t, farbe, gr) { A.text(t, MX + BONUS_POS.x + 1, MY + BONUS_POS.y + 1, gr || 10, '#111'); A.text(t, MX + BONUS_POS.x, MY + BONUS_POS.y, gr || 10, farbe); }
+
+  function titelZeichnen() {
+    x.fillStyle = COL.nacht; x.fillRect(0, 0, W, H);
+    x.globalAlpha = .12; x.drawImage(karteBild(false), MX, MY); x.globalAlpha = 1;
+    A.logo('HÜTTENMAMPF', 22, 26);
+    A.text('DIE GROSSE POMMES-PANIK IM SUMPF', 160, 42, 8, COL.hell);
+    var seite = Math.floor(uhr / 7000) % 2;
+    if (seite === 0) {
+      A.text('DAS DORF WILL SEINE POMMES ZURÜCK:', 160, 56, 7, COL.feuer);
+      DORF.forEach(function (d, i) {
+        var oy = 64 + i * 25, bild = Math.floor(uhr / 250 + i) % 2;
+        x.save(); x.imageSmoothingEnabled = false; x.translate(58, oy); x.scale(2, 2);
+        x.drawImage(leuteBild(i, '', bild), 0, 0); x.restore();
+        x.save(); x.translate(58, oy); x.scale(2, 2); augen(0, 0, ['l', 'r', 'u', 'o'][Math.floor(uhr / 600 + i) % 4]); x.restore();
+        A.text(d.name, 88, oy + 8, 9, d.farbe, 'left');
+        A.text('„' + d.spitz + '"', 150, oy + 8, 8, COL.hell, 'left');
+        A.text(d.info, 88, oy + 18, 6, COL.grau, 'left');
+      });
+      pommes(82, 170); A.text('POMMES  10', 90, 170, 7, COL.hell, 'left');
+      weizen(150, 170, true); A.text('KURTS WEIZEN  50', 158, 170, 7, COL.feuer, 'left');
+      A.text('WEIZEN MACHT DAS DORF MÜDE – DANN EINSAMMELN!', 160, 182, 7, COL.grau);
+    } else {
+      var l = LISTE.lesen(); A.kasten(90, 52, 140, 24 + l.length * 10); LISTE.malen(62);
+      parade(150);
+      bonusMalen('wurst', 100, 166); bonusMalen('paella', 130, 166); bonusMalen('pizza', 160, 166); bonusMalen('salat', 190, 166); bonusMalen('tuete', 220, 166);
+      A.text('IN DER MITTE GIBT ES WAS VON DER TRUPPE', 160, 182, 7, COL.grau);
+    }
+    if (Math.floor(uhr / 500) % 2) A.text('KNOPF DRÜCKEN ODER TIPPEN', 160, 202, 9, COL.feuer);
+    A.laufschrift(LAUF, 226);
+  }
+  function parade(py) {               // der Kumpel rennt, das Dorf hinterher – wie im Automaten vor 40 Jahren
+    var lauf = (uhr / 12) % 520, kx = 360 - lauf, kehr = lauf > 260, k = { dir: kehr ? 'r' : 'l', weg: uhr / 40, blick: kehr ? 'r' : 'l' };
+    if (kehr) kx = lauf - 260 - 60;
+    if (!kehr) weizen(28, py, Math.floor(uhr / 220) % 4 !== 0);
+    kumpelMalen(kx, py, k);
+    DORF.forEach(function (d, i) {
+      var g = { i: i, zustand: 'frei', dir: kehr ? 'r' : 'l', weg: uhr / 40, angst: kehr };
+      var gx = kehr ? kx + 30 + i * 16 : kx + 26 + i * 16;
+      if (kehr) { var alt = s; s = s || { angstBis: 5000 }; leuteMalen(g, gx, py); s = alt; } else leuteMalen(g, gx, py);
+    });
+  }
+  function nameZeichnen() {
+    x.fillStyle = COL.nacht; x.fillRect(0, 0, W, H);
+    x.globalAlpha = .3; x.drawImage(karteBild(false), MX, MY); x.globalAlpha = 1;
+    A.kasten(60, 60, 200, 126);
+    A.text('DEIN NAME', 160, 80, 12, COL.rosa);
+    for (var i = 0; i < 3; i++) {
+      var px = 130 + i * 30, aktiv = i === namePos;
+      A.text(ABC[name[i]], px, 116, 20, aktiv ? COL.feuer : COL.hell);
+      if (aktiv && Math.floor(uhr / 300) % 2) { x.fillStyle = COL.feuer; x.fillRect(px - 7, 130, 14, 2); }
+      if (aktiv) { A.text('▲', px, 96, 8, COL.grau); A.text('▼', px, 140, 8, COL.grau); }
+    }
+    x.fillStyle = COL.feuer; x.fillRect(105, 147, 110, 18); x.fillStyle = '#111'; x.fillRect(107, 149, 106, 14);   // FERTIG-Knopf
+    A.text('FERTIG – LOS!', 160, 156, 10, COL.feuer);
+    A.text('▲/▼ antippen ändert den Buchstaben', 160, 176, 7, COL.grau);
+  }
+  function endeZeichnen() {
+    spielfeld(false); leisten();
+    x.fillStyle = 'rgba(60,30,10,.88)'; x.fillRect(0, 0, W, H);
+    A.kasten(36, 8, 248, 226);
+    A.text('PÜREE! BİTTİ MORUK.', 160, 22, 12, COL.rosa);
+    A.text(s.punkte + ' PUNKTE · LEVEL ' + s.level, 160, 37, 9, COL.hell);
+    A.text(s.stats.pommes + ' POMMES · ' + s.stats.weizen + ' WEIZEN · ' + s.stats.dorf + ' DÖRFLER EINGESAMMELT', 160, 48, 7, COL.grau);
+    if (platz >= 0) A.text('NEU IN DER BESTENLISTE: PLATZ ' + (platz + 1), 160, 60, 9, COL.feuer);
+    LISTE.malen(72, platz);
+    DORF.forEach(function (d, i) { leuteMalen({ i: i, zustand: 'frei', dir: 'u', weg: uhr / 30 + i * 4, angst: false }, 112 + i * 32, 164 + (Math.floor(uhr / 200 + i) % 2)); });
+    A.text('DAS DORF FEIERT. MIT DEINEN POMMES.', 160, 176, 7, COL.grau);
+    A.text('IN EHREN: ' + s.gefallen.slice(-4).join(', ') + (s.gefallen.length > 4 ? ' …' : ''), 160, 187, 7, COL.rot);
+    var opt = ['NOCHMAL – TEKRAR?', 'ZUM HÜTTEN-MENÜ – GÖRÜŞÜRÜZ!'];
+    for (var j = 0; j < 2; j++) A.text((endeWahl === j ? '▶ ' : '  ') + opt[j], 160, 201 + j * 14, 10, endeWahl === j ? COL.feuer : COL.hell);
+  }
+  function zeichnen() {
+    if (modus === 'titel') { titelZeichnen(); return; }
+    if (modus === 'name') { nameZeichnen(); return; }
+    if (modus === 'ende') { endeZeichnen(); return; }
+    var ti = uhr - modusSeit, blitz = modus === 'geschafft' && ti < 2400 && Math.floor(ti / 200) % 2 === 1;
+    spielfeld(blitz);
+    figuren();
+    leisten();
+    if (modus === 'bereit') {
+      if (s.ersterStart || ti < 900) { x.fillStyle = 'rgba(16,19,27,.9)'; x.fillRect(MX + TUER.x - 26, MY + 6 * T + 1, 52, 11); A.text('LEVEL ' + s.level, MX + TUER.x, MY + 6 * T + 7, 9, COL.feuer); }
+      mitteText('MAHLZEIT!', COL.feuer);
+    }
+    if (modus === 'tot' && ti > 1700) {
+      x.fillStyle = 'rgba(16,19,27,.85)'; x.fillRect(MX + 8, MY + 84, SP * T - 16, 40);
+      A.text(kumpelName() + ' ' + PLATT[s.gefallen.length % PLATT.length] + '!', 160, MY + 96, 9, COL.feuer);
+      A.text(s.kumpels.length > 1 ? 'KARDEŞİM! DER NÄCHSTE MAMPFT WEITER.' : 'DAS WAR DER LETZTE KUMPEL …', 160, MY + 112, 7, COL.hell);
+    }
+    if (modus === 'geschafft' && ti >= 2400) {
+      var w = WITZE[s.witz % WITZE.length];
+      x.fillStyle = 'rgba(16,19,27,.9)'; x.fillRect(MX + 4, MY + 80, SP * T - 8, 52); x.strokeStyle = COL.rosa; x.strokeRect(MX + 4.5, MY + 80.5, SP * T - 9, 51);
+      A.text('ALLES WEGGEMAMPFT!', 160, MY + 92, 11, COL.feuer);
+      A.text(w[0], 160, MY + 107, 7, COL.hell); A.text(w[1], 160, MY + 117, 7, COL.hell);
+    }
+  }
+
+  x = A.start({ schritt: schritt, zeichnen: zeichnen, zurueck: '../index.html',
+    taste: function (k) { if (modus === 'name' && /^[a-zA-Z0-9]$/.test(k)) { name[namePos] = ABC.indexOf(k.toUpperCase()); nameWeiter(); } } });
+  // nur zum Testen
+  window.__mampf = function () { return { modus: modus, s: s, name: name, KARTE: KARTE, offen: offen, kachel: kachel, dorfZiel: dorfZiel, T: T, MX: MX, MY: MY,
+    setzeModus: setzeModus, uhr: uhr, neuesSpiel: neuesSpiel, stufe: stufe }; };
+}());
+</script>
+</body>
+</html>

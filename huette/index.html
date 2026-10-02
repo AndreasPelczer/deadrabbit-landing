@@ -30,6 +30,7 @@
 <main>
   <div id="kopf">
     <strong>URPHAED – DER SUMPF</strong>
+    <a href="automat/" style="color:#ffd25a">▶ SUMPF-ARCADE: alle Spiele</a>
     <span class="hilfe">Maus: zielen · Linksklick/Tippen: Feuer · Rechtsklick/R: nachdrehen · oder Stick/Pfeile + Leertaste</span>
   </div>
   <canvas id="spiel" width="320" height="240"></canvas>
@@ -100,6 +101,25 @@
   var TREFFER_WORTE = SPRUCH.treffer;
   function spanier(n) { return n === 'TONI' || n === 'ALF'; }
   var MORGEN_NACH = 8;   // so viele Wellen dauert eine Nacht
+  // Das Wochenende: Freitagnacht, Samstagnacht, Sonntag. Wer Sonntagabend 18 Uhr noch einen Kumpel hat, hat durchgefeiert.
+  var TAGE = ['FREITAGNACHT', 'SAMSTAGNACHT', 'SONNTAG'], TAG_KURZ = ['FR', 'SA', 'SO'], MORGEN_NAME = ['', 'SAMSTAGMORGEN', 'SONNTAGMORGEN'];
+  function partyZeit(welle) {
+    var block = Math.min(2, Math.floor((Math.max(1, welle) - 1) / MORGEN_NACH)), w = ((Math.max(1, welle) - 1) % MORGEN_NACH) + 1;
+    var h = block < 2 ? (20 + w) % 24 : 9 + w;
+    return { tag: TAGE[block], kurz: TAG_KURZ[block], uhr: ('0' + h).slice(-2) + ':00' };
+  }
+  function bisText() { if (s.sieg) return 'SO 18:00'; var z = partyZeit(s.welle); return z.kurz + ' ' + z.uhr; }
+  var PARTY_SCHLUESSEL = 'urphaed-party';
+  function partyLesen() { try { var p = JSON.parse(localStorage.getItem(PARTY_SCHLUESSEL)); if (p && p.n) return p; } catch (e) {} return { n: 'RAF', welle: 6, bis: 'FR 02:00' }; }
+  function partyMerken(wer) {
+    var alt = partyLesen(), weit = s.sieg ? 99 : s.welle;
+    if (weit > alt.welle) { try { localStorage.setItem(PARTY_SCHLUESSEL, JSON.stringify({ n: wer, welle: weit, bis: bisText() })); } catch (e) {} return true; }
+    return false;
+  }
+  function spielAbschliessen() {
+    var wer = name.map(function (i) { return ABC[i]; }).join('');
+    platz = eintragen(wer, s.punkte, bisText()); s.neuerPartyRekord = partyMerken(wer); endeWahl = 0;
+  }
   function gemischt(liste) { var l = liste.slice(); for (var i = l.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), h = l[i]; l[i] = l[j]; l[j] = h; } return l; }
 
   // ---------- Bestenliste ----------
@@ -108,8 +128,8 @@
     return [{ n: 'AND', p: 3000 }, { n: 'RAF', p: 2000 }, { n: 'MOP', p: 1000 }];
   }
   function listeSpeichern(l) { try { localStorage.setItem(LISTE_SCHLUESSEL, JSON.stringify(l)); } catch (e) {} }
-  function eintragen(name, punkte) {
-    var l = listeLesen(); l.push({ n: name, p: punkte, neu: true });
+  function eintragen(name, punkte, bis) {
+    var l = listeLesen(); l.push({ n: name, p: punkte, b: bis, neu: true });
     l.sort(function (a, b) { return b.p - a.p; }); l = l.slice(0, 8);
     var platz = -1; l.forEach(function (e, i) { if (e.neu) { platz = i; delete e.neu; } });
     listeSpeichern(l); return platz;
@@ -123,7 +143,7 @@
   function neuesSpiel() {
     s = { ziel: { x: 160, y: 140 }, gegner: [], leute: [], kumpel: null, mission: null, missionErgebnis: null,
           geschosse: [], funken: [], krater: [], meldungen: [], vorrat: [], leichen: [], flecken: [], sani: [], naechsterSani: 0, kumpels: gemischt(TRUPPE), lazarett: [], graeber: [], naechte: 0, explosionen: [], ketten: [], schwebe: [], dunst: 0,
-          punkte: 0, treffer: 0, schuesse: 0, huette: LEBEN, munition: MAGAZIN, nachladenBis: 0,
+          punkte: 0, treffer: 0, schuesse: 0, nachtStart: { lazarett: 0, punkte: 0, schuesse: 0 }, huette: LEBEN, munition: MAGAZIN, nachladenBis: 0,
           welle: 0, zuSpawnen: 0, letzteWelle: 0, welleMs: 1700, naechsterWanderer: 0, kumpelStart: 0, dackel: null, naechsterDackel: 0,
           muendung: 0, wackeln: 0, riese: null };
     naechsteWelle();
@@ -606,7 +626,7 @@
   window.addEventListener('keydown', function (e) {
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].indexOf(e.key) >= 0) e.preventDefault();
     tasten[e.key] = true;
-    if (e.key === 'Escape' && AUTOMAT) location.href = '../arcade/index.html';   // aus dem Automaten gestartet: zurück ins Menü
+    if (e.key === 'Escape' && AUTOMAT) location.href = 'automat/index.html';   // aus dem Automaten gestartet: zurück ins Menü
     if (modus === 'name' && /^[a-zA-Z0-9]$/.test(e.key)) { name[namePos] = ABC.indexOf(e.key.toUpperCase()); nameWeiter(); }
   });
   window.addEventListener('keyup', function (e) { tasten[e.key] = false; });
@@ -631,7 +651,7 @@
       if (ax < -0.5) e.l = true; if (ax > 0.5) e.r = true; if (ay < -0.5) e.o = true; if (ay > 0.5) e.u = true;
       if (pad.buttons[0] && pad.buttons[0].pressed) e.a = true;
       if (pad.buttons[1] && pad.buttons[1].pressed) e.b = true;
-      if (AUTOMAT && pad.buttons[9] && pad.buttons[9].pressed) location.href = '../arcade/index.html';
+      if (AUTOMAT && pad.buttons[9] && pad.buttons[9].pressed) location.href = 'automat/index.html';
     }
     if (e.l) e.ax = -1; if (e.r) e.ax = 1; if (e.o) e.ay = -1; if (e.u) e.ay = 1;
     var neu = {}; ['l','r','o','u','a','b'].forEach(function (k) { neu[k] = e[k] && !vorher[k]; vorher[k] = e[k]; });
@@ -663,7 +683,11 @@
       return;
     }
     if (modus === 'morgen') {
-      if (e.neu.a && zeit - modusSeit > MORGEN.knopf) naechsteWelle();
+      if (e.neu.a && zeit - modusSeit > MORGEN.knopf) { s.nachtStart = { lazarett: s.lazarett.length, punkte: s.punkte, schuesse: s.schuesse }; naechsteWelle(); }
+      return;
+    }
+    if (modus === 'sieg') {
+      if ((e.neu.a || e.klick) && zeit - modusSeit > MORGEN.knopf) { spielAbschliessen(); setzeModus('ende'); }
       return;
     }
     if (modus === 'intro') {
@@ -706,7 +730,7 @@
         setzeModus('spiel');
         return;
       }
-      if (!s.opfer && zeit - modusSeit > 2600) { platz = eintragen(name.map(function (i) { return ABC[i]; }).join(''), s.punkte); endeWahl = 0; setzeModus(s.graeber.length ? 'friedhof' : 'ende'); }
+      if (!s.opfer && zeit - modusSeit > 2600) { spielAbschliessen(); setzeModus(s.graeber.length ? 'friedhof' : 'ende'); }
       return;
     }
     var tempo = 0.11 * dt;
@@ -833,7 +857,9 @@
         s.naechte++;
         s.morgenBonus = { vorrat: s.vorrat.length * 500, kumpels: s.kumpels.length * 300 };
         s.punkte += s.morgenBonus.vorrat + s.morgenBonus.kumpels;
-        setzeModus('morgen');
+        s.bilanz = { verloren: s.lazarett.slice(s.nachtStart.lazarett), punkte: s.punkte - s.nachtStart.punkte, tueten: s.schuesse - s.nachtStart.schuesse };
+        if (s.naechte >= 3) { s.sieg = true; setzeModus('sieg'); }      // Sonntagabend erreicht – durchgefeiert!
+        else setzeModus('morgen');
       } else naechsteWelle();
     }
   }
@@ -1012,6 +1038,39 @@
     'DIE PARTY GEHT WEITER.'
   ];
   function zeilenUmbruch(t, max) { var w = t.split(' '), z = [], a = ''; w.forEach(function (x) { if ((a + ' ' + x).trim().length > max) { z.push(a.trim()); a = x; } else a += ' ' + x; }); if (a.trim()) z.push(a.trim()); return z; }
+  function bilanzMalen(titel) {
+    var bz = s.bilanz, n = bz.verloren.length;
+    x.fillStyle = 'rgba(0,0,0,.78)'; x.fillRect(16, 148, 288, 66);
+    text(titel, 160, 158, 11, COL.feuer);
+    text((s.sieg ? 'SONNTAG: ' : 'DIESE NACHT: ') + bz.punkte + ' PUNKTE · ' + bz.tueten + ' TÜTEN VERSCHOSSEN', 160, 172, 8, COL.hell);
+    text(n ? n + (n === 1 ? ' KUMPEL VERLOREN:' : ' KUMPELS VERLOREN:') : 'KEINEN KUMPEL VERLOREN – ASLANIM!', 160, 185, 8, n ? '#c46c71' : '#7fd06a');
+    if (n) zeilenUmbruch(bz.verloren.join(', '), 46).slice(0, 2).forEach(function (z, i) { text(z, 160, 196 + i * 9, 7, '#c46c71'); });
+    var noch = s.kumpels.length + (s.kumpel ? 1 : 0);
+    if (!n) text('NOCH ' + noch + ' KUMPELS AM FEUER', 160, 198, 7, COL.hell);
+  }
+  // Sonntagabend, 18 Uhr: das schafft keiner mehr
+  function siegZeichnen() {
+    if (!HG_BURG) HG_BURG = burgBild();
+    var t = zeit - modusSeit, noch = s.kumpels.slice(); if (s.kumpel) noch.push(s.kumpel.name);
+    x.drawImage(HG_BURG, 0, 0);
+    x.fillStyle = 'rgba(0,0,0,.72)'; x.fillRect(0, 0, W, 84);
+    text('SONNTAGABEND, 18:00', 160, 14, 10, '#edf171');
+    demoLogoText('DURCHGEFEIERT!', 40);
+    text('DAS HAT SEIT 1995 KEINER MEHR GESCHAFFT.', 160, 64, 8, COL.hell);
+    text('MONTAG IST EIN ANDERES PROBLEM.', 160, 75, 7, COL.grau);
+    if (t > 1500) {
+      bilanzMalen('DER SONNTAG');
+      text('ÜBRIG: ' + (noch.length ? noch.slice(0, 5).join(', ') + (noch.length > 5 ? ' …' : '') : 'KEINER'), 160, 222, 7, '#7fd06a');
+    }
+    if (t > MORGEN.knopf && Math.floor(zeit / 500) % 2) text('KNOPF = INS BETT', 160, 233, 8, COL.hell);
+  }
+  function demoLogoText(wort, py) {
+    x.save(); x.font = 'bold 22px monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillStyle = COL.nacht; x.fillText(wort, 162, py + 2);
+    var verlauf = x.createLinearGradient(0, py - 11, 0, py + 11), schub = (zeit / 900) % 1;
+    for (var i = 0; i < RASTER.length; i++) verlauf.addColorStop(((i / RASTER.length) + schub) % 1, RASTER[i]);
+    x.fillStyle = verlauf; x.fillText(wort, 160, py); x.restore();
+  }
   function morgenZeichnen() {
     if (!HG_BURG) HG_BURG = burgBild();
     var t = zeit - modusSeit;
@@ -1029,10 +1088,10 @@
     });
     if (t > MORGEN.knopf - 2000) {
       var b = s.morgenBonus;
-      text('BONUS: VORRAT +' + b.vorrat + '   KUMPELS +' + b.kumpels, 160, 210, 8, '#edf171');
-      if (s.lazarett.length) text('IN EHREN: ' + s.lazarett.slice(-5).join(', ') + (s.lazarett.length > 5 ? ' …' : ''), 160, 221, 7, '#c46c71');
+      bilanzMalen(MORGEN_NAME[s.naechte] + ', 05:00');
+      text('BONUS: VORRAT +' + b.vorrat + '   KUMPELS +' + b.kumpels, 160, 222, 8, '#edf171');
     }
-    if (t > MORGEN.knopf && Math.floor(zeit / 500) % 2) text('KNOPF = NÄCHSTE NACHT', 160, 233, 8, COL.hell);
+    if (t > MORGEN.knopf && Math.floor(zeit / 500) % 2) text('KNOPF = ' + (s.naechte === 1 ? 'SAMSTAGNACHT' : 'SONNTAG – DURCHHALTEN!'), 160, 233, 8, COL.hell);
   }
 
   // ---------- Titel im Stil der C64-Demoszene ----------
@@ -1614,7 +1673,8 @@
     x.fillStyle = 'rgba(16,19,27,.8)'; x.fillRect(0, 0, W, 13);
     text(name.map(function (i) { return ABC[i]; }).join('') + '  ' + s.punkte, 3, 7, 9, COL.hell, 'left');
     var quote = s.schuesse ? Math.round(100 * s.treffer / s.schuesse) : 0;
-    text('WELLE ' + s.welle + '  TREFFER ' + s.treffer + '/' + s.schuesse + ' ' + quote + '%', 168, 7, 9);
+    var pz = partyZeit(s.welle);
+    text(pz.kurz + ' ' + pz.uhr + '  TREFFER ' + s.treffer + '/' + s.schuesse + ' ' + quote + '%', 168, 7, 9);
     text('HÜTTE', 290, 7, 9, COL.hell, 'right');
     for (var h = 0; h < LEBEN; h++) { x.fillStyle = h < s.huette ? COL.rosa : COL.grau; x.fillRect(294 + h * 8, 3, 6, 6); }
     for (var i = 0; i < MAGAZIN; i++) tuete(6 + i * 7, 220, i < s.munition, i === s.munition - 1);
@@ -1636,11 +1696,11 @@
     s.meldungen.slice(-3).forEach(function (m, j) { text(m.t, 160, 34 + j * 11, 9, m.farbe); });
   }
   function bestenliste(o) {
-    var l = listeLesen();
+    var l = listeLesen(), mitBis = l.some(function (e) { return e.b; });
     text('BESTENLISTE', 160, o, 9, COL.feuer);
     l.forEach(function (e, i) {
       var farbe = (modus === 'ende' && i === platz) ? COL.rosa : COL.hell;
-      text((i + 1) + '. ' + e.n + '  ' + ('      ' + e.p).slice(-6), 160, o + 12 + i * 10, 9, farbe);
+      text((i + 1) + '. ' + e.n + '  ' + ('      ' + e.p).slice(-6) + (mitBis ? (e.b ? '  ' + e.b : '          ') : ''), 160, o + 12 + i * 10, 9, farbe);
     });
   }
   function szene() {
@@ -1708,7 +1768,7 @@
       demoLogo(30);
       text('DIE HÜTTE IM SUMPF BRAUCHT DICH', 160, 54, 9, COL.hell);
       ['bier','musik','grill','kohle','paella'].forEach(function (id, i) { symbol(id, 120 + i * 18, 62, 1); });
-      var hoeheL = 24 + listeLesen().length * 10; kasten(90, 76, 140, hoeheL); bestenliste(88);
+      var hoeheL = 24 + listeLesen().length * 10; kasten(70, 76, 180, hoeheL); bestenliste(88);
       if (Math.floor(zeit / 500) % 2) text('KLICKEN ODER KNOPF DRÜCKEN', 160, 198, 9, COL.feuer);
       laufschrift(226);
       return;
@@ -1729,10 +1789,12 @@
     }
     if (modus === 'intro') { introZeichnen(); return; }
     if (modus === 'morgen') { morgenZeichnen(); return; }
+    if (modus === 'sieg') { siegZeichnen(); return; }
     szene();
     if (modus === 'spezial') spezialMalen();
     if (modus === 'welle') {
-      kasten(55, 88, 210, 66);
+      kasten(55, 76, 210, 78);
+      var pzb = partyZeit(s.welle); text(pzb.tag + ', ' + pzb.uhr, 160, 86, 8, '#edf171');
       var zeile = 104;
       if (s.welle > 1) { text('WELLE ' + (s.welle - 1) + ' GESCHAFFT!', 160, zeile, 11, COL.feuer); zeile += 16; }
       text('WELLE ' + s.welle + (s.welle === 1 ? ' – DIE KARTOFFELN KOMMEN!' : s.welle % 4 === 3 ? ' – KARTOFFEL-ALARM!' : ''), 160, zeile, s.welle === 1 || s.welle % 4 === 3 ? 10 : 12, COL.hell); zeile += 14;
@@ -1759,10 +1821,12 @@
     if (modus === 'ende') {
       x.fillStyle = 'rgba(120,10,20,.85)'; x.fillRect(0, 0, W, H);
       kasten(40, 10, 240, 222);
-      text('BİTTİ MORUK – DIE HÜTTE IST GEFALLEN', 160, 24, 10, COL.rosa);
+      text(s.sieg ? 'DURCHGEFEIERT BIS SONNTAGABEND!' : 'BİTTİ MORUK – DIE HÜTTE IST GEFALLEN', 160, 24, 10, s.sieg ? COL.feuer : COL.rosa);
       text(s.punkte + ' Punkte · Welle ' + s.welle + ' · ' + s.treffer + ' Treffer' + (s.weggefegt ? ' · ' + s.weggefegt + ' weggefegt' : ''), 160, 39, 9);
-      if (s.vorrat.length) { text('Besorgt:', 120, 52, 8, COL.grau); s.vorrat.slice(-6).forEach(function (id, j) { symbol(id, 140 + j * 11, 48, 1); }); }
+      var pzE = s.sieg ? { tag: 'SONNTAG', uhr: '18:00' } : partyZeit(s.welle);
+      text('DURCHGEHALTEN BIS ' + pzE.tag + ' ' + pzE.uhr + ' · ' + s.schuesse + ' TÜTEN', 160, 52, 8, COL.hell);
       if (platz >= 0) text('NEU IN DER BESTENLISTE: PLATZ ' + (platz + 1), 160, 64, 9, COL.feuer);
+      var pr = partyLesen(); text((s.neuerPartyRekord ? 'NEU! ' : '') + 'LÄNGSTE PARTY: ' + pr.n + ' – BIS ' + pr.bis, 160, 174, 8, s.neuerPartyRekord ? COL.feuer : '#9fd0ff');
       if (s.lazarett.length) text('IN EHREN: ' + s.lazarett.slice(-4).join(', ') + (s.lazarett.length > 4 ? ' …' : ''), 160, 186, 7, COL.rot);
       bestenliste(78);
       var opt = ['NOCHMAL – TEKRAR?', 'ZUM HÜTTEN-MENÜ – GÖRÜŞÜRÜZ!'];

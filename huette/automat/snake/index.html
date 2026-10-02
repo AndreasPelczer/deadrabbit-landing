@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RINGELNATTER</title>
+<style>
+  body { margin: 0; padding-inline: 16px; box-sizing: border-box; min-height: 100vh; display: grid; place-items: center; background: #10131b; color: #f1eee4; font-family: system-ui, sans-serif; }
+  main { width: 100%; max-width: 960px; }
+  #kopf { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 12px 0; font-size: 15px; }
+  canvas { cursor: none; touch-action: none; width: 100%; display: block; aspect-ratio: 4 / 3; background: #10131b; border: 2px solid #f1eee4; image-rendering: pixelated; }
+  .hilfe { opacity: .7; }
+  /* Handy hochkant: kein Rand verschenken, die Maus-Hilfe braucht dort keiner */
+  @media (max-width: 700px) and (orientation: portrait) {
+    body { padding-inline: 4px; }
+    .hilfe { display: none; }
+    canvas { border-width: 1px; }
+  }
+  /* Handy quer: das Spielfeld so gross wie der Bildschirm hoch ist, nichts abgeschnitten */
+  @media (orientation: landscape) and (max-height: 700px) {
+    body { padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); min-height: 100vh; min-height: 100dvh; }
+    main { width: auto; max-width: none; }
+    #kopf { display: none; }
+    canvas { border: 0; width: calc(100vh * 4 / 3); width: min(calc(100dvh * 4 / 3), calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))); height: auto; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div id="kopf">
+    <strong>DIE RINGELNATTER VOM MAIN</strong>
+    <span class="hilfe">Stick/Pfeile lenken · antippen: dorthin abbiegen · Escape: zurück zum Automaten</span>
+  </div>
+  <canvas id="spiel" width="320" height="240"></canvas>
+</main>
+<script src="../gemeinsam/arcade.js"></script>
+<script>
+(function () {
+  var A = ARCADE, COL = A.COL, W = A.W, H = A.H, x, text = A.text;
+  // ---------- Einstellbar ----------
+  var ZELLE = 10, SP = 32, ZE = 21, OBEN = 22;           // Feld 32x21 Zellen unter der Anzeige
+  var TAKT_START = 150, TAKT_MIN = 60, SCHNELLER_ALLE = 5;
+  var WURST_ALLE = 7, WURST_MS = 6000, TUETE_ALLE = 11, BUNT_MS = 6000;
+  var ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var LISTE = A.liste('sumpf-snake');
+  var WITZE = ['KARTOFFEL!', 'MAMPF!', 'LECKER ERDAPFEL!', 'AFİYET OLSUN!', 'POMMES IN SPE!', 'KNOLLE!'];
+  var TOD = { zaun: 'AB IN DEN ZAUN.', knoten: 'DIE NATTER HAT SICH VERKNOTET.' };
+
+  var modus = 'titel', seit = 0, zeit = 0, name = [10, 0, 11], namePos = 0, platz = -1, endeWahl = 0, s = null;
+  function setze(m) { modus = m; seit = zeit; }
+  function neu() {
+    s = { natter: [{ x: 8, y: 10 }, { x: 7, y: 10 }, { x: 6, y: 10 }], richtung: { x: 1, y: 0 }, naechste: [], wachsen: 0,
+          takt: TAKT_START, uhr: 0, punkte: 0, gefressen: 0, futter: null, wurst: null, tuete: null, bunt: 0, blasen: [], tod: null, krater: [] };
+    s.futter = freiePlatz(); setze('spiel');
+  }
+  function belegt(p) { return s.natter.some(function (n) { return n.x === p.x && n.y === p.y; }) || (s.futter && s.futter.x === p.x && s.futter.y === p.y) || (s.wurst && s.wurst.x === p.x && s.wurst.y === p.y) || (s.tuete && s.tuete.x === p.x && s.tuete.y === p.y); }
+  function freiePlatz() { for (var v = 0; v < 500; v++) { var p = { x: 1 + Math.floor(Math.random() * (SP - 2)), y: 1 + Math.floor(Math.random() * (ZE - 2)) }; if (!belegt(p)) return p; } return { x: 1, y: 1 }; }
+  function blase(p, wort) { if (s.blasen.length < 2) s.blasen.push({ x: p.x * ZELLE + 5, y: OBEN + p.y * ZELLE - 6, t: wort, start: zeit }); }
+  function abbiegen(dx, dy) {
+    var letzte = s.naechste.length ? s.naechste[s.naechste.length - 1] : s.richtung;
+    if ((dx === -letzte.x && dy === -letzte.y) || (dx === letzte.x && dy === letzte.y) || s.naechste.length > 2) return;
+    s.naechste.push({ x: dx, y: dy });
+  }
+
+  function schritt(dt, e) {
+    zeit = A.zeit;
+    if (modus === 'titel') { if ((e.neu.a || e.klick) && zeit - seit > 300) setze('name'); return; }
+    if (modus === 'name') {
+      if (e.neu.o) name[namePos] = (name[namePos] + 1) % ABC.length;
+      if (e.neu.u) name[namePos] = (name[namePos] + ABC.length - 1) % ABC.length;
+      if (e.neu.l && namePos > 0) namePos--;
+      if (e.neu.r || e.neu.a) { namePos++; if (namePos > 2) { namePos = 0; neu(); } }
+      if (e.klick) {
+        if (e.klick.y > 144 && e.klick.x > 90 && e.klick.x < 230) { namePos = 0; neu(); return; }
+        var sp = Math.round((e.klick.x - 130) / 30); if (sp >= 0 && sp <= 2) namePos = sp;
+        if (e.klick.y < 106) name[namePos] = (name[namePos] + 1) % ABC.length; else if (e.klick.y > 126) name[namePos] = (name[namePos] + ABC.length - 1) % ABC.length;
+      }
+      return;
+    }
+    if (modus === 'tot') {
+      if (zeit - seit > 2200) { platz = LISTE.eintragen(name.map(function (i) { return ABC[i]; }).join(''), s.punkte); endeWahl = 0; setze('ende'); }
+      return;
+    }
+    if (modus === 'ende') {
+      if (e.neu.o || e.neu.u) endeWahl = 1 - endeWahl;
+      if (e.klick && zeit - seit > 600 && e.klick.y > 188) { endeWahl = e.klick.y < 203 ? 0 : 1; e.neu.a = true; }
+      if (e.neu.a && zeit - seit > 600) { if (endeWahl === 0) neu(); else location.href = '../index.html'; }
+      return;
+    }
+    // --- spielen ---
+    if (e.neu.l) abbiegen(-1, 0); if (e.neu.r) abbiegen(1, 0); if (e.neu.o) abbiegen(0, -1); if (e.neu.u) abbiegen(0, 1);
+    if (e.klick) {                                   // antippen: in Richtung des Fingers abbiegen
+      var kopf = s.natter[0], dx = e.klick.x - (kopf.x * ZELLE + 5), dy = e.klick.y - (OBEN + kopf.y * ZELLE + 5);
+      if (s.richtung.x !== 0) abbiegen(0, dy < 0 ? -1 : 1); else abbiegen(dx < 0 ? -1 : 1, 0);
+    }
+    if (s.bunt > 0) s.bunt -= dt;
+    if (s.wurst && zeit > s.wurst.bis) s.wurst = null;
+    s.uhr += dt;
+    while (s.uhr >= s.takt && modus === 'spiel') { s.uhr -= s.takt; ziehen(); }
+  }
+  function ziehen() {
+    if (s.naechste.length) s.richtung = s.naechste.shift();
+    var k = s.natter[0], p = { x: k.x + s.richtung.x, y: k.y + s.richtung.y };
+    if (p.x < 0 || p.y < 0 || p.x >= SP || p.y >= ZE) { sterben('zaun'); return; }
+    var schwanz = s.wachsen > 0 ? -1 : s.natter.length - 1;
+    for (var i = 0; i < s.natter.length; i++) if (i !== schwanz && s.natter[i].x === p.x && s.natter[i].y === p.y) { sterben('knoten'); return; }
+    s.natter.unshift(p);
+    if (s.wachsen > 0) s.wachsen--; else s.natter.pop();
+    var mal = s.bunt > 0 ? 2 : 1;
+    if (s.futter && p.x === s.futter.x && p.y === s.futter.y) {
+      s.gefressen++; s.punkte += 10 * mal; s.wachsen += 1;
+      if (s.gefressen % 3 === 0) blase(p, WITZE[Math.floor(Math.random() * WITZE.length)]);
+      if (s.gefressen % SCHNELLER_ALLE === 0) s.takt = Math.max(TAKT_MIN, s.takt - 10);
+      s.futter = freiePlatz();
+      if (s.gefressen % WURST_ALLE === 0) { s.wurst = freiePlatz(); s.wurst.bis = zeit + WURST_MS; }
+      if (s.gefressen % TUETE_ALLE === 0) s.tuete = freiePlatz();
+    }
+    if (s.wurst && p.x === s.wurst.x && p.y === s.wurst.y) { s.punkte += 50 * mal; s.wachsen += 3; blase(p, 'BRATWURST! +' + 50 * mal); s.wurst = null; }
+    if (s.tuete && p.x === s.tuete.x && p.y === s.tuete.y) { s.bunt = BUNT_MS; blase(p, 'OHA…'); s.tuete = null; }
+  }
+  function sterben(art) { s.tod = art; setze('tot'); }
+
+  // ---------- Malen ----------
+  var BODEN = null;
+  function boden() {           // Sumpfwiese am Main, einmal gemalt
+    if (BODEN) return BODEN;
+    BODEN = document.createElement('canvas'); BODEN.width = W; BODEN.height = H; var g = BODEN.getContext('2d');
+    g.fillStyle = '#16251b'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#1d3324'; g.fillRect(0, OBEN, W, ZE * ZELLE);
+    for (var i = 0; i < 700; i++) { g.fillStyle = i % 3 ? '#24402c' : '#2c4c33'; g.fillRect((i * 37) % W, OBEN + (i * 53) % (ZE * ZELLE), 1, i % 5 ? 1 : 2); }
+    for (var sc = 0; sc < 18; sc++) {                              // Schilf mit Rohrkolben
+      var sx = (sc * 89 + 13) % (W - 10), sy = OBEN + 8 + (sc * 67) % (ZE * ZELLE - 20);
+      g.fillStyle = '#2f5a2a'; g.fillRect(sx, sy, 1, 8); g.fillRect(sx + 3, sy + 2, 1, 6); g.fillRect(sx - 2, sy + 3, 1, 5);
+      g.fillStyle = '#5a3a1c'; g.fillRect(sx, sy - 2, 2, 4);
+    }
+    for (var j = 0; j < 30; j++) { g.fillStyle = '#2a3a5a'; g.fillRect((j * 71) % (W - 20), OBEN + 6 + (j * 41) % (ZE * ZELLE - 12), 8 + j % 3 * 4, 2); }   // Pfützen
+    g.fillStyle = '#6b4a2c';                                       // der Zaun rundherum
+    for (var z = 0; z < W; z += 6) { g.fillRect(z, OBEN - 4, 2, 4); g.fillRect(z, OBEN + ZE * ZELLE, 2, 4); }
+    g.fillRect(0, OBEN - 3, W, 1); g.fillRect(0, OBEN + ZE * ZELLE + 1, W, 1);
+    return BODEN;
+  }
+  function kartoffel(px, py) { x.fillStyle = '#1b1612'; x.fillRect(px + 1, py + 2, 8, 6); x.fillStyle = '#c9a25a'; x.fillRect(px + 2, py + 2, 6, 5); x.fillRect(px + 1, py + 3, 8, 3); x.fillStyle = '#8a6a34'; x.fillRect(px + 3, py + 3, 1, 1); x.fillRect(px + 6, py + 5, 1, 1); }
+  function wurst(px, py) { x.fillStyle = '#9a5a2c'; x.fillRect(px, py + 3, 10, 4); x.fillRect(px + 1, py + 2, 8, 6); x.fillStyle = '#5a3018'; x.fillRect(px + 3, py + 3, 1, 4); x.fillRect(px + 6, py + 3, 1, 4); }
+  function natterMalen() {
+    var n = s.natter, bunt = s.bunt > 0, regenbogen = ['#ff4fa3', '#ffd25a', '#7fd06a', '#5fb4ff', '#c58aff'];
+    for (var i = n.length - 1; i >= 1; i--) {
+      var px = n[i].x * ZELLE, py = OBEN + n[i].y * ZELLE;
+      var farbe = bunt ? regenbogen[(i + Math.floor(zeit / 90)) % regenbogen.length] : (i % 2 ? '#4f8f40' : '#62a84f');
+      x.fillStyle = '#0d1a10'; x.fillRect(px + 1, py, ZELLE - 2, ZELLE); x.fillRect(px, py + 1, ZELLE, ZELLE - 2);   // runde Ecken
+      x.fillStyle = farbe; x.fillRect(px + 1, py + 1, ZELLE - 2, ZELLE - 2);
+      if (!bunt) { x.fillStyle = '#3a6a30'; x.fillRect(px + 2, py + 2, 2, 2); x.fillRect(px + 6, py + 6, 2, 2); }   // Schuppen
+      if (i === 1 && !bunt) { x.fillStyle = '#ffd94a'; x.fillRect(px + 1, py + 1, 3, 3); x.fillRect(px + 6, py + 1, 3, 3); x.fillStyle = '#111'; x.fillRect(px + 1, py + 4, 3, 2); x.fillRect(px + 6, py + 4, 3, 2); }   // die gelben Halbmonde
+    }
+    var k = n[0], kx = k.x * ZELLE, ky = OBEN + k.y * ZELLE, d = s.richtung;
+    x.fillStyle = '#0d1a10'; x.fillRect(kx, ky, ZELLE, ZELLE);
+    x.fillStyle = bunt ? '#ffd25a' : '#3f7a34'; x.fillRect(kx + 1, ky + 1, ZELLE - 2, ZELLE - 2);
+    // Augen seitlich zur Laufrichtung, vorn
+    var vx = kx + 5 + d.x * 2, vy = ky + 5 + d.y * 2, qx = d.y ? 3 : 0, qy = d.x ? 3 : 0;
+    x.fillStyle = '#ffd94a'; x.fillRect(vx - qx - 1, vy - qy - 1, 2, 2); x.fillRect(vx + qx - 1, vy + qy - 1, 2, 2);
+    x.fillStyle = '#111'; x.fillRect(vx - qx - (d.x > 0 ? 0 : 1) + (d.x > 0 ? 0 : 1), vy - qy, 1, 1); x.fillRect(vx + qx, vy + qy, 1, 1);
+    if (Math.floor(zeit / 250) % 3 === 0) {                                                    // Zunge mit Gabel
+      x.fillStyle = '#e2283a'; var zx = kx + 5 + d.x * 6, zy = ky + 5 + d.y * 6;
+      x.fillRect(zx - (d.x < 0 ? 3 : 0), zy - (d.y < 0 ? 3 : 0), d.x ? 3 : 1, d.y ? 3 : 1);
+      x.fillRect(zx + d.x * 3 + (d.y ? -1 : 0), zy + d.y * 3 + (d.x ? -1 : 0), 1, 1); x.fillRect(zx + d.x * 3 + (d.y ? 1 : 0), zy + d.y * 3 + (d.x ? 1 : 0), 1, 1);
+    }
+  }
+  function nameZeichnen() {
+    A.kasten(60, 60, 200, 126);
+    text('DEIN NAME', 160, 80, 12, COL.rosa);
+    for (var i = 0; i < 3; i++) {
+      var px = 130 + i * 30, aktiv = i === namePos;
+      text(ABC[name[i]], px, 116, 20, aktiv ? COL.feuer : COL.hell);
+      if (aktiv && Math.floor(zeit / 300) % 2) { x.fillStyle = COL.feuer; x.fillRect(px - 7, 130, 14, 2); }
+      if (aktiv) { text('▲', px, 96, 8, COL.grau); text('▼', px, 140, 8, COL.grau); }
+    }
+    x.fillStyle = COL.feuer; x.fillRect(105, 147, 110, 18); x.fillStyle = '#111'; x.fillRect(107, 149, 106, 14);
+    text('FERTIG – LOS!', 160, 156, 10, COL.feuer);
+    text('▲/▼ antippen ändert den Buchstaben', 160, 176, 7, COL.grau);
+  }
+  function zeichnen() {
+    x.drawImage(boden(), 0, 0);
+    if (modus === 'titel') {
+      x.fillStyle = 'rgba(8,10,22,.6)'; x.fillRect(0, 0, W, H);
+      A.logo('RINGELNATTER', 40, 26);
+      text('VOM MAIN', 160, 62, 10, COL.hell);
+      for (var i = 0; i < 14; i++) { var px = 60 + i * 14, py = 110 + Math.sin(i / 2 + zeit / 300) * 10; x.fillStyle = i % 2 ? '#5aa04a' : '#7fd06a'; x.fillRect(px, py, 12, 10); if (i % 2 === 0) { x.fillStyle = '#e8d24a'; x.fillRect(px + 4, py + 3, 4, 4); } }
+      kartoffel(262, 105);
+      text('KARTOFFELN FRESSEN · NICHT IN DEN ZAUN', 160, 150, 8, COL.grau);
+      text('BRATWURST = +50 · TÜTE = DOPPELT UND BUNT', 160, 162, 8, COL.grau);
+      if (Math.floor(zeit / 500) % 2) text('KNOPF DRÜCKEN ODER ANTIPPEN', 160, 190, 9, COL.feuer);
+      var rek = LISTE.lesen()[0]; if (rek) text('REKORD: ' + rek.n + ' ' + rek.p, 160, 212, 9, COL.rosa);
+      return;
+    }
+    if (modus === 'name') { x.fillStyle = 'rgba(8,10,22,.6)'; x.fillRect(0, 0, W, H); nameZeichnen(); return; }
+    // Spielfeld
+    if (s.futter) kartoffel(s.futter.x * ZELLE, OBEN + s.futter.y * ZELLE);
+    if (s.wurst && (s.wurst.bis - zeit > 1500 || Math.floor(zeit / 120) % 2)) wurst(s.wurst.x * ZELLE, OBEN + s.wurst.y * ZELLE);
+    if (s.tuete) A.tuete(s.tuete.x * ZELLE + 3, OBEN + s.tuete.y * ZELLE - 3, true, true);
+    natterMalen();
+    s.blasen = s.blasen.filter(function (b) { return zeit - b.start < 1100; });
+    s.blasen.forEach(function (b) { A.comicStern(b.x, Math.max(30, b.y), b.t, 8, zeit - b.start); });
+    text('PUNKTE ' + s.punkte, 6, 10, 9, COL.hell, 'left');
+    text('KARTOFFELN ' + s.gefressen, 160, 10, 9, '#c9a25a');
+    if (s.bunt > 0) text('BUNT ' + Math.ceil(s.bunt / 1000), 314, 10, 9, COL.rosa, 'right');
+    if (modus === 'tot') {
+      x.fillStyle = 'rgba(150,6,16,' + Math.min(.6, (zeit - seit) / 1500) + ')'; x.fillRect(0, 0, W, H);
+      A.kasten(40, 92, 240, 50); text('AUS!', 160, 106, 16, COL.hell); text(TOD[s.tod] || '', 160, 128, 9, COL.feuer);
+    }
+    if (modus === 'ende') {
+      x.fillStyle = 'rgba(8,10,22,.85)'; x.fillRect(0, 0, W, H);
+      A.kasten(40, 10, 240, 222);
+      text('BİTTİ – DIE NATTER RUHT', 160, 24, 10, COL.rosa);
+      text(s.punkte + ' PUNKTE · ' + s.gefressen + ' KARTOFFELN', 160, 40, 9);
+      if (platz >= 0) text('NEU IN DER BESTENLISTE: PLATZ ' + (platz + 1), 160, 56, 9, COL.feuer);
+      LISTE.malen(76, platz);
+      var opt = ['NOCHMAL', 'ZURÜCK ZUM AUTOMATEN'];
+      for (var j = 0; j < 2; j++) text((endeWahl === j ? '▶ ' : '  ') + opt[j], 160, 196 + j * 14, 10, endeWahl === j ? COL.feuer : COL.hell);
+    }
+  }
+  x = A.start({ schritt: schritt, zeichnen: zeichnen, zurueck: '../index.html' });
+  window.__natter = function () { return { modus: modus, s: s, name: name, neu: neu }; };   // nur zum Testen
+}());
+</script>
+</body>
+</html>

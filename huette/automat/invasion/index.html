@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KNOLLENALARM</title>
+<style>
+  body { margin: 0; padding-inline: 16px; box-sizing: border-box; min-height: 100vh; display: grid; place-items: center; background: #10131b; color: #f1eee4; font-family: system-ui, sans-serif; }
+  main { width: 100%; max-width: 960px; }
+  #kopf { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 12px 0; font-size: 15px; }
+  canvas { cursor: none; touch-action: none; width: 100%; display: block; aspect-ratio: 4 / 3; background: #10131b; border: 2px solid #f1eee4; image-rendering: pixelated; }
+  .hilfe { opacity: .7; }
+  /* Handy hochkant: kein Rand verschenken, die Tasten-Hilfe braucht dort keiner */
+  @media (max-width: 700px) and (orientation: portrait) {
+    body { padding-inline: 4px; }
+    .hilfe { display: none; }
+    canvas { border-width: 1px; }
+  }
+  /* Handy quer: das Spielfeld so gross wie der Bildschirm hoch ist, nichts abgeschnitten */
+  @media (orientation: landscape) and (max-height: 700px) {
+    body { padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); min-height: 100vh; min-height: 100dvh; }
+    main { width: auto; max-width: none; }
+    #kopf { display: none; }
+    canvas { border: 0; width: calc(100vh * 4 / 3); width: min(calc(100dvh * 4 / 3), calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))); height: auto; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div id="kopf">
+    <strong>KNOLLENALARM – KARTOFFELKÄFER ÜBER WERTHEIM</strong>
+    <span class="hilfe">Stick/Pfeile: laufen · Leertaste/A: Tüte · R/B: nachdrehen · Finger halten: laufen · Tippen: Feuer · Esc: Menü</span>
+  </div>
+  <canvas id="spiel" width="320" height="240"></canvas>
+</main>
+<script src="../gemeinsam/arcade.js"></script>
+<script>
+(function () {
+  'use strict';
+  var A = ARCADE, W = A.W, H = A.H, COL = A.COL, x = null;
+
+  // ---------- Einstellbar ----------
+  var LEBEN = 3, EXTRA_LEBEN_BEI = 1500;
+  var SPALTEN = 9, REIHEN = 5, ABSTAND_X = 22, ABSTAND_Y = 15, START_X = 40, START_Y = 32, START_Y_PRO_WELLE = 6, START_Y_MAX = 30;
+  var GEGNER_B = 12, GEGNER_H = 9, REIHEN_ART = [0, 1, 1, 2, 2];
+  var SCHRITT_X = 2, SCHRITT_RUNTER = 6, RAND = 6;
+  var TAKT_MIN_MS = 26, TAKT_MAX_MS = 560, TAKT_WELLE = 0.15;      // Marschtakt: je weniger Knollen, desto schneller
+  var SPIELER_Y = 220, SPIELER_T = 0.55, SPIELER_TEMPO = 110, FINGER_TEMPO = 170, SPIELER_HALB = 6;
+  var MAGAZIN = 5, NACHDREHEN_MS = 1100, SCHUSS_PAUSE_MS = 240, SCHUSS_MAX = 2, TUETE_TEMPO = 230;
+  var BREI_TEMPO = 68, BREI_TEMPO_WELLE = 6, BREI_PAUSE_MS = 1250, BREI_PAUSE_WELLE = 110, BREI_PAUSE_MIN = 380, BREI_MAX = 2, BREI_MAX_GANZ = 6;
+  var BONUS_ALLE_MS = 15000, BONUS_Y = 15, BONUS_TEMPO = 46, BONUS_PUNKTE = [50, 100, 150, 300], ALF_JEDES = 4, ALF_PUNKTE = 500;
+  var KISTEN = 4, KISTE_B = 22, KISTE_H = 14, KISTE_Y = 174;
+  var STERNE_MAX = 2, STERN_MS = 800, STERN_JEDER = 5;
+  var TREFFER_MS = 1900, WELLE_MS = 2300, EROBERT_MS = 2600, TITEL_WECHSEL_MS = 4500;
+  var BODEN_Y = 222;
+  var ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var LISTE = A.liste('sumpf-invasion');
+  var ZURUECK = '../index.html';
+
+  // ---------- Die Knollen ----------
+  var PAL = { k: '#111111', o: '#e2742a', K: '#1a1a1a', y: '#f2d23a', b: '#b07a3e', B: '#7a4f22', w: '#ffffff',
+              G: '#7fae4a', D: '#5a8a32', g: '#d6f08a', r: '#c8302a', L: '#d0782a', F: '#8a5a2a' };
+  var ARTEN = [
+    { name: 'KARTOFFELKÄFER', punkte: 30, bilder: [
+      ['..L......L..', '...L....L...', '....oKKo....', '..yyyyyyyy..', '.yKyKyyKyKy.', 'LyKyKyyKyKyL', '.yKyKyyKyKy.', 'L.yKyyyyKy.L', '...yyyyyy...'],
+      ['.L........L.', '..L......L..', '....oKKo....', '..yyyyyyyy..', 'LyKyKyyKyKyL', '.yKyKyyKyKy.', 'LyKyKyyKyKyL', '..yKyyyyKy..', '...yyyyyy...']] },
+    { name: 'KARTOFFEL', punkte: 20, bilder: [
+      ['....bbbb....', '..bbBbbbbb..', 'FbKKbbbbKKbF', 'FbbwKbbwKbbF', '.bbbbbbbbBb.', '.bbBbKKKbbb.', '.bbbbbbbbbb.', '..bbbbbBbb..', '.F..F..F..F.'],
+      ['....bbbb....', '..bbBbbbbb..', '.bKKbbbbKKb.', 'FbbwKbbwKbbF', 'FbbbbbbbbBbF', '.bbBbKKKbbb.', '.bbbbbbbbbb.', '..bbbbbBbb..', '..F.F..F.F..']] },
+    { name: 'GRÜNE KNOLLE', punkte: 10, bilder: [
+      ['...g...g....', '....g.g.....', '...GGGGGG...', '..GGKGGKGG..', '.GGGwGGwGGG.', '.GDGGGGGGDG.', '.GGGrrrrGGG.', '..GGGGGGGG..', '..D......D..'],
+      ['....g...g...', '.....g.g....', '...GGGGGG...', '..GGKGGKGG..', '.GGGwGGwGGG.', '.GDGGGGGGDG.', '.GGGrrrrGGG.', '..GGGGGGGG..', '.D........D.']] }
+  ];
+  var DACKEL = [
+    ['..........BB..', '.........bbbbk', 'b........bkbb.', 'bbbbbbbbbbbb..', '.bbbbbbbbbb...', '.b.b.....b.b..'],
+    ['..........BB..', '.........bbbbk', '.b.......bkbb.', 'bbbbbbbbbbbb..', '.bbbbbbbbbb...', 'b...b...b...b.']];
+  var DACKEL_PAL = { b: '#7a4a22', B: '#4a2a12', k: '#111111' };
+  var KISTE_FARBEN = [null, '#b8322a', '#5a3412', '#e8c040', '#7a1e18', '#1a0d0a', '#e6b48a'];
+
+  var WELLEN = ['DIE KARTOFFELN KOMMEN!', 'JETZT MIT SCHALE', 'FRÜHKARTOFFELN – FLINKER!', 'FESTKOCHEND UND SAUER',
+                'DIE KÄFER HABEN HUNGER', 'MEHLIG. GEFÄHRLICH. MEHLIG.', 'ALI: DAS IST KEIN WITZ MEHR', 'DIE GANZE ERNTE'];
+  var STERN_WOERTER = ['PÜREE!', 'MATSCH!', 'PLOPP!', 'POMMES!', 'GESCHÄLT!', 'BRATKARTOFFEL!', 'ŞEREFE!', '¡OLÉ!'];
+  var WITZE = ['WER ANDEREN EINE GRUBE GRÄBT, PFLANZT KARTOFFELN.', 'MAN SOLL DIE KNOLLE NICHT VOR DEM SCHÄLEN LOBEN.',
+               'ERST DIE ARBEIT, DANN DIE POMMES.', 'KARTOFFELN HABEN AUGEN. SIE HABEN DICH GESEHEN.', 'ALLES HAT EIN ENDE, NUR DIE KARTOFFEL HAT ZWEI.'];
+  var LAUFTEXT = '+++ WERTHEIM IN GEFAHR +++ DIE KARTOFFELN WOLLEN AUF DIE BURG +++ DIE DÜMMSTEN BAUERN HABEN DIE DICKSTEN KARTOFFELN – UND DIE STEHEN JETZT VOR DER TÜR +++ KARTOFFELKÄFER: GELB, GESTREIFT, NULL RESPEKT +++ TÜTE LEER? NACHDREHEN! +++ GRÜNE KNOLLEN NICHT ESSEN +++ ¿DÓNDE ESTÁ ALF? +++ DER PIZZA-BLITZ LIEFERT AUCH IM KRIEG +++ WERDÖ A MOH +++ ';
+
+  // Figur je Verteidiger (wer zuerst stirbt, macht Platz für den nächsten)
+  var FIGUR = [['kumpel', 'kumpel'], ['wanderer', 'wanderer'], ['sprinter', 'sprinter'], ['sani', 'sani']];
+
+  // ---------- Zustand ----------
+  var modus = 'titel', seit = 0, uhr = 0, name = [0, 11, 5], namePos = 0, platz = -1, endeWahl = 0, s = null;
+
+  function setzeModus(m) { modus = m; seit = uhr; }
+  function mischen(l) { l = l.slice(); for (var i = l.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = l[i]; l[i] = l[j]; l[j] = t; } return l; }
+
+  function kisteNeu(nr) {
+    var p = [], abstand = W / KISTEN;
+    for (var yy = 0; yy < KISTE_H; yy++) for (var xx = 0; xx < KISTE_B; xx++) {
+      var f = 0;
+      if (yy < 4) { var b = (xx - 1) % 4; if (xx >= 1 && xx <= 20 && b < 2) f = yy === 0 ? 3 : 2; }     // Kronkorken + Flaschenhälse
+      else {
+        f = 1;
+        if (yy === 4 || yy === KISTE_H - 1 || xx === 0 || xx === KISTE_B - 1) f = 4;
+        if (yy >= 6 && yy <= 7 && xx >= 8 && xx <= 13) f = 5;                                            // Griffloch
+        if (yy === 10 && xx >= 4 && xx <= 17 && xx % 3 !== 0) f = 6;                                      // Aufschrift, unleserlich
+      }
+      p.push(f);
+    }
+    return { x: Math.round(abstand * nr + abstand / 2 - KISTE_B / 2), y: KISTE_Y, p: p };
+  }
+
+  function neuesSpiel() {
+    var leute = mischen(A.TRUPPE).slice(0, LEBEN);
+    s = { punkte: 0, welle: 0, leben: LEBEN, leute: leute, wer: 0, treffer: 0, verschossen: 0, abgeschossen: 0,
+          sx: W / 2, phase: 0, munition: MAGAZIN, nachdrehenBis: 0, schussPause: 0,
+          tueten: [], brei: [], pfuetzen: [], splitter: [], sterne: [], meldung: null,
+          gegner: [], fx: 0, fy: 0, richtung: 1, takt: 0, bild: 0, breiUhr: 0,
+          bonus: null, bonusUhr: 0, bonusZahl: 0, extra: false, grund: '', dackel: null, kisten: [] };
+    for (var i = 0; i < KISTEN; i++) s.kisten.push(kisteNeu(i));
+    naechsteWelle();
+  }
+
+  function naechsteWelle() {
+    s.welle++;
+    s.gegner = [];
+    for (var r = 0; r < REIHEN; r++) for (var sp = 0; sp < SPALTEN; sp++) s.gegner.push({ spalte: sp, reihe: r, art: REIHEN_ART[r], lebendig: true });
+    s.fx = START_X; s.fy = START_Y + Math.min(START_Y_MAX, (s.welle - 1) * START_Y_PRO_WELLE); s.richtung = 1; s.takt = 0;
+    s.tueten = []; s.brei = []; s.bonus = null; s.bonusUhr = 0; s.breiUhr = 0;
+    s.munition = MAGAZIN; s.nachdrehenBis = 0;
+    if (s.welle > 1) s.dackel = { x: -20, bild: 0 };                     // der Dackel räumt die Pfützen weg
+    setzeModus('welle');
+  }
+
+  // ---------- Hilfen ----------
+  function gegnerPos(g) { return { x: s.fx + g.spalte * ABSTAND_X, y: s.fy + g.reihe * ABSTAND_Y }; }
+  function lebende() { return s.gegner.filter(function (g) { return g.lebendig; }); }
+  function ueberlapp(l1, o1, b1, h1, l2, o2, b2, h2) { return l1 < l2 + b2 && l1 + b1 > l2 && o1 < o2 + h2 && o1 + h1 > o2; }
+  function spielerHoehe() { return A.spriteHoehe(SPIELER_T); }
+  function wer() { return s.leute[s.wer] || 'ALF'; }
+  function melden(t, farbe, ms) { s.meldung = { t: t, farbe: farbe || COL.hell, bis: uhr + (ms || 2200) }; }
+  function stern(px, py, wort) {
+    if (s.sterne.length >= STERNE_MAX) return false;
+    s.sterne.push({ x: Math.max(30, Math.min(W - 30, px)), y: Math.max(26, Math.min(200, py)), wort: wort, start: uhr });
+    return true;
+  }
+  function splittern(px, py, farben, n) {
+    for (var i = 0; i < n; i++) s.splitter.push({ x: px, y: py, vx: (Math.random() - .5) * 90, vy: (Math.random() - .8) * 70, f: farben[i % farben.length], bis: uhr + 350 + Math.random() * 250 });
+  }
+  function punkte(n) {
+    s.punkte += n;
+    if (!s.extra && s.punkte >= EXTRA_LEBEN_BEI) {
+      s.extra = true; s.leben++;
+      var neu = s.leute.indexOf('AHMED') < 0 ? 'AHMED' : mischen(A.TRUPPE.filter(function (n) { return s.leute.indexOf(n) < 0; }))[0];
+      s.leute.push(neu);
+      melden(neu === 'AHMED' ? 'AHMED KOMMT MIT BRATWURST: +1 LEBEN' : neu + ' KOMMT DAZU: +1 LEBEN', COL.feuer, 3000);
+    }
+  }
+
+  // ---------- Bierkisten ----------
+  function kisteTrifft(l, o, b, h, vonOben) {
+    for (var i = 0; i < s.kisten.length; i++) {
+      var k = s.kisten[i];
+      if (!ueberlapp(l, o, b, h, k.x, k.y, KISTE_B, KISTE_H)) continue;
+      var x0 = Math.max(0, Math.floor(l - k.x)), x1 = Math.min(KISTE_B - 1, Math.floor(l + b - 1 - k.x));
+      for (var n = 0; n < KISTE_H; n++) {
+        var yy = vonOben ? n : KISTE_H - 1 - n;
+        if (k.y + yy < o || k.y + yy >= o + h) continue;
+        for (var xx = x0; xx <= x1; xx++) if (k.p[yy * KISTE_B + xx]) { sprengen(k, xx, yy); return true; }
+      }
+    }
+    return false;
+  }
+  function sprengen(k, cx, cy) {
+    for (var dy = -3; dy <= 3; dy++) for (var dx = -3; dx <= 3; dx++) {
+      var xx = cx + dx, yy = cy + dy, d = dx * dx + dy * dy;
+      if (xx < 0 || yy < 0 || xx >= KISTE_B || yy >= KISTE_H) continue;
+      if (d <= 2 || (d <= 9 && Math.random() < .55)) k.p[yy * KISTE_B + xx] = 0;
+    }
+  }
+  function kistenPixel() { var n = 0; s.kisten.forEach(function (k) { k.p.forEach(function (v) { if (v) n++; }); }); return n; }
+
+  // ---------- Ablauf ----------
+  function schritt(dt, e) {
+    uhr += dt;
+    if (modus === 'titel') { if (e.neu.a || e.klick) { name = name.slice(); namePos = 0; setzeModus('name'); } return; }
+    if (modus === 'name') { nameSchritt(e); return; }
+    if (modus === 'ende') {
+      if (e.neu.o || e.neu.u || e.neu.l || e.neu.r) endeWahl = 1 - endeWahl;
+      if (e.klick && uhr - seit > 600 && e.klick.y > 188) { endeWahl = e.klick.y < 203 ? 0 : 1; e.neu.a = true; }
+      if (e.neu.a && uhr - seit > 600) { if (endeWahl === 0) neuesSpiel(); else if (typeof location !== 'undefined') location.href = ZURUECK; }
+      return;
+    }
+    effekte(dt);
+    if (modus === 'welle') {
+      if (s.dackel) dackelSchritt(dt);
+      if (uhr - seit > WELLE_MS || ((e.neu.a || e.klick) && uhr - seit > 700)) { s.dackel = null; s.pfuetzen = []; setzeModus('spiel'); if (s.welle === 1) melden(wer() + ' HAT DIE ZWILLE', COL.blau); }
+      return;
+    }
+    if (modus === 'treffer') {
+      if (uhr - seit > TREFFER_MS) {
+        if (s.leben > 0) {
+          s.wer++; s.brei = []; s.tueten = []; s.munition = MAGAZIN; s.nachdrehenBis = 0;
+          melden(wer() === 'ALF' ? 'ALF ÜBERNIMMT – UNSICHTBAR, AUCH FÜR DICH' : wer() + ' ÜBERNIMMT DIE ZWILLE', COL.blau, 2600);
+          setzeModus('spiel');
+        } else spielEnde('brei');
+      }
+      return;
+    }
+    if (modus === 'erobert') { if (uhr - seit > EROBERT_MS) spielEnde('erobert'); return; }
+    if (modus === 'spiel') spielSchritt(dt, e);
+  }
+
+  function nameSchritt(e) {
+    if (e.neu.o) name[namePos] = (name[namePos] + 1) % ABC.length;
+    if (e.neu.u) name[namePos] = (name[namePos] + ABC.length - 1) % ABC.length;
+    if (e.neu.l && namePos > 0) namePos--;
+    if (e.neu.r || e.neu.a) nameWeiter();
+    if (e.klick && e.klick.y > 144 && e.klick.x > 90 && e.klick.x < 230) { namePos = 0; neuesSpiel(); return; }   // FERTIG-Knopf
+    if (e.klick) {
+      var spalte = Math.round((e.klick.x - 130) / 30);
+      if (spalte >= 0 && spalte <= 2) namePos = spalte;
+      if (e.klick.y < 106) name[namePos] = (name[namePos] + 1) % ABC.length;
+      else if (e.klick.y > 126) name[namePos] = (name[namePos] + ABC.length - 1) % ABC.length;
+      else nameWeiter();
+    }
+  }
+  function nameWeiter() { namePos++; if (namePos > 2) { namePos = 0; neuesSpiel(); } }
+
+  function effekte(dt) {
+    var sek = dt / 1000;
+    s.splitter.forEach(function (p) { p.x += p.vx * sek; p.y += p.vy * sek; p.vy += 220 * sek; });
+    s.splitter = s.splitter.filter(function (p) { return p.bis > uhr; });
+    s.sterne = s.sterne.filter(function (st) { return uhr - st.start < STERN_MS; });
+    s.pfuetzen = s.pfuetzen.filter(function (p) { return p.bis > uhr; });
+    if (s.meldung && s.meldung.bis < uhr) s.meldung = null;
+  }
+
+  function dackelSchritt(dt) {
+    var d = s.dackel; d.x += 120 * dt / 1000; d.bild = Math.floor(Math.abs(d.x) / 6) % 2;
+    s.pfuetzen = s.pfuetzen.filter(function (p) { return p.x > d.x + 12 || p.x < d.x - 4 ? true : false; });
+    if (d.x > W + 20) s.dackel = null;
+  }
+
+  function spielSchritt(dt, e) {
+    var sek = dt / 1000, alt = s.sx;
+    // --- laufen: Stick, oder Finger halten ---
+    if (e.maus && e.maus.unten) {
+      var ziel = Math.max(SPIELER_HALB + 2, Math.min(W - SPIELER_HALB - 2, e.maus.x)), schrittweite = FINGER_TEMPO * sek;
+      if (Math.abs(ziel - s.sx) <= schrittweite) s.sx = ziel; else s.sx += ziel > s.sx ? schrittweite : -schrittweite;
+    } else if (e.ax) s.sx += e.ax * SPIELER_TEMPO * sek;
+    s.sx = Math.max(SPIELER_HALB + 2, Math.min(W - SPIELER_HALB - 2, s.sx));
+    if (Math.abs(s.sx - alt) > .01) s.phase += dt * .012;
+
+    // --- schiessen und nachdrehen ---
+    s.schussPause -= dt;
+    if (s.nachdrehenBis && uhr >= s.nachdrehenBis) { s.munition = MAGAZIN; s.nachdrehenBis = 0; }
+    if (e.neu.b && !s.nachdrehenBis && s.munition < MAGAZIN) s.nachdrehenBis = uhr + NACHDREHEN_MS;
+    if ((e.a || e.neu.a || e.klick) && !s.nachdrehenBis && s.munition > 0 && s.schussPause <= 0 && s.tueten.length < SCHUSS_MAX) {
+      s.tueten.push({ x: Math.round(s.sx) - 2, y: SPIELER_Y - spielerHoehe() - 12 });
+      s.munition--; s.verschossen++; s.schussPause = SCHUSS_PAUSE_MS;
+      if (s.munition === 0) s.nachdrehenBis = uhr + NACHDREHEN_MS;
+    }
+
+    // --- Knollen marschieren ---
+    var leben = lebende(), gesamt = s.gegner.length;
+    if (!leben.length) { stern(160, 110, ['ALLES PÜREE!', 'AFİYET OLSUN!', 'BRATKARTOFFELN!'][s.welle % 3]); naechsteWelle(); return; }
+    var takt = Math.max(TAKT_MIN_MS, (TAKT_MIN_MS + (TAKT_MAX_MS - TAKT_MIN_MS) * leben.length / gesamt) / (1 + TAKT_WELLE * (s.welle - 1)));
+    s.takt += dt;
+    if (s.takt >= takt) {
+      s.takt = 0; s.bild = 1 - s.bild;
+      var minX = 999, maxX = -999;
+      leben.forEach(function (g) { var p = gegnerPos(g); minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x + GEGNER_B); });
+      var weite = SCHRITT_X * (leben.length === 1 ? 2 : 1);
+      if ((s.richtung > 0 && maxX + weite > W - RAND) || (s.richtung < 0 && minX - weite < RAND)) { s.fy += SCHRITT_RUNTER; s.richtung = -s.richtung; }
+      else s.fx += s.richtung * weite;
+    }
+    var unten = 0;
+    leben.forEach(function (g) {
+      var p = gegnerPos(g); unten = Math.max(unten, p.y + GEGNER_H);
+      s.kisten.forEach(function (k) {                        // wer durch die Kiste marschiert, frisst sie auf
+        if (!ueberlapp(p.x, p.y, GEGNER_B, GEGNER_H, k.x, k.y, KISTE_B, KISTE_H)) return;
+        for (var yy = 0; yy < KISTE_H; yy++) for (var xx = 0; xx < KISTE_B; xx++)
+          if (ueberlapp(p.x, p.y, GEGNER_B, GEGNER_H, k.x + xx, k.y + yy, 1, 1)) k.p[yy * KISTE_B + xx] = 0;
+      });
+    });
+    if (unten >= SPIELER_Y - spielerHoehe() + 4) { s.grund = 'erobert'; stern(160, 120, 'KNOLLEN-INVASION!'); setzeModus('erobert'); return; }
+
+    // --- Kartoffelbrei fallen lassen ---
+    s.breiUhr += dt;
+    var pause = Math.max(BREI_PAUSE_MIN, BREI_PAUSE_MS - (s.welle - 1) * BREI_PAUSE_WELLE), maxBrei = Math.min(BREI_MAX_GANZ, BREI_MAX + s.welle - 1);
+    if (s.breiUhr >= pause && s.brei.length < maxBrei) {
+      s.breiUhr = Math.random() * pause * .3;
+      var spalten = {};
+      leben.forEach(function (g) { if (!spalten[g.spalte] || spalten[g.spalte].reihe < g.reihe) spalten[g.spalte] = g; });
+      var kandidaten = Object.keys(spalten).map(function (k) { return spalten[k]; }), schuetze = null;
+      if (Math.random() < .4) kandidaten.forEach(function (g) { var p = gegnerPos(g); if (Math.abs(p.x + GEGNER_B / 2 - s.sx) < 14) schuetze = g; });
+      if (!schuetze) schuetze = kandidaten[Math.floor(Math.random() * kandidaten.length)];
+      var sp = gegnerPos(schuetze);
+      s.brei.push({ x: sp.x + GEGNER_B / 2 - 1, y: sp.y + GEGNER_H, v: BREI_TEMPO + BREI_TEMPO_WELLE * (s.welle - 1) + Math.random() * 15, w: Math.random() * 6 });
+    }
+
+    // --- Bonus oben quer: der Pizza-Blitz, und manchmal Alf ---
+    if (!s.bonus) {
+      s.bonusUhr += dt;
+      if (s.bonusUhr > BONUS_ALLE_MS && leben.length > 6) {
+        s.bonusUhr = 0; s.bonusZahl++;
+        var links = Math.random() < .5, alf = s.bonusZahl % ALF_JEDES === 0;
+        s.bonus = { x: links ? -22 : W + 2, richtung: links ? 1 : -1, alf: alf };
+        if (alf) melden('¿DÓNDE ESTÁ ALF?', COL.feuer, 3000);
+      }
+    } else {
+      s.bonus.x += s.bonus.richtung * BONUS_TEMPO * (s.bonus.alf ? 1.3 : 1) * sek;
+      if (s.bonus.x < -30 || s.bonus.x > W + 30) s.bonus = null;
+    }
+
+    // --- Tüten fliegen ---
+    s.tueten.forEach(function (t) {
+      t.y -= TUETE_TEMPO * sek;
+      if (t.y < 10) { t.weg = true; return; }
+      if (s.bonus && ueberlapp(t.x, t.y, 4, 12, s.bonus.x, BONUS_Y - 4, 20, 12)) { bonusTreffer(); t.weg = true; return; }
+      for (var i = 0; i < leben.length; i++) {
+        var g = leben[i]; if (!g.lebendig) continue;
+        var p = gegnerPos(g);
+        if (ueberlapp(t.x, t.y, 4, 12, p.x, p.y, GEGNER_B, GEGNER_H)) { gegnerTreffer(g, p); t.weg = true; return; }
+      }
+      for (var j = 0; j < s.brei.length; j++) if (!s.brei[j].weg && ueberlapp(t.x, t.y, 4, 12, s.brei[j].x - 1, s.brei[j].y, 5, 5)) {
+        s.brei[j].weg = true; t.weg = true; splittern(t.x + 2, t.y, ['#f3e6b8', '#fffbe8'], 4); return;
+      }
+      if (kisteTrifft(t.x, t.y, 4, 12, false)) t.weg = true;
+    });
+    s.tueten = s.tueten.filter(function (t) { return !t.weg; });
+
+    // --- Brei fällt ---
+    var hh = spielerHoehe();
+    s.brei.forEach(function (b) {
+      if (b.weg) return;
+      b.y += b.v * sek;
+      if (kisteTrifft(b.x - 1, b.y, 5, 5, true)) { b.weg = true; return; }
+      if (ueberlapp(b.x - 1, b.y, 5, 5, s.sx - SPIELER_HALB, SPIELER_Y - hh + 3, SPIELER_HALB * 2, hh - 3)) { b.weg = true; spielerTreffer(); return; }
+      if (b.y + 4 >= BODEN_Y) { b.weg = true; s.pfuetzen.push({ x: b.x, bis: uhr + 6000 }); if (s.pfuetzen.length > 10) s.pfuetzen.shift(); }
+    });
+    s.brei = s.brei.filter(function (b) { return !b.weg; });
+  }
+
+  function gegnerTreffer(g, p) {
+    var art = ARTEN[g.art];
+    g.lebendig = false; s.treffer++; s.abgeschossen++;
+    punkte(art.punkte);
+    splittern(p.x + GEGNER_B / 2, p.y + GEGNER_H / 2, g.art === 0 ? ['#f2d23a', '#1a1a1a', '#e2742a'] : g.art === 1 ? ['#b07a3e', '#f3e6b8', '#7a4f22'] : ['#7fae4a', '#d6f08a', '#f3e6b8'], 8);
+    if (s.abgeschossen % STERN_JEDER === 0) stern(p.x + 6, p.y - 4, g.art === 0 ? 'KÄFER PLATT!' : STERN_WOERTER[Math.floor(Math.random() * STERN_WOERTER.length)]);
+  }
+  function bonusTreffer() {
+    var b = s.bonus, wert = b.alf ? ALF_PUNKTE : BONUS_PUNKTE[Math.floor(Math.random() * BONUS_PUNKTE.length)];
+    punkte(wert); s.treffer++;
+    splittern(b.x + 10, BONUS_Y, b.alf ? ['#c89060', '#8a5a2b'] : ['#e8c070', '#c8302a', '#ffd25a'], 10);
+    s.sterne = s.sterne.slice(-1);                          // der Bonus-Stern hat Vorfahrt
+    stern(b.x + 10, BONUS_Y + 18, b.alf ? '¡OLÉ! ALF!' : wert + '!');
+    melden(b.alf ? 'ALF ERWISCHT! ' + wert + ' PUNKTE' : 'PIZZA GEHOLT: ' + wert + ' PUNKTE', COL.feuer);
+    s.bonus = null;
+  }
+  function spielerTreffer() {
+    s.leben--; s.tueten = [];
+    s.sterne = s.sterne.slice(-1);
+    stern(s.sx, SPIELER_Y - 34, 'PLATSCH!');
+    splittern(s.sx, SPIELER_Y - 12, ['#f3e6b8', '#fffbe8', '#e8d8a0'], 12);
+    melden(s.leben > 0 ? wer() + ' IST IM BREI – KARDEŞİM!' : wer() + ' IST IM BREI. DAS WAR\'S.', COL.rot, TREFFER_MS);
+    setzeModus('treffer');
+  }
+  function spielEnde(grund) {
+    s.grund = grund; s.witz = WITZE[Math.floor(Math.random() * WITZE.length)];
+    platz = LISTE.eintragen(name.map(function (i) { return ABC[i]; }).join(''), s.punkte);
+    endeWahl = 0; setzeModus('ende');
+  }
+
+  // ---------- Zeichnen ----------
+  var BILDER = {};
+  function pixelBild(schluessel, karte, pal) {
+    if (BILDER[schluessel]) return BILDER[schluessel];
+    var hc = document.createElement('canvas'); hc.width = karte[0].length; hc.height = karte.length;
+    var g = hc.getContext('2d');
+    for (var yy = 0; yy < karte.length; yy++) for (var xx = 0; xx < karte[yy].length; xx++) {
+      var ch = karte[yy].charAt(xx); if (ch === '.') continue;
+      g.fillStyle = pal[ch]; g.fillRect(xx, yy, 1, 1);
+    }
+    return (BILDER[schluessel] = hc);
+  }
+  function knolle(art, bild, px, py) { x.drawImage(pixelBild('k' + art + bild, ARTEN[art].bilder[bild], PAL), Math.round(px), Math.round(py)); }
+
+  var STERNE = [];
+  for (var i = 0; i < 26; i++) STERNE.push({ x: Math.floor(Math.random() * W), y: Math.floor(Math.random() * 40), hell: Math.random() < .3 });
+  function hintergrund(dunkel) {
+    x.fillStyle = '#0b0e18'; x.fillRect(0, 0, W, H);
+    STERNE.forEach(function (st) { x.fillStyle = st.hell ? '#c8c4e0' : '#5a5878'; x.fillRect(st.x, st.y, 1, 1); });
+    x.fillStyle = '#e8e0b0'; x.fillRect(282, 12, 6, 6); x.fillRect(281, 13, 8, 4); x.fillStyle = '#0b0e18'; x.fillRect(285, 12, 4, 5);   // Mondsichel
+    x.imageSmoothingEnabled = false; A.burg(40);
+    // oben dunkler (da marschieren die Knollen), zum Horizont heller, damit man die Burg erkennt
+    var verlauf = x.createLinearGradient(0, 40, 0, H);
+    verlauf.addColorStop(0, 'rgba(11,14,24,' + Math.min(.95, dunkel + .28) + ')');
+    verlauf.addColorStop(1, 'rgba(11,14,24,' + Math.max(.2, dunkel - .22) + ')');
+    x.fillStyle = verlauf; x.fillRect(0, 40, W, H - 40);
+  }
+
+  function kistenMalen() {
+    s.kisten.forEach(function (k) {
+      for (var yy = 0; yy < KISTE_H; yy++) {
+        var xx = 0;
+        while (xx < KISTE_B) {                               // gleiche Farben am Stück malen
+          var f = k.p[yy * KISTE_B + xx], lang = 1;
+          while (xx + lang < KISTE_B && k.p[yy * KISTE_B + xx + lang] === f) lang++;
+          if (f) { x.fillStyle = KISTE_FARBEN[f]; x.fillRect(k.x + xx, k.y + yy, lang, 1); }
+          xx += lang;
+        }
+      }
+    });
+  }
+
+  function pizzaBlitz(px, py, richtung) {
+    px = Math.round(px); py = Math.round(py);
+    var dreh = Math.floor(uhr / 60) % 2;
+    x.fillStyle = '#d0d0d0'; x.fillRect(px + 10 - (dreh ? 7 : 3), py - 5, dreh ? 14 : 6, 1);      // Propeller
+    x.fillStyle = '#555'; x.fillRect(px + 9, py - 4, 2, 2);
+    x.fillStyle = '#7a5a2a'; x.fillRect(px, py - 2, 20, 8);                                         // Pizzakarton
+    x.fillStyle = '#d8b070'; x.fillRect(px + 1, py - 1, 18, 6);
+    x.fillStyle = '#b08a4a'; x.fillRect(px + 1, py + 1, 18, 1);
+    x.fillStyle = '#e2283a';                                                                        // der Blitz
+    x.fillRect(px + 8, py - 1, 3, 1); x.fillRect(px + 7, py, 3, 1); x.fillRect(px + 8, py + 1, 4, 1); x.fillRect(px + 10, py + 2, 2, 1); x.fillRect(px + 9, py + 3, 2, 1);
+    if (Math.floor(uhr / 120) % 2) { x.fillStyle = '#ffd25a'; x.fillRect(px - (richtung > 0 ? 3 : -21), py + 2, 2, 1); }  // Auspuff
+  }
+  function alfMalen(px, py) {
+    // Alf ist unsichtbar. Man sieht nur, dass da was flimmert.
+    if (Math.floor(uhr / 90) % 5 === 0) { x.fillStyle = 'rgba(241,238,228,.35)'; x.fillRect(Math.round(px) + 4, py - 3, 1, 1); x.fillRect(Math.round(px) + 12, py + 2, 1, 1); x.fillRect(Math.round(px) + 8, py - 1, 1, 1); }
+  }
+
+  function spielerMalen() {
+    var hh = spielerHoehe(), f = FIGUR[s.wer % FIGUR.length], top = SPIELER_Y - hh, px = Math.round(s.sx);
+    if (modus === 'treffer') {
+      var bild = A.liegendBild(f[0] === 'sani' ? 'sani' : f[0], null);
+      if (bild) A.liegendMalen(bild, px, SPIELER_Y, hh, false);
+      x.fillStyle = '#f3e6b8'; x.fillRect(px - 9, SPIELER_Y - 6, 7, 3); x.fillRect(px + 2, SPIELER_Y - 8, 6, 4); x.fillRect(px - 2, SPIELER_Y - 9, 4, 2);
+      x.fillStyle = '#fffbe8'; x.fillRect(px - 8, SPIELER_Y - 6, 3, 1); x.fillRect(px + 3, SPIELER_Y - 8, 2, 1);
+      return;
+    }
+    var alf = wer() === 'ALF';
+    if (alf) x.globalAlpha = .22;
+    A.figurMalen(f[0], f[1], px, SPIELER_Y, SPIELER_T, s.phase, false, false);
+    x.globalAlpha = 1;
+    // die Zwille, über den Kopf gehalten
+    var kopf = top + Math.round(hh * 3 / 26);
+    x.fillStyle = '#8a5a2b'; x.fillRect(px, kopf - 4, 1, 6); x.fillRect(px - 3, kopf - 9, 1, 4); x.fillRect(px + 3, kopf - 9, 1, 4);
+    x.fillRect(px - 2, kopf - 5, 5, 1); x.fillStyle = '#5a3a1a'; x.fillRect(px - 3, kopf - 9, 1, 1); x.fillRect(px + 3, kopf - 9, 1, 1);
+    if (s.munition > 0 && !s.nachdrehenBis) { x.fillStyle = '#e2553a'; x.fillRect(px - 2, kopf - 8, 1, 1); x.fillRect(px + 2, kopf - 8, 1, 1); x.fillRect(px - 1, kopf - 7, 3, 1); x.fillStyle = '#f4efe0'; x.fillRect(px, kopf - 10, 1, 3); }
+    else { x.fillStyle = '#e2553a'; x.fillRect(px - 2, kopf - 8, 5, 1); }
+  }
+
+  function tueteFliegt(t) { A.tuete(Math.round(t.x), Math.round(t.y) - 2, true, true); }
+  function breiMalen(b) {
+    var px = Math.round(b.x + Math.sin(b.y / 6 + b.w) * 1), py = Math.round(b.y);
+    x.fillStyle = 'rgba(243,230,184,.45)'; x.fillRect(px + 1, py - 3, 1, 3);       // tropft
+    x.fillStyle = '#f3e6b8'; x.fillRect(px, py, 3, 5); x.fillRect(px - 1, py + 1, 5, 3);
+    x.fillStyle = '#fffbe8'; x.fillRect(px, py + 1, 2, 1);
+    x.fillStyle = '#e8b830'; x.fillRect(px + 2, py + 3, 1, 1);                       // Butterflocke
+  }
+
+  function hud() {
+    var hi = Math.max(LISTE.lesen()[0] ? LISTE.lesen()[0].p : 0, s.punkte);
+    x.fillStyle = 'rgba(8,10,22,.75)'; x.fillRect(0, 0, W, 11);
+    A.text('PUNKTE ' + ('000000' + s.punkte).slice(-6), 4, 6, 8, COL.hell, 'left');
+    A.text('HI ' + ('000000' + hi).slice(-6), 160, 6, 8, COL.feuer);
+    A.text('WELLE ' + s.welle, W - 4, 6, 8, COL.hell, 'right');
+    // unten: Boden, Reserve, Name, Tüten
+    x.fillStyle = '#2f4a24'; x.fillRect(0, BODEN_Y, W, 2);
+    x.fillStyle = 'rgba(8,10,22,.88)'; x.fillRect(0, BODEN_Y + 2, W, H - BODEN_Y - 2);
+    var reserve = Math.max(0, s.leben - (modus === 'treffer' ? 0 : 1));
+    for (var i = 0; i < reserve; i++) { var f = FIGUR[(s.wer + 1 + i) % FIGUR.length]; A.figurMalen(f[0], f[1], 9 + i * 8, H - 1, 0.13, 0, false, false); }
+    if (!s.meldung || s.nachdrehenBis) A.text(modus === 'treffer' ? '' : wer(), 12 + Math.max(1, reserve) * 8, 231, 8, COL.blau, 'left');
+    for (var t = 0; t < MAGAZIN; t++) A.tuete(W - 10 - t * 7, BODEN_Y + 2, t < s.munition && !s.nachdrehenBis, false);
+    if (s.nachdrehenBis) {
+      var fortschritt = 1 - (s.nachdrehenBis - uhr) / NACHDREHEN_MS;
+      A.text('NACHDREHEN', W - 44, 229, 7, Math.floor(uhr / 200) % 2 ? COL.feuer : COL.hell, 'right');
+      x.fillStyle = COL.grau; x.fillRect(W - 92, 235, 48, 2); x.fillStyle = COL.feuer; x.fillRect(W - 92, 235, Math.max(0, Math.min(48, Math.round(48 * fortschritt))), 2);
+    } else if (s.meldung) A.text(s.meldung.t, 168, 231, 7, s.meldung.farbe);
+  }
+
+  function szene() {
+    hintergrund(.62);
+    // Brei-Pfützen auf der Mainwiese
+    s.pfuetzen.forEach(function (p) { x.fillStyle = 'rgba(243,230,184,' + Math.min(.8, (p.bis - uhr) / 3000) + ')'; x.fillRect(Math.round(p.x) - 3, BODEN_Y - 1, 8, 1); x.fillRect(Math.round(p.x) - 1, BODEN_Y - 2, 4, 1); });
+    kistenMalen();
+    s.gegner.forEach(function (g) { if (!g.lebendig) return; var p = gegnerPos(g); knolle(g.art, s.bild, p.x, p.y); });
+    if (s.bonus) { if (s.bonus.alf) alfMalen(s.bonus.x, BONUS_Y); else pizzaBlitz(s.bonus.x, BONUS_Y, s.bonus.richtung); }
+    s.brei.forEach(breiMalen);
+    s.tueten.forEach(tueteFliegt);
+    spielerMalen();
+    if (s.dackel) x.drawImage(pixelBild('d' + s.dackel.bild, DACKEL[s.dackel.bild], DACKEL_PAL), Math.round(s.dackel.x), BODEN_Y - 6);
+    s.splitter.forEach(function (p) { x.fillStyle = p.f; x.fillRect(Math.round(p.x), Math.round(p.y), 2, 2); });
+    s.sterne.forEach(function (st) { A.comicStern(st.x, st.y, st.wort, 7, uhr - st.start); });
+    hud();
+  }
+
+  function titelZeichnen() {
+    hintergrund(.55);
+    A.logo('KNOLLENALARM', 28, 28);
+    A.text('KARTOFFELKÄFER ÜBER WERTHEIM', 160, 50, 9, COL.feuer);
+    var tafel = Math.floor(uhr / TITEL_WECHSEL_MS) % 2;
+    if (tafel === 0) {
+      A.kasten(62, 62, 196, 112);
+      A.text('DIE ANGREIFER', 160, 72, 9, COL.rosa);
+      var zeilen = [['= 30  KARTOFFELKÄFER', 0], ['= 20  KARTOFFEL', 1], ['= 10  GRÜNE KNOLLE', 2]];
+      zeilen.forEach(function (z, i) { knolle(z[1], Math.floor(uhr / 400) % 2, 84, 82 + i * 16); A.text(z[0], 104, 87 + i * 16, 8, COL.hell, 'left'); });
+      A.text('(NICHT ESSEN)', 196, 112, 7, COL.grau, 'left');
+      pizzaBlitz(80, 135, 1); A.text('= ???  PIZZA-BLITZ', 104, 135, 8, COL.feuer, 'left');
+      A.text('UND IRGENDWO: ALF', 104, 150, 8, COL.grau, 'left');
+      A.text('TÜTE LEER? NACHDREHEN!', 160, 165, 8, COL.blau);
+    } else {
+      var n = LISTE.lesen().length; A.kasten(90, 62, 140, 22 + n * 10); LISTE.malen(72, -1);
+    }
+    if (Math.floor(uhr / 500) % 2) A.text('KNOPF DRÜCKEN ODER TIPPEN', 160, 196, 9, COL.feuer);
+    A.laufschrift(LAUFTEXT, 226);
+  }
+
+  function nameZeichnen() {
+    hintergrund(.7); A.kasten(60, 60, 200, 126);
+    A.text('WER VERTEIDIGT WERTHEIM?', 160, 78, 10, COL.rosa);
+    for (var i = 0; i < 3; i++) {
+      var px = 130 + i * 30, aktiv = i === namePos;
+      A.text(ABC[name[i]], px, 116, 20, aktiv ? COL.feuer : COL.hell);
+      if (aktiv && Math.floor(uhr / 300) % 2) { x.fillStyle = COL.feuer; x.fillRect(px - 7, 130, 14, 2); }
+      if (aktiv) { A.text('▲', px, 96, 8, COL.grau); A.text('▼', px, 140, 8, COL.grau); }
+    }
+    x.fillStyle = COL.feuer; x.fillRect(105, 147, 110, 18); x.fillStyle = '#111'; x.fillRect(107, 149, 106, 14);   // FERTIG-Knopf
+    A.text('FERTIG – LOS!', 160, 156, 10, COL.feuer);
+    A.text('▲/▼ antippen ändert den Buchstaben', 160, 176, 7, COL.grau);
+  }
+
+  function welleZeichnen() {
+    A.kasten(50, 86, 220, 62);
+    var zeile = 102;
+    if (s.welle > 1) { A.text('WELLE ' + (s.welle - 1) + ' GESCHAFFT – ALLES PÜREE!', 160, zeile, 9, COL.feuer); zeile += 15; }
+    A.text('WELLE ' + s.welle, 160, zeile, 12, COL.hell); zeile += 15;
+    A.text(WELLEN[Math.min(s.welle, WELLEN.length) - 1], 160, zeile, 9, COL.rosa); zeile += 12;
+    if (s.welle === 1) A.text('A/TIPPEN = TÜTE · B = NACHDREHEN', 160, zeile, 7, COL.grau);
+    else if (s.dackel) A.text('DER DACKEL RÄUMT DEN BREI WEG', 160, zeile, 7, COL.grau);
+  }
+
+  function endeZeichnen() {
+    x.fillStyle = 'rgba(70,40,10,.86)'; x.fillRect(0, 0, W, H);
+    A.kasten(30, 8, 260, 226);
+    A.text(s.grund === 'erobert' ? 'DIE KNOLLEN SIND IN DER BURG!' : 'BİTTİ – ALLE IM KARTOFFELBREI', 160, 21, 10, COL.rosa);
+    A.text(s.punkte + ' Punkte · Welle ' + s.welle + ' · ' + s.abgeschossen + ' Knollen', 160, 35, 9);
+    var q = s.verschossen ? s.treffer / s.verschossen : 0;
+    var urteil = !s.verschossen ? 'KEINE EINZIGE TÜTE? RESPEKT.' : q >= .6 ? 'SCHARFSCHÜTZE VOM MAIN – ASLANIM!' : q >= .35 ? 'SOLIDE. KURT GIBT EIN WEIZEN AUS.' : 'DIE HÄLFTE HAST DU WOHL SELBST GERAUCHT.';
+    A.text(s.verschossen + ' Tüten verschossen · ' + Math.round(q * 100) + '% Treffer', 160, 47, 8, COL.grau);
+    A.text(urteil, 160, 59, 8, COL.blau);
+    if (platz >= 0) A.text('NEU IN DER BESTENLISTE: PLATZ ' + (platz + 1), 160, 72, 9, COL.feuer);
+    LISTE.malen(84, platz);
+    if (s.witz) A.text(s.witz, 160, 180, 7, COL.wanderer);   // Kartoffelweisheit
+    var opt = ['NOCHMAL – TEKRAR?', 'ZUM MENÜ – GÖRÜŞÜRÜZ!'];
+    for (var j = 0; j < 2; j++) A.text((endeWahl === j ? '▶ ' : '  ') + opt[j], 160, 196 + j * 14, 10, endeWahl === j ? COL.feuer : COL.hell);
+  }
+
+  function zeichnen() {
+    if (modus === 'titel') { titelZeichnen(); return; }
+    if (modus === 'name') { nameZeichnen(); return; }
+    szene();
+    if (modus === 'welle') welleZeichnen();
+    if (modus === 'erobert' && uhr - seit > 600) {
+      x.fillStyle = 'rgba(8,10,22,.8)'; x.fillRect(20, 96, 280, 44);
+      A.text('DIE KNOLLEN HABEN WERTHEIM ERREICHT', 160, 110, 10, COL.rot);
+      A.text('DIE BURG WIRD ZUM KARTOFFELKELLER', 160, 126, 8, COL.hell);
+    }
+    if (modus === 'ende') endeZeichnen();
+  }
+
+  x = A.start({ schritt: schritt, zeichnen: zeichnen, zurueck: ZURUECK,
+                taste: function (k) { if (modus === 'name' && /^[a-zA-Z0-9]$/.test(k)) { name[namePos] = ABC.indexOf(k.toUpperCase()); nameWeiter(); } } });
+  window.__invasion = function () {   // nur zum Testen
+    return { modus: modus, s: s, name: name, platz: platz, uhr: uhr, gegnerPos: gegnerPos, spielerHoehe: spielerHoehe, kistenPixel: kistenPixel,
+             K: { MAGAZIN: MAGAZIN, NACHDREHEN_MS: NACHDREHEN_MS, LEBEN: LEBEN, SPIELER_Y: SPIELER_Y, ARTEN: ARTEN, STERNE_MAX: STERNE_MAX, KISTE_B: KISTE_B, KISTE_H: KISTE_H, BONUS_Y: BONUS_Y } };
+  };
+}());
+</script>
+</body>
+</html>
