@@ -1,0 +1,1762 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>URPHAED</title>
+<style>
+  body { margin: 0; padding-inline: 16px; box-sizing: border-box; min-height: 100vh; display: grid; place-items: center; background: #10131b; color: #f1eee4; font-family: system-ui, sans-serif; }
+  main { width: 100%; max-width: 960px; }
+  #kopf { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 12px 0; font-size: 15px; }
+  canvas { cursor: none; touch-action: none; width: 100%; display: block; aspect-ratio: 4 / 3; background: #10131b; border: 2px solid #f1eee4; image-rendering: pixelated; }
+  .hilfe { opacity: .7; }
+</style>
+</head>
+<body>
+<main>
+  <div id="kopf">
+    <strong>URPHAED – DER SUMPF</strong>
+    <span class="hilfe">Maus: zielen · Linksklick/Tippen: Feuer · Rechtsklick/R: nachdrehen · oder Stick/Pfeile + Leertaste</span>
+  </div>
+  <canvas id="spiel" width="320" height="240"></canvas>
+</main>
+<script>
+(function () {
+  var c = document.getElementById('spiel'), x = c.getContext('2d');
+  var W = 320, H = 240;
+  var COL = { nacht:'#10131b', himmel:'#273454', gruen:'#263c2f', dunkel:'#17271d', weg:'#bea76d',
+              hell:'#f1eee4', rosa:'#ff4fa3', grau:'#6b6f78', stahl:'#9aa0a8', feuer:'#ffd25a', rot:'#e2553a',
+              oliv:'#5d6b3a', blau:'#5fb4ff', braun:'#8a5a2b', wanderer:'#9cc58a' };
+
+  // ---------- Einstellbar ----------
+  var KUMPEL_FAEUSTE = 3; // so viele Angreifer haut der Kumpel selbst um
+  var MAGAZIN = 8, NACHLADEN_MS = 1400, FLUGZEIT_MS = 220, LEBEN = 3;
+  var LAUF_FUSS = { x: 160, y: 252 };
+  var ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var LISTE_SCHLUESSEL = 'urphaed-bestenliste';
+  var MISSIONEN = [
+    { id: 'bier',     wer: 'BIER',       auftrag: 'BIER HOLEN' },
+    { id: 'musik',    wer: 'MUSIKBOX',   auftrag: 'MUSIKBOX HOLEN' },
+    { id: 'grill',    wer: 'GRILLZEUG',  auftrag: 'WÜRSTCHEN HOLEN' },
+    { id: 'kohle',    wer: 'HOLZKOHLE',  auftrag: 'HOLZKOHLE HOLEN' },
+    { id: 'paella',   wer: 'PAELLA',     auftrag: 'PAELLA HOLEN' }
+  ];
+
+  // ---------- Die Truppe ----------
+  var TRUPPE = ['KURT', 'ALI', 'MOHAMED', 'GERD', 'TOFFEL', 'RAFFI', 'MURAT', 'AHMED', 'CHRISTIAN',
+                'ALEX', 'DER BULLE', 'DOC', 'TORE', 'THORSTEN', 'DER ANDERE THORSTEN', 'TONI', 'ALF'];
+  var WEN = { 'DER BULLE': 'DEN BULLEN', 'DER ANDERE THORSTEN': 'DEN ANDEREN THORSTEN' };   // „Du hast ___ erwischt"
+  function wen(n) { return WEN[n] || n; }
+  var HOLEN = { bier: 'BIERHOLEN', musik: 'MUSIKBOX-HOLEN', grill: 'WÜRSTCHENHOLEN', kohle: 'KOHLEHOLEN', paella: 'PAELLAHOLEN' };
+  var SPEZIAL = {
+    'TORE': { art: 'vespa', ruf: 'VESPA-ATTACKE!', comic: ['BRRRMM!', 'BRATKARTOFFELN!'] },
+    'THORSTEN': { art: 'porsche', ruf: 'PORSCHE-SCHUB!', comic: 'WROOOM!' },
+    'ALEX': { art: 'kinder', ruf: 'DIE KINDERHORDE!', comic: 'HURRAAA!' },
+    'RAFFI': { art: 'zwerge', ruf: 'ANGRIFF DER ZWERGE!', comic: 'HEI-HO!' },
+    'TOFFEL': { art: 'sterne', ruf: 'WURFSTERNE!', comic: 'ZING! ZING!' },
+    'GERD': { art: 'kaninchen', ruf: 'KANINCHEN-STAMPEDE!', comic: 'HOPP HOPP!' },
+    'DER BULLE': { art: 'polizei', ruf: 'BLAULICHT-EINSATZ!', comic: 'TATÜTATA!' },
+    'KURT': { art: 'weizen', ruf: 'WEIZENBIER-HAGEL!', comic: ['PROST!', 'ŞEREFE!'] },
+    'ALI': { art: 'feuerball', ruf: 'URPHAR-FEUERBALL!', comic: 'HA-DUU-KENNN!' },
+    'MOHAMED': { art: 'wirbel', ruf: 'WIRBELTRITT!', comic: 'WUSCHHH!' },
+    'MURAT': { art: 'feuerball', ruf: 'URPHAR-FEUERBALL!', comic: 'HA-DUU-KENNN!' },
+    'AHMED': { art: 'wurst', ruf: 'BRATWURST-SALVE!', comic: ['MAHLZEIT!', 'AFİYET OLSUN!'] },
+    'CHRISTIAN': { art: 'wirbel', ruf: 'WIRBELTRITT!', comic: 'WUSCHHH!' },
+    'DOC': { art: 'doc', ruf: 'ZANGE UND SKALPELL!', comic: 'BITTE WEIT AUFMACHEN!' },
+    'DER ANDERE THORSTEN': { art: 'tritt', ruf: 'FLUGTRITT!', comic: 'HIYAAA!' },
+    'TONI':  { art: 'rohrzange', ruf: 'ROHRZANGEN-WIRBEL!', comic: ['¡VAMOS!', 'PIFF! PAFF!', '¡OLÉ!'] },
+    'ALF':   { art: 'geist', ruf: 'GEISTERANGRIFF!', comic: ['¿DÓNDE ESTÁ ALF?', '¡HOLA!', '¿QUÉ PASA?'] }
+  };
+  // Sprüche nach Ereignis – Türkisch und Deutsch gemischt, wie in der Hütte
+  var SPRUCH = {
+    start:   ['HADİ!', 'HADİ BE!', 'GEL BAKALIM!', 'YÜRÜ!', 'GAZA BAS!', 'BAK ŞİMDİ!'],
+    treffer: ['PIFF!', 'PAFF!', 'OHA!', 'ÇÜŞ!', 'VAY BE!', 'YANDIN!', 'BİTTİ!', 'AL SANA!', 'ZACK!', 'POW!', 'BAMM!', 'PÜREE!', 'POMMES!', 'KARTOFFELBREI!'],
+    lob:     ['AFERİN!', 'ASLANIM!', 'KOÇUM!', 'SÜPER LAN!', 'KANKA!'],
+    pech:    ['EYVAH!', 'OLMADI LAN!', 'YAZIK!'],
+    aua:     ['NAPIYON LAN?!'],
+    spanisch:    ['¡VAMOS!', '¡VENGA!', '¡ARRIBA!', '¡HOMBRE!', '¡QUÉ PASA!'],
+    spanischLob: ['¡OLÉ!', '¡QUÉ BIEN!', '¡FENOMENAL!'],
+    anrede:  ['LAN', 'MORUK', 'ABİ', 'KANKA', 'OĞLUM', 'GARDAŞ']
+  };
+  function spruch(art, mitAnrede) {
+    var l = SPRUCH[art], w = l[Math.floor(Math.random() * l.length)];
+    if (mitAnrede && Math.random() < .5 && w.indexOf('LAN') < 0) w = w.replace('!', ' ' + SPRUCH.anrede[Math.floor(Math.random() * SPRUCH.anrede.length)] + '!');
+    return w;
+  }
+  var TREFFER_WORTE = SPRUCH.treffer;
+  function spanier(n) { return n === 'TONI' || n === 'ALF'; }
+  var MORGEN_NACH = 8;   // so viele Wellen dauert eine Nacht
+  function gemischt(liste) { var l = liste.slice(); for (var i = l.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), h = l[i]; l[i] = l[j]; l[j] = h; } return l; }
+
+  // ---------- Bestenliste ----------
+  function listeLesen() {
+    try { var l = JSON.parse(localStorage.getItem(LISTE_SCHLUESSEL)); if (l && l.length !== undefined) return l; } catch (e) {}
+    return [{ n: 'AND', p: 3000 }, { n: 'RAF', p: 2000 }, { n: 'MOP', p: 1000 }];
+  }
+  function listeSpeichern(l) { try { localStorage.setItem(LISTE_SCHLUESSEL, JSON.stringify(l)); } catch (e) {} }
+  function eintragen(name, punkte) {
+    var l = listeLesen(); l.push({ n: name, p: punkte, neu: true });
+    l.sort(function (a, b) { return b.p - a.p; }); l = l.slice(0, 8);
+    var platz = -1; l.forEach(function (e, i) { if (e.neu) { platz = i; delete e.neu; } });
+    listeSpeichern(l); return platz;
+  }
+
+  // ---------- Zustand ----------
+  var modus = 'titel', zeit = 0, modusSeit = 0;
+  var name = [0, 0, 0], namePos = 0, platz = -1, endeWahl = 0;
+  var s = null;
+
+  function neuesSpiel() {
+    s = { ziel: { x: 160, y: 140 }, gegner: [], leute: [], kumpel: null, mission: null, missionErgebnis: null,
+          geschosse: [], funken: [], krater: [], meldungen: [], vorrat: [], leichen: [], flecken: [], sani: [], naechsterSani: 0, kumpels: gemischt(TRUPPE), lazarett: [], graeber: [], naechte: 0, explosionen: [], ketten: [], schwebe: [], dunst: 0,
+          punkte: 0, treffer: 0, schuesse: 0, huette: LEBEN, munition: MAGAZIN, nachladenBis: 0,
+          welle: 0, zuSpawnen: 0, letzteWelle: 0, welleMs: 1700, naechsterWanderer: 0, kumpelStart: 0, dackel: null, naechsterDackel: 0,
+          muendung: 0, wackeln: 0, riese: null };
+    naechsteWelle();
+  }
+  function naechsteWelle() {
+    s.welle++;
+    s.zuSpawnen = 6 + s.welle * 3;
+    s.welleMs = Math.max(650, 1800 - s.welle * 160);
+    s.munition = MAGAZIN; s.nachladenBis = 0;
+    s.mission = (s.welle % 2 === 0) ? MISSIONEN[((s.welle / 2) - 1) % MISSIONEN.length] : null;
+    s.kumpel = null; s.kumpelStart = 0;
+    // Einmal pro Spiel stirbt einer nicht den Heldentod – auf dem Plumpsklo
+    if (s.welle >= 3 && !s.kloGehabt && s.kumpels.length > 3 && Math.random() < .3) {
+      var wer = s.kumpels.splice(Math.floor(Math.random() * s.kumpels.length), 1)[0];
+      s.kloGehabt = true; s.klo = { name: wer, art: Math.random() < .5 ? 'blitz' : 'frost' };
+      s.lazarett.push(wer); s.graeber.push({ name: wer, wie: 'AUF DEM KLO', welle: s.welle - 1 });
+      setzeModus('klo'); return;
+    }
+    setzeModus('welle');
+  }
+  function setzeModus(m) { modus = m; modusSeit = zeit; }
+  function melden(t, farbe) { s.meldungen.push({ t: t, farbe: farbe || COL.feuer, bis: zeit + 1800 }); }
+
+  // ---------- Wege und Körper ----------
+  function weg(seite, t) {
+    var y = 109 + t * 139;
+    return seite === 0 ? { x: 120 - t * 78 + Math.sin(t * 5) * 10, y: y }
+                       : { x: 200 + t * 78 - Math.sin(t * 5) * 10, y: y };
+  }
+  function figur(px, py, t) {     // eine Person in der Tiefe t (0 = hinten, 1 = vorn)
+    var gr = 2 + Math.round(t * 5);
+    return { l: Math.round(px) - gr, r: Math.round(px) + gr, o: Math.round(py) - 3 * gr, u: Math.round(py), gr: gr, p: { x: px, y: py } };
+  }
+  function koerper(g) {
+    var p = weg(g.seite, g.t);
+    if (g.art === 'fahrzeug') {
+      var b = 4 + Math.round(g.t * 12), h = 2 + Math.round(g.t * 6);
+      return { l: Math.round(p.x) - b, r: Math.round(p.x) + b, o: Math.round(p.y) - 2 * h, u: Math.round(p.y), gr: h, p: p };
+    }
+    if (g.art === 'sprinter') return figurKasten(p.x, p.y, g.t, 11);
+    if (g.art === 'fuss') {
+      var hh = spriteHoehe(g.t), bb = Math.round(hh * 10 / 26);     // ohne Mistgabel: nur der Mensch zählt als Treffer
+      return { l: Math.round(p.x - bb / 2) - 1, r: Math.round(p.x + bb / 2) - 1, o: Math.round(p.y) - hh, u: Math.round(p.y), gr: Math.max(2, Math.round(hh / 4)), p: p };
+    }
+    return figur(p.x, p.y, g.t);
+  }
+  function kumpelKoerper(k) { var p = weg(k.seite, k.t); return figurKasten(p.x, p.y, k.t, 11); }
+  function leuteKoerper(m) { return figurKasten(m.x, m.y, (m.y - 109) / 139, 9); }
+  function drin(k, zx, zy) { return zx >= k.l - 1 && zx <= k.r + 1 && zy >= k.o - 1 && zy <= k.u + 1; }
+
+  // ---------- Pixelfiguren im Stil der 80er-Automaten ----------
+  // Der Dorfbewohner: 16x26 Pixel, Hut, Stoppelbart, Leinenhemd, Weste, Mistgabel – vier Laufbilder.
+  var DORF_OBEN = [
+    '.....kkkkk...f.f', '....khhhhhk..f.f', '....khhhhhk..f.f', '..kkHHHHHHHkkfff', '..khhhhhhhhhk.g.',
+    '....ksssssk...g.', '....ksesesk...g.', '....ksssssk...g.', '....kSBmBSk...g.', '.....kSSSk....g.',
+    '...kkwwwwwkk..g.', '..kwvwwwwwvwk.g.', '.kwwvwwwwwvwwsg.', '.kwwvVwwwVvwwkg.', '.kskvVwwwVvk.kg.', '..k.kvVwVvk...g.'];
+  var DORF_BEINE = [
+    ['....kpppppk...g.', '....kppkppk...g.', '...kppk.kppk..g.', '...kppk..kpk..g.', '..kppk...kpk..g.', '..kppk....kpk.g.', '..kbbk....kbk.g.', '.kbbbk...kbbk.g.', '.kkkk....kkkk.g.', '..............g.'],
+    ['....kpppppk...g.', '....kppkppk...g.', '....kppkppk...g.', '....kppkppk...g.', '....kppkppk...g.', '....kppkppk...g.', '....kbbkbbk...g.', '...kbbbkbbbk..g.', '...kkkkkkkkk..g.', '..............g.'],
+    ['....kpppppk...g.', '....kppkppk...g.', '...kppk.kppk..g.', '...kpk..kppk..g.', '...kpk...kppk.g.', '..kpk....kppk.g.', '..kbk....kbbk.g.', '.kbbk...kbbbk.g.', '.kkkk....kkkk.g.', '..............g.']];
+  var DORF_FARBEN = [
+    { v: '#5a6b3a', V: '#3e4a28', p: '#4a4a5c', P: '#33333f', h: '#6b4a2c', H: '#3a2416' },
+    { v: '#7a3a2a', V: '#552618', p: '#3a4a3a', P: '#28332a', h: '#2a2a2a', H: '#111111' },
+    { v: '#3a4a6b', V: '#283350', p: '#5a4a3a', P: '#3f3428', h: '#8a6a3a', H: '#5a4220' }];
+  var SPRITES = {};
+  function dorfSprite(bild, variante, fackel) {
+    var key = bild + '-' + variante + (fackel ? '-f' : ''); if (SPRITES[key]) return SPRITES[key];
+    var f = DORF_FARBEN[variante], pal = { k: '#1b1612', s: '#e3b98f', S: '#b8875e', e: '#1b1612', m: '#7a2a2a', B: '#8a6a4a',
+      w: '#d8cfb6', W: '#a89e84', g: '#8a6440', f2: '#b7bcc4', b: '#2a1a10', v: f.v, V: f.V, p: f.p, P: f.P, h: f.h, H: f.H };
+    var zeilen = DORF_OBEN.slice(), beine = DORF_BEINE[bild === 3 ? 1 : bild];
+    if (bild === 2) { zeilen[13] = '.kswvVwwwVvwwkg.'; zeilen[14] = '.kwkvVwwwVvk.kg.'; }   // Arm schwingt vor
+    zeilen = zeilen.concat(beine);
+    if (fackel) zeilen = zeilen.map(function (z, i) { return i < 4 ? z.replace(/f/g, '.') : z; });   // keine Zinken, oben brennt es
+    var hc = document.createElement('canvas'); hc.width = 16; hc.height = 26; var g = hc.getContext('2d');
+    for (var y = 0; y < 26; y++) for (var xx = 0; xx < 16; xx++) { var ch = zeilen[y].charAt(xx); if (ch === '.') continue; g.fillStyle = ch === 'f' ? pal.f2 : pal[ch]; g.fillRect(xx, y, 1, 1); }
+    SPRITES[key] = hc; return hc;
+  }
+  function spriteHoehe(t) { return Math.round(6 + t * 30); }
+  // Die anderen Figuren – Vorlagen aus werkzeug/sprites.py (Wanderer und Sanitäter schauen nach rechts)
+  var FIGUREN = {"sprinter": [["................", "................", "................", "......kkkk......", ".....khhhhk.....", ".....kNNNNk.....", ".....ksesek.....", ".....kssssk.....", ".....kSmmSk.....", "......kssk......", "...kkrrrrrrkk...", "..krwrrrrrrwrk..", ".krwrrrrrrrrwrk.", ".kswrrrrrrrrwsk.", "..kk.rrrrrr.kk..", "....krrrrrrk....", "....krrkkrrk....", "...krwk..krwk...", "...krwk..krwk...", "..krwk....krwk..", "..krwk....krwk..", ".krwk......krwk.", ".krwk......krwk.", ".kWWk......kWWk.", "kWWWk......kWWWk", "kkkkk......kkkkk"], ["................", "................", "................", "......kkkk......", ".....khhhhk.....", ".....kNNNNk.....", ".....ksesek.....", ".....kssssk.....", ".....kSmmSk.....", "......kssk......", "...kkrrrrrrkk...", "..krwrrrrrrwrk..", ".krwrrrrrrrrwrk.", ".kswrrrrrrrrwsk.", "..kk.rrrrrr.kk..", "....krrrrrrk....", "....krrkkrrk....", "....krwkkwrk....", "....krwkkwrk....", "....krwkkwrk....", "....krwkkwrk....", "....krwkkwrk....", "....krwkkwrk....", "....kWWkkWWk....", "...kWWWkkWWWk...", "...kkkkkkkkkk..."], ["................", "................", "................", "......kkkk......", ".....khhhhk.....", ".....kNNNNk.....", ".....ksesek.....", ".....kssssk.....", ".....kSmmSk.....", "......kssk......", "...kkrrrrrrkk...", "..krwrrrrrrwrk..", ".krwrrrrrrrrwrk.", ".kswrrrrrrrrwsk.", "..kk.rrrrrr.kk..", "....krrrrrrk....", "....krrkkrrk....", "...kwrk..kwrk...", "...kwrk..kwrk...", "..kwrk....kwrk..", "..kwrk....kwrk..", ".kwrk......kwrk.", ".kwrk......kwrk.", ".kWWk......kWWk.", "kWWWk......kWWWk", "kkkkk......kkkkk"], ["................", "................", "................", "......kkkk......", ".....khhhhk.....", ".....kNNNNk.....", ".....ksesek.....", ".....kssssk.....", ".....kSmmSk.....", "......kssk......", "...kkrrrrrrkk...", "..krwrrrrrrwrk..", ".krwrrrrrrrrwrk.", ".kswrrrrrrrrwsk.", "..kk.rrrrrr.kk..", "....krrrrrrk....", "....krrkkrrk....", "....krwkkwrk....", "....krwkkwrk....", "....krwkkwrk....", "....krwkkwrk....", "....krwkkwrk....", "....krwkkwrk....", "....kWWkkWWk....", "...kWWWkkWWWk...", "...kkkkkkkkkk..."]], "kumpel": [["................", "................", "................", "......kkkk......", ".....kcccccck...", ".....kccccck....", ".....kssssk.....", ".....ksesek.....", ".....kssssk.....", ".....kSmmSk.....", "......kssk......", "...kkbbbbbbkk...", "..kbbbbbbbbbbk..", ".kbbBbbbbbBbbbk.", ".ksbBbbbbbBbbsk.", "..kkbBBBBBBbkk..", "....kbbbbbbk....", "....kjjjjjjk....", "....kjjkkjjk....", "...kjjk..kjjk...", "...kjjk...kjk...", "..kjjk....kjk...", "..kjjk.....kjk..", "..kWWk.....kWk..", ".kWWWk....kWWk..", ".kkkkk....kkkk.."], ["................", "................", "................", "......kkkk......", ".....kcccccck...", ".....kccccck....", ".....kssssk.....", ".....ksesek.....", ".....kssssk.....", ".....kSmmSk.....", "......kssk......", "...kkbbbbbbkk...", "..kbbbbbbbbbbk..", ".kbbBbbbbbBbbbk.", ".ksbBbbbbbBbbsk.", "..kkbBBBBBBbkk..", "....kbbbbbbk....", "....kjjjjjjk....", "....kjjkkjjk....", "....kjjkkjjk....", "....kjjkkjjk....", "....kjjkkjjk....", "....kjjkkjjk....", "....kWWkkWWk....", "...kWWWkkWWWk...", "...kkkkkkkkkk..."], ["................", "................", "................", "......kkkk......", ".....kcccccck...", ".....kccccck....", ".....kssssk.....", ".....ksesek.....", ".....kssssk.....", ".....kSmmSk.....", "......kssk......", "...kkbbbbbbkk...", "..kbbbbbbbbbbk..", ".kbbBbbbbbBbbbk.", ".ksbBbbbbbBbbsk.", "..kkbBBBBBBbkk..", "....kbbbbbbk....", "....kjjjjjjk....", "....kjjkkjjk....", "...kjjk..kjjk...", "...kjk...kjjk...", "...kjk....kjjk..", "..kjk.....kjjk..", "..kWk.....kWWk..", "..kWWk....kWWWk.", "..kkkk....kkkkk."], ["................", "................", "................", "......kkkk......", ".....kcccccck...", ".....kccccck....", ".....kssssk.....", ".....ksesek.....", ".....kssssk.....", ".....kSmmSk.....", "......kssk......", "...kkbbbbbbkk...", "..kbbbbbbbbbbk..", ".kbbBbbbbbBbbbk.", ".ksbBbbbbbBbbsk.", "..kkbBBBBBBbkk..", "....kbbbbbbk....", "....kjjjjjjk....", "....kjjkkjjk....", "....kjjkkjjk....", "....kjjkkjjk....", "....kjjkkjjk....", "....kjjkkjjk....", "....kWWkkWWk....", "...kWWWkkWWWk...", "...kkkkkkkkkk..."]], "wanderer": [["................", "................", "................", "........y.......", ".....kkkky......", "....khhhhhk.....", "...kkHHHHHkk....", ".....ksssk......", ".....ksesk......", ".....kssSk......", "......kSk.......", "...uukjjjjk.....", "..kuukjjjjjk....", "..kuukjjjjjjs.l.", "..kuukjjjjjk..l.", "...uukjjjjk...l.", ".....kjjjjk...l.", ".....kddddk...l.", "....kddk.kdk..l.", "....kddk..kdk.l.", "...kddk...kdk.l.", "...kddk....kdkl.", "..kddk.....kdk..", "..kddk......kdk.", ".kbbbk......kbbk", ".kkkkk......kkkk"], ["................", "................", "................", "........y.......", ".....kkkky......", "....khhhhhk.....", "...kkHHHHHkk....", ".....ksssk......", ".....ksesk......", ".....kssSk......", "......kSk.......", "...uukjjjjk.....", "..kuukjjjjjk....", "..kuukjjjjjjs.l.", "..kuukjjjjjk..l.", "...uukjjjjk...l.", ".....kjjjjk...l.", ".....kddddk...l.", ".....kddddk...l.", ".....kddddk...l.", ".....kddkdk...l.", ".....kddkdk...l.", ".....kddkdk...l.", ".....kddkdk...l.", ".....kbbbbbk..l.", ".....kkkkkkk...."], ["................", "................", "................", "........y.......", ".....kkkky......", "....khhhhhk.....", "...kkHHHHHkk....", ".....ksssk......", ".....ksesk......", ".....kssSk......", "......kSk.......", "...uukjjjjk.....", "..kuukjjjjjk....", "..kuukjjjjjjs.l.", "..kuukjjjjjk..l.", "...uukjjjjk...l.", ".....kjjjjk...l.", ".l...kddddk.....", ".l..kdk.kddk....", ".l.kdk..kddk....", ".l.kdk...kddk...", ".lkdk....kddk...", "..kdk.....kddk..", ".kdk......kddk..", "kbbk......kbbbk.", "kkkk......kkkkk."], ["................", "................", "................", "........y.......", ".....kkkky......", "....khhhhhk.....", "...kkHHHHHkk....", ".....ksssk......", ".....ksesk......", ".....kssSk......", "......kSk.......", "...uukjjjjk.....", "..kuukjjjjjk....", "..kuukjjjjjjs.l.", "..kuukjjjjjk..l.", "...uukjjjjk...l.", ".....kjjjjk...l.", ".....kddddk...l.", ".....kddddk...l.", ".....kddddk...l.", ".....kddkdk...l.", ".....kddkdk...l.", ".....kddkdk...l.", ".....kddkdk...l.", ".....kbbbbbk..l.", ".....kkkkkkk...."]], "sani": [["................", "................", "................", "................", "......kkkk......", ".....kwwwwk.....", ".....kwRwwk.....", ".....ksssk......", ".....ksesk......", ".....kssSk......", "......kSk.......", "....kwwwwwk.....", "...kwwRwwwwk....", "...kwRRRwwwwssk.", "...kwwRwwwwk....", "....kwwwwwk.....", "....kwwwwwk.....", "....kwwwwwk.....", "....kwwk.kwk....", "...kwwk...kwk...", "...kwwk...kwk...", "..kwwk.....kwk..", "..kwwk.....kwk..", "..kbbk......kbk.", ".kbbbk......kbbk", ".kkkkk......kkkk"], ["................", "................", "................", "................", "......kkkk......", ".....kwwwwk.....", ".....kwRwwk.....", ".....ksssk......", ".....ksesk......", ".....kssSk......", "......kSk.......", "....kwwwwwk.....", "...kwwRwwwwk....", "...kwRRRwwwwssk.", "...kwwRwwwwk....", "....kwwwwwk.....", "....kwwwwwk.....", "....kwwwwwk.....", ".....kwwwk......", ".....kwwwk......", ".....kwkwk......", ".....kwkwk......", ".....kwkwk......", ".....kbkbk......", "....kbbkbbk.....", "....kkkkkkk....."], ["................", "................", "................", "................", "......kkkk......", ".....kwwwwk.....", ".....kwRwwk.....", ".....ksssk......", ".....ksesk......", ".....kssSk......", "......kSk.......", "....kwwwwwk.....", "...kwwRwwwwk....", "...kwRRRwwwwssk.", "...kwwRwwwwk....", "....kwwwwwk.....", "....kwwwwwk.....", ".....kwwwwwk....", "....kwk.kwwk....", "...kwk...kwwk...", "...kwk...kwwk...", "..kwk.....kwwk..", "..kwk.....kwwk..", ".kbk......kbbk..", "kbbk......kbbbk.", "kkkk......kkkkk."], ["................", "................", "................", "................", "......kkkk......", ".....kwwwwk.....", ".....kwRwwk.....", ".....ksssk......", ".....ksesk......", ".....kssSk......", "......kSk.......", "....kwwwwwk.....", "...kwwRwwwwk....", "...kwRRRwwwwssk.", "...kwwRwwwwk....", "....kwwwwwk.....", "....kwwwwwk.....", "....kwwwwwk.....", ".....kwwwk......", ".....kwwwk......", ".....kwkwk......", ".....kwkwk......", ".....kwkwk......", ".....kbkbk......", "....kbbkbbk.....", "....kkkkkkk....."]]};
+  var HAUT = { k: '#1b1612', s: '#e3b98f', S: '#b8875e', e: '#1b1612', m: '#7a2a2a' };
+  var PAL = {
+    sprinter: { h: '#2a1a10', N: '#111111', r: '#c8302a', w: '#f0f0f0', W: '#f4f4f4' },
+    kumpel:   { c: '#1f3f8a', b: '#5fb4ff', B: '#3a7ac0', j: '#34508a', W: '#f4f4f4' },
+    wanderer: { y: '#e2553a', h: '#3f5a2a', H: '#2a3a1a', j: '#6a8a4a', u: '#8a5a2c', d: '#6b4a2c', b: '#2a1a10', l: '#8a6440' },
+    wuetend:  { y: '#e2553a', h: '#3f5a2a', H: '#2a3a1a', j: '#c8302a', u: '#8a5a2c', d: '#6b4a2c', b: '#2a1a10', l: '#8a6440' },
+    sani:     { w: '#f2f2f2', R: '#e2283a', b: '#333333' }
+  };
+  function figurBild(name, bild, palName, spiegel) {
+    var key = name + bild + palName + (spiegel ? 's' : ''); if (SPRITES[key]) return SPRITES[key];
+    var zeilen = FIGUREN[name][bild % 4], pal = PAL[palName];
+    var hc = document.createElement('canvas'); hc.width = 16; hc.height = 26; var g = hc.getContext('2d');
+    for (var yy = 0; yy < 26; yy++) for (var xx = 0; xx < 16; xx++) {
+      var ch = zeilen[yy].charAt(spiegel ? 15 - xx : xx); if (ch === '.') continue;
+      g.fillStyle = pal[ch] || HAUT[ch] || '#ff00ff'; g.fillRect(xx, yy, 1, 1);
+    }
+    SPRITES[key] = hc; return hc;
+  }
+  function figurMalen(name, palName, px, unten, t, phase, spiegel, blass) {
+    var hh = spriteHoehe(t), bb = Math.round(hh * 16 / 26), bild = Math.floor((phase || 0) / (Math.PI / 2)) % 4;
+    x.imageSmoothingEnabled = false; if (blass) x.globalAlpha = .5;
+    x.drawImage(figurBild(name, bild, palName, spiegel), Math.round(px - bb / 2), Math.round(unten - hh), bb, hh);
+    x.globalAlpha = 1;
+  }
+  function figurKasten(px, py, t, breite) {   // Trefferfläche = der Mensch, nicht Stock oder Rucksack
+    var hh = spriteHoehe(t), bb = Math.round(hh * breite / 26);
+    return { l: Math.round(px - bb / 2), r: Math.round(px + bb / 2), o: Math.round(py) - hh, u: Math.round(py), gr: Math.max(2, Math.round(hh / 4)), p: { x: px, y: py } };
+  }
+
+  // ---------- Wer kommt ----------
+  function gegnerSchicken() {
+    var w = s.welle, z = Math.random(), art = 'fuss';
+    if (w >= 5 && z < Math.min(0.35, 0.12 + (w - 5) * 0.06)) art = 'fahrzeug';
+    else if (w >= 3 && z < 0.5) art = 'sprinter';
+    var tempo = 0.000045 + Math.random() * 0.00003 + w * 0.000004;
+    if (art === 'sprinter') tempo *= 1.7;
+    if (art === 'fahrzeug') tempo = 0.00004;
+    var seite = Math.random() < .5 ? 0 : 1;
+    // Fair bleiben: niemand taucht direkt neben dem Kumpel im Dorf auf.
+    if (s.kumpel && s.kumpel.t < 0.2 && seite === s.kumpel.seite) seite = 1 - seite;
+    s.gegner.push({ seite: seite, t: 0, lebendig: true, art: art, leben: art === 'fahrzeug' ? 3 : 1, blitz: 0, tempo: tempo, schritt: Math.random() * 6, variante: Math.floor(Math.random() * 3), fackel: Math.random() < .4 });
+    s.zuSpawnen--;
+  }
+  function wandererSchicken() {
+    var gruppe = s.welle >= 4 && Math.random() < 0.45;
+    var vonLinks = Math.random() < .5, y = 120 + Math.random() * 40;
+    var anzahl = gruppe ? 3 : 1;
+    for (var i = 0; i < anzahl; i++) {
+      s.leute.push({ x: vonLinks ? -6 - i * 9 : W + 6 + i * 9, y: y + (i % 2) * 3, dx: (vonLinks ? 1 : -1) * (0.012 + Math.random() * 0.004),
+                     gruppe: gruppe, seit: zeit, wuetend: false, schritt: Math.random() * 6 });
+    }
+  }
+
+  // ---------- Schiessen ----------
+  function laufWinkel() { return Math.atan2(s.ziel.y - LAUF_FUSS.y, s.ziel.x - LAUF_FUSS.x); }
+  function muendungsPunkt() { return { x: 160, y: 216 }; }   // die Schlaufe der Zwille
+  function nachladen() { if (modus !== 'spiel' || s.nachladenBis || s.munition === MAGAZIN) return; s.nachladenBis = zeit + NACHLADEN_MS; }
+  function feuern() {
+    if (s.nachladenBis) return;
+    if (s.munition <= 0) { nachladen(); return; }
+    s.munition--; s.schuesse++; s.muendung = 4;
+    var m = muendungsPunkt();
+    s.geschosse.push({ vx: m.x, vy: m.y, zx: s.ziel.x, zy: s.ziel.y, start: zeit });
+    if (s.munition === 0) nachladen();
+  }
+  // Grüne Rauchwolke: weiche Kringel, die langsam aufsteigen und zerfasern
+  function rauchwolke(px, py, n, gr) {
+    s.dunst = Math.min(.55, s.dunst + n * .004);   // jeder Treffer macht den Himmel über Urphar grüner
+    for (var i = 0; i < n; i++) s.funken.push({ x: px + (Math.random() - .5) * gr * 2, y: py + (Math.random() - .5) * gr, dx: (Math.random() - .5) * .5, dy: -.15 - Math.random() * .35, leben: 40 + Math.random() * 30, farbe: i % 3 ? '#7fd06a' : '#a8d89a', rauch: true, gross: 1 + Math.random() * (gr / 3) });
+  }
+  function funken(px, py, n, farbe, kraft) {
+    for (var i = 0; i < n; i++) s.funken.push({ x: px, y: py, dx: (Math.random() - .5) * kraft, dy: (Math.random() - .7) * kraft, leben: 22, farbe: farbe });
+  }
+  function leicheAblegen(px, py, gr, rumpf, kopf, art) {
+    // Fällt einer auf einen anderen, stapelt er sich obendrauf.
+    var hoehe = 0;
+    s.leichen.forEach(function (l) { if (Math.abs(l.x - px) < l.gr * 2.2 && Math.abs(l.y - l.hoehe - py) < l.gr * 1.5) hoehe = Math.max(hoehe, l.hoehe + Math.max(1, l.gr * 0.7)); });
+    s.leichen.push({ x: px, y: py, gr: gr, rumpf: rumpf, kopf: kopf, art: art, hoehe: hoehe, links: Math.random() < .5, rauch: art === 'fahrzeug' ? zeit + 5000 : 0, seit: zeit, abgeholt: false, variante: Math.floor(Math.random() * 3) });
+    if (s.leichen.length > 220) s.leichen.shift();
+  }
+  function fleckMachen(l) {
+    s.flecken.push({ x: l.x, y: l.y, gr: l.gr, leben: 1, brand: l.art === 'fahrzeug' });
+    if (s.flecken.length > 120) s.flecken.shift();
+  }
+  function saniSchicken() {
+    // Den am längsten Liegenden, der noch nicht abgeholt wird.
+    var frei = s.leichen.filter(function (l) { return !l.abgeholt && l.art !== 'fahrzeug'; });
+    if (!frei.length) return;
+    var l = frei[0]; l.abgeholt = true;
+    var vonLinks = l.x < 160;
+    s.sani.push({ x: vonLinks ? -8 : W + 8, y: l.y, dx: vonLinks ? 1 : -1, ziel: l, phase: 'hin', schritt: 0, vonLinks: vonLinks });
+  }
+  function saniTiefe(m) { return Math.max(0, (m.y - 109) / 139); }
+  function saniRichtung(m) { return m.phase === 'hin' ? (m.ziel && m.ziel.x < m.x ? -1 : 1) : (m.vonLinks ? -1 : 1); }
+  function saniPaar(m) {          // vorn und hinten an der Trage
+    var d = saniRichtung(m), a = spriteHoehe(saniTiefe(m)) * .5, t2 = saniTiefe(m);
+    return [figurKasten(m.x + d * a, m.y, t2, 9), figurKasten(m.x - d * a, m.y, t2, 9)];
+  }
+  function saniKoerper(m) { return saniPaar(m)[0]; }
+  function missionScheitert(art) {
+    if (!s.kumpel) return;
+    var k = kumpelKoerper(s.kumpel), wer = s.kumpel.name;
+    funken(k.p.x, k.p.y - k.gr, 12, COL.blau, 2); leicheAblegen(k.p.x, k.u, k.gr, COL.blau, COL.hell, 'kumpel');
+    s.lazarett.push(wer); s.graeber.push({ name: wer, wie: 'BEIM ' + (s.mission && HOLEN[s.mission.id] || 'HOLEN'), welle: s.welle }); s.kumpel = null;
+    var naechster = s.kumpels[0];
+    var was = art === 'beschossen' ? spruch('aua') + ' DU HAST ' + wen(wer) + ' ERWISCHT!'
+            : art === 'ueberrollt' ? wer + ' WURDE ÜBERROLLT!'
+            : spruch('pech') + ' ' + wer + ' FIEL BEIM ' + HOLEN[s.mission.id] + '!';
+    if (naechster) { melden(was, COL.rot); melden(naechster + ' MUSS JETZT RAN!', COL.blau); s.kumpelStart = zeit + 2200; }
+    else { melden(was, COL.rot); melden('KEINER MEHR DA, DER WAS HOLEN KANN!', COL.rot); s.missionErgebnis = 'weg'; }
+  }
+  // Ein Fahrzeug fliegt in die Luft – und nimmt mit, was in der Nähe steht.
+  function explosion(px, py, tiefe, kette) {
+    var radius = 10 + tiefe * 34, weg = 0;
+    s.explosionen.push({ x: px, y: py, r: radius, start: zeit });
+    s.wackeln = Math.max(s.wackeln, 18);
+    s.flecken.push({ x: px, y: py + 2, gr: Math.max(2, radius / 3.5), leben: 1, brand: true });
+    rauchwolke(px, py - 3, 40, radius / 3);
+    for (var r2 = 0; r2 < 10; r2++) s.funken.push({ x: px + (Math.random() - .5) * radius, y: py - Math.random() * radius * .5, dx: (Math.random() - .5) * .4, dy: -.4, leben: 50, farbe: COL.grau, rauch: true });
+    s.gegner.forEach(function (g) {
+      if (!g.lebendig) return;
+      var k = koerper(g), mx = (k.l + k.r) / 2, my = (k.o + k.u) / 2;
+      if (Math.hypot(mx - px, my - py) > radius) return;
+      g.lebendig = false; weg++;
+      if (g.art === 'fahrzeug') s.ketten.push({ x: k.p.x, y: (k.o + k.u) / 2, t: g.t, um: zeit + 180 });   // Kettenreaktion
+      else { leicheAblegen(k.p.x, k.u, k.gr, g.art === 'sprinter' ? COL.rot : COL.hell, g.art === 'sprinter' ? COL.hell : COL.rosa, g.art); rauchwolke(k.p.x, k.p.y - k.gr, 6, k.gr); }
+    });
+    s.leute.forEach(function (m) {                       // nur Wütende fliegen mit, die anderen ducken sich
+      if (!m.wuetend) return;
+      var km = leuteKoerper(m);
+      if (Math.hypot(km.p.x - px, km.p.y - km.gr - py) <= radius) { m.weg = true; weg++; leicheAblegen(km.p.x, km.u, km.gr, COL.rosa, COL.hell, 'wanderer'); }
+    });
+    s.leute = s.leute.filter(function (m) { return !m.weg; });
+    if (weg > 0) {
+      var bonus = weg * 100 + (weg >= 3 ? weg * 50 : 0);
+      s.punkte += bonus; s.weggefegt = (s.weggefegt || 0) + weg;   // zählt in die Punkte, nicht in die Trefferquote
+      melden((kette ? 'KETTENREAKTION! ' : weg >= 3 ? 'SÜPER LAN! ' : 'VAY BE! ') + weg + ' EINGENEBELT! +' + bonus, '#7fd06a');
+    }
+  }
+
+  function einschlag(zx, zy) {
+    // 1. Kumpel? Der steht im Weg – Pech gehabt.
+    if (s.kumpel && drin(kumpelKoerper(s.kumpel), zx, zy)) { s.punkte = Math.max(0, s.punkte - 300); missionScheitert('beschossen'); return; }
+    // 2. Angreifer, vorderster zuerst
+    var ziele = s.gegner.filter(function (g) { return g.lebendig; }).sort(function (a, b) { return b.t - a.t; });
+    for (var i = 0; i < ziele.length; i++) {
+      var g = ziele[i], k = koerper(g);
+      if (!drin(k, zx, zy)) continue;
+      g.leben--; g.blitz = 6; s.treffer++;
+      if (g.leben <= 0) {
+        g.lebendig = false;
+        if (Math.random() < .3) s.schwebe.push({ x: k.p.x, y: k.o - 2, t: spruch('treffer'), start: zeit });
+        var wert = g.art === 'fahrzeug' ? 500 : g.art === 'sprinter' ? 200 : 100;
+        s.punkte += wert + Math.round((1 - g.t) * 100);
+        rauchwolke(k.p.x, k.p.y - k.gr, g.art === 'fahrzeug' ? 24 : 12, k.gr);
+        leicheAblegen(k.p.x, k.u, k.gr, g.art === 'sprinter' ? COL.rot : COL.hell, g.art === 'sprinter' ? COL.hell : COL.rosa, g.art);
+        if (g.art === 'fahrzeug') explosion(k.p.x, (k.o + k.u) / 2, g.t, false);
+      } else funken(zx, zy, 5, COL.stahl, 2);
+      return;
+    }
+    // 2b. Der Dackel – wird nicht erschossen, er jault und rennt heim
+    if (s.dackel && !s.dackel.flucht && drin(dackelKasten(s.dackel), zx, zy)) {
+      s.dackel.flucht = true; s.dackel.dx = (s.dackel.dx > 0 ? -1 : 1) * 0.16;
+      s.punkte = Math.max(0, s.punkte - 300); funken(zx, zy, 6, '#8a4a1c', 1.5);
+      melden('NICHT DEN DACKEL! -300', COL.rot); melden(spruch('aua'), COL.rosa);
+      return;
+    }
+    // 3. Sanitäter
+    for (var q = 0; q < s.sani.length; q++) {
+      var sa = s.sani[q], paar = saniPaar(sa), ks = drin(paar[0], zx, zy) ? paar[0] : drin(paar[1], zx, zy) ? paar[1] : null;
+      if (!ks) continue;
+      s.sani.splice(q, 1); if (sa.ziel) sa.ziel.abgeholt = false;
+      s.punkte = Math.max(0, s.punkte - 300); funken(ks.p.x, ks.p.y - ks.gr, 10, COL.rot, 1.8);
+      leicheAblegen(ks.p.x, ks.u, ks.gr, COL.hell, COL.hell, 'sani');
+      var ander = ks === paar[0] ? paar[1] : paar[0]; leicheAblegen(ander.p.x, ander.u, ander.gr, COL.hell, COL.hell, 'sani');   // die Trage fällt, beide liegen
+      if (sa.traegt) leicheAblegen(sa.x, sa.y, ks.gr, sa.traegt.rumpf, sa.traegt.kopf, sa.traegt.art || 'fuss');
+      melden('NICHT DIE SANITÄTER! -300', COL.rot);
+      return;
+    }
+    // 4. Spaziergänger
+    for (var j = 0; j < s.leute.length; j++) {
+      var m = s.leute[j], km = leuteKoerper(m);
+      if (!drin(km, zx, zy)) continue;
+      s.leute.splice(j, 1);
+      if (m.wuetend) { s.treffer++; s.punkte += 150; funken(km.p.x, km.p.y - km.gr, 12, COL.rosa, 2.2); }
+      else { s.punkte = Math.max(0, s.punkte - 200); funken(km.p.x, km.p.y - km.gr, 8, COL.wanderer, 1.6); melden('UNBETEILIGTER! -200', COL.rot); }
+      leicheAblegen(km.p.x, km.u, km.gr, m.wuetend ? COL.rosa : COL.wanderer, COL.hell, 'wanderer');
+      return;
+    }
+    // 5. daneben
+    s.krater.push({ x: zx, y: zy, leben: 240 });
+    funken(zx, zy, 6, COL.weg, 1.4);
+  }
+
+  // ---------- Spezialattacken: wer fällt, geht nicht still ----------
+  function seiteMitMehr() { var l = 0, r = 0; s.gegner.forEach(function (g) { if (g.lebendig) { if (g.seite === 0) l++; else r++; } }); return l >= r ? 0 : 1; }
+  function spezialStarten(name) {
+    var sp = SPEZIAL[name] || { art: 'tritt', ruf: 'FLUGTRITT!' }, obj = [], i, links = seiteMitMehr();
+    var bunt = ['#ff4fa3', '#5fb4ff', '#ffd25a', '#9cc58a', '#e2553a', '#c58aff'];
+    if (sp.art === 'vespa' || sp.art === 'tritt' || sp.art === 'feuerball' || sp.art === 'polizei') obj.push({ typ: sp.art, seite: links, t: 1, tempo: sp.art === 'tritt' ? 0.00022 : 0.00025, ab: 0 });
+    if (sp.art === 'porsche') obj.push({ typ: 'porsche', seite: links, t: 1, tempo: 0.0004, ab: 0 }, { typ: 'porsche', seite: 1 - links, t: 1, tempo: 0.0004, ab: 1600 });
+    if (sp.art === 'kinder' || sp.art === 'zwerge' || sp.art === 'kaninchen')
+      for (i = 0; i < 16; i++) obj.push({ typ: sp.art, seite: i % 2, t: 1, tempo: 0.00035 + Math.random() * 0.0002, ab: i * 200, versatz: (Math.random() - .5) * 0.8, farbe: bunt[i % bunt.length] });
+    if (sp.art === 'geist') s.gegner.filter(function (g) { return g.lebendig; }).forEach(function (g, j) { obj.push({ typ: 'geist', ziel: g, ab: 900 + j * 420 }); });
+    if (sp.art === 'sterne' || sp.art === 'weizen' || sp.art === 'wurst' || sp.art === 'doc' || sp.art === 'rohrzange') s.gegner.filter(function (g) { return g.lebendig; }).slice(0, 14).forEach(function (g, j) { obj.push({ typ: 'stern', bild: sp.art === 'doc' ? (j % 2 ? 'zange' : 'skalpell') : sp.art, ziel: g, x: 112, y: 214, ab: j * 220 }); });
+    if (sp.art === 'wirbel') obj.push({ typ: 'wirbel', ab: 0, dauer: 3400 });
+    if (sp.art === 'rohrzange') obj.forEach(function (o) { o.bild = 'rohrzange'; });
+    obj.forEach(function (o) { o.sprung = 0; o.dreh = 0; });   // Startwerte, damit schon das erste Bild stimmt
+    s.spezial = { name: name, ruf: sp.ruf, comic: sp.comic, art: sp.art, obj: obj, start: zeit, erledigt: 0, blasen: [] };
+    setzeModus('spezial');
+  }
+  function erledigen(g) {
+    if (!g.lebendig) return;
+    g.lebendig = false; s.spezial.erledigt++;
+    var k = koerper(g);
+    if (s.spezial.blasen.length < 2 && zeit - (s.spezial.letzteBlase || 0) > 450) s.spezial.letzteBlase = zeit, s.spezial.blasen.push({ x: k.p.x, y: k.o - 4, t: s.spezial.art === 'geist' ? (s.spezial.erledigt % 2 ? '¿EH?' : '¡AY!') : TREFFER_WORTE[s.spezial.erledigt % TREFFER_WORTE.length], start: zeit, gr: 6 + g.t * 4 });
+    if (g.art === 'fahrzeug') explosion(k.p.x, (k.o + k.u) / 2, g.t, true);
+    else { leicheAblegen(k.p.x, k.u, k.gr, g.art === 'sprinter' ? COL.rot : COL.hell, g.art === 'sprinter' ? COL.hell : COL.rosa, g.art); rauchwolke(k.p.x, k.p.y - k.gr, 8, k.gr); }
+  }
+  function spezialSchritt(dt) {
+    var sp = s.spezial, t0 = zeit - sp.start, aktiv = false;
+    sp.obj.forEach(function (o) {
+      if (t0 < o.ab || o.fertig) { if (!o.fertig) aktiv = true; return; }
+      aktiv = true;
+      if (o.typ === 'stern') {
+        if (!o.ziel.lebendig) { o.fertig = true; return; }
+        var k = koerper(o.ziel), zx = (k.l + k.r) / 2, zy = (k.o + k.u) / 2, dx = zx - o.x, dy = zy - o.y, d = Math.hypot(dx, dy);
+        if (d < 4) { erledigen(o.ziel); o.fertig = true; return; }
+        o.x += dx / d * 0.16 * dt; o.y += dy / d * 0.16 * dt; o.dreh = (o.dreh || 0) + dt * 0.03; return;
+      }
+      if (o.typ === 'geist') {          // Alf ist nicht da – und trotzdem fällt einer nach dem anderen um
+        if (o.ziel.lebendig) erledigen(o.ziel);
+        o.fertig = true; return;
+      }
+      if (o.typ === 'wirbel') {
+        // der Wirbeltritt fegt alles im vorderen Drittel weg, von vorn nach hinten
+        var reichweite = 1 - (t0 - o.ab) / o.dauer * 0.75;
+        s.gegner.forEach(function (g) { if (g.lebendig && g.t > reichweite) erledigen(g); });
+        if (t0 - o.ab > o.dauer) o.fertig = true; return;
+      }
+      o.t -= o.tempo * dt; o.sprung = (o.sprung || 0) + dt * 0.02;
+      s.gegner.forEach(function (g) { if (g.lebendig && g.seite === o.seite && Math.abs(g.t - o.t) < 0.06) erledigen(g); });
+      if (o.t <= 0) {
+        o.fertig = true;
+        if (o.typ === 'vespa' || o.typ === 'porsche') { var p = weg(o.seite, 0.02); explosion(p.x, p.y - 3, 0.05, false); }
+      }
+    });
+    if ((!aktiv && t0 > 3500) || t0 > 12000) spezialEnde();
+  }
+  function spezialEnde() {
+    s.lazarett.push(s.spezial.name); s.graeber.push({ name: s.spezial.name, wie: 'FÜR DIE HÜTTE', welle: s.welle });
+    // Was noch direkt vor der Hütte steht, hat die Attacke auch mitgenommen.
+    s.gegner.forEach(function (g) { if (g.lebendig && g.t > 0.5) erledigen(g); });
+    s.gegner = s.gegner.filter(function (g) { return g.lebendig; });
+    s.punkte += s.spezial.erledigt * 50;
+    s.huette = LEBEN; s.riese = null; s.wackeln = 0; s.letzteWelle = zeit;
+    melden(s.spezial.name + ' FIEL FÜR DIE HÜTTE – ' + s.spezial.erledigt + ' MITGENOMMEN!', COL.feuer);
+    melden(s.kumpels.length + (s.kumpel ? 1 : 0) + ' KUMPELS SIND NOCH DA.', COL.blau);
+    s.opfer = null; s.spezial = null;
+    setzeModus('spiel');
+  }
+  // Ein gelber Comic-Stern mit schwarzem Rand und Spruch – ploppt auf
+  function comicStern(px, py, wort, gr, alter) {
+    var pop = alter < 160 ? alter / 160 * 1.25 : alter < 260 ? 1.25 - (alter - 160) / 100 * .25 : 1;
+    var r = gr * 2.2 * pop, n = 12;
+    x.save(); x.translate(px, py); x.rotate(-0.08);
+    x.beginPath();
+    for (var i = 0; i < n * 2; i++) { var w = i / (n * 2) * Math.PI * 2, rr = i % 2 ? r * .62 : r; x.lineTo(Math.cos(w) * rr * Math.max(1.3, wort.length * .17), Math.sin(w) * rr); }
+    x.closePath(); x.fillStyle = '#ffe23a'; x.fill(); x.lineWidth = 1.5; x.strokeStyle = '#111'; x.stroke();
+    x.font = 'bold ' + Math.max(6, Math.round(gr * pop)) + 'px monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillStyle = '#111'; x.fillText(wort, 1, 1); x.fillStyle = '#e2283a'; x.fillText(wort, 0, 0);
+    x.restore(); x.lineWidth = 1;
+  }
+  // Wer wirft, steht selbst neben der Hütte und holt aus
+  function werferMalen(art, t0) {
+    var bild = art === 'doc' ? 'zange' : art === 'sterne' ? 'stern' : art;
+    var arm = Math.sin(t0 / 110), px = 112, py = 236, r = Math.round;
+    person(figur(px, py, 1.05), art === 'doc' ? COL.hell : art === 'sterne' ? '#222831' : art === 'rohrzange' ? '#3a5a8a' : COL.blau, '#e8c9a0', 0);
+    var hx = r(px + 6 + arm * 3), hy = r(py - 32 - Math.abs(arm) * 6);
+    x.fillStyle = art === 'doc' ? COL.hell : art === 'sterne' ? '#222831' : COL.blau; x.fillRect(r(px + 4), hy + 2, 3, r(py - 24 - hy));   // erhobener Arm
+    x.save(); x.translate(hx, hy); x.scale(1.6, 1.6);
+    if (bild === 'weizen') { x.fillStyle = '#e8a23a'; x.fillRect(-2, -4, 4, 8); x.fillRect(-3, -2, 6, 4); x.fillStyle = COL.hell; x.fillRect(-3, -6, 6, 2); }
+    else if (bild === 'wurst') { x.fillStyle = '#9a5a2c'; x.fillRect(-5, -1, 10, 3); x.fillStyle = '#5a3018'; x.fillRect(-2, -1, 1, 3); x.fillRect(1, -1, 1, 3); }
+    else if (bild === 'rohrzange') { x.fillStyle = '#c8302a'; x.fillRect(-1, 0, 2, 7); x.fillStyle = COL.stahl; x.fillRect(-2, -5, 4, 5); x.fillStyle = COL.nacht; x.fillRect(-1, -4, 2, 2); }
+    else if (bild === 'zange') { x.fillStyle = COL.stahl; x.fillRect(-1, -5, 1, 9); x.fillRect(1, -5, 1, 9); x.fillRect(-2, -6, 5, 2); }
+    else { x.fillStyle = COL.stahl; x.fillRect(-4, -1, 8, 2); x.fillRect(-1, -4, 2, 8); }
+    x.restore();
+    if (art === 'doc') { x.fillStyle = COL.hell; x.fillRect(px - 4, py - 30, 8, 2); x.fillStyle = '#9fd0ff'; x.fillRect(px - 2, py - 31, 4, 1); }   // Stirnspiegel des Zahnarzts
+    if (art === 'sterne') { x.fillStyle = '#222831'; x.fillRect(px - 4, py - 30, 8, 3); }                                                        // Ninja-Maske
+  }
+
+  function spezialMalen() {
+    var sp = s.spezial, t0 = zeit - sp.start;
+    sp.obj.forEach(function (o) {
+      if (o.typ === 'geist') {
+        if (!o.fertig && o.ziel.lebendig && o.ab - t0 > 0 && o.ab - t0 < 420) {
+          var kg = koerper(o.ziel); x.globalAlpha = .18 + Math.random() * .1; x.fillStyle = '#e8f4ff';
+          x.beginPath(); x.arc(kg.p.x + 2, (kg.o + kg.u) / 2, (kg.u - kg.o) * .5, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1;
+        }
+        return;
+      }
+      if (t0 < o.ab || o.fertig) return;
+      if (o.typ === 'stern') {
+        x.save(); x.translate(o.x, o.y); x.rotate(o.dreh || 0);
+        if (o.bild === 'rohrzange') { x.fillStyle = '#c8302a'; x.fillRect(-1, 0, 2, 7); x.fillStyle = COL.stahl; x.fillRect(-2, -5, 4, 5); x.fillStyle = COL.nacht; x.fillRect(-1, -4, 2, 2); }
+        else if (o.bild === 'skalpell') { x.fillStyle = COL.stahl; x.fillRect(-1, -6, 2, 7); x.fillStyle = COL.hell; x.fillRect(-1, -6, 1, 4); x.fillStyle = '#3a6b8a'; x.fillRect(-1, 1, 2, 4); }
+        else if (o.bild === 'zange') { x.fillStyle = COL.stahl; x.fillRect(-2, -5, 1, 10); x.fillRect(1, -5, 1, 10); x.fillRect(-2, -6, 4, 2); x.fillStyle = COL.rot; x.fillRect(-2, 3, 1, 3); x.fillRect(1, 3, 1, 3); }
+        else if (o.bild === 'weizen') {                                    // Weizenglas: hoch, bauchig, mit Schaumkrone
+          x.fillStyle = '#e8a23a'; x.fillRect(-2, -4, 4, 8); x.fillRect(-3, -2, 6, 4);
+          x.fillStyle = COL.hell; x.fillRect(-3, -6, 6, 2);
+        } else if (o.bild === 'wurst') {                              // Bratwurst mit Grillstreifen
+          x.fillStyle = '#9a5a2c'; x.fillRect(-5, -1, 10, 3); x.fillRect(-4, -2, 8, 1);
+          x.fillStyle = '#5a3018'; x.fillRect(-2, -1, 1, 3); x.fillRect(1, -1, 1, 3);
+        } else {
+          x.fillStyle = COL.stahl; x.fillRect(-4, -1, 8, 2); x.fillRect(-1, -4, 2, 8); x.fillStyle = COL.hell; x.fillRect(-1, -1, 2, 2);
+        }
+        x.restore(); return;
+      }
+      if (o.typ === 'wirbel') {
+        var a = (t0 - o.ab) / o.dauer, cx = 160, cy = 215 - a * 90, r = 14 + a * 10;
+        x.strokeStyle = COL.feuer; x.lineWidth = 2;
+        for (var w = 0; w < 3; w++) { x.beginPath(); x.arc(cx, cy, r - w * 4, zeit / 60 + w, zeit / 60 + w + 4); x.stroke(); }
+        x.lineWidth = 1; person(figur(cx, cy + 6, .7), COL.blau, COL.hell, zeit / 40); return;
+      }
+      var tt = Math.max(0.02, o.t), p = weg(o.seite, tt), gr = 2 + tt * 5, px = p.x + (o.versatz || 0) * gr * 6, py = p.y, r2 = Math.round;
+      if (o.typ === 'vespa') {
+        x.fillStyle = COL.rot; x.fillRect(r2(px - gr * 1.6), r2(py - gr * 1.6), r2(gr * 3.2), r2(gr * 1.2));
+        x.fillStyle = COL.nacht; x.fillRect(r2(px - gr * 1.6), r2(py - gr * .5), r2(gr), r2(gr * .5)); x.fillRect(r2(px + gr * .6), r2(py - gr * .5), r2(gr), r2(gr * .5));
+        person(figur(px, py - gr * 1.4, tt * .8), COL.blau, COL.hell, zeit / 50);
+        x.fillStyle = COL.grau; x.fillRect(r2(px - gr * 2.4), r2(py - gr), 2, 2);                       // Auspuffwölkchen
+      } else if (o.typ === 'porsche') {
+        x.fillStyle = '#d8c27a'; x.fillRect(r2(px - gr * 2.4), r2(py - gr * 1.4), r2(gr * 4.8), r2(gr * 1.1));
+        x.fillStyle = '#9fd0ff'; x.fillRect(r2(px - gr * 1.2), r2(py - gr * 2), r2(gr * 2.2), r2(gr * .7));
+        x.fillStyle = COL.nacht; x.fillRect(r2(px - gr * 2), r2(py - gr * .5), r2(gr), r2(gr * .5)); x.fillRect(r2(px + gr), r2(py - gr * .5), r2(gr), r2(gr * .5));
+        if (Math.floor(zeit / 150) % 2) text('TÜT!', px, py - gr * 3, 7, COL.feuer);
+      } else if (o.typ === 'kinder' || o.typ === 'zwerge') {
+        var k = figur(px, py - Math.abs(Math.sin(o.sprung)) * gr * .6, tt * .55);
+        person(k, o.typ === 'zwerge' ? '#2e6b3a' : o.farbe, '#e8c9a0', o.sprung * 2);
+        if (o.typ === 'zwerge') {
+          x.fillStyle = COL.rot; x.beginPath(); x.moveTo(k.p.x - k.gr, k.o); x.lineTo(k.p.x + k.gr, k.o); x.lineTo(k.p.x, k.o - k.gr * 1.6); x.fill();   // Zipfelmütze
+          x.fillStyle = COL.hell; x.fillRect(r2(k.p.x - k.gr * .5), r2(k.o + k.gr), r2(k.gr), Math.max(1, r2(k.gr * .6)));                                   // Bart
+        }
+      } else if (o.typ === 'kaninchen') {
+        var hy = py - Math.abs(Math.sin(o.sprung * 1.5)) * gr * 1.2, kg = gr * .8;
+        x.fillStyle = o.farbe === '#9cc58a' || o.farbe === '#5fb4ff' ? '#a77b52' : COL.hell;
+        x.fillRect(r2(px - kg), r2(hy - kg * 1.2), r2(kg * 2), r2(kg * 1.2));                             // Körper
+        x.fillRect(r2(px + kg * .4), r2(hy - kg * 2), r2(kg), r2(kg));                                   // Kopf
+        x.fillRect(r2(px + kg * .5), r2(hy - kg * 3), 1, r2(kg)); x.fillRect(r2(px + kg * 1.1), r2(hy - kg * 3), 1, r2(kg));   // Ohren
+        x.fillStyle = COL.hell; x.fillRect(r2(px - kg * 1.2), r2(hy - kg), 2, 2);                         // Puschel
+      } else if (o.typ === 'feuerball') {
+        x.fillStyle = '#5fb4ff'; x.beginPath(); x.arc(px, py - gr * 2, gr * 1.6, 0, Math.PI * 2); x.fill();
+        x.fillStyle = COL.hell; x.beginPath(); x.arc(px, py - gr * 2, gr * .8, 0, Math.PI * 2); x.fill();
+        for (var sp2 = 1; sp2 < 4; sp2++) { var q = weg(o.seite, Math.min(1, tt + sp2 * 0.03)); x.globalAlpha = .5 / sp2; x.fillStyle = '#5fb4ff'; x.fillRect(r2(q.x - 2), r2(q.y - gr * 2), 4, 3); }
+        x.globalAlpha = 1;
+      } else if (o.typ === 'polizei') {
+        // Streifenwagen mit dem Bullen drin – Blaulicht im Wechsel
+        x.fillStyle = COL.hell; x.fillRect(r2(px - gr * 2.6), r2(py - gr * 1.5), r2(gr * 5.2), r2(gr * 1.2));
+        x.fillStyle = '#1f5fa8'; x.fillRect(r2(px - gr * 2.6), r2(py - gr * 1.0), r2(gr * 5.2), Math.max(1, r2(gr * .35)));
+        x.fillStyle = COL.hell; x.fillRect(r2(px - gr * 1.4), r2(py - gr * 2.3), r2(gr * 2.6), r2(gr * .8));
+        x.fillStyle = '#9fd0ff'; x.fillRect(r2(px - gr * 1.2), r2(py - gr * 2.1), r2(gr * 2.2), Math.max(1, r2(gr * .5)));
+        x.fillStyle = '#e8c9a0'; x.fillRect(r2(px - gr * .3), r2(py - gr * 2.05), Math.max(1, r2(gr * .5)), Math.max(1, r2(gr * .45)));   // der Bulle am Steuer
+        var blau = Math.floor(zeit / 120) % 2;
+        x.fillStyle = blau ? '#3aa0ff' : '#0c2a6a'; x.fillRect(r2(px - gr * .7), r2(py - gr * 2.7), Math.max(1, r2(gr * .6)), Math.max(1, r2(gr * .4)));
+        x.fillStyle = blau ? '#0c2a6a' : '#3aa0ff'; x.fillRect(r2(px + gr * .1), r2(py - gr * 2.7), Math.max(1, r2(gr * .6)), Math.max(1, r2(gr * .4)));
+        if (blau) { x.globalAlpha = .25; x.fillStyle = '#3aa0ff'; x.beginPath(); x.arc(px, py - gr * 2.6, gr * 2.5, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1; }
+        x.fillStyle = COL.nacht; x.fillRect(r2(px - gr * 2.2), r2(py - gr * .5), r2(gr), r2(gr * .5)); x.fillRect(r2(px + gr * 1.2), r2(py - gr * .5), r2(gr), r2(gr * .5));
+        text('POLIZEI', px, py - gr * .2, Math.max(5, r2(gr * .9)), '#1f5fa8');
+      } else if (o.typ === 'stier') {
+        x.fillStyle = '#6b3f22'; x.fillRect(r2(px - gr * 2), r2(py - gr * 2.2), r2(gr * 4), r2(gr * 1.6));
+        x.fillRect(r2(px + gr * 1.4), r2(py - gr * 2.8), r2(gr * 1.4), r2(gr * 1.2));
+        x.fillStyle = COL.hell; x.fillRect(r2(px + gr * 1.3), r2(py - gr * 3.3), 1, r2(gr * .6)); x.fillRect(r2(px + gr * 2.7), r2(py - gr * 3.3), 1, r2(gr * .6));   // Hörner
+        x.fillStyle = '#3a2418'; for (var b = 0; b < 4; b++) x.fillRect(r2(px - gr * 1.8 + b * gr), r2(py - gr * .6), 1, r2(gr * .6));
+        if (Math.random() < .5) s.funken.push({ x: px - gr * 2, y: py, dx: (Math.random() - .5), dy: -Math.random(), leben: 14, farbe: COL.weg });   // Staub
+      } else if (o.typ === 'tritt') {
+        // waagerecht fliegender Kämpfer, Bein voraus
+        x.fillStyle = COL.hell; x.fillRect(r2(px - gr * 2), r2(py - gr * 3), r2(gr * 3), r2(gr));        // Körper im Gi
+        x.fillRect(r2(px + gr), r2(py - gr * 4), r2(gr * 2), r2(gr * .6));                               // ausgestrecktes Bein
+        x.fillStyle = COL.nacht; x.fillRect(r2(px - gr * .5), r2(py - gr * 3), r2(gr * .4), r2(gr));     // Gürtel
+        x.fillStyle = '#e8c9a0'; x.fillRect(r2(px - gr * 3), r2(py - gr * 3.2), r2(gr), r2(gr));          // Kopf
+        x.fillStyle = COL.rot; x.fillRect(r2(px - gr * 3.6), r2(py - gr * 3), r2(gr * .6), 1);            // Stirnband flattert
+      }
+    });
+    if (['weizen', 'wurst', 'sterne', 'doc', 'rohrzange'].indexOf(sp.art) >= 0 && t0 < 9000) werferMalen(sp.art, t0);
+    sp.blasen = sp.blasen.filter(function (b) { return zeit - b.start < 1100; });
+    sp.blasen.forEach(function (b) { comicStern(b.x, b.y, b.t, b.gr, zeit - b.start); });
+    var cs = (Math.floor(t0 / 2400) % 2) ? 1 : 0;                       // der grosse Spruch ploppt immer wieder auf, mal links, mal rechts
+    var spruch = typeof sp.comic === 'string' ? sp.comic : sp.comic[Math.floor(t0 / 2400) % sp.comic.length];
+    comicStern(cs ? 238 : 84, 112 + Math.sin(t0 / 300) * 3, spruch, 9, t0 % 2400);
+    // Name und Ruf wie bei Street Fighter
+    var puls = 1 + Math.max(0, 1 - t0 / 500) * .6;
+    x.save(); x.translate(160, 58); x.scale(puls, puls);
+    x.fillStyle = 'rgba(11,16,32,.75)'; x.fillRect(-120, -18, 240, 36);
+    text(sp.name, 0, -7, 10, COL.blau); text(sp.ruf, 0, 8, 13, COL.feuer);
+    x.restore();
+  }
+
+  // ---------- Eingabe ----------
+  var tasten = {}, vorher = {};
+  window.addEventListener('keydown', function (e) {
+    if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].indexOf(e.key) >= 0) e.preventDefault();
+    tasten[e.key] = true;
+    if (modus === 'name' && /^[a-zA-Z0-9]$/.test(e.key)) { name[namePos] = ABC.indexOf(e.key.toUpperCase()); nameWeiter(); }
+  });
+  window.addEventListener('keyup', function (e) { tasten[e.key] = false; });
+  // Maus und Touch: zielen wo der Zeiger ist, Klick/Tippen = Feuer bzw. OK
+  var maus = { aktiv: false, x: 160, y: 140, klick: null, rechts: false };
+  function aufLeinwand(cx, cy) { var r = c.getBoundingClientRect(); return { x: (cx - r.left) / r.width * W, y: (cy - r.top) / r.height * H }; }
+  c.addEventListener('mousemove', function (e) { var p = aufLeinwand(e.clientX, e.clientY); maus.x = p.x; maus.y = p.y; maus.aktiv = true; });
+  c.addEventListener('mousedown', function (e) { var p = aufLeinwand(e.clientX, e.clientY); maus.x = p.x; maus.y = p.y; maus.aktiv = true; if (e.button === 2) maus.rechts = true; else maus.klick = p; e.preventDefault(); });
+  c.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  c.addEventListener('touchstart', function (e) { var tt = e.changedTouches[0], p = aufLeinwand(tt.clientX, tt.clientY); maus.x = p.x; maus.y = p.y; maus.aktiv = true; maus.klick = p; e.preventDefault(); }, { passive: false });
+  c.addEventListener('touchmove', function (e) { var tt = e.changedTouches[0], p = aufLeinwand(tt.clientX, tt.clientY); maus.x = p.x; maus.y = p.y; e.preventDefault(); }, { passive: false });
+
+  function lesen() {
+    var e = { l: !!tasten.ArrowLeft, r: !!tasten.ArrowRight, o: !!tasten.ArrowUp, u: !!tasten.ArrowDown,
+              a: !!tasten[' '] || !!tasten.Enter, b: !!tasten.r || !!tasten.R, ax: 0, ay: 0 };
+    var pads = [], pad = null;
+    try { pads = navigator.getGamepads ? navigator.getGamepads() : []; } catch (err) { pads = []; }   // in eingebetteten Seiten kann der Joystick gesperrt sein
+    for (var i = 0; i < pads.length; i++) if (pads[i]) { pad = pads[i]; break; }
+    if (pad) {
+      var ax = pad.axes[0] || 0, ay = pad.axes[1] || 0;
+      if (Math.abs(ax) > 0.25) e.ax = ax; if (Math.abs(ay) > 0.25) e.ay = ay;
+      if (ax < -0.5) e.l = true; if (ax > 0.5) e.r = true; if (ay < -0.5) e.o = true; if (ay > 0.5) e.u = true;
+      if (pad.buttons[0] && pad.buttons[0].pressed) e.a = true;
+      if (pad.buttons[1] && pad.buttons[1].pressed) e.b = true;
+    }
+    if (e.l) e.ax = -1; if (e.r) e.ax = 1; if (e.o) e.ay = -1; if (e.u) e.ay = 1;
+    var neu = {}; ['l','r','o','u','a','b'].forEach(function (k) { neu[k] = e[k] && !vorher[k]; vorher[k] = e[k]; });
+    e.neu = neu;
+    e.klick = maus.klick; maus.klick = null;
+    if (e.klick && modus !== 'name' && modus !== 'ende') e.neu.a = true;      // Klick = Feuer/OK
+    if (maus.rechts) { e.neu.b = true; maus.rechts = false; }                  // Rechtsklick = nachladen
+    e.maus = maus.aktiv;
+    return e;
+  }
+  function nameWeiter() { namePos++; if (namePos > 2) { namePos = 0; setzeModus('intro'); } }
+
+  // ---------- Ablauf ----------
+  function schritt(dt, e) {
+    if (modus === 'titel') { if (e.neu.a) setzeModus('name'); return; }
+    if (modus === 'name') {
+      if (e.neu.o) name[namePos] = (name[namePos] + 1) % ABC.length;
+      if (e.neu.u) name[namePos] = (name[namePos] + ABC.length - 1) % ABC.length;
+      if (e.neu.l && namePos > 0) namePos--;
+      if (e.neu.r || e.neu.a) nameWeiter();
+      if (e.klick) {
+        var spalte = Math.round((e.klick.x - 130) / 30);
+        if (spalte >= 0 && spalte <= 2) namePos = spalte;
+        if (e.klick.y < 106) name[namePos] = (name[namePos] + 1) % ABC.length;
+        else if (e.klick.y > 126) name[namePos] = (name[namePos] + ABC.length - 1) % ABC.length;
+        else nameWeiter();
+      }
+      return;
+    }
+    if (modus === 'morgen') {
+      if (e.neu.a && zeit - modusSeit > MORGEN.knopf) naechsteWelle();
+      return;
+    }
+    if (modus === 'intro') {
+      var ti = zeit - modusSeit;
+      if (e.neu.a && ti < INTRO.zaehlen) modusSeit = zeit - INTRO.zaehlen;   // überspringen: gleich zum Countdown
+      if (ti > INTRO.los) neuesSpiel();
+      return;
+    }
+    if (modus === 'klo') {
+      if (((e.neu.a || e.klick) && zeit - modusSeit > 1500) || zeit - modusSeit > 7000) setzeModus('welle');
+      return;
+    }
+    if (modus === 'friedhof') {
+      var dauer = 1200 + s.graeber.length * 350;
+      if (((e.neu.a || e.klick) && zeit - modusSeit > 1500) || zeit - modusSeit > dauer + 7000) setzeModus('ende');
+      return;
+    }
+    if (modus === 'ende') {
+      if (e.neu.o || e.neu.u || e.neu.l || e.neu.r) endeWahl = 1 - endeWahl;
+      if (e.klick && zeit - modusSeit > 600 && e.klick.y > 188) { endeWahl = e.klick.y < 203 ? 0 : 1; e.neu.a = true; }
+      if (e.neu.a && zeit - modusSeit > 600) { if (endeWahl === 0) neuesSpiel(); else setzeModus('titel'); }
+      return;
+    }
+    effekte();
+    if (modus === 'spezial') { spezialSchritt(dt); return; }
+    if (modus === 'ueberrannt') {
+      s.riese.t = Math.min(1, (zeit - modusSeit) / 1600);
+      if (s.opfer && zeit - modusSeit > 1900) { spezialStarten(s.opfer); return; }
+      if (false) {
+        // Der Kumpel hat sich dazwischengeworfen: er fällt, die Hütte hält, weiter geht's.
+        s.lazarett.push(s.opfer);
+        s.gegner.forEach(function (g) {
+          if (g.t > 0.5) { var k = koerper(g); leicheAblegen(k.p.x, k.u, k.gr, g.art === 'sprinter' ? COL.rot : COL.hell, g.art === 'sprinter' ? COL.hell : COL.rosa, g.art); g.lebendig = false; }
+        });
+        s.gegner = s.gegner.filter(function (g) { return g.lebendig; });
+        s.huette = LEBEN; s.riese = null; s.wackeln = 0;
+        melden(s.opfer + ' FIEL FÜR DIE HÜTTE.', COL.rot);
+        melden(s.kumpels.length + (s.kumpel ? 1 : 0) + ' KUMPELS SIND NOCH DA.', COL.blau);
+        s.opfer = null; s.letzteWelle = zeit;
+        setzeModus('spiel');
+        return;
+      }
+      if (!s.opfer && zeit - modusSeit > 2600) { platz = eintragen(name.map(function (i) { return ABC[i]; }).join(''), s.punkte); endeWahl = 0; setzeModus(s.graeber.length ? 'friedhof' : 'ende'); }
+      return;
+    }
+    var tempo = 0.11 * dt;
+    if (e.maus && !e.ax && !e.ay) { s.ziel.x = maus.x; s.ziel.y = maus.y; }
+    else { s.ziel.x += e.ax * tempo; s.ziel.y += e.ay * tempo; if (e.ax || e.ay) maus.aktiv = false; }
+    s.ziel.x = Math.max(6, Math.min(W - 6, s.ziel.x));
+    s.ziel.y = Math.max(78, Math.min(200, s.ziel.y));
+    if (modus === 'welle') {
+      if (zeit - modusSeit > 2800) { setzeModus('spiel'); s.letzteWelle = zeit; s.naechsterWanderer = zeit + 2500; s.missionErgebnis = null; if (s.mission) s.kumpelStart = zeit + 1500; }
+      return;
+    }
+
+    if (e.neu.a) feuern();
+    if (e.neu.b) nachladen();
+
+    // Angreifer schicken
+    if (s.zuSpawnen > 0 && zeit - s.letzteWelle > s.welleMs) { gegnerSchicken(); s.letzteWelle = zeit; }
+    // Spaziergänger ab Welle 2
+    if (s.welle >= 2 && zeit > s.naechsterWanderer && s.zuSpawnen > 0) { wandererSchicken(); s.naechsterWanderer = zeit + 5000 + Math.random() * 4000; }
+    // Ab und zu läuft ein Dackel quer übers Feld
+    if (!s.dackel && s.welle >= 2 && s.zuSpawnen > 0 && zeit > s.naechsterDackel) {
+      if (s.naechsterDackel) { var vl = Math.random() < .5; s.dackel = { x: vl ? -14 : W + 14, y: 178 + Math.random() * 36, dx: (vl ? 1 : -1) * 0.035, schritt: 0, flucht: false, seit: zeit }; }
+      s.naechsterDackel = zeit + 18000 + Math.random() * 20000;
+    }
+    // Kumpel losschicken
+    if (s.mission && !s.kumpel && s.kumpelStart && zeit > s.kumpelStart && !s.missionErgebnis && s.kumpels.length) {
+      s.kumpel = { name: s.kumpels.shift(), seite: Math.random() < .5 ? 0 : 1, t: 1, phase: 'hin', wartenBis: 0, schritt: 0, faeuste: KUMPEL_FAEUSTE, blitz: 0, ruheBis: 0 }; s.kumpelStart = 0;
+      melden(s.kumpel.name + ': ' + (spanier(s.kumpel.name) ? spruch('spanisch') : spruch('start', true)) + ' ' + s.mission.auftrag + '!', COL.blau);
+    }
+
+    // Angreifer bewegen
+    s.gegner.forEach(function (g) {
+      if (!g.lebendig) return;
+      g.t += g.tempo * dt; if (g.blitz) g.blitz--; g.schritt += dt * (g.art === 'sprinter' ? 0.034 : 0.017);
+      if (g.t > 1) {
+        g.lebendig = false; s.huette -= g.art === 'fahrzeug' ? 2 : 1; s.wackeln = 10;
+        if (s.huette <= 0) {
+          s.huette = 0; s.riese = { seite: g.seite, art: g.art, t: 0 }; s.opfer = null;
+          if (s.kumpels.length) s.opfer = s.kumpels.splice(Math.floor(Math.random() * s.kumpels.length), 1)[0];
+          else if (s.kumpel) { s.opfer = s.kumpel.name; s.kumpel = null; if (s.mission) s.missionErgebnis = 'weg'; }
+          setzeModus('ueberrannt');
+        }
+      }
+    });
+    s.gegner = s.gegner.filter(function (g) { return g.lebendig; });
+    if (modus !== 'spiel') return;
+
+    // Kumpel bewegen
+    var k = s.kumpel;
+    if (k) {
+      if (k.phase !== 'warten') k.schritt += dt * 0.02;
+      if (k.phase === 'hin') { k.t -= 0.00011 * dt; if (k.t <= 0) { k.t = 0; k.phase = 'warten'; k.wartenBis = zeit + 1200; } }
+      else if (k.phase === 'warten') { if (zeit > k.wartenBis) k.phase = 'zurueck'; }
+      else { k.t += 0.0001 * dt; if (k.t >= 1) {
+        s.punkte += 1000; s.vorrat.push(s.mission.id); s.missionErgebnis = 'geschafft'; s.kumpels.push(k.name); s.kumpel = null;
+        melden(k.name + ' BRINGT ' + s.mission.wer + '! +1000', COL.blau); melden(spanier(k.name) ? spruch('spanischLob') : spruch('lob', true), COL.feuer);
+      } }
+      // Ein Angreifer auf demselben Weg, auf gleicher Höhe? Dann ist der Kumpel dran.
+      if (s.kumpel && k.phase !== 'warten') {
+        for (var i = 0; i < s.gegner.length; i++) {
+          var g = s.gegner[i];
+          if (!g.lebendig || g.seite !== k.seite || Math.abs(g.t - k.t) >= 0.025 || zeit < k.ruheBis) continue;
+          if (g.art === 'fahrzeug') { missionScheitert('ueberrollt'); break; }
+          if (k.faeuste > 0) {
+            // Der Kumpel haut ihn um – der Angreifer bleibt liegen.
+            k.faeuste--; k.blitz = 10; k.ruheBis = zeit + 500;
+            g.lebendig = false;
+            var kg = koerper(g); funken(kg.p.x, kg.p.y - kg.gr, 10, COL.blau, 2.2);
+            leicheAblegen(kg.p.x, kg.u, kg.gr, g.art === 'sprinter' ? COL.rot : COL.hell, g.art === 'sprinter' ? COL.hell : COL.rosa, g.art);
+            s.punkte += 50;
+            melden(k.faeuste > 0 ? k.name + ': YOK ARTIK! (noch ' + k.faeuste + ')' : k.name + ' IST AM ENDE – HILF IHM!', k.faeuste > 0 ? COL.blau : COL.rot);
+          } else { missionScheitert('ueberfallen'); break; }
+        }
+        if (s.kumpel && s.kumpel.blitz) s.kumpel.blitz--;
+      }
+    }
+
+    // Spaziergänger
+    s.leute.forEach(function (m) {
+      m.x += m.dx * dt; m.schritt += dt * 0.012;
+      if (m.gruppe && !m.wuetend && zeit - m.seit > 3500) m.wuetend = true;
+      if (m.wuetend && zeit - m.seit > 4700) {        // aus der Gruppe wird ein Angriff
+        var seite = m.x < 160 ? 0 : 1, t = Math.max(0, Math.min(.6, (m.y - 109) / 139));
+        s.gegner.push({ seite: seite, t: t, lebendig: true, art: 'fuss', leben: 1, blitz: 0, tempo: 0.00006, schritt: m.schritt });
+        m.weg = true;
+      }
+      if (m.x < -20 || m.x > W + 20) m.weg = true;
+    });
+    if (s.leute.some(function (m) { return m.weg && m.wuetend; })) melden('DIE WANDERER GREIFEN AN!', COL.rot);
+    s.leute = s.leute.filter(function (m) { return !m.weg; });
+    if (s.dackel) { var dk = s.dackel; dk.x += dk.dx * dt; dk.schritt += dt * (dk.flucht ? 0.06 : 0.03); if (dk.x < -24 || dk.x > W + 24) s.dackel = null; }
+
+    // Sanitäter: kommen, wenn mehr als zwei liegen
+    if (zeit > s.naechsterSani && s.leichen.filter(function (l) { return !l.abgeholt && l.art !== 'fahrzeug'; }).length > 2) { saniSchicken(); s.naechsterSani = zeit + 2500; }
+    s.sani.forEach(function (m) {
+      m.schritt += dt * 0.02;
+      var tempo = 0.045 * dt;
+      if (m.phase === 'hin') {
+        if (!m.ziel || s.leichen.indexOf(m.ziel) < 0) { m.phase = 'zurueck'; m.ziel = null; }
+        else if (Math.abs(m.x - m.ziel.x) <= tempo) {          // angekommen: aufheben, Fleck bleibt
+          fleckMachen(m.ziel); s.leichen.splice(s.leichen.indexOf(m.ziel), 1);
+          m.traegt = { rumpf: m.ziel.rumpf, kopf: m.ziel.kopf, art: m.ziel.art, variante: m.ziel.variante }; m.ziel = null; m.phase = 'zurueck';
+        } else m.x += (m.ziel.x > m.x ? 1 : -1) * tempo;
+      } else m.x += (m.vonLinks ? -1 : 1) * tempo;
+      if (m.phase === 'zurueck' && (m.x < -14 || m.x > W + 14)) m.weg = true;
+    });
+    s.sani = s.sani.filter(function (m) { return !m.weg; });
+
+    // Kettenreaktionen: ein mitgerissenes Fahrzeug geht kurz danach selbst hoch
+    var faellig = s.ketten.filter(function (k) { return zeit >= k.um; });
+    s.ketten = s.ketten.filter(function (k) { return zeit < k.um; });
+    faellig.forEach(function (k) { leicheAblegen(k.x, k.y + 4, 2 + Math.round(k.t * 6), COL.oliv, COL.oliv, 'fahrzeug'); explosion(k.x, k.y, k.t, true); });
+
+    // Geschosse
+    s.geschosse = s.geschosse.filter(function (b) { if (zeit - b.start >= FLUGZEIT_MS) { einschlag(b.zx, b.zy); return false; } return true; });
+    if (s.nachladenBis && zeit >= s.nachladenBis) { s.munition = MAGAZIN; s.nachladenBis = 0; }
+
+    // Welle vorbei? Erst wenn alle Angreifer weg sind UND die Mission entschieden ist.
+    var missionOffen = s.mission && !s.missionErgebnis;
+    if (s.zuSpawnen === 0 && s.gegner.length === 0 && s.geschosse.length === 0 && s.ketten.length === 0 && !missionOffen) {
+      s.punkte += s.huette * 250;
+      s.leute = []; s.sani = []; s.dackel = null; s.leichen.forEach(function (l) { l.abgeholt = false; });
+      if (s.welle % MORGEN_NACH === 0) {
+        s.naechte++;
+        s.morgenBonus = { vorrat: s.vorrat.length * 500, kumpels: s.kumpels.length * 300 };
+        s.punkte += s.morgenBonus.vorrat + s.morgenBonus.kumpels;
+        setzeModus('morgen');
+      } else naechsteWelle();
+    }
+  }
+  function effekte() {
+    s.funken.forEach(function (p) { p.x += p.dx; p.y += p.dy; if (!p.rauch) p.dy += 0.05; p.leben--; });
+    s.funken = s.funken.filter(function (p) { return p.leben > 0; });
+    s.krater.forEach(function (k) { k.leben--; }); s.krater = s.krater.filter(function (k) { return k.leben > 0; });
+    s.meldungen = s.meldungen.filter(function (m) { return m.bis > zeit; });
+    // Wer lange liegt und nicht abgeholt wird, versickert zum Fleck; Wracks brennen aus.
+    s.leichen = s.leichen.filter(function (l) {
+      var alt = zeit - l.seit;
+      if (!l.abgeholt && alt > (l.art === 'fahrzeug' ? 15000 : 9000)) { fleckMachen(l); return false; }
+      return true;
+    });
+    s.flecken.forEach(function (f) { f.leben -= 0.00045; });
+    s.flecken = s.flecken.filter(function (f) { return f.leben > 0; });
+    s.leichen.forEach(function (l) { if (l.art !== 'fahrzeug' && zeit - l.seit < 4000 && Math.random() < 0.03) s.funken.push({ x: l.x, y: l.y - l.hoehe - l.gr, dx: (Math.random() - .5) * .2, dy: -.25, leben: 45, farbe: '#a8d89a', rauch: true, gross: 1 }); });
+    s.leichen.forEach(function (l) { if (l.rauch > zeit && Math.random() < 0.08) s.funken.push({ x: l.x + (Math.random() - .5) * l.gr, y: l.y - l.hoehe - l.gr, dx: (Math.random() - .5) * .3, dy: -.35, leben: 40, farbe: COL.grau, rauch: true }); });
+    if (s.muendung > 0) s.muendung--; if (s.wackeln > 0) s.wackeln--;
+    s.dunst = Math.max(0, s.dunst - .0006);
+  }
+
+  // ---------- Intro: die Story in einer kleinen Szene ----------
+  var INTRO = { gehen: 7000, rein: 9000, dorf: 10500, zaehlen: 15000, los: 18000 };
+  var INTRO_TEXTE = [
+    { ab: 400,   t: 'FREITAGABEND IN URPHAR.' },
+    { ab: 2600,  t: 'DIE JUNGS ZIEHEN MIT DEM BOLLERWAGEN ZUR HÜTTE AM SUMPF.' },
+    { ab: 7200,  t: 'BIER, MUSIK, GRILLZEUG – DIE PARTY KANN STEIGEN.' },
+    { ab: 10500, t: 'DOCH IM DORF HAT JEMAND WAS DAGEGEN …' },
+    { ab: 13000, t: 'VERTEIDIGE DIE HÜTTE!' }
+  ];
+  var JUNGS = [ { hemd: COL.blau, verzug: 0 }, { hemd: COL.rot, verzug: 260 }, { hemd: COL.feuer, verzug: 520, zieht: true }, { hemd: COL.wanderer, verzug: 1400 } ];
+  var TUER_X = 262, BODEN_Y = 196;
+  var HG_INTRO = null;
+
+  function introHintergrund() {
+    var hc = document.createElement('canvas'); hc.width = W; hc.height = H;
+    var g = hc.getContext('2d'), r = zufall(1983);
+    function rect(px, py, b, h, f) { g.fillStyle = f; g.fillRect(Math.round(px), Math.round(py), Math.round(b), Math.round(h)); }
+    var band = ['#0b1020', '#0e1527', '#111a2f', '#152038', '#1a2742', '#202f4d', '#273859', '#2d4063'];
+    for (var i = 0; i < band.length; i++) rect(0, i * 18, W, 18, band[i]);
+    for (var st = 0; st < 60; st++) rect(r() * W, r() * 110, 1, 1, r() < .2 ? '#fff6d8' : '#9fb0d0');
+    g.fillStyle = '#f3ecd2'; g.beginPath(); g.arc(60, 34, 8, 0, Math.PI * 2); g.fill();
+    // Ferne Hügel des Spessart, dahinter der Main, ganz klein Urphar mit Kirchturm
+    rect(0, 140, W, 60, '#273859');
+    g.fillStyle = '#18242f'; g.beginPath(); g.moveTo(0, 200);
+    for (var fx = 0; fx <= W; fx += 2) g.lineTo(fx, 150 - Math.sin(fx / 40) * 6 - Math.sin(fx / 13) * 2);
+    g.lineTo(W, 200); g.fill();
+    rect(0, 168, W, 5, '#1b3456'); for (var wl = 0; wl < 25; wl++) rect(r() * W, 169 + r() * 3, 3 + r() * 5, 1, '#2a4a78');
+    g.fillStyle = '#1c2e28'; g.beginPath(); g.moveTo(0, 200);
+    for (var fx2 = 0; fx2 <= W; fx2 += 2) g.lineTo(fx2, 175 - Math.sin(fx2 / 31 + 2) * 4 - r() * 2);
+    g.lineTo(W, 200); g.fill();
+    rect(118, 156, 3, 10, '#3a4a5a'); g.fillStyle = '#3a4a5a'; g.beginPath(); g.moveTo(117, 156); g.lineTo(122, 156); g.lineTo(119.5, 150); g.fill();   // Kirchturm in der Ferne
+    for (var dh = 0; dh < 6; dh++) { rect(96 + dh * 9, 163, 6, 4, '#2c3a46'); if (r() < .6) rect(98 + dh * 9, 164, 1, 1, '#ffd25a'); }   // Dorf mit Lichtern
+    // Hügel rechts mit der Hütte
+    g.fillStyle = '#1a2d22'; g.beginPath(); g.moveTo(0, BODEN_Y); g.lineTo(200, BODEN_Y); g.quadraticCurveTo(250, 150, 320, 152); g.lineTo(320, H); g.lineTo(0, H); g.fill();
+    rect(0, BODEN_Y, W, H - BODEN_Y, '#1f3424');
+    for (var gr = 0; gr < 300; gr++) rect(r() * W, BODEN_Y + r() * 44, 1, 1 + r() * 2, r() < .5 ? '#2a4630' : '#18291c');
+    // Bäume links
+    for (var b = 0; b < 9; b++) { var bx = 4 + b * 14 + r() * 6, gr2 = 10 + r() * 8;
+      rect(bx - 1, BODEN_Y - gr2 * .5, 3, gr2 * .5, '#3a2a1c');
+      g.fillStyle = b % 2 ? '#1d3a25' : '#163020'; g.beginPath(); g.arc(bx, BODEN_Y - gr2, gr2 * .6, 0, Math.PI * 2); g.fill(); }
+    // Die Hütte am Sumpf
+    var hx = 240, hy = 158;
+    rect(hx, hy - 26, 44, 26, '#6b4a2c');
+    for (var pl = 0; pl < 26; pl += 4) rect(hx, hy - 26 + pl, 44, 1, '#553a22');                     // Bretter
+    g.fillStyle = '#3a2418'; g.beginPath(); g.moveTo(hx - 5, hy - 26); g.lineTo(hx + 22, hy - 42); g.lineTo(hx + 49, hy - 26); g.fill();
+    rect(hx + 32, hy - 44, 5, 10, '#4a2f20');                                                          // Schornstein
+    rect(TUER_X - 4, hy - 14, 9, 14, '#2a1a10');                                                       // Tür
+    rect(hx + 4, hy - 20, 7, 6, '#1a1a1a'); rect(hx + 33, hy - 20, 7, 6, '#1a1a1a');                    // Fenster (noch dunkel)
+    g.fillStyle = '#d8c27a'; g.font = '6px monospace'; g.textAlign = 'center'; g.fillText('HÜTTE', hx + 22, hy - 29);
+    // Hanf rund um die Hütte
+    function hanfI(hx, hy, gr2) {
+      for (var e = 0; e < 3; e++) { var ey = hy - gr2 * (.3 + e * .3), eg = gr2 * (.6 - e * .12);
+        for (var bl = -3; bl <= 3; bl++) { var w2 = -Math.PI / 2 + bl * .42, len = eg * (1 - Math.abs(bl) * .18);
+          g.fillStyle = (bl + e) % 2 ? '#4f9a3f' : '#6fbf55'; g.beginPath(); g.moveTo(hx, ey); g.lineTo(hx + Math.cos(w2 - .1) * len * .5, ey + Math.sin(w2 - .1) * len * .5); g.lineTo(hx + Math.cos(w2) * len, ey + Math.sin(w2) * len); g.lineTo(hx + Math.cos(w2 + .1) * len * .5, ey + Math.sin(w2 + .1) * len * .5); g.fill(); } }
+      g.fillStyle = '#3f7a32'; g.fillRect(hx, hy - gr2, 1, gr2);
+    }
+    [[234, 158, 12], [229, 160, 9], [290, 158, 12], [296, 160, 9], [246, 160, 7], [280, 160, 7]].forEach(function (h2) { hanfI(h2[0], h2[1], h2[2]); });
+    // Weg den Hügel hinauf
+    g.strokeStyle = '#9c8758'; g.lineWidth = 2; g.beginPath(); g.moveTo(200, BODEN_Y + 1); g.quadraticCurveTo(240, 175, TUER_X, hy); g.stroke();
+    return hc;
+  }
+
+  // Wo steht eine Figur auf dem Weg? Bis x=200 eben, dann den Hügel hinauf zur Tür.
+  function introBoden(px) {
+    if (px <= 200) return BODEN_Y;
+    var a = Math.min(1, (px - 200) / (TUER_X - 200));
+    return BODEN_Y - (BODEN_Y - 158) * (a * a * .6 + a * .4);
+  }
+  function seitenMann(px, py, hemd, phase, gr, extra) {
+    var r = Math.round, schritt = Math.sin(phase);
+    x.fillStyle = '#2d3a55'; x.fillRect(r(px - 2 + schritt * 2), r(py - 5 * gr), 2 * gr, 5 * gr); x.fillRect(r(px - schritt * 2), r(py - 5 * gr), 2 * gr, 5 * gr);   // Beine
+    x.fillStyle = hemd; x.fillRect(r(px - 2 * gr), r(py - 11 * gr), 4 * gr, 6 * gr);                 // Hemd
+    x.fillStyle = '#e8c9a0'; x.fillRect(r(px - 1.5 * gr), r(py - 15 * gr), 3 * gr, 4 * gr);          // Kopf
+    if (extra === 'fackel') {
+      x.fillStyle = '#6b4a2c'; x.fillRect(r(px + 2 * gr), r(py - 15 * gr), 1, 8 * gr);
+      x.fillStyle = Math.random() < .5 ? COL.feuer : COL.rot; x.fillRect(r(px + 1 * gr), r(py - 18 * gr), 3, 3 + Math.round(Math.random() * 2));
+    }
+    if (extra === 'gabel') {
+      x.fillStyle = '#9aa0a8'; x.fillRect(r(px + 2 * gr), r(py - 18 * gr), 1, 12 * gr);
+      x.fillRect(r(px + 1 * gr), r(py - 18 * gr), 3, 1); x.fillRect(r(px + 1 * gr), r(py - 20 * gr), 1, 2); x.fillRect(r(px + 3 * gr), r(py - 20 * gr), 1, 2);
+    }
+  }
+  function bollerwagen(px, py) {
+    var r = Math.round;
+    x.fillStyle = '#7d5935'; x.fillRect(r(px - 14), r(py - 9), 16, 6);                                 // Kasten
+    x.fillStyle = COL.feuer; for (var i = 0; i < 4; i++) x.fillRect(r(px - 13 + i * 3), r(py - 12), 2, 3); // Bierflaschen
+    x.fillStyle = COL.stahl; x.fillRect(r(px - 3), r(py - 13), 5, 4);                                   // Musikbox
+    x.fillStyle = COL.nacht; x.fillRect(r(px - 12), r(py - 3), 3, 3); x.fillRect(r(px - 2), r(py - 3), 3, 3);  // Räder
+    x.fillStyle = '#6b4a2c'; x.fillRect(r(px + 2), r(py - 7), 5, 1);                                   // Deichsel
+  }
+
+  function introZeichnen() {
+    if (!HG_INTRO) HG_INTRO = introHintergrund();
+    var t = zeit - modusSeit;
+    x.drawImage(HG_INTRO, 0, 0);
+    // Die Jungs mit dem Bollerwagen
+    var drin = 0;
+    JUNGS.forEach(function (j, i) {
+      var tt = Math.max(0, t - j.verzug), px = -20 + tt * 0.04;
+      if (px >= TUER_X) { drin++; return; }
+      var py = introBoden(px) - Math.abs(Math.sin(tt / 120)) * 2;        // fröhlich hüpfen
+      if (j.zieht) bollerwagen(px - 6, introBoden(px - 6));
+      seitenMann(px, py, j.hemd, tt / 90, 1);
+      if (Math.floor(tt / 500) % 3 === i % 3) { x.fillStyle = COL.hell; x.fillText('♪', px + 4, py - 17); }
+    });
+    if (drin > 0) {                                                         // Licht an, Musik
+      x.fillStyle = COL.feuer; x.fillRect(244, 138, 7, 6); if (drin > 2) x.fillRect(273, 138, 7, 6);
+      x.font = '8px monospace'; x.fillStyle = COL.rosa; x.textAlign = 'center';
+      for (var n = 0; n < drin; n++) x.fillText('♪', 250 + n * 9 + Math.sin(zeit / 300 + n) * 3, 120 - ((zeit / 25 + n * 20) % 30));
+    }
+    // Die Dorfbewohner
+    if (t > INTRO.dorf) {
+      var td = t - INTRO.dorf;
+      for (var d = 0; d < 6; d++) {
+        var px2 = Math.min(150 - d * 18, -30 - d * 14 + td * 0.05);
+        seitenMann(px2, BODEN_Y, d % 2 ? '#6b5a48' : '#4e5a3a', td / 110 + d, 1, d % 2 ? 'gabel' : 'fackel');
+      }
+    }
+    // Texte wie auf der Schreibmaschine
+    x.fillStyle = 'rgba(11,16,32,.85)'; x.fillRect(0, 206, W, 34);
+    var zeilen = INTRO_TEXTE.filter(function (z) { return t >= z.ab; }).slice(-2);
+    zeilen.forEach(function (z, i) {
+      var n = Math.floor((t - z.ab) / 35), txt = z.t.slice(0, n);
+      text(txt + (n < z.t.length && Math.floor(zeit / 200) % 2 ? '_' : ''), 8, 215 + i * 12, 9, i === zeilen.length - 1 ? COL.hell : COL.grau, 'left');
+    });
+    // 3 – 2 – 1 – LOS
+    if (t > INTRO.zaehlen) {
+      var tz = t - INTRO.zaehlen, zahl = 3 - Math.floor(tz / 1000), puls = 1 + (1 - (tz % 1000) / 1000) * .6;
+      x.save(); x.translate(160, 100); x.scale(puls, puls);
+      text(zahl > 0 ? String(zahl) : 'LOS!', 0, 0, zahl > 0 ? 40 : 30, zahl > 0 ? COL.rosa : COL.feuer);
+      x.restore();
+      if (zahl <= 0 && tz % 200 < 100) { x.fillStyle = 'rgba(255,255,255,.25)'; x.fillRect(0, 0, W, H); }
+    }
+    if (t < INTRO.zaehlen && Math.floor(zeit / 600) % 2) text('KNOPF = ÜBERSPRINGEN', 312, 8, 7, COL.grau, 'right');
+  }
+
+  // ---------- Der Morgen: Sonnenaufgang über der Wertheimer Burg (C64, 160x200 Multicolor) ----------
+  var BURG = '2999299929992999292988822929228282298222829882288988aaaa8882882288822299aaa2aaaa77777777777a777aaaaa7777aaaaa8aaaaaaaaaa828888828282822282aa78a88288aaaa828282229999929999999999999922229999988999928828829292929998aaaa899828282828229992929aaa777777a7a7aaaaaaaaa777772a88888a8aaaaaaa8888282992922292088a8a888a8aaaaa922822929929299999228929992929999999928929228222292922222229aaaa8929228822822929292288aa72277777777a7a7a7a77777228aaa8aa82aaaaaa828882292282882282aaaaa8aaaaaaa29922822999999999999299999999999299929299922299999999922822992aaa8292922829929298222298aa2292a777a7a7a7a7a7a78228282aaa88228aaa2a2222922222222898888aa78aaaaa222999922299292929992999292929992999228882292282292929992288892922a282228229822928222222998829228777777a7777777a82228a8aaa228288a9928822828288892222a88a77aaaaa22229292929992299999999999992929999999998889992999299999222282299999a28282299988888999992999999928877a7a7a77777aa22022aaaa8280202999988222292988892288a2aaaaa82222292999999992929992999292922292999999999828229292999992282288282292a8888228288888999999999999922aa7aaaaa77777a78802228aaaaa2202229292222822928882288888a88a882202922292929299999999992929292299999999999992292289999929228288822922a88882888882999999999999999928888aa8aa7a7aaa822020228aa820002999999992822889822288828888822009999999299928220202022222222822029992999202228aa82892222888888822228a8a28888aa292999292222822999228888822aaaaaa28822292288222929299929292888822929288822822229992020292920888802220222222828882282999999000228aa8882929992882822229822282888299999999292922222999288889292aaaa22222299982292229999929299988822999998229998929292222292920228a888828888a888a8a8a28229992920822aaa8888892999822929822920222222299999992282292222822288892222aaa229222999222929292999288282292929299922292999292928a8a2222288a88a8a888a8aa888aa28882299922202282aa822229999999292999228280292929999999992289992282299922282992299999299999829929999999292222299999992229299992292288aa822288a88aaa8a8a8aaaaa2a8888882298288a888aaa888892929222222292988a8202222299929292988292282292929288829292929299929292999292222992929292282292888888288828888a2822282aa82aa8888888aaa8288882829999888aa8aaaaa282292922292929992888a22999999999299998892922299929299999999999999992999999999282299999299988828888888888888888822029228aa22aaaaaaaaaaa28288888229992288aaaaaaa282822282899999299928aa82292999299999992229228229292229299922999999992929228222822922228222828289888888888828888822222288a880aaaaaaaaa82082088a8099999998aaaaaa28822292229999999999998a8898229999929992282292222292222999992299999999999992282299928888888888828229289228889292222828282888027777aaaa89292928aaa929292022a77a8882888229292929292929992229a8822999292988a8a2228228888929292988a99929992999208a829922a8aaaa77788882292929222229292988a2a88882228787aaa892999288aa2222990222aaaa882888282292929999999999929a8822929992228a2228228828922299922288299999999999020889922882288a888888829299999992929992028a8a88288a8888a82022822988aa222229222220a282822882228222222999222929aaa8822222888888208880888929299928822829222999992928a8298888a2822282888882222999222929292222aaa888a8aa82000000992299922aa29222222200028292929292289222999988222222a88892929288020228a288929992922822929222999999922aa82888aa222202222292229299999892999228888828288a8882202282298222822aa222a2aaa2a2228922222282228229292988222aa2a8a8822929228a88aaa2822929292888892922222929292288aa8288aa202282222229292229292228828288aaa882228a8a22288aaa288898889aaa22aaaaaaa7aa2892222822992299929882929aaaaaaa22999298aa8a8a829999929298882992992a829999220282929222020222020228922299992928288888aa882002282a20828aa828829982992222aa777a7aaa882282292929292929888222292a82a829828882a2228820992929298822292922aa8822298920a8292222a82288822888288229292928888888a8a8822222aa02882a2898229922999a2aaaa7aaaaaa88922222929228229298222222990028822888990222222299929992829222922aaa28288222202299982222022a888882299922999928888888aa8828282aaa82aa888882202922222a7a77777aaaa8a82282822222a2202222202282208888a888822082822282222222228888a888a77aa8a88888828222228882a88aa877777220222020aa888888aaa888882aaa8222882888009292222aa7a7a7aa888aaa2222022222220222222202882288888a8828288888299292928822288aaa8887a7aaaa8888288a8222888888a777a77787aa2222022a8888828aa822289aaaa280228288809929222a7a77aaaa828aaa828088aaaaa2aa22222282828288aaa8a88888828889222288aaa28aaa77a88a777a7aa8a88aaa828888888877777a72887a7a80828aa8888288a2992992aaaaa829982a229999999aaaa78aa78a2aaa88022aaaaaaaaaaa2a822822088a888aaa8a8a229299929888aa222a8a8aaa888aa78a888a8aaa8298288887aa8aaa8888aaa7a228aaaa822228229992222aaaaa8928aaa2292929aaaaa2aa77aaaaa8aa28a8a77777777aa2a282a222aa78aa7aaaa8822229292288a820828880aa7aaa7aaa7aa8aaaa82222922887aaa8882887a77aaa8a8a8828982888222a222888828288aa8929992222a02a78a8a8a288a8aaaa7a7a7a7772aaa8aa88a87a7a7aaaaa82892929988222822220888aaaaa7a7a7a7aa8aa89222929908a7a8082228a7aaaa8a822222990228882292922082888288a822222922a2a28880208a2222aaaa77777a7a7777aaaaa8aa7a777a77aaa289222929228220228a28aa7aa8aaaa777777aaa0992929298aaa888a80887a7aaaa880209929002888892929000828882888222822922aaa88080002000228aaa7aa2a2a2aa78aaa88aaaaa7aaa72822929999999928228a2a28aaa7a788a7a7a777a222999992288888008a8828a7a7aa880200999900282222929929228888828888a8a88888aaa822822282828882888822aaaaa82aa022a2888889288888222929292922888888228888aa887777aaaa822929292888a820202a82888aaa88892929292928888929228892999822228aaa8a8a8828aa8a8202288a8a88222288a9aaaaa828882222929999928822929992999999228888229299288aa7a7aa88882292222888a2220828aa2aaaaa88999999999992222292922829292282aaaa7a7aaa7888a888822288aaaa82822922a9aa88aaa8aaaaa2299999299929222999292929228888292982888a7a77aaa28888822999882282888aaaaaa9aa82999999992929292929992299929928aaaa87a7a7aa8aaa88222a8aa88a89929999299a82aaaaaaaa22999999999299922289999999988822999288888a8a8aa8202228229999920288288aaaaa88aa22999999929222222999999929992228aa82aa777777aaaa8282aaaaa28229992999229922aaaaa8a229292929892289292288992999222882222288a8a8887aa22029222999292228a8aaaaaaa8aa88222929228822888929292929999992988828a7a7a78aaaaa28288aaa8aaa9298882222090002028892999999922292922a22289992999299922222288888888822229299929292222aaa288aaa8a889892922222929222229299929229292288888aaa7aa8aaa22228aaaaaaaaaa828888892909222020822929992999882928aaaa8229822929228882288882888888a880292922228288aaaa8288aaa8a98882888882992929222229228292229888282aaa8aaa8a22228aaa8aaaaaaa822888889299080208829299999999929988aaaa88222292282888888888222888088a288822999298888aaaa8282002999899229229992222929299929988888aa8aaaaaaa8aaaaa8887aa7a8aa888822288888a880222222802220292920228877777aa8802288aaaaaaaaa8a889288888aaa8aa88202288aa88888889292929292020200022822222822029298aaaaa88a7aa8a882a828a8aa7878aaa8828929982888822088822022a22229988288a87a20228022aaa222288888a88229888220aa88788222a8aaa8888882999999299220228022822022882029222aa7aaaaa7a7aaa7a82888aaa7aa7aaaa828882292988202228a88222aaaa822288a8888822228282a88029228a8888828288888228a28aa882aaaaaa88888889292922228288888282222288a2222982a7a7a7aa8aaaaaaaa828aa8a8aa7aa88822888222292222a888822282aaa22920aaa88882aaa82282200922a2aa882282828888828020a778a8aaa229928282222229888888888282228288a8828922877777777777a7a78a8a882a88aa8a222822982828282888aa88882aaaaaa82298aa8a888aa7aa888a88022a228a22022228882222822887aaaa88822292222228282228888a8a888828888aa88822288777777a7aaaaa7a88888288a88880228229292982888a82a888828aaa7aa82928aa8a7a7aaaaaa8a8aa8922202220202282822990288aaa7aaaa2208229222922822222888aaa8882888288a888298887a7a7aaaa88888aa82828282808828a88922228229888228aaaaaaaa777a8888aaaa7a777a7aaa88a8a299222028a882288929292288a8a7aaa82222292929228888828888aaaaaaaaa8888a88a28888a888888aa88a8888020228a88a882a829292282299288aaaaaaaaaaaa7778888aaaaa777aaa7aaaaaa222222288a8a2222229999022208aa882228229992992888882888aaaaaaaa888aaa8a8aa8288882828228aa888222888a8888aaa2828229228888208aaaaaaaaa7777aaaaaaa8a2aaaaaaaaaa7777aa828822aaa88220222929992922228929298aa2222288888a7aaaaaaaaaaaaaa8887aaa777aa888922822022a8a2228888a2888aa22288228288a22028aaa2aaaaa7728222aaa8aaaaaaa88aaaa8777a22222022a888200929999999299289222228aaa220288888aa7a7aa88aaaaaaaa28a7a7a7a78a28228888aaa8a88288a88828882929228928888888a8aaaa22a9aa7720202aaaaaa2292288aaa28777a8a8a82282a888802282292999292888aaaaa88822228888a8aa7a7888aa82aaaaaaaaaa887788a82288aaaaaa8228288a8a2899999299999888aaaaaaaa2a2222aa7788080aaa8a299202222a222788aaaa8822228a8a222882999999999888aaaa2228222288aaaaa7aa882a8200028aaaaa2a88aa88882228aaaaa8208888aaaa82292999299929228aaaaa82222222aa78728888aaa82922888222292222a8aa82228aa8aa888889292929292288a22922887aa288777aaaaaa8aa8022828aaa7aaa88a8828299928aaa8a8292288a889999999999999999022888022299999a282888882a229992888829920228888222088a28aa8a88999299999992882299088aa7a7a7a7aa8aa7a7a2022822288aaaaa0888882229292288228829999999999999999929228828a8888229299929202288aaa8a8222288a229292028a8a8a2aa888aaaa829222222292929282922228aa27777777a7a7777802022822288aaa28a7a828299990002000222929999999999999228888888aa8a22999999990000088aaaaaaa222200922202278aaaaaaa882a8aa89222922292929292929a8aaaaaa7a77aa88a878822288a88022202028aaa2a82292922292999292929882229299282828222828288892229299929992928aaaaaaa22900828aa88282aa7778a2828aa82022a22288888888222a7777777a777a7229822228a8882922828222888888889999289299999999999822999999289222999222922292229999992822992aaaaa8228902208aa828aaa77a888aa8822022aaa22888888888a8a777777a7aaa7772228282a8828929292a8222822922299992929292929292929992922822222292922292929292929292888822992aaa882822022208a88aaaaa8a880aa822222aa7aaa8888aa7aaa8877777a7722a77777aaa822a22222292222888229292299999999888829999999999298829999999828999992999999999888889999922228299902220202888888882288a888aaa7aaaa8a87a7a7aa220228888a22277777aaa0028888229992288892929222292929992229299929292928888229292288888922222229292222882999292922a8822922aaa88228aa7aa8a888aaaaaa777a7aaa7a777aa28222228888aa2a7227aa20228a888882822888222982222222929992929992229228829222922229999228829288229828222299999992288a882228aaaaaa2a8a77a8888a8aaaa7a777a7777a8aa822220222888a2a022292aa022aa828888822288a222222928888822229292222298882292922228889999922822288828888888229292929228a888882a8aaaa88aa7aa88288aaaa7a7a7777777aa8a88882827288a822222922a2202aa222888222a8a8228882228888882299999922999292999992282822999992229992288888882892229222028a288888888aa222288aa7a8288aaaaaaaa777aa8a88a7aaaa87888888020099922822888822922828a8222288829229288889292922892992228222822222222929292289888888aaa8882222888882a82828a8a8a8a88888aaaa7aa8aaaaaaaa77788aa888777aaaaa828222222920222288a88288888288a822888888822299292222922888229299922222222228999999929922282a220202929228228888088a8aaaaaaaaa8aa7aaa7aa8a8a8aaa8a8a8888888a8a8a8a2292982299020292922802288a882228288a8aaa8822299922892229288929882222882272882922299999992228a220222922222982a822a8aa777a777aaa7777777aaaaaaaaaa8aaa87aa8a88a7aa8a882882888a2222929222222a8aa8282aa7aaaaaa899999999999999929992228887777777882222928899992888a8288892922828288828288aa7aa8a8aa7a777a7a7aaa7a7a7aaa7aaa7aaaa8aaa8888222888888828288822020228aaa882aaaaa7aa88299929292289292929222888777777728882888888898928a8202aa2222988888aa8a8aaaaa888888a7aa8887aaa7a7a777a7777777a7a7a78a8822282888888828888888282828aaaaaa8aa777aaaa899982292988292222292928877229299999288888888829222022882229228928aaa882888aaaaaaaa88a8888aaaa7a7aaaaa7aa8aaa8887aa8822288888882822888888aaaa882aaaaaaaaaa7a888222922882922222988888929288020999929228222288889292222a8a888828222aaaa8888a8a77a777a88888888aaaa7aaaaaaa7a888888a77a7a82228882228288aa8828aaaaaaa8aaa8aaaa7a7a8220882999999299929882229222020099999999999292282222220202a888882822288a0a8aa88888aaa7aaaa8a800a08a7a888888888888aa7a7a7880222928828aaaa8292228aaaa8282888aa888a822829292928829928aaa922222929222999222988292999822929992988aaaaa8888aaa8aa8aa2282a888888882888888aa82a888a8a288aaaaaaaaa88882222a8a7aa8a888a8aaa8a8a88aa8a88888a2889999992828922a8a222aaa9222229999922292999999999999999928aaaa8a888aa208aaa8082888882228228888a8882a8aaaaaa82828282228288828022aaa888a8a87aaaaaa28aaaaaa8888aa888899999922288888a229aaaaaa82222922292999299999999929992928aaaa7a7aaaaaaa7a8822aaa229822922228282822aaa8aaaaa88a82282222288a22288a888887888aaa88888aaaaaa82aaaaaaaa999992929228820292aaaaaa22922888299999999999999299928822922aa777aaaaa777aa222888222222929992228aaa8aa7a7aa8a2228282828282222888aaa8aaa88280202022888aa888a8aaaaa299929288882822222222aaa22298829222929292922228929988822222a7777a0a87aaaaa82822282222229292988aaaaaa7777aa828228aaa8aaa02888aaaaaa888aa8822222228288aaa282aaa22a999992288828280292929aaa882222999882929999982229999292999aaaa8080228aa8aaa22222292929828288288888aaa888aaa288808aa8aaa2222228aaaa7aaa7a8822222222228aa882222022899292888222288a822a299aa8888888282888222299229292229992992a28880202a7aa8a8822282828222888888aaa8a88a7888a8aaa8888aa82288888222a8aa777aa882822288882222aaa22888829222928882982a822aa299aa8888288888888822929992999299929999290008288aaa8a88020288888822282828a8a8822888882aaa8a828aa82828aaa82222888a8a882228222aaa8822aaa88aaa288888a8aaa82222202aaaa2a229292922888aaa8229298222828222292929228888aa8888822928aaaaa8a822828aa08820202288aaaaaaa08a7a7aa8aaaaaaaaaaaaa88282828888aaa28288aaaaaa882a8aaa8aaa288a80022aaa2098999292222288229998888a8828229928888aaa2222882292922aaaaaaaaa28288a2288220222222a8a8888877777a7a7a7a7a7aaaa88282a288a882888288a8aaaaa8822aa7a78aaaaa8802028a820282922aaa82222822928aaaaa022292999828aaa822882292282222288a8a888aaaaa288a8a88880208aaa88888777777777777aaaa88288a8a8a8a8a888aaaaa8aaaaa8288aa88828888888822808829222992a8aaa8a888228aaaa882299989992022888029292928202882882288aaaa8222228aa8822022a88888888a7a7aaa7a7aa88882228288aaaaa888a8aaaaa8a2a8a8888aaa8a2a8aaa2228aaa888882222288aaaaaa8888aaaaaaa289282922888aaa228229222222a8aaaaa8a8aa828288a8aaaa822288a8a88aaa77777aaaaaa888a28aaaaa8aa8aaa888a8aaaa802aaa8aaaaaa7828aaa82082aa82a29999292222228aa8888288aaaaa88282292288aaa8a82922888a80228aaa88aaa28228aaaaaaa8822288888888aa7a777aaa7882aa88aaaaa8202222822228a8802288aaaaaa8aa8088a2822088aaa82288a2aa82aaa28a88828822a8aa888929298282a88889298888a22228aaaaaaa8888aaaaaaaa88282228a777a7a7a88a8aaaaa88822a8aaaaa2228882a82222202222aa888a88880228288a828a8a822888a222288aaa8a8892000022aa282282288888288222999888888aaa8aaaa8888aaa8aaaaaa828222a8a8a8aa7a78888a7880802222aaaaa888a8aa88822222288222a888888828888888888888888888229292888882929992222a8a88220a2a2aa8222888889292288aa8288a2888888aaa88aaaa22288a8aaaa77778882a8aaa2828888aa7aa88a778288828222a8aa8228889228929228889298888888222822229822989228988888aa88020292228a02288a8888282228222888aa2a8888aaaa88aaaa2aaaaaaaaa778822220228288a8888a78a8a8888229822220a8a8a8888222922292929992929292288828a22222999992928888988a28222222922888888aa89898888aaa22888aaa82988a822228a7a77777aaaa299899222828288aa888a78a8aa8882822282288888aa88892299999999929292999299928a282292229299999988292882222822999228220288222292992882282208a292288a82222aa777aa000299009002988222228a8a8a888aaaaa282228282a22222a89208229299929888889888829292a82222222292929292229288288a8822222a88822822289292922a282292022822288a2822277777800099000000228a8828288777aa8809aa8822288888a828aa8299088999999999228989888229202222299929999992892929222028aa8229288222888929292922888922902022292220202022a2aa00000000000082228888aaa77a78a8098882222922222022a8029002289298299298889228889222222aaa288222922882922822228aaaaa222a228a8a889292928888222888222292922222882222280000000000008898aaaaaaa77777a80098822222222222288a0900092229288999998229292229222222aaa8888222288222888222aaaaaaaaaaaaaa82282999998028299288202999208220822022280000000000002922aaaaaaaaa878a00099a88882822288aaaa0000020222228292920288a80222288888888a8a88222aaa77aaa788a88887777aaa2222920202282822929292220222928888888aaa8a00000000000022222888888a888a9900998a8a87a888888a99900008a8828822829020287aa282287a7aa8a8828aa8aa7a77aaa8aa78888a7aa0008282202020822929292920282229222222888aaaaa00000000000029228889228282aa90009929888a788882999000000aaa8222282822082aa7a2aaaaa777777aaaaaaaa7777aaaaaa7a8888777220222282a22222802929292922a88288888222222228a00000000000082922288288aaa8a90000929aaa7aa7999009900000288a0002922222220a8a2aaa8aa7a7a7aaaaaaaaa777a7a7a77782882a2a22029292aa2a288a229292920228222828222292022aa000000000000822929292982222290090029aaaa78890000999000088aaaa822288a8a8a87aaaa8aaaaa888aaa8a222aa7a77aa8a78898922aa222222887a7aaaaa822222228828822922aa82222228a0000000000008882282822222222900000998aaa0000000000900000222aa8a8828aaaaa7a7222288aa888aaa2222029999a2000a8899922a22222292282aaaaa8a8288a222aa8a829208aa28922222800000000000092292282292288899909009998a8000000000900000a82002aa8888aaaaaa8882aaaaaaa8a8a88888a2a99aa2a288a8292920228aaa8288aa7aa2222288aaaaaaa8828222a888222222a00000000000092222828222828229909000009900000000000000008a82088899928a88088aa88aa7888888228a8aa2999922220888999200028a888888a7a7aa2298282aaaaa8292822228222822288000000000000822929888282202290002000990000000000000000088a22777a2228a8288aaa8a8aaa88222228822802022822220228888a8888022288a7aaaaa7888a8aaa2aa7aaaaa822288aa8228a00000000000088882888888229229000990990000000000000000002a888887a20000082a88288828282202929202022aaa0288028288888a88822228288aa7aaaa8a8aa8288777aaaa222aaaaa8828a000000000000787888828282202990099000000000000000000000028aa7882a820208aa8a22020222220202922288222aa88aaaaa888a88a7aa2a2a2828a777a77a888828a7a7aa28882aaa022a08870000000000008777777892289090999900000000000000000000000828a88828aaa8a8222082208a822282888228a88222a8aaaaa8a88aa8777aaaa828aa7aaaaa7a7a78822888a8228222822222aaaa0000000000008288828229229909999000000000000000000000000a8a888828aaaaaa82288a8a8aaa28aaa88828aaa7aaa88a888aa7777777aaaaaaaa8aa7a7aaa7777a22288aaa8aaaaaa88aaaaaa7000000000000220222022228900299000000000000000000000000028228828228aaa8a8a8aaaaaaa882aaa889228aa7aaa88022822a7a77a88888aaa828887aa8a8aaaaaa8aa8882288a8088aa8a8a70000000000002222222929229009900000000000000000000000000228882888882aa88aaa8aaaaaaa888a8828882aaaaa7aaaaaaa88aaaa87888a2aaa8a8888888aaa8aaa88aaaa282288088aaaa88a00000000000088282222229800000000000000000000000000000002a8822882828288888aa8a888aaaaa8a882828aaa777aaaaa88a0808088aaaa88a2888080888a8aa88888888882222000aaa88082000000000000882222228999000000000000000000000000000000088aa7aaaa8aa7aa8aaaa77aaaa77aaaa7aa8aa77aaa8aaa8a88888a888a8a8888228a8802222828882888822882228000aa8a99880000000000002228282889000000000000000000000000000000000a88aaaa7aaa777a7a7a7a7aaa88aaaaaa7a7a7a7aaaaaa888822aa8828280222022a880222222222282828228a8889000022890880000000000008222228299000000000000000000000000000000000aa777aa8aaaa7a7aaa788aaaa888a2aa887aa88822828888a882a888a8888882222820228882228aaaa8a22228aa890000a88009a0000000000002888288890000000000000000000000000000000000a777aa888aa7aa8a88888a8a888880028a8888882202888aa88a8aaa888a8aaa8aaa28228a822aaaaa8a8a8828aa8000000a9000a00000000000088aaa88290000000000000000000000000000000000a7a8aa7a7aaaaaaa88aaa8aa7a8880288aaa777aa882a8a8a8aa7a7aaaa8aaaaaaaaaaa8aaa8aaaaa888a8888aaa9000000a0000a0000000000008aaaaa8890000000000000000000000000000000000a7a888a7a7888a8aa7aa878aaa8882228aa7a7aaaa8888a7aa8aaaaaaa222828aaa88a8aaaaaaa8a88888aaaaa8a0000000800009000000000000aaaaa8a8900000000000000000000000000000000007aaaa888aa88aaaaaa78aaaaaa7aa8228a777a77aaaaaa77aaaaa8a88888aaaa888288aa88a228a8aaaaaaaaaaa200000000000000000000000008aa82a8290000000000000000000000000000000000888a8a8a8aaaa7a7a7aaaaaaa7aa8aaaaa8a8a888a8888aa88aaaa8a2a28282a88888aaa8828aa8aaaaaaaaaaaa00009000000000000000000000aaaa8a8900000000000000000000000000000000000aaa8aaaa7a7aa8aaaaa777a8aa7a7aaa88aa88888888a8a888aa777a8a8888888aa8777aa888aaaa777a7aa88870000790000000000000000000088a88820000000000000000000000000000000000008aaa82aa77aa888802a7aa88888a878a88a788aa8a8a8888888a8a88888a8aaaa7aaa88aaa8aaaa7a7a7a7aa87900007900000000000000000000aa88289900000000000000000000000000000000000aaaa888aaaaaaa82a2228888a8a88888888888aaa8aaaa7a7a7aaa7aaa7a7777777aa8aaaa77aaaaaaaaa777770000079000000000000000000008a82988900000000000000000000000000000000000aaaa22288888222aaa22088aa8aa8888888aa7a7a777a7aa8a77a777a777a777a7a7a7a77777a7aa8aaa8aaa890000079000000000000000000008aa98890000000000000000000000000000000000008888a8aaa8aaa88a77a288a8aaaaaaaa7a7777777777777777777a777777777aa8a77a777777777a7a7a7a7a7000000a9000000000000000000008aa2990009000000000000000000000000000000000282228aaaaaaaa8aaaaa8a8aa7a7a7a7777777a7a7a7a77777a7aaa777a77aaaaa8aaaaaaa8aaaaaaaa8888a800000000000000000000000000008a9999000000000000000000000000000000000000020208aaa7888a882aa7aaa7777777a77777778888878888aa878aa7a7aaaa8aaaa7aaaa8aa7a7aaaa88888aa900000000000000000000000000008a90009900000000000000000000000000000000000228a8aaa8888888aa777a777aaaa8aa7aa8a88888aaa8888a788aa88888aa7a7aaaaaaa7aa888aa7aaaa88a790000000000000000000000000000999000999900000000000000000000000000000000028a88aa822a8aa77aaaaa8aaaaa8aaaaa28888887a77788877a8aaa9aa7a7778aa77777aaa8999aa7a7aa8aa9000000000000000000000000000090000099990000000000000000000000000000000008802088228a8a7a7aa88888a888aaaaa2802282a77aaaa8aaa889aa777aaaaa8a77aa7a7a9999a9277aaaaaa90000000000000000000000000000900000990000000000000000000000000000000000088a8888888a8aa7aaaa28aa88888a8a88a2282887aa8aa777aa89aaa7a7aa8a877aa7a77898999297a7a88aa90000200000000000000000000000000000000000000000000000000000000000000000028aa8a8a88a89aaaaa888aa8888802222a088aaa888a8aaaa7aa9aaaaaa788a88aaaaa9a99999092aaaaaa87900097900000000000000000000000000000000000000000000000000000000000000000828aaaa22aaaaaa9222aaaa8aa828882088288a888aaaa888a779a777aaaa8a77aaaaa99990990999aaa77779000979000000000000000000000000000000000000000000000000000000000000000008888a8280a22999a8222988aaa2228a80aaa8aa8888a8a8887a79aa78aaaaaa77a8aaa990909909997a777a7900097900000000000000000000000000000000000000000000000000000000000000000aaa288aa802099aaa8809989282288a228a8aaa8aa8a7aa87a7a097aa87a7a7aaa78a9a0000090099a777a7a9000090000000000000000000000000000000000000000000000000000000000000000002a8a28aa80029999220099982882228a2828882aa7a7a777aaa000a7a78a8a888a8899900999090999a7aaa7900000000000000000000000000000000000000000000000000000000000000000000000208a82222988aa8820202988a8a8a8aaa7aaaaaaaaaa7a777aa00002aaa8828288890009909a099989a82927900000000000000000000000000000000000000000000000000000000000000000000000222822999992880202222222888a8a2a07a7aaa8820208888a000008882222922990000099999900900000079000000000000000000000000000000000000000000000000000000000000000000000008022298882222022a888292922a822280222a288a02088888800000982828882200000000009909900000000000000000000000000000000000000000000000000000000000000000000000000000000222828888822288a88229992088822280022222888228a8888000000888a2228900000000000999900000000000000000000000000000000000000000000000000000000000000000000000000000000aaa882828229222888802282aaa8228000aa8288a282887a70000000aaa22288000000000000999000000009000000000000000000000000000000000000000000000000000000000000000000000000222888888292088008882888aaaa8220000a288222288aaaa00000008a28222900000000000990900000000700000000000000000000000000000000000000000000000000000000000000000000000020aa82822288a8a28aaa888888aaa800000aaaa88288aa7a7000000022828289090000000009900000000007000000000000000000000000000000000000000000000000000000000000000000000000822222888888aa8a8aaa8888aa8a8a000000aaaa8aaaaaa7a000000002882289990900000000000000000007000000000000000000000000000000000000000000000000000000000000000000000000888888777a7777777aaa777a77a8a70000007a77777a7778a00000009a77777280000000000000000000000a000000000000000000000000000000000000000000000000000000000000000000000000aa8aa7aaaa87aaa777a7777777a880000000a8aaaaa7a78aa000000097a7777790000000000000000000000a000000000000000000000000000000000000000000000000000000000000000000000000777777777a7aaaaa7aaaaaaaa8aa70000000aa88aa7778aa70000000977a7279000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aaa7aa8a87a7aaaaaaaa8a888888a0000000a7a7a7a7aa77a000000007aa299900000000000000000009000000000000000000000000000000000000000000000000000000000000000000000000000088aaa08888aa777777aaa8a8a8a880000000877a777a7777200000000aa99900000000000000000000090000000000000000000000000000000000000000000000000000000000000000000000000000888a88a887a82a2a222a8887a7aaa00000000a8a88800000000000000aaa90000000000000000000000900000000000000000000000000000000000000000000000000000000000000000000000000007777aa7a8888222222a77aaaa8a7700000000888880000000000000009aa00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008a88888a88882aaaa7aa8aa88887700000000888880000000000000000a90000000000000900000000000000000000000000000000000000000000000000000000000000000000000000000000000000aa88aa7a7aaa7a7aa8a8aaaa7aa8800000009888a90000000000000000290009000000900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aa8aa777777777aaa77777a7aa889000000007779000000000000000000990090000009000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007a77777aaa7a77777a7a777aa8aa900000000777000000000000000000090000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a7a7888a888aaaa7a88a8a8aa7a700000000087900000000000000000000000090000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000088888877a87aaa7888aa7aa877700000000000900000000000000000000009900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008a88aa8a888a8888a78aaa8887a0000000000000000000000000000000000990900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a8887aa88888a8a88aaaa8aaaa700000000000000000000000000000000000990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008a8a8a8a88aa8a8a88aa8a8a8aa0000000000000000000000000000000000002090900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a777777a7a7aaa77777a7a7a7779000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000777777a7a7a7a7a777a777777779000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000777a77777a777777777777777779000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aaaa8aa7a7a7a777a7a7aaa7a7a90000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007a7a7a7777777777777aaa7a777900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000077a7777a8777a7a7aaa7a7aaaaa90090000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007a7a7a78887aaaaaaaaa777a7aa9008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aa8a8a88aa8a8aaaaaa7a7a7a7790090000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000000007aa8aaaaa77a7777777777777779002000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000000000888aaaaaa7777777777777777779000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aa7aaa7a77777777777777777779000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a777a777a7a77777888822282229000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000777777777a2222227722828272290000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007788aa2aa2022292872828287729000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000888820222022292222222282222900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080202020292920202020292290000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002229292922292222222922222229000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000929292929292929292920202922000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000029292929292922222922222222290000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009292929292929292929222222229000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000222922222222222922228882828900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022922822222222222222888828200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002222228282828288aaaaaaaa82890000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002228222828882228aaaaaaaa888900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000088888282a8a88888aa7aaa777aa900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000028282822888888888aaaa7a7a7a9000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000828288828888888888aaaaaaa7a9000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000222887778a8a8a87aaa7a77aaa79000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000777777777a7a777a7777777aa97a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000077777777777777777777777897a700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000077777777777777777777777a97aa00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000077777777a7777778777777777799000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000777a7a7a7777777877777777777800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000077a777a7a777777777aaaaa779970000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007777777a7a7a777a7aaaaa7a7898000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a777a7a7a7aa8888aaa777aa77090000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007777777777777777777a7777770900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000077a77777a7a7a7777a8aa777779900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000077777aaa77777778777aaa777990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a7a78aaa8aa88aaaa777a7777890000000000000000000000700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+  var C64 = ['#000000','#ffffff','#813338','#75cec8','#8e3c97','#56ac4d','#2e2c9b','#edf171',
+             '#8e5029','#553800','#c46c71','#4a4a4a','#7b7b7b','#a9ff9f','#706deb','#b2b2b2'];
+  var HG_BURG = null, MORGEN = { knopf: 6000 };
+  function burgBild() {
+    var hc = document.createElement('canvas'); hc.width = 320; hc.height = 200;
+    var g = hc.getContext('2d');
+    for (var y = 0; y < 200; y++) for (var xx = 0; xx < 160; xx++) {
+      g.fillStyle = C64[parseInt(BURG.charAt(y * 160 + xx), 16)]; g.fillRect(xx * 2, y, 2, 1);   // Doppelpixel
+    }
+    return hc;
+  }
+  var MORGEN_TEXTE = [
+    'DIE NACHT IST ÜBERSTANDEN! ASLANIM!',
+    'DU HAST DIE WELT GERETTET. GANZE LANDSTRICHE WERDEN IHRE KINDER NACH DIR BENENNEN.',
+    'NICHT NUR DIE HÜTTE IM BRAUNEN SUMPF – DU HAST DIE EHRE ALLER VERHEIRATETEN MÄNNER UND VÄTER VERTEIDIGT.',
+    'DIE PARTY GEHT WEITER.'
+  ];
+  function zeilenUmbruch(t, max) { var w = t.split(' '), z = [], a = ''; w.forEach(function (x) { if ((a + ' ' + x).trim().length > max) { z.push(a.trim()); a = x; } else a += ' ' + x; }); if (a.trim()) z.push(a.trim()); return z; }
+  function morgenZeichnen() {
+    if (!HG_BURG) HG_BURG = burgBild();
+    var t = zeit - modusSeit;
+    x.drawImage(HG_BURG, 0, 0);
+    // die zwei Vögel kreisen weiter
+    for (var v = 0; v < 2; v++) { var vx = 90 + v * 50 + Math.sin(zeit / 1400 + v * 2) * 30, vy = 92 + v * 16 + Math.sin(zeit / 900 + v) * 6, fl = Math.floor(zeit / 180 + v) % 2;
+      x.fillStyle = '#000'; x.fillRect(vx - 2, vy - fl, 2, 1); x.fillRect(vx, vy, 1, 1); x.fillRect(vx + 1, vy - fl, 2, 1); }
+    // Text: Seite für Seite wie auf der Schreibmaschine
+    x.fillStyle = 'rgba(0,0,0,.72)'; x.fillRect(0, 0, W, 72);
+    var alle = []; MORGEN_TEXTE.forEach(function (m) { zeilenUmbruch(m, 44).forEach(function (z) { alle.push(z); }); });
+    var zeichen = Math.floor(t / 30), y0 = 9;
+    alle.forEach(function (z, i) {
+      var vorher = alle.slice(0, i).join('').length, n = Math.max(0, Math.min(z.length, zeichen - vorher));
+      if (n > 0) text(z.slice(0, n), 160, y0 + i * 10, 8, i === 0 ? '#edf171' : COL.hell);
+    });
+    if (t > MORGEN.knopf - 2000) {
+      var b = s.morgenBonus;
+      text('BONUS: VORRAT +' + b.vorrat + '   KUMPELS +' + b.kumpels, 160, 210, 8, '#edf171');
+      if (s.lazarett.length) text('IN EHREN: ' + s.lazarett.slice(-5).join(', ') + (s.lazarett.length > 5 ? ' …' : ''), 160, 221, 7, '#c46c71');
+    }
+    if (t > MORGEN.knopf && Math.floor(zeit / 500) % 2) text('KNOPF = NÄCHSTE NACHT', 160, 233, 8, COL.hell);
+  }
+
+  // ---------- Titel im Stil der C64-Demoszene ----------
+  var GRUESSE = '+++ URPHAED +++ DIE HÜTTE IM SUMPF BRAUCHT DICH +++ FÜR DIE JUNGS VON DER HÜTTE +++ JUNGS, ICH HATTE NIE GRILLFLEISCH DABEI. IHR HABT MIR TROTZDEM IMMER WAS ABGEGEBEN. DAFÜR GIBT ES JETZT DIESES SPIEL. EUER ANDREAS +++ GRÜSSE AN RAPHI +++ JOYSTICK NEHMEN, KNOPF DRÜCKEN +++          ';
+  var RASTER = ['#ff4fa3', '#ff7ab8', '#ffd25a', '#ffe9a0', '#5fb4ff', '#9fd0ff', '#9cc58a', '#ff4fa3'];
+  function demoLogo(py) {
+    // Schriftzug mit durchlaufenden Farbbalken
+    x.save();
+    x.font = 'bold 30px monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillStyle = COL.nacht; x.fillText('URPHAED', 162, py + 2);              // Schatten
+    var verlauf = x.createLinearGradient(0, py - 16, 0, py + 16), schub = (zeit / 900) % 1;
+    for (var i = 0; i < RASTER.length; i++) verlauf.addColorStop(((i / RASTER.length) + schub) % 1, RASTER[i]);
+    x.fillStyle = verlauf; x.fillText('URPHAED', 160, py);
+    x.restore();
+    // Rasterbalken links und rechts vom Schriftzug
+    for (var b = 0; b < 6; b++) { x.fillStyle = RASTER[(b + Math.floor(zeit / 120)) % RASTER.length]; x.fillRect(0, py - 15 + b * 5, 28, 2); x.fillRect(292, py - 15 + b * 5, 28, 2); }
+  }
+  function laufschrift(py) {
+    x.fillStyle = 'rgba(11,16,32,.85)'; x.fillRect(0, py - 9, W, 18);
+    x.font = 'bold 10px monospace'; x.textAlign = 'left'; x.textBaseline = 'middle';
+    var breite = 7, gesamt = GRUESSE.length * breite, start = W - (zeit / 18) % (gesamt + W);
+    for (var i = 0; i < GRUESSE.length; i++) {
+      var cx = start + i * breite; if (cx < -8 || cx > W) continue;
+      x.fillStyle = RASTER[Math.floor(i / 3 + zeit / 200) % RASTER.length];
+      x.fillText(GRUESSE[i], cx, py + Math.sin(cx / 22 + zeit / 250) * 4);   // die Welle
+    }
+  }
+
+  // ---------- Zeichnen ----------
+  function text(t, px, py, gr, farbe, ausr) {
+    x.font = (gr >= 12 ? 'bold ' : '') + gr + 'px monospace'; x.fillStyle = farbe || COL.hell;
+    x.textAlign = ausr || 'center'; x.textBaseline = 'middle'; x.fillText(t, px, py);
+  }
+  function kasten(l, o, b, h) { x.fillStyle = COL.nacht; x.fillRect(l, o, b, h); x.strokeStyle = COL.rosa; x.lineWidth = 1; x.strokeRect(l + .5, o + .5, b - 1, h - 1); }
+
+  // ---------- Die Landschaft: Urphar, die Kirche, der Main im Tal ----------
+  // Wird EINMAL in einen Zwischenspeicher gemalt. Bei jedem Bild wird nur das
+  // fertige Bild hingelegt – das schafft auch der kleine Pi Zero.
+  var HG = null;                     // der fertige Hintergrund
+  var deko = { rauch: [], zuletzt: 0 };
+  var SCHORNSTEINE = [];             // [x, y] – wird beim Malen gefüllt
+  var FENSTER = [];                  // [x, y] beleuchtete Fenster zum Flackern
+  var MOND = { x: 268, y: 26 };
+  var MAIN_O = 86, MAIN_U = 95;      // der Fluss: obere und untere Uferkante
+
+  function zufall(saat) { var z = saat; return function () { z = (z * 16807) % 2147483647; return (z - 1) / 2147483646; }; }
+
+  function hintergrundMalen() {
+    var hc = document.createElement('canvas'); hc.width = W; hc.height = H;
+    var g = hc.getContext('2d'), r = zufall(1986);
+    function rect(px, py, b, h, f) { g.fillStyle = f; g.fillRect(Math.round(px), Math.round(py), Math.round(b), Math.round(h)); }
+    function poly(f, pts) { g.fillStyle = f; g.beginPath(); g.moveTo(pts[0], pts[1]); for (var i = 2; i < pts.length; i += 2) g.lineTo(pts[i], pts[i + 1]); g.closePath(); g.fill(); }
+
+    // Himmel: Nachtverlauf in Bändern, wie früher
+    var band = ['#0b1020', '#0e1527', '#111a2f', '#152038', '#1a2742', '#202f4d', '#273859'];
+    for (var i = 0; i < band.length; i++) rect(0, i * 13, W, 13, band[i]);
+    for (var st = 0; st < 70; st++) { var sx = r() * W, sy = r() * 70; rect(sx, sy, 1, 1, r() < .2 ? '#fff6d8' : '#9fb0d0'); }
+    // Mond mit Kratern
+    g.fillStyle = '#f3ecd2'; g.beginPath(); g.arc(MOND.x, MOND.y, 9, 0, Math.PI * 2); g.fill();
+    rect(MOND.x - 4, MOND.y - 3, 3, 2, '#d8cfae'); rect(MOND.x + 2, MOND.y + 2, 2, 2, '#d8cfae'); rect(MOND.x - 1, MOND.y + 4, 2, 1, '#d8cfae');
+
+    // Spessart hinten: zwei Hügelketten mit Baumkante
+    function huegel(f, basis, hoehe, saat, rand) {
+      var rr = zufall(saat); g.fillStyle = f; g.beginPath(); g.moveTo(0, MAIN_O + 2);
+      for (var hx = 0; hx <= W; hx += 2) {
+        var hy = basis - Math.sin(hx / 47 + saat) * hoehe - Math.sin(hx / 19 + saat * 2) * hoehe * .35;
+        if (rand) hy -= rr() * 3;                     // Baumwipfel am Kamm
+        g.lineTo(hx, hy);
+      }
+      g.lineTo(W, MAIN_O + 2); g.closePath(); g.fill();
+    }
+    huegel('#141e2a', 62, 9, 3, false);
+    huegel('#17262a', 72, 7, 7, true);
+    huegel('#1a2d2b', 80, 5, 11, true);
+
+    // Der Main: dunkles Band mit Ufer
+    rect(0, MAIN_O, W, MAIN_U - MAIN_O, '#1b3456');
+    rect(0, MAIN_O, W, 1, '#24426b');
+    for (var wl = 0; wl < 40; wl++) rect(r() * W, MAIN_O + 2 + r() * (MAIN_U - MAIN_O - 3), 3 + r() * 6, 1, '#22406a');
+    // Mondspur auf dem Wasser
+    for (var ms = MAIN_O + 1; ms < MAIN_U; ms += 2) rect(MOND.x - 3 + (ms % 4), ms, 5 - (ms % 3), 1, '#5f84b8');
+    // Alte Brücke mit Bögen über den Main
+    // Alte Mainbrücke: Steinbögen, Fahrbahn knapp über dem Wasser
+    rect(132, MAIN_O - 1, 56, 5, '#6f685a');
+    rect(132, MAIN_O - 2, 56, 1, '#8c8473');
+    for (var bo = 0; bo < 5; bo++) {
+      var bx0 = 135 + bo * 10;
+      g.fillStyle = '#1b3456'; g.beginPath(); g.arc(bx0 + 4, MAIN_O + 4, 4, Math.PI, 0); g.fill();   // Bogen öffnet sich zum Wasser
+      rect(bx0, MAIN_O + 4, 8, MAIN_U - MAIN_O - 4, '#1b3456');
+      rect(bx0 + 8, MAIN_O + 2, 2, MAIN_U - MAIN_O - 2, '#5e5849');                                    // Pfeiler
+      rect(bx0 + 4, MAIN_U - 2, 2, 1, '#36507a');                                                       // Spiegelung im Bogen
+    }
+    rect(132, MAIN_O + 2, 3, MAIN_U - MAIN_O - 2, '#5e5849');
+
+    // Nahes Ufer und Wiese
+    poly('#1f3424', [0, 112, 74, 98, 151, 104, 230, 96, 320, 110, 320, 240, 0, 240]);
+    rect(0, MAIN_U, W, 6, '#1f3424');
+    // Gras: Struktur, zum Betrachter hin gröber
+    for (var gr = 0; gr < 900; gr++) {
+      var gy = 100 + r() * 140, gx = r() * W, gl = 1 + Math.round((gy - 100) / 50);
+      rect(gx, gy, 1, gl, r() < .5 ? '#2a4630' : '#18291c');
+    }
+
+    // Die Wege (Spiel braucht genau diese Form)
+    var WEG_L = [112, 109, 127, 109, 137, 164, 83, 240, 42, 240, 98, 161];
+    var WEG_R = [193, 109, 208, 109, 221, 161, 278, 240, 237, 240, 184, 164];
+    poly('#9c8758', WEG_L); poly('#9c8758', WEG_R);
+    function inWeg(pts, px, py) {                 // Punkt im Vieleck?
+      var drin = false;
+      for (var i = 0, j = pts.length - 2; i < pts.length; j = i, i += 2) {
+        var xi = pts[i], yi = pts[i + 1], xj = pts[j], yj = pts[j + 1];
+        if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) drin = !drin;
+      }
+      return drin;
+    }
+    for (var kk = 0; kk < 900; kk++) {           // Kies – nur, was wirklich auf dem Weg liegt
+      var kx = 40 + r() * 240, ky = 109 + r() * 131;
+      if (inWeg(WEG_L, kx, ky) || inWeg(WEG_R, kx, ky)) rect(kx, ky, 1, 1, r() < .5 ? '#b8a372' : '#7d6b45');
+    }
+    // Aussenkante eines Wegs auf Höhe y – entlang der echten Wegform
+    function kante(seite, y) {
+      var k = seite === 0 ? [[112, 109], [98, 161], [42, 240]] : [[208, 109], [221, 161], [278, 240]];
+      for (var i = 0; i < k.length - 1; i++) if (y <= k[i + 1][1]) return k[i][0] + (k[i + 1][0] - k[i][0]) * (y - k[i][1]) / (k[i + 1][1] - k[i][1]);
+      return k[k.length - 1][0];
+    }
+
+    // Wald an den Hängen: Laubbäume und Tannen, hinten klein, vorn groß
+    function laubbaum(bx, by, gr2) {
+      rect(bx - gr2 * .15, by - gr2 * .6, gr2 * .3, gr2 * .6, '#3a2a1c');
+      g.fillStyle = '#1d3a25'; g.beginPath(); g.arc(bx, by - gr2, gr2 * .7, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#28502f'; g.beginPath(); g.arc(bx - gr2 * .2, by - gr2 * 1.15, gr2 * .4, 0, Math.PI * 2); g.fill();
+    }
+    function tanne(bx, by, gr2) {
+      rect(bx - 1, by - gr2 * .3, 2, gr2 * .3, '#3a2a1c');
+      poly('#163020', [bx, by - gr2 * 1.8, bx + gr2 * .55, by - gr2 * .3, bx - gr2 * .55, by - gr2 * .3]);
+      poly('#1f4029', [bx, by - gr2 * 1.8, bx + gr2 * .3, by - gr2 * .9, bx - gr2 * .1, by - gr2 * .9]);
+    }
+    var baeume = [];
+    for (var bm = 0; bm < 70; bm++) {
+      var links = r() < .5, by2 = 104 + Math.pow(r(), 1.4) * 120;
+      var bx2 = links ? r() * (75 - (by2 - 104) * .55) : W - r() * (70 - (by2 - 104) * .4);
+      baeume.push([bx2, by2, 3 + (by2 - 100) * .14, r() < .45]);
+    }
+    baeume.sort(function (a, b) { return a[1] - b[1]; }).forEach(function (b2) { if (b2[3]) tanne(b2[0], b2[1], b2[2]); else laubbaum(b2[0], b2[1], b2[2]); });
+
+    // Fachwerkhäuser im Dorf
+    function fachwerk(hx, hy, b, h, rot) {
+      rect(hx, hy - h, b, h, '#cbbf9f');                                   // Wand
+      g.fillStyle = '#4a3424';
+      g.fillRect(hx, hy - h, b, 1); g.fillRect(hx, hy - Math.round(h / 2), b, 1); g.fillRect(hx, hy - 1, b, 1);
+      for (var bx3 = hx; bx3 <= hx + b - 1; bx3 += 4) g.fillRect(bx3, hy - h, 1, h);   // Ständer
+      for (var bx4 = hx; bx4 < hx + b - 4; bx4 += 8) {                      // Andreaskreuze
+        for (var k = 0; k < 4; k++) { g.fillRect(bx4 + k, hy - h + k + 1, 1, 1); g.fillRect(bx4 + 3 - k, hy - h + k + 1, 1, 1); }
+      }
+      poly(rot, [hx - 2, hy - h, hx + b + 2, hy - h, hx + b / 2, hy - h - Math.round(b * .6)]);   // Dach
+      poly('rgba(0,0,0,.25)', [hx + b / 2, hy - h - Math.round(b * .6), hx + b + 2, hy - h, hx + b / 2, hy - h]);
+      var fy = hy - Math.round(h * .3);
+      for (var fx = hx + 2; fx < hx + b - 2; fx += 5) {                     // Fenster, manche erleuchtet
+        var hell = r() < .55; rect(fx, fy, 2, 2, hell ? '#ffd25a' : '#2a2a2a'); if (hell) FENSTER.push([fx, fy]);
+      }
+      var sx2 = hx + Math.round(b * .7); rect(sx2, hy - h - Math.round(b * .45), 2, 4, '#5a3a2a');
+      SCHORNSTEINE.push([sx2 + 1, hy - h - Math.round(b * .45)]);
+    }
+    [[62, 104, 14, 8, '#8a3b2a'], [78, 101, 12, 7, '#7a3424'], [95, 104, 14, 9, '#8a3b2a'], [131, 103, 12, 8, '#6f2f22'],
+     [175, 102, 13, 8, '#8a3b2a'], [214, 101, 14, 9, '#7a3424'], [232, 103, 12, 7, '#8a3b2a']].forEach(function (hh) { fachwerk(hh[0], hh[1], hh[2], hh[3], hh[4]); });
+
+    // Die Kirche von Urphar auf ihrer Anhöhe, mit Wehrmauer
+    poly('#223a27', [244, 110, 262, 98, 300, 97, 320, 106, 320, 112, 244, 112]);
+    rect(250, 100, 50, 4, '#8f877a'); for (var zm = 250; zm < 300; zm += 4) rect(zm, 98, 2, 2, '#8f877a');   // Mauer mit Zinnen
+    rect(262, 84, 26, 16, '#c9c2b0');                                      // Kirchenschiff
+    poly('#3e4a5c', [260, 84, 290, 84, 284, 76, 266, 76]);                 // Schieferdach
+    rect(270, 92, 3, 5, '#ffd25a'); rect(279, 92, 3, 5, '#ffd25a'); FENSTER.push([270, 92]); FENSTER.push([279, 92]);
+    rect(286, 66, 10, 34, '#d2cbb8');                                      // Turm
+    rect(286, 66, 1, 34, '#b3ac9a');
+    poly('#2f3a4a', [285, 66, 297, 66, 291, 48]);                          // Turmhelm
+    rect(290, 44, 1, 5, '#d8c27a'); rect(289, 45, 3, 1, '#d8c27a');        // Kreuz
+    rect(290, 72, 2, 3, '#2a2a2a'); rect(289, 84, 4, 2, '#1d1d1d');        // Schallluke, Uhr
+    rect(274, 95, 4, 5, '#3b2a1c');                                        // Tür
+
+    // Hanfpflanzen vor der Hütte, links und rechts neben der Zwille
+    function blatt(bx, by, len, winkel, hell) {            // ein Fächerblatt: sieben breite Finger
+      for (var f = -3; f <= 3; f++) {
+        var w2 = winkel + f * .38, l2 = len * (1 - Math.abs(f) * .2), b2 = l2 * .2;
+        var ex = bx + Math.cos(w2) * l2, ey = by + Math.sin(w2) * l2, nx = -Math.sin(w2) * b2, ny = Math.cos(w2) * b2;
+        g.fillStyle = (f % 2) ? (hell ? '#7ccf5e' : '#4f9a3f') : (hell ? '#5fb84a' : '#3f8a32');
+        g.beginPath(); g.moveTo(bx, by);
+        g.lineTo(bx + Math.cos(w2) * l2 * .5 + nx, by + Math.sin(w2) * l2 * .5 + ny);
+        g.lineTo(ex, ey);
+        g.lineTo(bx + Math.cos(w2) * l2 * .5 - nx, by + Math.sin(w2) * l2 * .5 - ny);
+        g.fill();
+        g.strokeStyle = '#2f6a26'; g.lineWidth = .5; g.beginPath(); g.moveTo(bx, by); g.lineTo(ex, ey); g.stroke();   // Mittelrippe
+      }
+    }
+    function hanf(hx, hy, gr2) {
+      g.fillStyle = '#3f7a32'; g.fillRect(hx, hy - gr2, 1.5, gr2);
+      for (var e = 0; e < 3; e++) {
+        var ey = hy - gr2 * (.25 + e * .3), eg = gr2 * (.5 - e * .1);
+        blatt(hx, ey, eg, -Math.PI / 2 - .9, e % 2 === 0); blatt(hx, ey, eg, -Math.PI / 2 + .9, e % 2 === 1);
+      }
+      blatt(hx, hy - gr2, gr2 * .35, -Math.PI / 2, true);                  // die Spitze
+    }
+    [[110, 242, 30], [124, 242, 22], [96, 240, 18], [210, 242, 30], [196, 242, 22], [224, 240, 18]].forEach(function (h2) { hanf(h2[0], h2[1], h2[2]); });
+
+    // Zäune an den Wegen, hinten klein, vorn groß
+    function zaun(seite) {
+      var abstand = function (zt) { return 3 + zt * 7; };
+      var pos = function (zt) { var zy = 109 + zt * 131; return { y: zy, h: 2 + zt * 8, x: kante(seite, zy) + (seite === 0 ? -abstand(zt) : abstand(zt)) }; };
+      for (var zt = 0.08; zt < 1; zt += 0.07) {
+        var q = pos(zt), zy = q.y, zh = q.h, zx = q.x;
+        rect(zx, zy - zh, Math.max(1, zt * 2.4), zh, '#6b4a2c');
+        if (zt > 0.1) { var q0 = pos(zt - 0.07), zy0 = q0.y, zh0 = q0.h, zx0 = q0.x;
+          g.strokeStyle = '#7d5935'; g.lineWidth = Math.max(1, zt * 1.6); g.beginPath();
+          g.moveTo(zx0, zy0 - zh0 * .7); g.lineTo(zx, zy - zh * .7); g.moveTo(zx0, zy0 - zh0 * .3); g.lineTo(zx, zy - zh * .3); g.stroke(); }
+      }
+    }
+    zaun(0); zaun(1);
+    return hc;
+  }
+
+  // Was sich im Hintergrund bewegt – nur kleine Flächen, damit es billig bleibt.
+  function lebendig() {
+    // Glitzern auf dem Main
+    for (var i = 0; i < 14; i++) {
+      var px = (i * 37 + Math.floor(zeit / 90) * (i % 3 + 1)) % W, py = MAIN_O + 2 + (i * 5) % (MAIN_U - MAIN_O - 3);
+      if ((Math.floor(zeit / 200) + i) % 3 === 0) { x.fillStyle = '#7fa6d8'; x.fillRect(px, py, 2, 1); }
+    }
+    // Mondspur flimmert
+    if (Math.floor(zeit / 300) % 2) { x.fillStyle = '#86a8d6'; x.fillRect(MOND.x - 1, MAIN_O + 3 + Math.floor(zeit / 300) % 5, 3, 1); }
+    // Ein Fenster geht ab und zu aus und an
+    var fi = Math.floor(zeit / 2500) % Math.max(1, FENSTER.length), f = FENSTER[fi];
+    if (f && Math.floor(zeit / 400) % 3 === 0) { x.fillStyle = '#2a2a2a'; x.fillRect(f[0], f[1], 2, 2); }
+    // Schornsteinrauch
+    if (zeit - deko.zuletzt > 260 && SCHORNSTEINE.length) {
+      var sc = SCHORNSTEINE[Math.floor(Math.random() * SCHORNSTEINE.length)];
+      deko.rauch.push({ x: sc[0], y: sc[1], leben: 70 }); deko.zuletzt = zeit;
+    }
+    deko.rauch.forEach(function (p) { p.y -= 0.12; p.x += 0.05 + Math.sin((p.leben + p.y) / 9) * 0.06; p.leben--; });
+    deko.rauch = deko.rauch.filter(function (p) { return p.leben > 0; });
+    deko.rauch.forEach(function (p) { x.globalAlpha = Math.min(.55, p.leben / 90); x.fillStyle = '#9aa3ad'; x.fillRect(Math.round(p.x), Math.round(p.y), p.leben < 35 ? 2 : 1, p.leben < 35 ? 2 : 1); });
+    x.globalAlpha = 1;
+  }
+
+  function kleinerFriedhof() {
+    if (typeof s === 'undefined' || !s || !s.graeber) return;
+    s.graeber.forEach(function (g, i) {
+      var gx = 247 + (i % 18) * 4, gy = 106;
+      x.fillStyle = '#9aa0a8'; x.fillRect(gx, gy, 2, 3); x.fillStyle = '#c8ccd2'; x.fillRect(gx, gy, 2, 1);
+    });
+    if (s.graeber.length && Math.floor(zeit / 180) % 2) { var lx = 247 + ((s.graeber.length - 1) % 18) * 4; x.fillStyle = '#ffb040'; x.fillRect(lx + 2, 108, 1, 1); }   // Grablicht am neuesten
+  }
+  // Der Friedhof von Urphar: jeder Gefallene bekommt seinen Stein
+  function grabstein(px, py, g, alter) {
+    var w = 54, h = 30, r = Math.round, hoch = Math.min(1, alter / 300);
+    var oy = py + r((1 - hoch) * h);
+    x.save(); x.beginPath(); x.rect(px - 2, py - 8, w + 4, h + 8); x.clip();
+    x.fillStyle = '#1b1612'; x.beginPath(); x.moveTo(px, oy + h); x.lineTo(px, oy + 7); x.arc(px + w / 2, oy + 7, w / 2, Math.PI, 0); x.lineTo(px + w, oy + h); x.fill();
+    x.fillStyle = '#8f949c'; x.beginPath(); x.moveTo(px + 1, oy + h); x.lineTo(px + 1, oy + 7); x.arc(px + w / 2, oy + 7, w / 2 - 1, Math.PI, 0); x.lineTo(px + w - 1, oy + h); x.fill();
+    x.fillStyle = '#a9aeb6'; x.fillRect(px + 3, oy + 4, 2, h - 6);                                     // Licht auf der Kante
+    x.fillStyle = '#5c6068'; x.fillRect(px + w / 2 - .5, oy - 3, 1, 6); x.fillRect(px + w / 2 - 2.5, oy - 1, 5, 1);   // Kreuz
+    var teile = g.name.length > 10 && g.name.indexOf(' ') > 0 ? [g.name.slice(0, g.name.lastIndexOf(' ')), g.name.slice(g.name.lastIndexOf(' ') + 1)] : [g.name];
+    teile.forEach(function (z, i) { text(z, px + w / 2, oy + 10 + i * 7 - (teile.length - 1) * 3, 7, '#1b1612'); });
+    text(g.wie, px + w / 2, oy + 22, 5, '#2e3138'); text('WELLE ' + g.welle, px + w / 2, oy + 27, 5, '#2e3138');
+    x.restore();
+    if (hoch >= 1) {                                                                                     // Grablicht davor
+      x.fillStyle = '#c8302a'; x.fillRect(px + w - 9, py + h - 4, 4, 4);
+      x.fillStyle = Math.random() < .5 ? '#ffd25a' : '#ff8a2a'; x.fillRect(px + w - 8, py + h - 6 - (Math.random() < .3 ? 1 : 0), 2, 2);
+    }
+  }
+  // Zwischenbild: gestorben, aber nicht den Heldentod
+  function kloZeichnen() {
+    var k = s.klo, frost = k.art === 'frost', ti = zeit - modusSeit, r = Math.round;
+    function R(a, b, w, h, c) { x.fillStyle = c; x.fillRect(r(a), r(b), r(w), r(h)); }
+    var blitzJetzt = !frost && (ti % 1700 < 90 || (ti % 1700 > 180 && ti % 1700 < 240));
+    R(0, 0, W, H, blitzJetzt ? '#e8ecff' : frost ? '#101a30' : '#0b1020');
+    if (!blitzJetzt) { x.fillStyle = '#cfd8ff'; for (var st = 0; st < 30; st++) x.fillRect((st * 53) % W, (st * 29) % 80, 1, 1); }
+    R(0, 196, W, H - 196, frost ? '#dfe8f2' : '#1e3322');                                     // Boden: Schnee oder Gras
+    // das Häuschen
+    R(116, 88, 88, 112, '#6b4a2c'); for (var pl = 0; pl < 8; pl++) R(118 + pl * 11, 88, 1, 112, '#4e3420');
+    x.fillStyle = '#4a3020'; x.beginPath(); x.moveTo(108, 92); x.lineTo(212, 80); x.lineTo(212, 88); x.lineTo(108, 100); x.fill();   // Dach
+    R(124, 98, 72, 102, '#1a120c');                                                            // innen dunkel
+    R(196, 98, 34, 102, '#7d5935'); R(196, 98, 2, 102, '#4e3420');                             // Tür steht offen
+    x.fillStyle = '#1a120c'; x.beginPath(); x.arc(210, 116, 3, 0, Math.PI * 2); x.arc(216, 116, 3, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.moveTo(207, 117); x.lineTo(219, 117); x.lineTo(213, 124); x.fill();       // das Herz in der Tür
+    R(124, 160, 72, 12, '#8a6440'); R(124, 160, 72, 2, '#a07a50');                             // der Donnerbalken
+    // der Arme auf dem Thron
+    var haut = frost ? '#bfdcff' : blitzJetzt ? '#ffffff' : '#2a2422', pulli = frost ? '#8fb4d8' : '#1d1d1d';
+    if (frost || !blitzJetzt) {
+      R(148, 134, 24, 27, pulli);                                                              // Pulli
+      R(152, 116, 16, 18, haut);                                                               // Kopf
+      R(150, 112, 20, 6, frost ? '#f4f8ff' : '#111'); R(166, 116, 6, 2, frost ? '#f4f8ff' : '#111');   // Kappe (verschneit oder verkohlt)
+      R(146, 160, 12, 10, haut); R(162, 160, 12, 10, haut);                                    // Knie
+      R(148, 170, 8, 18, haut); R(164, 170, 8, 18, haut);                                      // Schienbeine
+      R(144, 186, 32, 7, frost ? '#7a9ac0' : '#22283a');                                       // Hose um die Knöchel
+      R(146, 193, 10, 4, '#111'); R(164, 193, 10, 4, '#111');                                  // Schuhe
+      R(140, 140, 8, 16, pulli); R(172, 140, 8, 16, pulli);                                    // Arme
+      if (frost) {
+        R(140, 150, 40, 14, '#e8e4d8'); text('KICKER', 160, 158, 7, '#c8302a');               // Zeitung, festgefroren
+        R(156, 122, 2, 2, '#1b1612'); R(162, 122, 2, 2, '#1b1612');                             // starre Augen
+        x.fillStyle = '#f4f8ff'; x.beginPath(); x.moveTo(159, 128); x.lineTo(161, 128); x.lineTo(160, 136); x.fill();   // Eiszapfen an der Nase
+        for (var ez = 0; ez < 12; ez++) { x.beginPath(); x.moveTo(110 + ez * 9, 99 - ez); x.lineTo(114 + ez * 9, 99 - ez); x.lineTo(112 + ez * 9, 106 - ez + (ez % 3) * 2); x.fill(); }   // Eiszapfen am Dach
+        R(108, 86, 104, 4, '#f4f8ff');
+        x.fillStyle = '#ffffff'; for (var sf = 0; sf < 40; sf++) { var sx2 = (sf * 41 + Math.sin(ti / 600 + sf) * 6) % W, sy2 = (sf * 23 + ti * (0.02 + (sf % 4) * .008)) % H; x.fillRect(r(sx2), r(sy2), sf % 5 ? 1 : 2, sf % 5 ? 1 : 2); }
+      } else {
+        R(155, 122, 2, 2, '#ffffff'); R(163, 122, 2, 2, '#ffffff');                             // weisse Augen im Russ
+        x.fillStyle = '#111'; for (var hs = 0; hs < 5; hs++) R(152 + hs * 3, 104 - (hs % 2) * 3, 2, 9, '#111');   // Haare stehen zu Berge
+        x.fillStyle = 'rgba(160,160,170,.5)'; for (var rq = 0; rq < 6; rq++) { var ry = 110 - ((ti / 12 + rq * 20) % 50); x.beginPath(); x.arc(160 + Math.sin(ry / 9 + rq) * 6, ry, 4 + rq % 3, 0, Math.PI * 2); x.fill(); }   // Rauch
+        R(150, 80, 18, 10, '#0b1020');                                                         // Loch im Dach
+      }
+    }
+    if (!frost && ti % 1700 < 260) {                                                           // der Blitz
+      x.strokeStyle = '#fff6a0'; x.lineWidth = 3; x.beginPath(); x.moveTo(170, 0); x.lineTo(150, 30); x.lineTo(168, 40); x.lineTo(152, 70); x.lineTo(162, 84); x.stroke();
+      x.strokeStyle = '#ffffff'; x.lineWidth = 1; x.stroke(); x.lineWidth = 1;
+    }
+    x.fillStyle = 'rgba(11,16,32,.85)'; x.fillRect(20, 8, 280, 44);
+    text(k.name + ' IST GESTORBEN.', 160, 24, 12, COL.hell);
+    text('ABER NICHT DEN HELDENTOD.', 160, 40, 9, COL.feuer);
+    if (ti > 1200) { x.fillStyle = 'rgba(11,16,32,.85)'; x.fillRect(20, 204, 280, 30); text(frost ? 'AUF DEM KLO ERFROREN.' : 'BEIM SCHEISSEN VOM BLITZ GETROFFEN.', 160, 222, frost ? 11 : 9, frost ? '#bfdcff' : '#fff6a0'); }
+  }
+  function friedhofZeichnen() {
+    landschaft(); x.fillStyle = 'rgba(8,10,22,.82)'; x.fillRect(0, 0, W, H);
+    text('FRIEDHOF URPHAR', 160, 20, 14, COL.hell);
+    text('HIER RUHEN DIE HELDEN DER HÜTTE', 160, 36, 8, COL.grau);
+    x.fillStyle = '#1e3322'; x.fillRect(0, 196, W, H - 196);
+    var ti = zeit - modusSeit, sp = 5, bw = 60;
+    s.graeber.forEach(function (g, i) {
+      var reihe = Math.floor(i / sp), spalte = i % sp, inReihe = Math.min(sp, s.graeber.length - reihe * sp);
+      var px = 160 - inReihe * bw / 2 + spalte * bw + 3, py = 48 + reihe * 37, alter = ti - 600 - i * 350;
+      if (alter > 0) grabstein(px, py, g, alter);
+    });
+    if (ti > 1200 + s.graeber.length * 350) {
+      text('RUHET IN FRIEDEN, JUNGS.', 160, 206, 10, COL.feuer);
+      if (Math.floor(zeit / 500) % 2) text('KLICKEN ODER KNOPF – WEITER', 160, 224, 8, COL.hell);
+    }
+  }
+  function landschaft() {
+    if (!HG) HG = hintergrundMalen();
+    x.drawImage(HG, 0, 0);
+    lebendig(); kleinerFriedhof();
+  }
+
+  function symbol(id, px, py, gr) {      // kleine Pixel-Symbole für den Vorrat
+    var g = gr || 1;
+    if (id === 'bier')  { x.fillStyle = COL.feuer; x.fillRect(px, py + 2*g, 5*g, 6*g); x.fillStyle = COL.hell; x.fillRect(px, py, 5*g, 2*g); x.fillStyle = COL.feuer; x.fillRect(px + 5*g, py + 3*g, 2*g, 3*g); }
+    if (id === 'musik') { x.fillStyle = COL.stahl; x.fillRect(px, py + 2*g, 8*g, 6*g); x.fillStyle = COL.nacht; x.fillRect(px + g, py + 3*g, 3*g, 3*g); x.fillStyle = COL.rosa; x.fillRect(px + 5*g, py, g, 4*g); x.fillRect(px + 5*g, py, 2*g, g); }
+    if (id === 'grill') { x.fillStyle = COL.braun; x.fillRect(px, py + 3*g, 8*g, 3*g); x.fillStyle = COL.rot; x.fillRect(px + g, py + 3*g, 6*g, g); }
+    if (id === 'paella') { x.fillStyle = '#2a2a2a'; x.fillRect(px - g, py + 3*g, 10*g, 4*g); x.fillStyle = '#ffd25a'; x.fillRect(px, py + 3*g, 8*g, 3*g); x.fillStyle = '#e2553a'; x.fillRect(px + g, py + 3*g, g, g); x.fillRect(px + 5*g, py + 4*g, g, g); x.fillStyle = '#7fd06a'; x.fillRect(px + 3*g, py + 3*g, g, g); }
+    if (id === 'kohle') { x.fillStyle = COL.grau; x.fillRect(px, py + g, 7*g, 7*g); x.fillStyle = COL.nacht; x.fillRect(px + 2*g, py + 3*g, 3*g, 3*g); }
+  }
+
+  // Eine laufende Figur: Kopf, Körper, schwingende Arme, Beine im Schritt.
+  function person(k, rumpf, kopf, phase, extra) {
+    var gr = k.gr, cx = Math.round(k.p.x), r = Math.round;
+    var hs = Math.max(1, r(gr * 0.9)), tw = Math.max(2, r(gr * 1.4)), th = Math.max(1, r(gr * 1.1));
+    var kopfY = k.o, rumpfY = k.o + hs, beinY = rumpfY + th, beinH = Math.max(1, k.u - beinY);
+    var schwung = Math.sin(phase || 0), lw = Math.max(1, r(gr * 0.45)), aw = Math.max(1, r(gr * 0.35));
+    var spreiz = r(schwung * gr * 0.35), hebL = schwung > 0 ? r(schwung * gr * 0.5) : 0, hebR = schwung < 0 ? r(-schwung * gr * 0.5) : 0;
+    x.fillStyle = rumpf;                                                    // Beine
+    x.fillRect(cx - lw - Math.max(0, spreiz) - 0, beinY, lw, Math.max(1, beinH - hebL));
+    x.fillRect(cx + Math.max(0, -spreiz), beinY, lw, Math.max(1, beinH - hebR));
+    x.fillRect(cx - r(tw / 2), rumpfY, tw, th);                             // Körper
+    var armO = r(schwung * gr * 0.3);                                      // Arme gegenläufig
+    x.fillRect(cx - r(tw / 2) - aw, rumpfY + Math.max(0, armO), aw, Math.max(1, th - Math.abs(armO)));
+    x.fillRect(cx + r(tw / 2), rumpfY + Math.max(0, -armO), aw, Math.max(1, th - Math.abs(armO)));
+    x.fillStyle = kopf; x.fillRect(cx - r(hs / 2), kopfY, hs, hs);          // Kopf
+    if (extra === 'sprinter') {
+      x.fillStyle = COL.nacht; x.fillRect(cx - r(hs / 2), kopfY + r(hs * 0.3), hs, Math.max(1, r(hs * 0.3)));   // Stirnband
+      x.fillStyle = COL.rot; var sl = Math.max(2, gr);                                                        // Tempo-Striche
+      x.fillRect(cx - sl, kopfY - 3, 1, 2); x.fillRect(cx, kopfY - 4, 1, 3); x.fillRect(cx + sl, kopfY - 3, 1, 2);
+    }
+  }
+  // Eine Figur liegt auf der Seite: dasselbe Pixelbild, um 90° gekippt. Gibt false zurück, wenn es kein Bild gibt.
+  function liegendBild(art, rumpf, variante) {
+    if (art === 'fuss') return dorfSprite(1, variante || 0, false);
+    if (art === 'sprinter') return figurBild('sprinter', 1, 'sprinter', false);
+    if (art === 'kumpel') return figurBild('kumpel', 1, 'kumpel', false);
+    if (art === 'wanderer') return figurBild('wanderer', 1, rumpf === COL.rosa ? 'wuetend' : 'wanderer', false);
+    if (art === 'sani') return figurBild('sani', 1, 'sani', false);
+    return null;
+  }
+  function liegendMalen(bild, px, unten, hh, links) {
+    var bb = Math.round(hh * 16 / 26);
+    x.save(); x.imageSmoothingEnabled = false;
+    if (links) { x.translate(Math.round(px + hh / 2), Math.round(unten - bb / 2)); x.rotate(-Math.PI / 2); }
+    else       { x.translate(Math.round(px - hh / 2), Math.round(unten - bb / 2)); x.rotate(Math.PI / 2); }
+    x.drawImage(bild, -bb / 2, -hh, bb, hh);
+    x.restore();
+  }
+  // Der Dorfbewohner kommt ganz nah: Augen glühen, Brauen runter, Schaum vorm Mund
+  function wutMalen(t) {
+    var p1 = 1.5 + t * t * 14, hh = 26 * p1, mx = 160 + (s.riese.seite === 0 ? -1 : 1) * (1 - t) * 60 + (Math.random() - .5) * t * 5;
+    var sx = mx - 8 * p1, sy = 150 + t * 200 - hh, r = Math.round;
+    function px(cx, cy, w, h, col) { x.fillStyle = col; x.fillRect(r(sx + cx * p1), r(sy + cy * p1), Math.max(1, r(w * p1)), Math.max(1, r(h * p1))); }
+    x.imageSmoothingEnabled = false; x.drawImage(dorfSprite(1, 0, false), r(sx), r(sy), r(16 * p1), r(hh));
+    var glut = Math.floor(zeit / 90) % 2 ? '#ff2a2a' : '#ffd25a';
+    px(6, 6, 1, 1, glut); px(8, 6, 1, 1, glut);                                            // glühende Augen
+    if (p1 > 4) {
+      x.fillStyle = '#1b1612';                                                             // böse Brauen
+      x.save(); x.translate(sx + 6.3 * p1, sy + 5.55 * p1); x.rotate(.45); x.fillRect(-p1 * .8, -p1 * .22, p1 * 1.6, p1 * .45); x.restore();
+      x.save(); x.translate(sx + 8.7 * p1, sy + 5.55 * p1); x.rotate(-.45); x.fillRect(-p1 * .8, -p1 * .22, p1 * 1.6, p1 * .45); x.restore();
+      px(6, 8, 3, 1, '#3a0a0a'); px(6.1, 8, 2.8, .3, '#f4efe0');                           // Maul auf, Zähne
+      x.fillStyle = '#f4f8ff';                                                             // Schaum, der blubbert und tropft
+      for (var i = 0; i < 7; i++) {
+        var fx = sx + (5.8 + i * .55) * p1, fy = sy + (8.9 + Math.sin(zeit / 70 + i * 2) * .15) * p1;
+        x.beginPath(); x.arc(fx, fy, p1 * (.28 + (i % 3) * .1), 0, Math.PI * 2); x.fill();
+        if (i % 2) { var tropf = ((zeit / 600 + i * .37) % 1) * 2.2 * p1; x.fillRect(r(fx - p1 * .12), r(fy), Math.max(1, r(p1 * .24)), r(tropf)); x.beginPath(); x.arc(fx, fy + tropf, p1 * .16, 0, Math.PI * 2); x.fill(); }
+      }
+    }
+  }
+  // Wie am Anfang eines Bond-Films: von oben läuft es rot herunter, in Tropfen
+  function blutVorhang(ms, deckung) {
+    if (ms <= 0) return;
+    var stand = Math.min(H + 30, ms / 1500 * (H + 30));
+    x.fillStyle = 'rgba(150,6,16,' + deckung + ')';
+    x.fillRect(0, 0, W, Math.round(stand));
+    for (var c = 0; c < W; c += 4) {
+      var lang = (Math.sin(c * .37) + Math.sin(c * .113 + 1.3) + 2) * 9 + (c * 7 % 11);
+      x.fillRect(c, Math.round(stand), 4, Math.round(lang * Math.min(1, ms / 500)));
+    }
+  }
+  // Eine Tüte: unten der Filter, nach oben breiter, oben zugedreht – die nächste glimmt
+  function tuete(px, py, da, naechste) {
+    var papier = da ? '#f4efe0' : '#4a4f5a', schatten = da ? '#cfc6b0' : '#3a3f48';
+    x.fillStyle = da ? '#c9a86a' : '#3a3f48'; x.fillRect(px + 1, py + 11, 2, 3);                 // Filter
+    for (var z = 0; z < 9; z++) { var b = 2 + Math.floor(z / 3.5); x.fillStyle = papier; x.fillRect(px + 2 - Math.ceil(b / 2), py + 10 - z, b, 1); x.fillStyle = schatten; x.fillRect(px + 2 - Math.ceil(b / 2) + b - 1, py + 10 - z, 1, 1); }
+    x.fillStyle = papier; x.fillRect(px + 1, py + 1, 1, 1); x.fillRect(px + 2, py, 1, 1);          // zugedrehte Spitze
+    if (da && naechste) { x.fillStyle = Math.floor(zeit / 250) % 2 ? '#ff7a2a' : '#ffd25a'; x.fillRect(px, py + 1, 4, 1); }
+  }
+  // Der Dreher: sitzt auf der Bierkiste neben dem Vorrat, dreht, und reicht die Tüte rüber
+  function dreherMalen(anteil) {
+    var r = Math.round;
+    x.fillStyle = '#b8862a'; x.fillRect(64, 229, 15, 9); x.fillStyle = '#8a6220'; x.fillRect(64, 232, 15, 1); x.fillRect(71, 229, 1, 9);   // Kiste
+    x.fillStyle = '#3a6a2a'; for (var f = 0; f < 4; f++) x.fillRect(65 + f * 4, 227, 2, 2);                                              // Flaschenhälse
+    x.fillStyle = '#34508a'; x.fillRect(73, 226, 8, 3); x.fillRect(79, 226, 3, 9); x.fillStyle = '#222'; x.fillRect(79, 235, 4, 2);       // Beine, Schuhe
+    x.fillStyle = '#3a7ac0'; x.fillRect(67, 216, 8, 11);                                                                                    // Pulli
+    x.fillStyle = '#e3b98f'; x.fillRect(68, 209, 6, 7); x.fillStyle = '#1b1612'; x.fillRect(72, 211, 1, 1); x.fillRect(70, 214, 3, 1);     // Kopf, Auge, Mund
+    x.fillStyle = '#1f3f8a'; x.fillRect(67, 207, 8, 3); x.fillRect(73, 209, 4, 1);                                                          // Kappe
+    if (anteil < .82) {
+      var hin = Math.sin(zeit / 70) * 1.5;                                                                                                  // die Hände rollen
+      x.fillStyle = '#f4efe0'; x.fillRect(75, 220, 5, 2);
+      x.fillStyle = '#e3b98f'; x.fillRect(r(74 + hin), 219, 2, 3); x.fillRect(r(79 - hin), 219, 2, 3);
+      x.fillStyle = '#3a7ac0'; x.fillRect(73, 219, r(2 + hin), 2);
+    } else {
+      var a = (anteil - .82) / .18, tx = 80 + a * 70, ty = 219 - Math.sin(a * Math.PI) * 18 - a * 3;                                         // die Tüte fliegt zur Zwille
+      x.fillStyle = '#3a7ac0'; x.fillRect(74, 216, 7, 2); x.fillStyle = '#e3b98f'; x.fillRect(81, 215, 2, 3);                                // Arm ausgestreckt
+      x.fillStyle = '#f4efe0'; x.fillRect(r(tx), r(ty), 4, 2); x.fillStyle = '#c9a86a'; x.fillRect(r(tx), r(ty), 1, 2);
+    }
+  }
+  function leicheMalen(l) {
+    var gr = Math.max(1, l.gr), y = Math.round(l.y - l.hoehe), lang = Math.round(gr * 3), dick = Math.max(1, Math.round(gr * 0.8));
+    var x0 = Math.round(l.x - lang / 2);
+    if (l.art === 'fahrzeug') {
+      x.fillStyle = COL.dunkel; x.fillRect(Math.round(l.x - gr * 2), y - gr, Math.round(gr * 4), gr);
+      x.fillStyle = COL.nacht; x.fillRect(Math.round(l.x - gr * 1.5), y - Math.round(gr * 1.6), Math.round(gr * 1.6), Math.max(1, Math.round(gr * .6)));
+      return;
+    }
+    var bild = liegendBild(l.art, l.rumpf, l.variante);
+    if (bild) { liegendMalen(bild, l.x, y + Math.round(gr * .6), spriteHoehe(Math.max(0, Math.min(1, (l.y - 109) / 139))), l.links); return; }
+    x.fillStyle = l.rumpf; x.fillRect(x0, y - dick, lang, dick);
+    x.fillStyle = l.kopf;  x.fillRect(l.links ? x0 - dick : x0 + lang, y - dick, dick, dick);
+  }
+
+  function fleckMalen(f) {
+    var gr = Math.max(1, f.gr), b = Math.round(gr * 3.4), h = Math.max(1, Math.round(gr * 0.9));
+    x.globalAlpha = Math.min(0.75, f.leben * 1.2);
+    x.fillStyle = f.brand ? '#1c2a1a' : '#2f4a2a';
+    x.fillRect(Math.round(f.x - b / 2), Math.round(f.y - h), b, h);
+    x.fillRect(Math.round(f.x - b / 3), Math.round(f.y - h - 1), Math.round(b * 2 / 3), 1);
+    x.globalAlpha = 1;
+  }
+  function saniMalen(m) {
+    var d = saniRichtung(m), t2 = saniTiefe(m), hh = spriteHoehe(t2), r = Math.round, paar = saniPaar(m);
+    var vorn = paar[0].p.x, hinten = paar[1].p.x, handY = r(m.y - hh * 13 / 26), dick = Math.max(1, r(hh / 26));
+    var l = Math.min(vorn, hinten), br = Math.abs(vorn - hinten);
+    figurMalen('sani', 'sani', hinten, m.y, t2, m.schritt + Math.PI, d < 0, false);
+    x.fillStyle = '#7d5935'; x.fillRect(r(l - hh * .12), handY, r(br + hh * .24), dick);                  // die Holme
+    x.fillStyle = '#d8cfb6'; x.fillRect(r(l + hh * .1), handY - dick, r(br - hh * .2), dick);              // das Leinen
+    if (m.traegt) {                                                                                        // der Abgeholte liegt drauf
+      var lb = liegendBild(m.traegt.art, m.traegt.rumpf, m.traegt.variante);
+      if (lb) liegendMalen(lb, m.x, handY - dick + r(hh * .08), r(br * 1.1), d < 0);
+      else { var lang = r(br * .6), kd = Math.max(2, r(hh / 9));
+        x.fillStyle = m.traegt.rumpf; x.fillRect(r(m.x - lang / 2), handY - dick - kd, lang, kd); }
+    }
+    figurMalen('sani', 'sani', vorn, m.y, t2, m.schritt, d < 0, false);
+  }
+
+  function gegnerMalen(g) {
+    var k = koerper(g), weiss = g.blitz > 0 && g.blitz % 2;
+    if (g.art === 'fahrzeug') {
+      x.fillStyle = weiss ? COL.hell : COL.oliv; x.fillRect(k.l, k.o + k.gr, k.r - k.l, k.gr);
+      x.fillStyle = weiss ? COL.hell : COL.dunkel; x.fillRect(k.l + 2, k.o, Math.round((k.r - k.l) * .5), k.gr);
+      x.fillStyle = COL.nacht; var rad = Math.max(1, Math.round(k.gr * .6));
+      x.fillRect(k.l + 1, k.u - rad, rad * 2, rad); x.fillRect(k.r - 1 - rad * 2, k.u - rad, rad * 2, rad);
+      x.fillStyle = COL.rosa; x.fillRect(Math.round(k.p.x), k.o - 1, 1, 2);
+      for (var i = 0; i < g.leben; i++) { x.fillStyle = COL.feuer; x.fillRect(k.l + i * 3, k.o - 4, 2, 2); }
+      return;
+    }
+    if (g.art === 'sprinter') {
+      figurMalen('sprinter', 'sprinter', k.p.x, k.u, g.t, g.schritt, false, weiss);
+      var sl = Math.max(2, Math.round(k.gr * .8)); x.fillStyle = COL.rot;                         // Tempo-Striche
+      x.fillRect(Math.round(k.p.x - sl * 1.5), k.o - 4, 1, 3); x.fillRect(Math.round(k.p.x), k.o - 5, 1, 3); x.fillRect(Math.round(k.p.x + sl * 1.5), k.o - 4, 1, 3);
+    }
+    else if (g.art === 'fuss') {
+      var hh = spriteHoehe(g.t), bb = Math.round(hh * 16 / 26), bild = Math.floor((g.schritt || 0) / (Math.PI / 2)) % 4;
+      x.imageSmoothingEnabled = false;
+      if (weiss) { x.globalAlpha = .5; }
+      var sx = Math.round(k.p.x - bb * 6 / 16), sy = Math.round(k.u - hh);
+      x.drawImage(dorfSprite(bild, g.variante || 0, g.fackel), sx, sy, bb, hh);
+      if (g.fackel) {                                                      // die Flamme flackert über dem Stiel
+        var px1 = hh / 26, fx = sx + 14.5 * bb / 16, fy = sy + 4 * px1, fl = 2 + Math.random() * 1.5;
+        x.globalAlpha = .25; x.fillStyle = '#ffb040'; x.beginPath(); x.arc(fx, fy - px1 * 2, px1 * 5, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1;
+        x.fillStyle = '#e2553a'; x.fillRect(Math.round(fx - px1 * 1.5), Math.round(fy - px1 * fl * 1.6), Math.max(1, Math.round(px1 * 3)), Math.max(1, Math.round(px1 * fl * 1.6)));
+        x.fillStyle = '#ffd25a'; x.fillRect(Math.round(fx - px1 * .7), Math.round(fy - px1 * fl), Math.max(1, Math.round(px1 * 1.4)), Math.max(1, Math.round(px1 * fl)));
+      }
+      x.globalAlpha = 1;
+    }
+    else person(k, weiss ? COL.rosa : COL.hell, COL.rosa, g.schritt);
+  }
+  function kumpelMalen() {
+    var k = kumpelKoerper(s.kumpel);
+    var kb = s.kumpel.blitz > 0 && s.kumpel.blitz % 2;
+    figurMalen('kumpel', 'kumpel', k.p.x, k.u, s.kumpel.t, s.kumpel.schritt, false, kb);
+    text(s.kumpel.name, k.p.x, k.o - 14, 7, COL.blau);
+    for (var f = 0; f < KUMPEL_FAEUSTE; f++) { x.fillStyle = f < s.kumpel.faeuste ? COL.blau : COL.grau; x.fillRect(Math.round(k.p.x) - 4 + f * 3, k.o - 9, 2, 2); }
+    if (s.kumpel.phase === 'zurueck') symbol(s.mission.id, k.r + 1, k.o + k.gr, Math.max(1, Math.round(k.gr / 3)));
+    if (Math.floor(zeit / 400) % 2) { x.fillStyle = COL.blau; x.fillRect(Math.round(k.p.x) - 1, k.o - 5, 3, 2); }   // Markierung: „nicht schiessen"
+  }
+  function dackelKasten(d) {
+    var u = (7 + Math.max(0, (d.y - 109) / 139) * 22) / 16;
+    return { l: Math.round(d.x - 8 * u), r: Math.round(d.x + 8 * u), o: Math.round(d.y - 8 * u), u: Math.round(d.y), gr: 2, p: { x: d.x, y: d.y } };
+  }
+  // Der Dackel: lang, kurze Beine, Ohren fliegen, Schwanz wedelt
+  function dackelMalen(d) {
+    var u = (7 + Math.max(0, (d.y - 109) / 139) * 22) / 16, rechts = d.dx > 0, r = Math.round;
+    function px(a, b, w, h, col) { x.fillStyle = col; var lx = rechts ? d.x - 8 * u + a * u : d.x + 8 * u - (a + w) * u; x.fillRect(r(lx), r(d.y + b * u), Math.max(1, r(w * u)), Math.max(1, r(h * u))); }
+    var s1 = Math.sin(d.schritt), s2 = Math.sin(d.schritt + Math.PI), wedel = Math.sin(zeit / 60) > 0 ? 0 : 1;
+    px(3, -2 + (s1 > 0 ? -.6 : 0), 1, 2, '#7a3a14'); px(5, -2 + (s2 > 0 ? -.6 : 0), 1, 2, '#7a3a14');      // Beine hinten
+    px(10, -2 + (s2 > 0 ? -.6 : 0), 1, 2, '#7a3a14'); px(12, -2 + (s1 > 0 ? -.6 : 0), 1, 2, '#7a3a14');    // Beine vorn
+    px(2, -5, 11, 3, '#c06a2c'); px(3, -2.6, 9, .6, '#9a5222');                                           // langer Körper
+    px(0.5, -6.5 - wedel, 1.2, 2 + wedel, '#c06a2c');                                                      // Schwanz
+    px(11.5, -7.5, 4, 3, '#c06a2c'); px(15.2, -6, 1.6, 1.5, '#c06a2c'); px(16.3, -6, .8, .8, '#111');        // Kopf, Schnauze, Nase
+    px(11.6, -7 + (d.flucht ? -1.2 : 0), 1.3, 3, '#6a3410');                                              // Schlappohr
+    px(14, -7, .8, .8, '#111'); px(11, -5, .8, 3, '#c8302a');                                              // Auge, Halsband
+    if (d.flucht) text('JAUL!', d.x, d.y - 10 * u - 4, 7, COL.rosa);
+    else if (Math.floor((zeit - d.seit) / 900) % 3 === 0) text('WAU!', d.x + (rechts ? 8 : -8) * u, d.y - 9 * u - 3, 7, COL.hell);
+  }
+  function leuteMalen(m) {
+    var k = leuteKoerper(m);
+    figurMalen('wanderer', m.wuetend ? 'wuetend' : 'wanderer', k.p.x, k.u, (m.y - 109) / 139, m.schritt, m.dx < 0, false);
+    if (m.wuetend) text('!', k.p.x, k.o - 5, 9, COL.rot);
+  }
+
+  function lauf() {
+    // Holz-Zwille vor der Hütte: das Gummi zieht zur Zielrichtung, beim Schuss schnalzt es
+    var w = laufWinkel(), r = Math.round, zug = s.muendung > 0 ? 0 : 6;
+    var gx = 160, gy = 236, lx = gx - 11, rx = gx + 11, oy = gy - 22;
+    x.fillStyle = '#6b4a2c'; x.fillRect(gx - 2, gy - 10, 4, 14);                         // Griff
+    x.fillRect(lx, oy, 3, 14); x.fillRect(rx - 2, oy, 3, 14);                              // Gabel
+    x.fillRect(lx, oy + 11, rx - lx + 1, 3);
+    x.fillStyle = '#8a6440'; x.fillRect(lx, oy, 1, 14); x.fillRect(rx - 2, oy, 1, 14);
+    var px = gx - Math.cos(w) * zug, py = oy + 2 - Math.sin(w) * zug + zug;                 // Lederschlaufe
+    x.strokeStyle = '#3a2418'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(lx + 1, oy + 1); x.lineTo(px, py); x.lineTo(rx - 1, oy + 1); x.stroke(); x.lineWidth = 1;
+    x.fillStyle = '#4a2f20'; x.fillRect(r(px - 2), r(py - 1), 4, 3);
+    if (s.munition > 0 && !s.nachladenBis) { x.fillStyle = '#f4efe0'; x.beginPath(); x.moveTo(px - 1, py + 1); x.lineTo(px - 3, py - 7); x.lineTo(px + 3, py - 7); x.lineTo(px + 1, py + 1); x.fill(); x.fillStyle = (Math.floor(zeit / 200) % 2) ? '#ff7a2a' : '#ffd25a'; x.fillRect(r(px - 3), r(py - 8), 6, 2); }   // der nächste Joint liegt drin
+    x.fillStyle = COL.dunkel; x.fillRect(132, 230, 56, 10);
+    x.fillStyle = COL.weg; for (var i = 0; i < 4; i++) x.fillRect(134 + i * 13, 232, 11, 5);
+    if (s.muendung > 0) rauchwolke(gx, oy - 2, 1, 4);
+  }
+  function fadenkreuz() {
+    var zx = Math.round(s.ziel.x) + .5, zy = Math.round(s.ziel.y) + .5;
+    x.strokeStyle = COL.hell; x.lineWidth = 1; x.beginPath(); x.arc(zx, zy, 9, 0, Math.PI * 2);
+    x.moveTo(zx - 13, zy); x.lineTo(zx - 4, zy); x.moveTo(zx + 4, zy); x.lineTo(zx + 13, zy);
+    x.moveTo(zx, zy - 13); x.lineTo(zx, zy - 4); x.moveTo(zx, zy + 4); x.lineTo(zx, zy + 13); x.stroke();
+    x.fillStyle = COL.rosa; x.fillRect(zx - .5, zy - .5, 1, 1);
+  }
+  function anzeigen() {
+    x.fillStyle = 'rgba(16,19,27,.8)'; x.fillRect(0, 0, W, 13);
+    text(name.map(function (i) { return ABC[i]; }).join('') + '  ' + s.punkte, 3, 7, 9, COL.hell, 'left');
+    var quote = s.schuesse ? Math.round(100 * s.treffer / s.schuesse) : 0;
+    text('WELLE ' + s.welle + '  TREFFER ' + s.treffer + '/' + s.schuesse + ' ' + quote + '%', 168, 7, 9);
+    text('HÜTTE', 290, 7, 9, COL.hell, 'right');
+    for (var h = 0; h < LEBEN; h++) { x.fillStyle = h < s.huette ? COL.rosa : COL.grau; x.fillRect(294 + h * 8, 3, 6, 6); }
+    for (var i = 0; i < MAGAZIN; i++) tuete(6 + i * 7, 220, i < s.munition, i === s.munition - 1);
+    if (s.nachladenBis) {
+      var anteil = 1 - (s.nachladenBis - zeit) / NACHLADEN_MS;
+      dreherMalen(anteil); text('NACHDREHEN', 6, 208, 9, COL.hell, 'left'); x.fillStyle = COL.grau; x.fillRect(6, 214, 46, 2); x.fillStyle = COL.feuer; x.fillRect(6, 214, 46 * anteil, 2);
+    } else if (s.munition === 0) text('LEER!', 6, 208, 9, COL.rot, 'left');
+    var leben = s.kumpels.length + (s.kumpel ? 1 : 0);
+    text('KUMPELS', 314, 184, 7, COL.blau, 'right');
+    for (var m = 0; m < TRUPPE.length; m++) {                    // ein Männchen pro Kumpel, Gefallene grau
+      var mx = 312 - (m % 8) * 5, my = 189 + Math.floor(m / 8) * 7, da = m < leben;
+      x.fillStyle = da ? COL.hell : COL.grau; x.fillRect(mx, my, 2, 2);
+      x.fillStyle = da ? COL.blau : COL.grau; x.fillRect(mx, my + 2, 2, 3);
+    }
+    // Vorrat der Hütte unten rechts
+    if (s.vorrat.length) { text('VORRAT', 314, 212, 8, COL.grau, 'right'); s.vorrat.slice(-6).forEach(function (id, j) { symbol(id, 304 - j * 11, 220, 1); }); }
+    // laufende Mission
+    if (s.mission && !s.missionErgebnis && modus === 'spiel') text('MISSION: ' + s.mission.auftrag, 160, 20, 8, COL.blau);
+    s.meldungen.slice(-3).forEach(function (m, j) { text(m.t, 160, 34 + j * 11, 9, m.farbe); });
+  }
+  function bestenliste(o) {
+    var l = listeLesen();
+    text('BESTENLISTE', 160, o, 9, COL.feuer);
+    l.forEach(function (e, i) {
+      var farbe = (modus === 'ende' && i === platz) ? COL.rosa : COL.hell;
+      text((i + 1) + '. ' + e.n + '  ' + ('      ' + e.p).slice(-6), 160, o + 12 + i * 10, 9, farbe);
+    });
+  }
+  function szene() {
+    var wx = s.wackeln ? (Math.random() - .5) * s.wackeln * .6 : 0;
+    x.save(); x.translate(Math.round(wx), 0);
+    landschaft();
+    s.krater.forEach(function (k) { x.globalAlpha = Math.min(1, k.leben / 60); x.fillStyle = COL.dunkel; x.fillRect(k.x - 2, k.y - 1, 5, 3); x.fillStyle = COL.nacht; x.fillRect(k.x - 1, k.y, 3, 1); });
+    x.globalAlpha = 1;
+    s.flecken.forEach(fleckMalen);
+    s.leichen.forEach(leicheMalen);
+    s.sani.forEach(saniMalen);
+    s.leute.forEach(leuteMalen);
+    if (s.dackel) dackelMalen(s.dackel);
+    var alle = s.gegner.map(function (g) { return { t: g.t, mal: function () { gegnerMalen(g); } }; });
+    if (s.kumpel) alle.push({ t: s.kumpel.t, mal: kumpelMalen });
+    alle.sort(function (a, b) { return a.t - b.t; }).forEach(function (o) { o.mal(); });
+    s.geschosse.forEach(function (b) {
+      var a = Math.min(1, (zeit - b.start) / FLUGZEIT_MS), px = b.vx + (b.zx - b.vx) * a, py = b.vy + (b.zy - b.vy) * a, gr = 2 + (1 - a) * 2;
+      // Dicke Tüte, die sich im Flug überschlägt – hinten spitz, vorn dick mit Glut
+      var lang = 5 + (1 - a) * 6, dick = 1.5 + (1 - a) * 2;
+      x.save(); x.translate(px, py); x.rotate(zeit / 70 + b.start);
+      x.fillStyle = '#f4efe0'; x.beginPath(); x.moveTo(-lang / 2, -dick * .35); x.lineTo(lang / 2, -dick); x.lineTo(lang / 2, dick); x.lineTo(-lang / 2, dick * .35); x.fill();
+      x.fillStyle = '#c9a86a'; x.fillRect(-lang / 2, -dick * .35, 1.5, dick * .7);                        // Filter
+      x.fillStyle = (Math.floor(zeit / 60) % 2) ? '#ff7a2a' : '#ffd25a'; x.fillRect(lang / 2 - 1, -dick, 2, dick * 2);   // Glut
+      x.fillStyle = '#7fd06a'; x.fillRect(-1, -dick * .6, 1, 1);                                          // ein Krümel Grün
+      x.restore();
+      if (Math.random() < .25) s.funken.push({ x: px, y: py, dx: 0, dy: -.12, leben: 26, farbe: 'ring', rauch: true });   // Rauchkringel
+      if (Math.random() < .5) s.funken.push({ x: px, y: py, dx: (Math.random() - .5) * .2, dy: -.2, leben: 18, farbe: '#a8d89a', rauch: true, gross: 1 });
+    });
+    s.explosionen = s.explosionen.filter(function (e) { return zeit - e.start < 650; });
+    s.explosionen.forEach(function (e) {
+      var a = (zeit - e.start) / 650;
+      x.globalAlpha = 1 - a;
+      x.fillStyle = a < .25 ? '#d8f5c8' : '#7fd06a';                                   // Qualmball
+      x.beginPath(); x.arc(e.x, e.y, e.r * (.35 + a * .4), 0, Math.PI * 2); x.fill();
+      x.strokeStyle = '#4f9a3f'; x.lineWidth = 2;                                         // Rauchring
+      x.beginPath(); x.arc(e.x, e.y, e.r * (.4 + a * .8), 0, Math.PI * 2); x.stroke();
+      x.globalAlpha = 1; x.lineWidth = 1;
+    });
+    s.funken.forEach(function (p) { if (p.farbe === 'ring') { x.globalAlpha = p.leben / 30; x.strokeStyle = '#d8f0c8'; x.beginPath(); x.arc(p.x, p.y, 1 + (26 - p.leben) / 6, 0, Math.PI * 2); x.stroke(); x.globalAlpha = 1; return; } var g2 = p.gross ? Math.max(2, Math.round(p.gross * (1 + (70 - p.leben) / 50))) : 2; if (p.gross) x.globalAlpha = Math.min(.8, p.leben / 50); x.fillStyle = p.farbe; x.fillRect(Math.round(p.x - g2 / 2), Math.round(p.y - g2 / 2), g2, g2); x.globalAlpha = 1; });
+    // Grüner Dunst, der über dem Tal hängt – je mehr getroffen, desto dichter
+    if (s.dunst > .01) {
+      for (var dz = 0; dz < 7; dz++) {                                     // Schwaden als wellige Bänder
+        x.globalAlpha = s.dunst * (1 - dz / 8) * .22;
+        x.fillStyle = dz % 2 ? '#9ad884' : '#76c262';
+        x.beginPath(); x.moveTo(0, H);
+        for (var dx2 = 0; dx2 <= W; dx2 += 8) x.lineTo(dx2, 34 + dz * 9 + Math.sin(dx2 / 37 + zeit / 2200 + dz * 1.7) * 7 + Math.sin(dx2 / 13 + zeit / 900) * 2);
+        x.lineTo(W, 34 + dz * 9 + 40); x.lineTo(0, 34 + dz * 9 + 40); x.closePath(); x.fill();
+      }
+      x.globalAlpha = 1;
+    }
+    s.schwebe = s.schwebe.filter(function (b) { return zeit - b.start < 900; });
+    s.schwebe.forEach(function (b) { var a = (zeit - b.start) / 900; x.globalAlpha = 1 - a; text(b.t, b.x, b.y - a * 14, 7, '#c8f0a8'); x.globalAlpha = 1; });
+    lauf(); x.restore();
+    if (modus !== 'ueberrannt' && modus !== 'spezial') fadenkreuz();
+    anzeigen();
+  }
+
+  function zeichnen() {
+    if (modus === 'friedhof') { friedhofZeichnen(); return; }
+    if (modus === 'klo') { kloZeichnen(); return; }
+    if (modus === 'titel') {
+      landschaft();
+      x.fillStyle = 'rgba(11,16,32,.6)'; x.fillRect(0, 0, W, H);
+      demoLogo(30);
+      text('DIE HÜTTE IM SUMPF BRAUCHT DICH', 160, 54, 9, COL.hell);
+      ['bier','musik','grill','kohle','paella'].forEach(function (id, i) { symbol(id, 120 + i * 18, 62, 1); });
+      var hoeheL = 24 + listeLesen().length * 10; kasten(90, 76, 140, hoeheL); bestenliste(88);
+      if (Math.floor(zeit / 500) % 2) text('KLICKEN ODER KNOPF DRÜCKEN', 160, 198, 9, COL.feuer);
+      laufschrift(226);
+      return;
+    }
+    if (modus === 'name') {
+      landschaft(); kasten(60, 60, 200, 110);
+      text('DEIN NAME', 160, 80, 12, COL.rosa);
+      for (var i = 0; i < 3; i++) {
+        var px = 130 + i * 30, aktiv = i === namePos;
+        text(ABC[name[i]], px, 116, 20, aktiv ? COL.feuer : COL.hell);
+        if (aktiv && Math.floor(zeit / 300) % 2) { x.fillStyle = COL.feuer; x.fillRect(px - 7, 130, 14, 2); }
+        if (aktiv) { text('▲', px, 96, 8, COL.grau); text('▼', px, 140, 8, COL.grau); }
+      }
+      text('▲/▼ antippen oder Stick · Buchstabe antippen: weiter', 160, 158, 7, COL.grau);
+      return;
+    }
+    if (modus === 'intro') { introZeichnen(); return; }
+    if (modus === 'morgen') { morgenZeichnen(); return; }
+    szene();
+    if (modus === 'spezial') spezialMalen();
+    if (modus === 'welle') {
+      kasten(55, 88, 210, 66);
+      var zeile = 104;
+      if (s.welle > 1) { text('WELLE ' + (s.welle - 1) + ' GESCHAFFT!', 160, zeile, 11, COL.feuer); zeile += 16; }
+      text('WELLE ' + s.welle + (s.welle === 1 ? ' – DIE KARTOFFELN KOMMEN!' : s.welle % 4 === 3 ? ' – KARTOFFEL-ALARM!' : ''), 160, zeile, s.welle === 1 || s.welle % 4 === 3 ? 10 : 12, COL.hell); zeile += 14;
+      if (s.mission) { text('MISSION: ' + s.mission.auftrag, 160, zeile, 9, COL.blau); symbol(s.mission.id, 240, zeile - 4, 1); zeile += 11; text('Nicht auf den Kumpel schiessen!', 160, zeile, 8, COL.grau); }
+      else if (s.welle === 3) text('Achtung: SCHNELLE in Rot mit Stirnband!', 160, zeile, 8, COL.rot);
+      else if (s.welle === 5) text('FAHRZEUGE! 3 Treffer – dann qualmt es', 160, zeile, 8, COL.rot);
+    }
+    if (modus === 'ueberrannt') {
+      var t = s.riese.t, gr = 10 + t * t * 260, mx = 160 + (s.riese.seite === 0 ? -1 : 1) * (1 - t) * 60, unten = 150 + t * 200;
+      if (s.riese.art === 'fahrzeug') {
+        x.fillStyle = COL.oliv; x.fillRect(mx - gr, unten - gr * .9, gr * 2, gr * .6);
+        x.fillStyle = COL.nacht; x.fillRect(mx - gr * .9, unten - gr * .35, gr * .6, gr * .3); x.fillRect(mx + gr * .3, unten - gr * .35, gr * .6, gr * .3);
+      } else wutMalen(t);
+      blutVorhang(zeit - modusSeit - 900, s.opfer ? .78 : .92);
+      if (zeit - modusSeit > (s.opfer ? 1000 : 1700)) { x.fillStyle = 'rgba(11,16,32,.8)'; x.fillRect(30, s.opfer ? 150 : 160, 260, s.opfer ? 78 : 56); }   // unten, damit man ihm ins Gesicht sieht
+      if (zeit - modusSeit > (s.opfer ? 1000 : 1700)) text('ÜBERRANNT!', 160, s.opfer ? 166 : 178, 20, COL.hell);
+      if (s.opfer && zeit - modusSeit > 1200) {
+        text('KARDEŞİM!', 160, 186, 9, COL.hell);
+        text(s.opfer + ' WIRFT SICH', 160, 198, 11, COL.feuer);
+        text('DEN ANGREIFERN ENTGEGEN!', 160, 212, 11, COL.feuer);
+      }
+      if (!s.opfer && zeit - modusSeit > 2000) text('KEIN KUMPEL MEHR DA', 160, 200, 10, COL.hell);
+    }
+    if (modus === 'ende') {
+      x.fillStyle = 'rgba(120,10,20,.85)'; x.fillRect(0, 0, W, H);
+      kasten(40, 10, 240, 222);
+      text('BİTTİ MORUK – DIE HÜTTE IST GEFALLEN', 160, 24, 10, COL.rosa);
+      text(s.punkte + ' Punkte · Welle ' + s.welle + ' · ' + s.treffer + ' Treffer' + (s.weggefegt ? ' · ' + s.weggefegt + ' weggefegt' : ''), 160, 39, 9);
+      if (s.vorrat.length) { text('Besorgt:', 120, 52, 8, COL.grau); s.vorrat.slice(-6).forEach(function (id, j) { symbol(id, 140 + j * 11, 48, 1); }); }
+      if (platz >= 0) text('NEU IN DER BESTENLISTE: PLATZ ' + (platz + 1), 160, 64, 9, COL.feuer);
+      if (s.lazarett.length) text('IN EHREN: ' + s.lazarett.slice(-4).join(', ') + (s.lazarett.length > 4 ? ' …' : ''), 160, 186, 7, COL.rot);
+      bestenliste(78);
+      var opt = ['NOCHMAL – TEKRAR?', 'ZUM HÜTTEN-MENÜ – GÖRÜŞÜRÜZ!'];
+      for (var j = 0; j < 2; j++) text((endeWahl === j ? '▶ ' : '  ') + opt[j], 160, 196 + j * 14, 10, endeWahl === j ? COL.feuer : COL.hell);
+    }
+  }
+
+  function tick(jetzt) {
+    var dt = zeit ? Math.min(40, jetzt - zeit) : 16;
+    zeit = jetzt;
+    schritt(dt, lesen()); zeichnen();
+    requestAnimationFrame(tick);
+  }
+  window.__sumpf = function () { return { saniKoerper: saniKoerper, saniPaar: saniPaar, s: s, modus: modus, koerper: koerper, kumpelKoerper: kumpelKoerper, leuteKoerper: leuteKoerper, name: name }; }; // nur zum Testen
+  requestAnimationFrame(tick);
+}());
+</script>
+</body>
+</html>
