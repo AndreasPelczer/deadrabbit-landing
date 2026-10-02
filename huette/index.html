@@ -1363,9 +1363,11 @@
       if (alter > 0) grabstein(px, py, g, alter);
     });
     if (ti > 1200 + s.graeber.length * 350) {
-      text('DU BIST SO EIN MIESER KUMPEL.', 160, 203, 10, COL.feuer);
-      text('ALLE DEINE FREUNDE FÜR BIER UND KOHLE VERHEIZT.', 160, 215, 7, COL.hell);
-      text('GEH HEIM UND SCHÄM DICH, ' + name.map(function (i) { return ABC[i]; }).join('') + '!', 160, 229, 10, COL.rosa);
+      var liste = listeLesen(), ueberholt = platz >= 0 && liste[platz + 1] ? liste[platz + 1].n : null;   // wen hat er gerade überholt?
+      text('DU BIST SO EIN MIESER KUMPEL.', 160, 200, 9, COL.feuer);
+      text('ALLE DEINE FREUNDE FÜR BIER UND KOHLE VERHEIZT.', 160, 210, 7, COL.hell);
+      text('GEH HEIM UND SCHÄM DICH, ' + name.map(function (i) { return ABC[i]; }).join('') + '!', 160, 221, 9, COL.rosa);
+      if (ti > 2600 + s.graeber.length * 350) text(ueberholt ? 'UND JETZT NOCH STOLZ, WEIL DU MEHR PUNKTE ALS ' + ueberholt + ' HAST? ECHT.' : 'UND NICHT MAL IN DER BESTENLISTE. ECHT.', 160, 232, 7, '#c8ccd2');
     }
   }
   function landschaft() {
