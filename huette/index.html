@@ -2131,21 +2131,29 @@
     var pz = s.pizza, rechts = pz.dx > 0, h = seitlichMalen('pizzaSeite', pz.x, PIZZA_Y + (Math.floor(zeit / 120) % 2), pizzaBreite(), rechts);
     if (zeit - pz.seit < 3000 || Math.floor(zeit / 700) % 3 === 0) text(zeit - pz.seit < 3000 ? 'PIZZA-BLITZ' : 'TÜT TÜT!', pz.x, PIZZA_Y - h - 6, 7, COL.feuer);
   }
-  // die Bundesstraße am anderen Mainufer – nur angedeutet, wie in echt
-  var STRASSE_Y = 100;
+  // die Bundesstraße am anderen Mainufer – nur angedeutet, wie in echt. Am letzten Haus geht es hoch auf die Brücke,
+  // drüben hinter den ersten Häusern wieder runter ans Ufer; die Auffahrten sieht man nicht, rechts verschwindet alles in den Bäumen.
+  var STRASSE = [[0, 150, 100], [163, 203, 90], [216, 292, 98]];      // [von x, bis x, Höhe der Fahrbahn]
+  function strasseBei(px) { for (var i = 0; i < STRASSE.length; i++) if (px >= STRASSE[i][0] && px <= STRASSE[i][1]) return STRASSE[i][2]; return null; }
   function strasseMalen() {
-    x.fillStyle = 'rgba(30,32,44,.45)'; x.fillRect(0, STRASSE_Y - 2, W, 2);
-    x.fillStyle = 'rgba(200,190,150,.18)'; for (var sx = (Math.floor(zeit / 400) * 0) % 12; sx < W; sx += 12) x.fillRect(sx, STRASSE_Y - 1, 4, 1);
+    [STRASSE[0], STRASSE[2]].forEach(function (st) {
+      x.fillStyle = 'rgba(30,32,44,.45)'; x.fillRect(st[0], st[2] - 2, st[1] - st[0], 2);
+      x.fillStyle = 'rgba(200,190,150,.18)'; for (var sx = st[0]; sx < st[1]; sx += 12) x.fillRect(sx, st[2] - 1, 4, 1);
+    });
   }
   function verkehrMalen() {
     var v = s.verkehr, rechts = v.dx > 0, br = v.art[0] === 'traktorSeite' ? 11 : v.art[0] === 'vespaSeite' ? 8 : 12;
-    var h = seitlichMalen(v.art[0], v.x, STRASSE_Y, br, rechts);
-    if (v.art[1]) seitlichMalen(v.art[1], v.x + (rechts ? -1 : 1) * br * .95, STRASSE_Y, br * .9, rechts);
-    var vorn = v.x + (rechts ? 1 : -1) * br / 2, hinten = v.x - (rechts ? 1 : -1) * br / 2, ly = Math.round(STRASSE_Y - Math.max(2, h * .45));
-    x.fillStyle = '#fff2b0'; x.fillRect(Math.round(vorn), ly, 1, 1);                                          // Scheinwerfer
-    x.globalAlpha = .25; x.fillRect(Math.round(vorn + (rechts ? 1 : -4)), ly, 4, 1); x.globalAlpha = 1;       // Lichtkegel
-    x.fillStyle = '#ff3a3a'; x.fillRect(Math.round(hinten), ly, 1, 1);                                        // Rücklicht
-    if (v.art[0] === 'polizeiSeite' && Math.floor(zeit / 150) % 2) { x.fillStyle = '#3aa0ff'; x.fillRect(Math.round(v.x - 1), Math.round(STRASSE_Y - h - 1), 2, 1); }
+    var y0 = strasseBei(v.x); if (y0 === null) return;                                        // gerade auf der Auffahrt oder im Wald
+    var anh = v.art[1] ? v.x + (rechts ? -1 : 1) * br * .95 : null;
+    x.save(); x.beginPath(); var st = STRASSE.filter(function (s2) { return s2[2] === y0; })[0]; x.rect(st[0], 0, st[1] - st[0], H); x.clip();   // nur auf diesem Stück sichtbar
+    var h = seitlichMalen(v.art[0], v.x, y0, br, rechts);
+    if (anh !== null) seitlichMalen(v.art[1], anh, y0, br * .9, rechts);
+    var vorn = v.x + (rechts ? 1 : -1) * br / 2, hinten = v.x - (rechts ? 1 : -1) * br / 2, ly = Math.round(y0 - Math.max(2, h * .45));
+    x.fillStyle = '#fff2b0'; x.fillRect(Math.round(vorn), ly, 1, 1);
+    x.globalAlpha = .25; x.fillRect(Math.round(vorn + (rechts ? 1 : -4)), ly, 4, 1); x.globalAlpha = 1;
+    x.fillStyle = '#ff3a3a'; x.fillRect(Math.round(hinten), ly, 1, 1);
+    if (v.art[0] === 'polizeiSeite' && Math.floor(zeit / 150) % 2) { x.fillStyle = '#3aa0ff'; x.fillRect(Math.round(v.x - 1), Math.round(y0 - h - 1), 2, 1); }
+    x.restore();
   }
   function dackelKasten(d) {
     var u = (7 + Math.max(0, tiefeAusY(d.y)) * 22) / 16;
