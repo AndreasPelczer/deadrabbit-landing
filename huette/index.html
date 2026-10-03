@@ -862,6 +862,10 @@
       if ((e.neu.a || e.klick) && zeit - modusSeit > KIRCHE.knopf) { spielAbschliessen(); setzeModus('ende'); }
       return;
     }
+    if (modus === 'schande') {
+      if (((e.neu.a || e.klick) && zeit - modusSeit > KIRCHE.knopf) || zeit - modusSeit > KIRCHE.knopf + 12000) setzeModus('ende');
+      return;
+    }
     if (modus === 'intro') {
       var ti = zeit - modusSeit;
       if (e.neu.a && ti < INTRO.zaehlen) modusSeit = zeit - INTRO.zaehlen;   // überspringen: gleich zum Countdown
@@ -874,7 +878,7 @@
     }
     if (modus === 'friedhof') {
       var dauer = 1200 + s.graeber.length * 350;
-      if (((e.neu.a || e.klick) && zeit - modusSeit > dauer + 2500) || zeit - modusSeit > dauer + 18000) setzeModus('ende');   // erst lesen lassen, dann weiter
+      if (((e.neu.a || e.klick) && zeit - modusSeit > dauer + 2500) || zeit - modusSeit > dauer + 18000) setzeModus('schande');   // erst lesen lassen, dann weiter
       return;
     }
     if (modus === 'ende') {
@@ -902,7 +906,7 @@
         setzeModus('spiel');
         return;
       }
-      if (!s.opfer && zeit - modusSeit > 2600) { spielAbschliessen(); setzeModus(s.graeber.length ? 'friedhof' : 'ende'); }
+      if (!s.opfer && zeit - modusSeit > 2600) { spielAbschliessen(); setzeModus(s.graeber.length ? 'friedhof' : 'schande'); }
       return;
     }
     if (s.schneeAb && modus === 'spiel') { s.schneeAb = false; s.schneeBis = zeit + SCHNEE_MS; melden('SCHNEEFALL IN URPHAR …', '#e8f4ff'); melden('ALLE SIND HELLWACH!', '#e8f4ff'); }
@@ -1350,13 +1354,8 @@
     var g = x.createLinearGradient(0, 0, 0, 140); g.addColorStop(0, 'rgba(255,170,110,' + (.35 * staerke) + ')'); g.addColorStop(1, 'rgba(255,170,110,0)');
     x.fillStyle = g; x.fillRect(0, 0, W, 140); x.restore();
   }
-  function siegZeichnen() {
-    var t = zeit - modusSeit, pano = vBild('panorama');
-    if (!pano) { if (!HG_BURG) HG_BURG = burgBild(); x.drawImage(HG_BURG, 0, 0); }
-    else { x.imageSmoothingEnabled = false; x.drawImage(pano, 0, 0); tagLicht(1); }
-    if (Math.floor(zeit / 700) % 2) { text('BIMM', 228, 70, 8, '#ffe9a0'); } else { text('BAMM', 194, 66, 8, '#ffe9a0'); }   // am Kirchturm   // die Glocken
-    // der Zug zur Kirche: alle 18, dazwischen das Dorf – von rechts nach links den Weg entlang
-    var noch = s.kumpels.slice(); if (s.kumpel) noch.push(s.kumpel.name);
+  // der Zug zur Kirche: alle 18, dazwischen das Dorf – von rechts nach links den Weg entlang
+  function kirchZug(t, noch, spott) {
     var kumpelBilder = [['j_rot0', 'j_rot1', 'j_rot2'], ['j_kappe0', 'j_kappe1', 'j_kappe2'], ['j_hut0', 'j_hut1', 'j_hut2']], zug = [];
     TRUPPE.forEach(function (n, i) { zug.push({ name: n, bilder: kumpelBilder[i % 3], wach: noch.indexOf(n) >= 0 }); if (i % 3 === 2) zug.push({ bilder: V_DORF[(i / 3 | 0) % V_DORF.length] }); });
     zug.forEach(function (z, i) {
@@ -1364,8 +1363,58 @@
       var b = vBild(z.bilder[Math.floor((t + i * 70) / 160) % z.bilder.length]); if (!b) return;
       var unten = PANO_BODEN + (i % 2) * 3 - Math.abs(Math.sin((t + i * 90) / 140)) * 1.5;
       x.save(); x.translate(Math.round(px), 0); x.scale(-1, 1); x.imageSmoothingEnabled = false; x.drawImage(b, -Math.round(b.naturalWidth / 2), Math.round(unten - b.naturalHeight)); x.restore();
-      if (z.name) text(z.name, px, unten - b.naturalHeight - 4 - (i % 2) * 6, 5, z.wach ? '#7fd06a' : '#c8ccd2');   // grün: hat durchgehalten
+      if (z.name) text(z.name, px, unten - b.naturalHeight - 4 - (i % 2) * 6, 5, z.wach ? '#7fd06a' : '#c8ccd2');
+      if (spott && Math.abs(px - spott.x) < 40 && (i % 4 === 1)) text(spott.worte[i % spott.worte.length], px, unten - b.naturalHeight - 14, 7, '#ffe9a0');   // wer vorbeikommt, sagt was
     });
+  }
+  // Wer alles verliert: Sonntagmorgen gehen alle in die Kirche – und einer wacht nackt vor der Tür auf
+  var SCHANDE_TEXTE = [
+    { ab: 0,    t: 'SONNTAG, 9 UHR. DIE GLOCKEN LÄUTEN.' },
+    { ab: 2400, t: 'ALLE GEHEN BRAV IN DIE KIRCHE …' },
+    { ab: 4800, t: '@ WACHT NACKT VOR DER KIRCHE AUF.' },
+    { ab: 7400, t: 'DAS GANZE DORF SCHAUT ZU.' }
+  ];
+  function nackterMalen(px, unten, t) {
+    var r = Math.round, wach = t > 4800, hoch = wach ? Math.min(1, (t - 4800) / 600) : 0, ruck = wach && t < 6500 ? Math.sin(t / 40) : 0;
+    var haut = '#e3b98f', schatten = '#b8875e', k = '#1b1612';
+    // liegt auf dem Rücken, Kopf links – setzt sich beim Aufwachen auf
+    var ky = unten - 4 - hoch * 7, kx = px - 12 + hoch * 2 + ruck;
+    x.fillStyle = k; x.fillRect(r(px - 9), r(unten - 5), 18, 5); x.fillStyle = haut; x.fillRect(r(px - 8), r(unten - 4), 16, 3);   // Körper
+    x.fillStyle = schatten; x.fillRect(r(px - 8), r(unten - 2), 16, 1);
+    x.fillStyle = k; x.fillRect(r(px + 8), r(unten - 4), 9, 4); x.fillStyle = haut; x.fillRect(r(px + 8), r(unten - 3), 8, 2);    // Beine
+    if (hoch > 0) { var oy = r(ky + 3), oh = r(unten - 3 - oy); if (oh > 0) { x.fillStyle = k; x.fillRect(r(kx - 3), oy, 7, oh + 1); x.fillStyle = haut; x.fillRect(r(kx - 2), oy, 5, oh); } }   // Oberkörper richtet sich auf
+    x.fillStyle = k; x.fillRect(r(kx - 3), r(ky - 3), 7, 7); x.fillStyle = haut; x.fillRect(r(kx - 2), r(ky - 2), 5, 5);         // Kopf
+    x.fillStyle = '#5a3a1c'; x.fillRect(r(kx - 3), r(ky - 3), 7, 2);                                                         // Haare, zerzaust
+    x.fillStyle = k; if (wach) { x.fillRect(r(kx - 1), r(ky), 1, 1); x.fillRect(r(kx + 1), r(ky), 1, 1); } else x.fillRect(r(kx - 1), r(ky), 3, 1);
+    x.fillStyle = '#111'; x.fillRect(r(px + 2), r(unten - 7), 12, 5); text('ZENSIERT', px + 8, unten - 4.5, 3, '#f4f4f4');       // Sonntag ist Sonntag
+    if (!wach) text('ZZZ', kx + 4, ky - 8 - (t / 300 % 6), 6, '#e8f4ff');
+    else if (t < 7000) text('?!', kx, ky - 9, 8, COL.feuer);
+  }
+  function schandeZeichnen() {
+    var t = zeit - modusSeit, pano = vBild('panorama'), wer = name.map(function (i) { return ABC[i]; }).join('');
+    if (!pano) { if (!HG_BURG) HG_BURG = burgBild(); x.drawImage(HG_BURG, 0, 0); }
+    else { x.imageSmoothingEnabled = false; x.drawImage(pano, 0, 0); tagLicht(1); }
+    if (Math.floor(zeit / 700) % 2) text('BIMM', 228, 70, 8, '#ffe9a0'); else text('BAMM', 194, 66, 8, '#ffe9a0');
+    var nx = 160, nu = 234;   // vorn im Bild, vor dem Zug
+    kirchZug(t, [], t > 4800 ? { x: 196, worte: ['JESSES!', 'HAHAHA!', 'SCHÄM DICH!', 'IST DAS NICHT …?', 'IGITT!', wer + '?!'] } : null);
+    x.save(); x.translate(nx, nu); x.scale(2, 2); nackterMalen(0, 0, t); x.restore();
+    x.fillStyle = 'rgba(11,16,32,.75)'; x.fillRect(0, 0, W, 32);
+    var zeilen = SCHANDE_TEXTE.filter(function (z) { return t >= z.ab; }).slice(-2);
+    zeilen.forEach(function (z, i) { var tx = z.t.replace('@', wer), n = Math.floor((t - z.ab) / 35); text(tx.slice(0, n), 8, 9 + i * 12, 9, i === zeilen.length - 1 ? COL.hell : COL.grau, 'left'); });
+    if (t > 9400) {
+      x.fillStyle = 'rgba(11,16,32,.8)'; x.fillRect(0, 186, W, 54);
+      demoLogoText('SCHANDE!', 200);
+      var pzS = partyZeit(s.welle); text('DURCHGEHALTEN BIS ' + pzS.tag + ' ' + pzS.uhr + ' · ' + s.punkte + ' PUNKTE', 160, 219, 7, COL.hell);
+      if (t > KIRCHE.knopf && Math.floor(zeit / 500) % 2) text('KNOPF = ANZIEHEN UND HEIM', 160, 232, 8, COL.feuer);
+    }
+  }
+  function siegZeichnen() {
+    var t = zeit - modusSeit, pano = vBild('panorama');
+    if (!pano) { if (!HG_BURG) HG_BURG = burgBild(); x.drawImage(HG_BURG, 0, 0); }
+    else { x.imageSmoothingEnabled = false; x.drawImage(pano, 0, 0); tagLicht(1); }
+    if (Math.floor(zeit / 700) % 2) { text('BIMM', 228, 70, 8, '#ffe9a0'); } else { text('BAMM', 194, 66, 8, '#ffe9a0'); }   // am Kirchturm   // die Glocken
+    var noch = s.kumpels.slice(); if (s.kumpel) noch.push(s.kumpel.name);
+    kirchZug(t, noch);
     // Texte oben
     x.fillStyle = 'rgba(11,16,32,.75)'; x.fillRect(0, 0, W, 32);
     var zeilen = KIRCH_TEXTE.filter(function (z) { return t >= z.ab; }).slice(-2);
@@ -2184,6 +2233,7 @@
     if (modus === 'intro') { introZeichnen(); return; }
     if (modus === 'morgen') { morgenZeichnen(); return; }
     if (modus === 'sieg') { siegZeichnen(); return; }
+    if (modus === 'schande') { schandeZeichnen(); return; }
     szene();
     if (modus === 'spezial') spezialMalen();
     if (modus === 'welle') {
