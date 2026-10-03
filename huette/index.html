@@ -110,7 +110,13 @@
     return { tag: TAGE[block], kurz: TAG_KURZ[block], uhr: ('0' + h).slice(-2) + ':00' };
   }
   function bisText() { if (s.sieg) return 'SO 18:00'; var z = partyZeit(s.welle); return z.kurz + ' ' + z.uhr; }
-  var PARTY_SCHLUESSEL = 'urphaed-party';
+  var PARTY_SCHLUESSEL = 'urphaed-party', BEWEIS_SCHLUESSEL = 'urphaed-partybeweis';
+  function beweisLesen() { try { var b = JSON.parse(localStorage.getItem(BEWEIS_SCHLUESSEL)); if (b && b.n) return b; } catch (e) {} return null; }
+  function beweisMerken(wer, kumpels) {
+    var alt = beweisLesen();
+    if (!alt || kumpels > alt.k) { try { localStorage.setItem(BEWEIS_SCHLUESSEL, JSON.stringify({ n: wer, k: kumpels })); } catch (e) {} return true; }
+    return false;
+  }
   function partyLesen() { try { var p = JSON.parse(localStorage.getItem(PARTY_SCHLUESSEL)); if (p && p.n) return p; } catch (e) {} return { n: 'RAF', welle: 6, bis: 'FR 02:00' }; }
   function partyMerken(wer) {
     var alt = partyLesen(), weit = s.sieg ? 99 : s.welle;
@@ -151,6 +157,7 @@
   }
   function naechsteWelle() {
     s.welle++;
+    if (SCHNEE_WELLEN.indexOf(s.welle) >= 0) s.schneeAb = true;   // sobald die Welle läuft, fängt es an zu schneien
     s.zuSpawnen = 6 + s.welle * 3;
     s.welleMs = Math.max(650, 1800 - s.welle * 160);
     s.munition = MAGAZIN; s.nachladenBis = 0;
@@ -367,7 +374,19 @@
   // ---------- Schiessen ----------
   function laufWinkel() { return Math.atan2(s.ziel.y - LAUF_FUSS.y, s.ziel.x - LAUF_FUSS.x); }
   function muendungsPunkt() { return { x: 160, y: 216 }; }   // die Schlaufe der Zwille
-  function nachladen() { if (modus !== 'spiel' || s.nachladenBis || s.munition === MAGAZIN) return; s.nachladenBis = zeit + NACHLADEN_MS; }
+  function nachladenDauer() { return schneit() ? NACHLADEN_MS * .35 : NACHLADEN_MS; }
+  function nachladen() { if (modus !== 'spiel' || s.nachladenBis || s.munition === MAGAZIN) return; s.nachladenBis = zeit + nachladenDauer(); s.nachladenDauer = nachladenDauer(); }
+  // Schneefall über Urphar – Freitag- und Samstagabend je einmal. Danach sind alle hellwach. (Wer weiß, der weiß.)
+  var SCHNEE_WELLEN = [3, 11], SCHNEE_MS = 16000;
+  function schneit() { return s && s.schneeBis && zeit < s.schneeBis; }
+  function schneeMalen() {
+    if (!schneit()) return;
+    var rest = Math.min(1, (s.schneeBis - zeit) / 2500), an = Math.min(1, (zeit - (s.schneeBis - SCHNEE_MS)) / 1500), dichte = Math.min(rest, an);
+    x.globalAlpha = .85 * dichte; x.fillStyle = '#f4f8ff';
+    for (var i = 0; i < 70; i++) { var fx = (i * 53 + Math.sin(zeit / 900 + i) * 14 + zeit * .012 * (i % 3 + 1)) % W, fy = (i * 37 + zeit * (.02 + (i % 4) * .008)) % H; x.fillRect(Math.round(fx), Math.round(fy), i % 6 ? 1 : 2, i % 6 ? 1 : 2); }
+    x.globalAlpha = 1;
+    if (Math.floor(zeit / 500) % 2) text('HELLWACH! NACHDREHEN IM TURBO', 160, 32, 8, '#e8f4ff');
+  }
   function feuern() {
     if (s.nachladenBis) return;
     if (s.munition <= 0) { nachladen(); return; }
@@ -854,7 +873,7 @@
     }
     if (modus === 'friedhof') {
       var dauer = 1200 + s.graeber.length * 350;
-      if (((e.neu.a || e.klick) && zeit - modusSeit > 1500) || zeit - modusSeit > dauer + 7000) setzeModus('ende');
+      if (((e.neu.a || e.klick) && zeit - modusSeit > dauer + 2500) || zeit - modusSeit > dauer + 18000) setzeModus('ende');   // erst lesen lassen, dann weiter
       return;
     }
     if (modus === 'ende') {
@@ -885,7 +904,8 @@
       if (!s.opfer && zeit - modusSeit > 2600) { spielAbschliessen(); setzeModus(s.graeber.length ? 'friedhof' : 'ende'); }
       return;
     }
-    var tempo = 0.11 * dt;
+    if (s.schneeAb && modus === 'spiel') { s.schneeAb = false; s.schneeBis = zeit + SCHNEE_MS; melden('SCHNEEFALL IN URPHAR …', '#e8f4ff'); melden('ALLE SIND HELLWACH!', '#e8f4ff'); }
+    var tempo = (schneit() ? 0.17 : 0.11) * dt;
     if (e.maus && !e.ax && !e.ay) { s.ziel.x = maus.x; s.ziel.y = maus.y; }
     else { s.ziel.x += e.ax * tempo; s.ziel.y += e.ay * tempo; if (e.ax || e.ay) maus.aktiv = false; }
     s.ziel.x = Math.max(6, Math.min(W - 6, s.ziel.x));
@@ -1065,6 +1085,9 @@
         s.morgenBonus = { vorrat: s.vorrat.length * 500, kumpels: s.kumpels.length * 300 };
         s.punkte += s.morgenBonus.vorrat + s.morgenBonus.kumpels;
         s.bilanz = { verloren: s.lazarett.slice(s.nachtStart.lazarett), punkte: s.punkte - s.nachtStart.punkte, tueten: s.schuesse - s.nachtStart.schuesse };
+        if (s.naechte === 2) {                                                              // SONNTAGMORGEN – der Partybeweis
+          s.beweis = s.kumpels.length + (s.kumpel ? 1 : 0); s.neuerBeweisRekord = beweisMerken(name.map(function (i) { return ABC[i]; }).join(''), s.beweis);
+        }
         if (s.naechte >= 3) { s.sieg = true; setzeModus('sieg'); }      // Sonntagabend erreicht – durchgefeiert!
         else setzeModus('morgen');
       } else naechsteWelle();
@@ -1351,6 +1374,11 @@
     if (t > MORGEN.knopf - 2000) {
       var b = s.morgenBonus;
       bilanzMalen(MORGEN_NAME[s.naechte] + ', 05:00');
+      if (s.naechte === 2 && s.beweis) {
+        x.fillStyle = 'rgba(0,0,0,.7)'; x.fillRect(30, 108, 260, 38);
+        demoLogoText('PARTYBEWEIS!', 122);
+        text('MIT ' + s.beweis + (s.beweis === 1 ? ' KUMPEL' : ' KUMPELS') + ' BIS SONNTAGMORGEN' + (s.neuerBeweisRekord ? ' – NEUER REKORD!' : ''), 160, 139, 7, s.neuerBeweisRekord ? COL.feuer : COL.hell);
+      }
       text('BONUS: VORRAT +' + b.vorrat + '   KUMPELS +' + b.kumpels, 160, 222, 8, '#edf171');
     }
     if (t > MORGEN.knopf && Math.floor(zeit / 500) % 2) text('KNOPF = ' + (s.naechte === 1 ? 'SAMSTAGNACHT' : 'SONNTAG – DURCHHALTEN!'), 160, 233, 8, COL.hell);
@@ -2007,7 +2035,7 @@
     for (var h = 0; h < LEBEN; h++) { if (!iconMalen(h < s.huette ? 'icon_huette' : 'icon_huette_kaputt', 283 + h * 12, 0, 13)) { x.fillStyle = h < s.huette ? COL.rosa : COL.grau; x.fillRect(294 + h * 8, 3, 6, 6); } }
     for (var i = 0; i < MAGAZIN; i++) tuete(6 + i * 7, 220, i < s.munition, i === s.munition - 1);
     if (s.nachladenBis) {
-      var anteil = 1 - (s.nachladenBis - zeit) / NACHLADEN_MS;
+      var anteil = 1 - (s.nachladenBis - zeit) / (s.nachladenDauer || NACHLADEN_MS);
       dreherMalen(anteil); text('NACHDREHEN', 6, 208, 9, COL.hell, 'left'); x.fillStyle = COL.grau; x.fillRect(6, 214, 46, 2); x.fillStyle = COL.feuer; x.fillRect(6, 214, 46 * anteil, 2);
     } else if (s.munition === 0) text('LEER!', 6, 208, 9, COL.rot, 'left');
     var leben = s.kumpels.length + (s.kumpel ? 1 : 0);
@@ -2053,7 +2081,7 @@
     var alle = s.gegner.map(function (g) { return { t: g.t, mal: function () { gegnerMalen(g); } }; });
     if (s.kumpel) alle.push({ t: s.kumpel.t, mal: kumpelMalen });
     alle.sort(function (a, b) { return a.t - b.t; }).forEach(function (o) { o.mal(); });
-    fxMalen(); distelMalen();
+    fxMalen(); distelMalen(); schneeMalen();
     s.geschosse.forEach(function (b) {
       var a = Math.min(1, (zeit - b.start) / FLUGZEIT_MS), px = b.vx + (b.zx - b.vx) * a, py = b.vy + (b.zy - b.vy) * a, gr = 2 + (1 - a) * 2;
       // Dicke Tüte, die sich im Flug überschlägt – hinten spitz, vorn dick mit Glut
@@ -2163,7 +2191,8 @@
       var pzE = s.sieg ? { tag: 'SONNTAG', uhr: '18:00' } : partyZeit(s.welle);
       text('DURCHGEHALTEN BIS ' + pzE.tag + ' ' + pzE.uhr + ' · ' + s.schuesse + ' TÜTEN', 160, 52, 8, COL.hell);
       if (platz >= 0) text('NEU IN DER BESTENLISTE: PLATZ ' + (platz + 1), 160, 64, 9, COL.feuer);
-      var pr = partyLesen(); text((s.neuerPartyRekord ? 'NEU! ' : '') + 'LÄNGSTE PARTY: ' + pr.n + ' – BIS ' + pr.bis, 160, 174, 8, s.neuerPartyRekord ? COL.feuer : '#9fd0ff');
+      var pr = partyLesen(); text((s.neuerPartyRekord ? 'NEU! ' : '') + 'LÄNGSTE PARTY: ' + pr.n + ' – BIS ' + pr.bis, 160, 168, 8, s.neuerPartyRekord ? COL.feuer : '#9fd0ff');
+      var bw = beweisLesen(); text(bw ? (s.neuerBeweisRekord ? 'NEU! ' : '') + 'PARTYBEWEIS: ' + bw.n + ' – ' + bw.k + ' KUMPELS BIS SONNTAGMORGEN' : 'PARTYBEWEIS: NOCH KEINER BIS SONNTAGMORGEN', 160, 178, 7, s.neuerBeweisRekord ? COL.feuer : '#c58aff');
       if (s.lazarett.length) text('IN EHREN: ' + s.lazarett.slice(-4).join(', ') + (s.lazarett.length > 4 ? ' …' : ''), 160, 186, 7, COL.rot);
       bestenliste(78);
       var opt = ['NOCHMAL – TEKRAR?', 'ZUM HÜTTEN-MENÜ – GÖRÜŞÜRÜZ!'];
