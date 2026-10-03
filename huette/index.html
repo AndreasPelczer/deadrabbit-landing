@@ -106,10 +106,11 @@
   var TAGE = ['FREITAGNACHT', 'SAMSTAGNACHT', 'SONNTAG'], TAG_KURZ = ['FR', 'SA', 'SO'], MORGEN_NAME = ['', 'SAMSTAGMORGEN', 'SONNTAGMORGEN'];
   function partyZeit(welle) {
     var block = Math.min(2, Math.floor((Math.max(1, welle) - 1) / MORGEN_NACH)), w = ((Math.max(1, welle) - 1) % MORGEN_NACH) + 1;
-    var h = block < 2 ? (20 + w) % 24 : 9 + w;
+    var h = block < 2 ? (20 + w) % 24 : 5 + w;    // Sonntag: 6, 7, 8 Uhr – um 9 ist die Party vorbei
     return { tag: TAGE[block], kurz: TAG_KURZ[block], uhr: ('0' + h).slice(-2) + ':00' };
   }
-  function bisText() { if (s.sieg) return 'SO 18:00'; var z = partyZeit(s.welle); return z.kurz + ' ' + z.uhr; }
+  var SONNTAG_WELLEN = 3, LETZTE_WELLE = 2 * MORGEN_NACH + SONNTAG_WELLEN;
+  function bisText() { if (s.sieg) return 'SO 09:00'; var z = partyZeit(s.welle); return z.kurz + ' ' + z.uhr; }
   var PARTY_SCHLUESSEL = 'urphaed-party', BEWEIS_SCHLUESSEL = 'urphaed-partybeweis';
   function beweisLesen() { try { var b = JSON.parse(localStorage.getItem(BEWEIS_SCHLUESSEL)); if (b && b.n) return b; } catch (e) {} return null; }
   function beweisMerken(wer, kumpels) {
@@ -858,7 +859,7 @@
       return;
     }
     if (modus === 'sieg') {
-      if ((e.neu.a || e.klick) && zeit - modusSeit > MORGEN.knopf) { spielAbschliessen(); setzeModus('ende'); }
+      if ((e.neu.a || e.klick) && zeit - modusSeit > KIRCHE.knopf) { spielAbschliessen(); setzeModus('ende'); }
       return;
     }
     if (modus === 'intro') {
@@ -1080,7 +1081,10 @@
     if (s.zuSpawnen === 0 && s.gegner.length === 0 && s.geschosse.length === 0 && s.ketten.length === 0 && !missionOffen) {
       s.punkte += s.huette * 250;
       s.leute = []; s.sani = []; s.dackel = null; s.pizza = null; s.schwarm = []; s.leichen.forEach(function (l) { l.abgeholt = false; });
-      if (s.welle % MORGEN_NACH === 0) {
+      if (s.welle === LETZTE_WELLE) {                                                     // SONNTAG, 9 UHR – die Party ist vorbei
+        s.bilanz = { verloren: s.lazarett.slice(s.nachtStart.lazarett), punkte: s.punkte - s.nachtStart.punkte, tueten: s.schuesse - s.nachtStart.schuesse };
+        s.punkte += (s.kumpels.length + (s.kumpel ? 1 : 0)) * 500; s.sieg = true; setzeModus('sieg');
+      } else if (s.welle % MORGEN_NACH === 0) {
         s.naechte++;
         s.morgenBonus = { vorrat: s.vorrat.length * 500, kumpels: s.kumpels.length * 300 };
         s.punkte += s.morgenBonus.vorrat + s.morgenBonus.kumpels;
@@ -1088,8 +1092,7 @@
         if (s.naechte === 2) {                                                              // SONNTAGMORGEN – der Partybeweis
           s.beweis = s.kumpels.length + (s.kumpel ? 1 : 0); s.neuerBeweisRekord = beweisMerken(name.map(function (i) { return ABC[i]; }).join(''), s.beweis);
         }
-        if (s.naechte >= 3) { s.sieg = true; setzeModus('sieg'); }      // Sonntagabend erreicht – durchgefeiert!
-        else setzeModus('morgen');
+        setzeModus('morgen');
       } else naechsteWelle();
     }
   }
@@ -1334,20 +1337,46 @@
     if (!n) text('NOCH ' + noch + ' KUMPELS AM FEUER', 160, 198, 7, COL.hell);
   }
   // Sonntagabend, 18 Uhr: das schafft keiner mehr
+  // Sonntag, 9 Uhr: die Party ist vorbei – alle gehen brav in die Kirche. Die Überlebenden, die früher Heimgegangenen und das Dorf.
+  var KIRCHE = { knopf: 10500 };
+  var KIRCH_TEXTE = [
+    { ab: 0,    t: 'SONNTAG, 9 UHR. DIE PARTY IST VORBEI.' },
+    { ab: 2600, t: 'ALLE GEHEN BRAV IN DIE KIRCHE.' },
+    { ab: 5200, t: 'AUCH DIE, DIE FRÜHER HEIMGEGANGEN SIND.' },
+    { ab: 7600, t: 'UND DAS DORF GLEICH MIT. WIE IN ECHT.' }
+  ];
+  function tagLicht(staerke) {                                                       // die Nacht wird Morgen
+    x.save(); x.globalCompositeOperation = 'screen'; x.fillStyle = 'rgba(105,85,55,' + (.55 * staerke) + ')'; x.fillRect(0, 0, W, H);
+    var g = x.createLinearGradient(0, 0, 0, 140); g.addColorStop(0, 'rgba(255,170,110,' + (.35 * staerke) + ')'); g.addColorStop(1, 'rgba(255,170,110,0)');
+    x.fillStyle = g; x.fillRect(0, 0, W, 140); x.restore();
+  }
   function siegZeichnen() {
-    if (!HG_BURG) HG_BURG = burgBild();
-    var t = zeit - modusSeit, noch = s.kumpels.slice(); if (s.kumpel) noch.push(s.kumpel.name);
-    x.drawImage(HG_BURG, 0, 0);
-    x.fillStyle = 'rgba(0,0,0,.72)'; x.fillRect(0, 0, W, 84);
-    text('SONNTAGABEND, 18:00', 160, 14, 10, '#edf171');
-    demoLogoText('DURCHGEFEIERT!', 40);
-    text('DAS HAT SEIT 1995 KEINER MEHR GESCHAFFT.', 160, 64, 8, COL.hell);
-    text('MONTAG IST EIN ANDERES PROBLEM.', 160, 75, 7, COL.grau);
-    if (t > 1500) {
-      bilanzMalen('DER SONNTAG');
-      text('ÜBRIG: ' + (noch.length ? noch.slice(0, 5).join(', ') + (noch.length > 5 ? ' …' : '') : 'KEINER'), 160, 222, 7, '#7fd06a');
+    var t = zeit - modusSeit, pano = vBild('panorama');
+    if (!pano) { if (!HG_BURG) HG_BURG = burgBild(); x.drawImage(HG_BURG, 0, 0); }
+    else { x.imageSmoothingEnabled = false; x.drawImage(pano, 0, 0); tagLicht(1); }
+    if (Math.floor(zeit / 700) % 2) { text('BIMM', 228, 70, 8, '#ffe9a0'); } else { text('BAMM', 194, 66, 8, '#ffe9a0'); }   // am Kirchturm   // die Glocken
+    // der Zug zur Kirche: alle 18, dazwischen das Dorf – von rechts nach links den Weg entlang
+    var noch = s.kumpels.slice(); if (s.kumpel) noch.push(s.kumpel.name);
+    var kumpelBilder = [['j_rot0', 'j_rot1', 'j_rot2'], ['j_kappe0', 'j_kappe1', 'j_kappe2'], ['j_hut0', 'j_hut1', 'j_hut2']], zug = [];
+    TRUPPE.forEach(function (n, i) { zug.push({ name: n, bilder: kumpelBilder[i % 3], wach: noch.indexOf(n) >= 0 }); if (i % 3 === 2) zug.push({ bilder: V_DORF[(i / 3 | 0) % V_DORF.length] }); });
+    zug.forEach(function (z, i) {
+      var px = W + 20 + i * 19 - t * .045; if (px < -20 || px > W + 20) return;
+      var b = vBild(z.bilder[Math.floor((t + i * 70) / 160) % z.bilder.length]); if (!b) return;
+      var unten = PANO_BODEN + (i % 2) * 3 - Math.abs(Math.sin((t + i * 90) / 140)) * 1.5;
+      x.save(); x.translate(Math.round(px), 0); x.scale(-1, 1); x.imageSmoothingEnabled = false; x.drawImage(b, -Math.round(b.naturalWidth / 2), Math.round(unten - b.naturalHeight)); x.restore();
+      if (z.name) text(z.name, px, unten - b.naturalHeight - 4 - (i % 2) * 6, 5, z.wach ? '#7fd06a' : '#c8ccd2');   // grün: hat durchgehalten
+    });
+    // Texte oben
+    x.fillStyle = 'rgba(11,16,32,.75)'; x.fillRect(0, 0, W, 32);
+    var zeilen = KIRCH_TEXTE.filter(function (z) { return t >= z.ab; }).slice(-2);
+    zeilen.forEach(function (z, i) { var n = Math.floor((t - z.ab) / 35); text(z.t.slice(0, n), 8, 9 + i * 12, 9, i === zeilen.length - 1 ? COL.hell : COL.grau, 'left'); });
+    if (t > 9000) {
+      x.fillStyle = 'rgba(11,16,32,.8)'; x.fillRect(0, 176, W, 64);
+      demoLogoText('DURCHGEFEIERT!', 192);
+      text('MIT ' + noch.length + (noch.length === 1 ? ' KUMPEL' : ' KUMPELS') + ' BIS SONNTAG 9 UHR · ' + s.punkte + ' PUNKTE', 160, 212, 7, COL.hell);
+      text('DAS HAT SEIT 1995 KEINER MEHR GESCHAFFT. MONTAG IST EIN ANDERES PROBLEM.', 160, 222, 6, COL.grau);
+      if (t > KIRCHE.knopf && Math.floor(zeit / 500) % 2) text('KNOPF = AMEN', 160, 233, 8, COL.feuer);
     }
-    if (t > MORGEN.knopf && Math.floor(zeit / 500) % 2) text('KNOPF = INS BETT', 160, 233, 8, COL.hell);
   }
   function demoLogoText(wort, py) {
     x.save(); x.font = 'bold 22px monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
@@ -1381,7 +1410,7 @@
       }
       text('BONUS: VORRAT +' + b.vorrat + '   KUMPELS +' + b.kumpels, 160, 222, 8, '#edf171');
     }
-    if (t > MORGEN.knopf && Math.floor(zeit / 500) % 2) text('KNOPF = ' + (s.naechte === 1 ? 'SAMSTAGNACHT' : 'SONNTAG – DURCHHALTEN!'), 160, 233, 8, COL.hell);
+    if (t > MORGEN.knopf && Math.floor(zeit / 500) % 2) text('KNOPF = ' + (s.naechte === 1 ? 'SAMSTAGNACHT' : 'DURCHHALTEN BIS 9 UHR!'), 160, 233, 8, COL.hell);
   }
 
   // ---------- Titel im Stil der C64-Demoszene ----------
@@ -1722,7 +1751,7 @@
     }
   }
   function landschaft() {
-    if (BILD_HINTERGRUND && HG_BILD && HG_BILD.complete && HG_BILD.naturalWidth) { x.imageSmoothingEnabled = false; x.drawImage(HG_BILD, 0, 0, W, H); }
+    if (BILD_HINTERGRUND && HG_BILD && HG_BILD.complete && HG_BILD.naturalWidth) { x.imageSmoothingEnabled = false; x.drawImage(HG_BILD, 0, 0, W, H); if (typeof s !== 'undefined' && s && s.welle > 2 * MORGEN_NACH && modus !== 'titel') tagLicht(Math.min(1, (s.welle - 2 * MORGEN_NACH) / SONNTAG_WELLEN)); }
     else { if (!HG) HG = hintergrundMalen(); x.drawImage(HG, 0, 0); }
     lebendig(); kleinerFriedhof();
   }
@@ -2186,9 +2215,9 @@
     if (modus === 'ende') {
       x.fillStyle = 'rgba(120,10,20,.85)'; x.fillRect(0, 0, W, H);
       kasten(40, 10, 240, 222);
-      text(s.sieg ? 'DURCHGEFEIERT BIS SONNTAGABEND!' : 'BİTTİ MORUK – DIE HÜTTE IST GEFALLEN', 160, 24, 10, s.sieg ? COL.feuer : COL.rosa);
+      text(s.sieg ? 'DURCHGEFEIERT BIS SONNTAG, 9 UHR!' : 'BİTTİ MORUK – DIE HÜTTE IST GEFALLEN', 160, 24, 10, s.sieg ? COL.feuer : COL.rosa);
       text(s.punkte + ' Punkte · Welle ' + s.welle + ' · ' + s.treffer + ' Treffer' + (s.weggefegt ? ' · ' + s.weggefegt + ' weggefegt' : ''), 160, 39, 9);
-      var pzE = s.sieg ? { tag: 'SONNTAG', uhr: '18:00' } : partyZeit(s.welle);
+      var pzE = s.sieg ? { tag: 'SONNTAG', uhr: '09:00' } : partyZeit(s.welle);
       text('DURCHGEHALTEN BIS ' + pzE.tag + ' ' + pzE.uhr + ' · ' + s.schuesse + ' TÜTEN', 160, 52, 8, COL.hell);
       if (platz >= 0) text('NEU IN DER BESTENLISTE: PLATZ ' + (platz + 1), 160, 64, 9, COL.feuer);
       var pr = partyLesen(); text((s.neuerPartyRekord ? 'NEU! ' : '') + 'LÄNGSTE PARTY: ' + pr.n + ' – BIS ' + pr.bis, 160, 168, 8, s.neuerPartyRekord ? COL.feuer : '#9fd0ff');
