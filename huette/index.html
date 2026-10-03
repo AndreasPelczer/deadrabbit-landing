@@ -875,18 +875,23 @@
     if (s.welle >= 2 && zeit > s.naechsterWanderer && s.zuSpawnen > 0) { wandererSchicken(); s.naechsterWanderer = zeit + 5000 + Math.random() * 4000; }
     // Der Pizza-Blitz: quert die Wege – wer drauf steht, muss weg
     if (!s.pizza && s.welle >= 2 && s.zuSpawnen > 0 && zeit > s.naechstePizza) {
-      if (s.naechstePizza) { var pl = Math.random() < .5; s.pizza = { x: pl ? -40 : W + 40, dx: (pl ? 1 : -1) * PIZZA_TEMPO, warten: 0, seit: zeit, hupen: 0 }; melden('DER PIZZA-BLITZ KOMMT – SCHIESS IHM DEN WEG FREI!', COL.feuer); }
+      if (s.naechstePizza) { var pl = Math.random() < .5; s.pizza = { x: pl ? -40 : W + 40, dx: (pl ? 1 : -1) * PIZZA_TEMPO, verteilt: 0, seit: zeit, hupen: 0 }; melden('DER PIZZA-BLITZ KOMMT – PIZZA FÜR ALLE!', COL.feuer); }
       s.naechstePizza = zeit + 30000 + Math.random() * 25000;
     }
     if (s.pizza) {
-      var pz = s.pizza, vorne = pz.x + (pz.dx > 0 ? 1 : -1) * 30;
-      var steht = s.gegner.some(function (g) { if (!g.lebendig) return false; var k = koerper(g); return Math.abs(k.u - PIZZA_Y) < 14 && vorne > k.l - 4 && vorne < k.r + 4; });
-      if (steht) { pz.warten += dt; if (zeit - pz.hupen > 1200) { pz.hupen = zeit; } }
-      else pz.x += pz.dx * dt;
-      if (pz.warten > PIZZA_GEDULD) { melden('PIZZA KALT – KLAUS FÄHRT HEIM.', COL.grau); s.pizza = null; }
-      else if (pz.x < -50 || pz.x > W + 50) {
+      var pz = s.pizza, halb = pizzaBreite() / 2;
+      pz.x += pz.dx * dt;
+      s.gegner.forEach(function (g) {                                                     // wer im Weg steht, kriegt Pizza
+        if (!g.lebendig || g.pizzaBis || g.art === 'fahrzeug') return;
+        var k = koerper(g);
+        if (Math.abs(k.u - PIZZA_Y) < 16 && pz.x + halb > k.l && pz.x - halb < k.r) {
+          g.pizzaBis = zeit + PIZZA_ESSEN; g.pizzaFolge = Math.random() < .5 ? 'schlaf' : 'heim'; pz.verteilt++;
+          s.schwebe.push({ x: k.p.x, y: k.o - 2, t: ['PIZZA!', 'MAMPF!', 'LECKER!', 'AFİYET OLSUN!'][pz.verteilt % 4], start: zeit });
+        }
+      });
+      if (pz.x < -50 || pz.x > W + 50) {
         s.huette = Math.min(LEBEN, s.huette + 1); s.punkte += 500;
-        melden('PIZZA-BLITZ: LIEFERUNG! +1 HÜTTE +500', COL.feuer); melden(spruch('lob', true), COL.feuer); s.pizza = null;
+        melden('PIZZA-BLITZ: LIEFERUNG! +1 HÜTTE +500' + (s.pizza.verteilt ? ' · ' + s.pizza.verteilt + '× SATT' : ''), COL.feuer); melden(spruch('lob', true), COL.feuer); s.pizza = null;
       }
     }
     // Hinten an der Uferstraße: ein bisschen Verkehr (nur Kulisse)
@@ -909,6 +914,16 @@
     // Angreifer bewegen
     s.gegner.forEach(function (g) {
       if (!g.lebendig) return;
+      if (g.pizzaBis) {
+        if (zeit < g.pizzaBis) { if (g.blitz) g.blitz--; return; }                       // mampft noch
+        if (g.pizzaFolge === 'schlaf') {                                                  // satt umgekippt
+          var kp = koerper(g); g.lebendig = false; leicheAblegen(kp.p.x, kp.u, kp.gr, g.art === 'sprinter' ? COL.rot : COL.hell, COL.rosa, g.art);
+          s.schwebe.push({ x: kp.p.x, y: kp.o - 2, t: 'ZZZ…', start: zeit }); return;
+        }
+        g.t -= g.tempo * 1.4 * dt; g.schritt += dt * 0.017;                               // trottet satt zurück ins Dorf
+        if (g.t <= 0) g.lebendig = false;
+        return;
+      }
       g.t += g.tempo * dt; if (g.blitz) g.blitz--; g.schritt += dt * (g.art === 'sprinter' ? 0.034 : 0.017);
       if (g.t > 1) {
         g.lebendig = false; s.huette -= g.art === 'fahrzeug' ? 2 : 1; s.wackeln = 10;
@@ -1787,6 +1802,11 @@
   }
 
   function gegnerMalen(g) {
+    gegnerMalenRoh(g);
+    if (g.pizzaBis && zeit < g.pizzaBis) { var kz = koerper(g), st = Math.max(3, Math.round((kz.u - kz.o) / 6)), sx = kz.r - 1, sy = Math.round(kz.o + (kz.u - kz.o) * .4);   // ein Stück Pizza in der Hand
+      x.fillStyle = '#ffd25a'; x.beginPath(); x.moveTo(sx, sy); x.lineTo(sx + st, sy - st * .4); x.lineTo(sx + st, sy + st * .6); x.fill(); x.fillStyle = '#e2553a'; x.fillRect(sx + st - 1, sy, 1, 1); }
+  }
+  function gegnerMalenRoh(g) {
     var k = koerper(g), weiss = g.blitz > 0 && g.blitz % 2;
     if (g.art === 'fahrzeug' && g.maschine && fahrzeugBild(g.maschine[0])) {
       x.imageSmoothingEnabled = false; if (weiss) x.globalAlpha = .45;
@@ -1838,7 +1858,7 @@
     if (Math.floor(zeit / 400) % 2) { x.fillStyle = COL.blau; x.fillRect(Math.round(k.p.x) - 1, k.o - 5, 3, 2); }   // Markierung: „nicht schiessen"
   }
   // ---------- Der Pizza-Blitz und der Verkehr ----------
-  var PIZZA_Y = BILD_HINTERGRUND ? 168 : 150, PIZZA_TEMPO = 0.028, PIZZA_GEDULD = 9000;
+  var PIZZA_Y = BILD_HINTERGRUND ? 168 : 150, PIZZA_TEMPO = 0.028, PIZZA_ESSEN = 3000;
   // [Bild, Anhänger, Tempo] – alle Seitenbilder schauen nach links
   var VERKEHR = [['vespaSeite', null, .035], ['porscheSeite', null, .06], ['polizeiSeite', null, .045], ['traktorSeite', 'holzSeite', .018]];
   function pizzaBreite() { return 18 + tiefeAusY(PIZZA_Y) * 72; }
@@ -1852,10 +1872,8 @@
     x.restore(); return h;
   }
   function pizzaMalen() {
-    var pz = s.pizza, rechts = pz.dx > 0, h = seitlichMalen('pizzaSeite', pz.x, PIZZA_Y + (pz.warten && Math.floor(zeit / 120) % 2 ? 0 : 1), pizzaBreite(), rechts);
-    if (pz.warten > 0 && Math.floor(zeit / 300) % 2) text('TÜT! PLATZ DA!', pz.x, PIZZA_Y - h - 6, 8, COL.feuer);
-    else if (zeit - pz.seit < 2500) text('PIZZA-BLITZ', pz.x, PIZZA_Y - h - 6, 7, COL.feuer);
-    if (pz.warten > 0) { x.fillStyle = COL.grau; x.fillRect(Math.round(pz.x - 12), PIZZA_Y + 3, 24, 2); x.fillStyle = COL.rot; x.fillRect(Math.round(pz.x - 12), PIZZA_Y + 3, Math.round(24 * (1 - pz.warten / PIZZA_GEDULD)), 2); }   // wie lange die Pizza noch warm ist
+    var pz = s.pizza, rechts = pz.dx > 0, h = seitlichMalen('pizzaSeite', pz.x, PIZZA_Y + (Math.floor(zeit / 120) % 2), pizzaBreite(), rechts);
+    if (zeit - pz.seit < 3000 || Math.floor(zeit / 700) % 3 === 0) text(zeit - pz.seit < 3000 ? 'PIZZA-BLITZ' : 'TÜT TÜT!', pz.x, PIZZA_Y - h - 6, 7, COL.feuer);
   }
   function verkehrMalen() {
     var v = s.verkehr, y0 = 126, rechts = v.dx > 0, br = v.art[0] === 'traktorSeite' ? 18 : 16;
