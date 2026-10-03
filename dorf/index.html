@@ -384,7 +384,7 @@
       if (e.a && zeit - seit > 300) { var antwort = wahl === 0 ? s.frage.ja() : s.frage.nein(); s.frage = null; s.bericht = [antwort]; pruefeEnde(); setze('bericht'); }
       return;
     }
-    if (modus === 'ende') { if ((e.a || e.klick) && zeit - seit > 1500) setze('titel'); return; }
+    if (modus === 'ende') { if ((e.a || e.klick) && zeit - seit > 1500) { if (s.ende === 'dorf' && typeof location !== 'undefined' && location.href) location.href = 'kapitel2.html'; else setze('titel'); } return; }
   }
   // ---------- Hilfe für den Spieler: Vorschlag, Vorschau, Rat des Alten ----------
   function erwarteteErnte() { return Object.keys(felder).filter(function (k) { return felder[k] !== 'leer'; }).length * ERNTE_FELD; }
@@ -808,7 +808,7 @@
     text('DIE CHRONIK', 160, 46, 8, COL.feuer, 'center');
     var zeilen = []; s.chronik.forEach(function (c2) { umbruch(c2, 56).forEach(function (z) { zeilen.push(z); }); });
     zeilen.slice(-18).forEach(function (z, i) { text(z, 12, 58 + i * 8.6, 6, COL.hell); });
-    if (zeit - seit > 1500 && Math.floor(zeit / 500) % 2) text(s.ende === 'dorf' ? 'KNOPF = WEITER (KAPITEL 2 FOLGT)' : 'KNOPF = NOCHMAL', 160, 232, 8, COL.feuer, 'center');
+    if (zeit - seit > 1500 && Math.floor(zeit / 500) % 2) text(s.ende === 'dorf' ? 'KNOPF = WEITER ZU KAPITEL 2: DIE BURG AM MAIN' : 'KNOPF = NOCHMAL', 160, 232, 8, COL.feuer, 'center');
   }
   function zeichnen() {
     x.setTransform(2, 0, 0, 2, 0, 0);                                            // intern doppelt so fein, gerechnet wird in 320×240
