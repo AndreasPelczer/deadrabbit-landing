@@ -104,6 +104,7 @@
           nahrung: 22, holz: 8, saat: 6, vertrauen: 10, haeuser: 1, bauFortschritt: 0, ehen: 0,
           plan: { feld: 2, sammeln: 1, holz: 0, roden: 0, bauen: 0, wache: 0, erkunden: 0, sippe: 0 },
           bericht: [], chronik: ['JAHR 1: ARN UND ULA KOMMEN MIT IHRER FAMILIE AN DEN BACH.'], frage: null, ende: null, namenM: VORNAMEN_M.slice(4), namenW: VORNAMEN_W.slice(2) };
+    s.arbeiterNamen = arbeiter().map(function (p) { return p.name; });
     setze('planen'); speichern();
   }
   var SPEICHER = 'dasdorf-kapitel1';
@@ -162,7 +163,8 @@
         reif.slice(0, geerntet).forEach(function (k) { felder[k] = 'leer'; });
         s.nahrung += ertrag; s.saat += geerntet + Math.floor(geerntet / 2);
         b.push(geerntet ? 'ERNTE: ' + geerntet + ' FELDER, +' + ertrag + ' NAHRUNG, +' + (geerntet + Math.floor(geerntet / 2)) + ' SAATGUT.' : 'NICHTS ZU ERNTEN.');
-      } else b.push('DAS FELD BRAUCHT GERADE KEINE HÄNDE.');
+      } else if (jz === 1) { var n2 = p.feld * 2; s.nahrung += n2; b.push('DIE BAUERN JÄTEN UND SAMMELN DABEI BEEREN: +' + n2 + ' NAHRUNG.'); }
+      else { var h2 = p.feld * 2; s.holz += h2; b.push('IM WINTER GEHEN DIE BAUERN INS HOLZ: +' + h2 + ' HOLZ.'); }
     }
     // Felder wachsen von selbst: gesät im Frühling -> reif im Herbst
     if (jz === 1) Object.keys(felder).forEach(function (k) { if (felder[k] === 'gesaet') felder[k] = 'reif'; });
@@ -179,7 +181,9 @@
       s.holz += gerodet * 2; b.push(gerodet ? gerodet + ' STÜCK WALD GERODET, +' + gerodet * 2 + ' HOLZ.' : 'KEIN WALD MEHR ZUM RODEN IN DER NÄHE.');
     }
     // Bauen
-    if (p.bauen) {
+    if (p.bauen && s.bauFortschritt === 0 && lebende().length < s.haeuser * PLATZ_HAUS - 1) {
+      var h4 = p.bauen * 3; s.holz += h4; b.push('NOCH IST PLATZ IM LANGHAUS. DIE BAULEUTE SCHLAGEN HOLZ: +' + h4 + '.');
+    } else if (p.bauen) {
       if (s.holz >= HAUS_HOLZ || s.bauFortschritt > 0) {
         if (s.bauFortschritt === 0) s.holz -= HAUS_HOLZ;
         s.bauFortschritt += p.bauen;
@@ -189,7 +193,7 @@
           if (platz) karte[platz[0]][platz[1]] = 'H';
           b.push('EIN NEUES LANGHAUS STEHT! PLATZ FÜR ' + s.haeuser * PLATZ_HAUS + '.'); chronik('EIN NEUES LANGHAUS WIRD GEBAUT.');
         } else b.push('AM LANGHAUS WIRD GEBAUT (' + s.bauFortschritt + '/' + HAUS_ARBEIT + ').');
-      } else b.push('ZU WENIG HOLZ FÜR EIN LANGHAUS (' + HAUS_HOLZ + ' NÖTIG).');
+      } else { var h3 = p.bauen * 3; s.holz += h3; b.push('ZU WENIG HOLZ FÜR EIN LANGHAUS (' + HAUS_HOLZ + ' NÖTIG). DIE BAULEUTE SCHLAGEN HOLZ: +' + h3 + '.'); }
     }
     // Erkunden
     if (p.erkunden) {
@@ -225,7 +229,7 @@
       else if (s.holz < 0) { s.holz = 0; b.push('🟠 DAS HOLZ REICHT KNAPP NICHT. ALLE FRIEREN, ABER ALLE ÜBERLEBEN.'); }
       winterEnde(b);
     }
-    s.bericht = b; s.plan = { feld: 0, sammeln: 0, holz: 0, roden: 0, bauen: 0, wache: 0, erkunden: 0, sippe: 0 };
+    anpassen(b); s.bericht = b;                                                 // feste Berufe: jeder bleibt bei seiner Arbeit
     pruefeEnde();
     setze(s.szenen.length ? 'szene' : 'bericht');
   }
@@ -325,11 +329,11 @@
   c.addEventListener('mousedown', function (e) { maus.klick = aufLeinwand(e.clientX, e.clientY); e.preventDefault(); });
   c.addEventListener('touchstart', function (e) { var t = e.changedTouches[0]; maus.klick = aufLeinwand(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
   function lesen() {
-    var e = { l: !!tasten.ArrowLeft, r: !!tasten.ArrowRight, o: !!tasten.ArrowUp, u: !!tasten.ArrowDown, a: !!tasten[' '] || !!tasten.Enter, b: !!tasten.n || !!tasten.N, k: !!tasten.k || !!tasten.K };
+    var e = { l: !!tasten.ArrowLeft, r: !!tasten.ArrowRight, o: !!tasten.ArrowUp, u: !!tasten.ArrowDown, a: !!tasten[' '] || !!tasten.Enter, b: !!tasten.n || !!tasten.N, k: !!tasten.k || !!tasten.K, v: !!tasten.v || !!tasten.V };
     try { var pads = navigator.getGamepads ? navigator.getGamepads() : []; for (var i = 0; i < pads.length; i++) if (pads[i]) { var pd = pads[i];
       if (pd.axes[0] < -.5) e.l = true; if (pd.axes[0] > .5) e.r = true; if (pd.axes[1] < -.5) e.o = true; if (pd.axes[1] > .5) e.u = true;
       if (pd.buttons[0] && pd.buttons[0].pressed) e.a = true; if (pd.buttons[1] && pd.buttons[1].pressed) e.b = true; break; } } catch (er) {}
-    var neu = {}; ['l', 'r', 'o', 'u', 'a', 'b', 'k'].forEach(function (k) { neu[k] = e[k] && !vorher[k]; vorher[k] = e[k]; });
+    var neu = {}; ['l', 'r', 'o', 'u', 'a', 'b', 'k', 'v'].forEach(function (k) { neu[k] = e[k] && !vorher[k]; vorher[k] = e[k]; });
     neu.klick = maus.klick; maus.klick = null; return neu;
   }
 
@@ -349,6 +353,7 @@
       if (e.o) wahl = (wahl + AUFGABEN.length) % (AUFGABEN.length + 1);
       if (e.u) wahl = (wahl + 1) % (AUFGABEN.length + 1);
       if (e.k || (e.klick && e.klick.x < 208 && e.klick.y > 14 && e.klick.y < 190)) uebersicht = !uebersicht;
+      if (e.v || (e.klick && e.klick.y > 200)) { s.plan = vorschlag(); s.arbeiterNamen = arbeiter().map(function (p) { return p.name; }); }
       if (e.klick && e.klick.x > 210) {
         var zi = Math.floor((e.klick.y - PLAN_Y0 + 2) / PLAN_ZEILE);
         if (zi >= 0 && zi < AUFGABEN.length) { wahl = zi; if (e.klick.x > 296) e.r = true; else if (e.klick.x < 232) e.l = true; }
@@ -401,6 +406,7 @@
     return plan;
   }
   function rat() {
+    if (frei() > 0) return 'ES SITZEN NOCH ' + frei() + ' AM FEUER. GIB IHNEN ARBEIT – ODER V: ICH VERTEILE.';
     var essen = s.nahrung + (s.jz <= 2 ? erwarteteErnte() : 0);
     if (s.jz === 2 && erwarteteErnte()) return 'DIE FELDER SIND REIF. SCHICKT LEUTE AUFS FELD, SONST VERFAULT ES.';
     if (s.jz === 0 && s.saat > 0 && !s.plan.feld) return 'JETZT IST SÄZEIT. WER IM FRÜHLING NICHT SÄT, HUNGERT IM WINTER.';
@@ -410,10 +416,24 @@
     if (s.vertrauen < 60) return 'DRÜBEN SCHAUEN SIE NOCH MISSTRAUISCH. BESUCHT DIE SIPPE.';
     return 'ES GEHT EUCH GUT. ERKUNDET DAS LAND ODER BESUCHT DIE SIPPE.';
   }
+  // Feste Berufe: Tote und Alte fallen raus, wer neu anpacken kann, bekommt vom Alten die dringendste Arbeit
+  function anpassen(b) {
+    var n = arbeiter().length, ordnung = ['erkunden', 'sippe', 'bauen', 'roden', 'wache', 'holz', 'sammeln', 'feld'];
+    while (verplant() > n) for (var i = 0; i < ordnung.length; i++) if (s.plan[ordnung[i]] > 0) { s.plan[ordnung[i]]--; break; }
+    var vorher = s.arbeiterNamen || [], neu = arbeiter().filter(function (p) { return vorher.indexOf(p.name) < 0; });
+    var k = 0;
+    while (frei() > 0) {
+      var v = vorschlag(), beste = 'sammeln', d = -99;
+      AUFGABEN.forEach(function (a) { var diff = v[a.id] - s.plan[a.id]; if (diff > d) { d = diff; beste = a.id; } });
+      s.plan[beste]++;
+      var wer = neu[k++], name = AUFGABEN.filter(function (a) { return a.id === beste; })[0].name;
+      if (b && wer && s.arbeiterNamen) b.push('🟢 ' + wer.name + ' PACKT JETZT MIT AN: ' + name + '.');
+    }
+    s.arbeiterNamen = arbeiter().map(function (p) { return p.name; });
+  }
   function weiter() {
     if (s.ende) { vergessen(); setze('ende'); return; }
     s.jz = (s.jz + 1) % 4;
-    s.plan = vorschlag();                                                       // der Alte schlägt vor, man darf alles ändern
     setze('planen'); speichern();
   }
 
@@ -739,8 +759,7 @@
       var essen = s.nahrung + (s.jz <= 2 ? erwarteteErnte() : 0), bed = bedarfBisFruehling();
       text('ESSEN BIS FRÜHLING ' + essen + '/' + bed, 4, 221, 7, ampel(essen, bed));
       text('HOLZ FÜR DEN WINTER ' + s.holz + '/' + holzBedarf(), 150, 221, 7, ampel(s.holz, holzBedarf()));
-      var namen = lebende().map(function (p) { return p.name + ' ' + p.alter + (p.herkunft === 'sippe' ? '*' : ''); }).join(' · ');
-      text(umbruch(namen, 64)[0] || '', 4, 233, 6, COL.grau);
+      text('JEDER BLEIBT BEI SEINER ARBEIT · V ODER HIER TIPPEN: DER ALTE VERTEILT NEU', 4, 233, 6, COL.grau);
     }
   }
   function berichtMalen() {
