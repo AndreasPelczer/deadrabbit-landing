@@ -59,8 +59,8 @@
 
   // ---------- Die Truppe ----------
   var TRUPPE = ['KURT', 'ALI', 'MOHAMED', 'GERD', 'TOFFEL', 'RAFFI', 'MURAT', 'AHMED', 'CHRISTIAN',
-                'ALEX', 'DER BULLE', 'DOC', 'TORE', 'THORSTEN', 'DER ANDERE THORSTEN', 'TONI', 'ALF'];
-  var WEN = { 'DER BULLE': 'DEN BULLEN', 'DER ANDERE THORSTEN': 'DEN ANDEREN THORSTEN' };   // „Du hast ___ erwischt"
+                'ALEX', 'DER BULLE', 'DOC', 'TORE', 'THORSTEN', 'DER ANDERE THORSTEN', 'TONI', 'ALF', 'DER KOCH'];
+  var WEN = { 'DER BULLE': 'DEN BULLEN', 'DER ANDERE THORSTEN': 'DEN ANDEREN THORSTEN', 'DER KOCH': 'DEN KOCH' };   // „Du hast ___ erwischt"
   function wen(n) { return WEN[n] || n; }
   var HOLEN = { bier: 'BIERHOLEN', musik: 'MUSIKBOX-HOLEN', grill: 'WÜRSTCHENHOLEN', kohle: 'KOHLEHOLEN', paella: 'PAELLAHOLEN' };
   var SPEZIAL = {
@@ -80,7 +80,8 @@
     'DOC': { art: 'doc', ruf: 'ZANGE UND SKALPELL!', comic: 'BITTE WEIT AUFMACHEN!' },
     'DER ANDERE THORSTEN': { art: 'tritt', ruf: 'FLUGTRITT!', comic: 'HIYAAA!' },
     'TONI':  { art: 'rohrzange', ruf: 'ROHRZANGEN-WIRBEL!', comic: ['¡VAMOS!', 'PIFF! PAFF!', '¡OLÉ!'] },
-    'ALF':   { art: 'geist', ruf: 'GEISTERANGRIFF!', comic: ['¿DÓNDE ESTÁ ALF?', '¡HOLA!', '¿QUÉ PASA?'] }
+    'ALF':   { art: 'geist', ruf: 'GEISTERANGRIFF!', comic: ['¿DÓNDE ESTÁ ALF?', '¡HOLA!', '¿QUÉ PASA?'] },
+    'DER KOCH': { art: 'schaben', ruf: 'KÜCHENSCHABEN-ALARM!', comic: ['OUI, CHEF!', 'SERVICE!', 'MISE EN PLACE!', 'IIIH!'] }
   };
   // Sprüche nach Ereignis – Türkisch und Deutsch gemischt, wie in der Hütte
   var SPRUCH = {
@@ -144,7 +145,7 @@
     s = { ziel: { x: 160, y: 140 }, gegner: [], leute: [], kumpel: null, mission: null, missionErgebnis: null,
           geschosse: [], funken: [], krater: [], meldungen: [], vorrat: [], leichen: [], flecken: [], sani: [], naechsterSani: 0, kumpels: gemischt(TRUPPE), lazarett: [], graeber: [], naechte: 0, explosionen: [], ketten: [], schwebe: [], dunst: 0,
           punkte: 0, treffer: 0, schuesse: 0, nachtStart: { lazarett: 0, punkte: 0, schuesse: 0 }, huette: LEBEN, munition: MAGAZIN, nachladenBis: 0,
-          welle: 0, zuSpawnen: 0, letzteWelle: 0, welleMs: 1700, naechsterWanderer: 0, kumpelStart: 0, dackel: null, naechsterDackel: 0, pizza: null, naechstePizza: 0, verkehr: null, naechsterVerkehr: 0,
+          welle: 0, zuSpawnen: 0, letzteWelle: 0, welleMs: 1700, naechsterWanderer: 0, kumpelStart: 0, dackel: null, naechsterDackel: 0, pizza: null, naechstePizza: 0, schwarm: [], toteSchaben: [], naechsteKontrolle: 0, verkehr: null, naechsterVerkehr: 0,
           muendung: 0, wackeln: 0, riese: null };
     naechsteWelle();
   }
@@ -153,7 +154,7 @@
     s.zuSpawnen = 6 + s.welle * 3;
     s.welleMs = Math.max(650, 1800 - s.welle * 160);
     s.munition = MAGAZIN; s.nachladenBis = 0;
-    s.mission = (s.welle % 2 === 0) ? MISSIONEN[((s.welle / 2) - 1) % MISSIONEN.length] : null;
+    s.mission = (s.welle % 2 === 0 && s.kumpels.length) ? MISSIONEN[((s.welle / 2) - 1) % MISSIONEN.length] : null;   // ohne Reserve keine Mission
     s.kumpel = null; s.kumpelStart = 0;
     // Einmal pro Spiel stirbt einer nicht den Heldentod – auf dem Plumpsklo
     if (s.welle >= 3 && !s.kloGehabt && s.kumpels.length > 3 && Math.random() < .3) {
@@ -293,6 +294,12 @@
       var h = Math.max(3, Math.round(f.h)), w = Math.round(h * b.naturalWidth / b.naturalHeight);
       x.imageSmoothingEnabled = false; x.drawImage(b, Math.round(f.x - w / 2), Math.round(f.y - h / 2), w, h);
     });
+  }
+  // wer eine Schabe sieht, kreischt und rennt heim (nutzt den Heimweg der Pizza-Satten)
+  function flucht(g) {
+    if (!g.lebendig || g.art === 'fahrzeug' || g.pizzaFolge === 'heim') return;
+    g.pizzaBis = 1; g.pizzaFolge = 'heim'; var k = koerper(g);
+    if (s.schwebe.length < 8) s.schwebe.push({ x: k.p.x, y: k.o - 2, t: ['IIIH!', 'IGITT!', 'HILFE!', 'ÄÄH!'][Math.floor(Math.random() * 4)], start: zeit });
   }
   // ein Wurfgeschoss mittig um (0,0) malen – Drehung macht der Aufrufer
   function wurfMalen(n, hoehe) {
@@ -466,6 +473,14 @@
       } else funken(zx, zy, 5, COL.stahl, 2);
       return;
     }
+    // 1b. Eine Küchenschabe erwischt – PLATSCH
+    for (var sq = 0; sq < s.schwarm.length; sq++) {
+      var sb = s.schwarm[sq];
+      if (Math.abs(sb.x - zx) < 4 && Math.abs(sb.y - 3 - zy) < 4) {
+        s.schwarm.splice(sq, 1); s.punkte += 25; s.toteSchaben.push({ x: sb.x, y: sb.y, seit: zeit });
+        s.schwebe.push({ x: sb.x, y: sb.y - 6, t: 'PLATSCH! +25', start: zeit }); return;
+      }
+    }
     // 2a. Der Pizza-Blitz – Klaus wird sauer
     if (s.pizza && drin(pizzaKasten(), zx, zy)) {
       s.punkte = Math.max(0, s.punkte - 300); funken(zx, zy, 8, '#e2553a', 1.5); s.pizza.hupen = zeit;
@@ -518,6 +533,7 @@
     if (sp.art === 'geist') s.gegner.filter(function (g) { return g.lebendig; }).forEach(function (g, j) { obj.push({ typ: 'geist', ziel: g, ab: 900 + j * 420 }); });
     if (sp.art === 'sterne' || sp.art === 'weizen' || sp.art === 'wurst' || sp.art === 'doc' || sp.art === 'rohrzange') s.gegner.filter(function (g) { return g.lebendig; }).slice(0, 14).forEach(function (g, j) { obj.push({ typ: 'stern', bild: sp.art === 'doc' ? (j % 2 ? 'zange' : 'skalpell') : sp.art, ziel: g, x: 112, y: 214, ab: j * 220 }); });
     if (sp.art === 'wirbel') obj.push({ typ: 'wirbel', ab: 0, dauer: 3400 });
+    if (sp.art === 'schaben') for (i = 0; i < 26; i++) obj.push({ typ: 'schabe', seite: i % 2, t: 1, tempo: 0.00045 + Math.random() * 0.00025, ab: i * 110, versatz: (Math.random() - .5) * 1.1 });
     if (sp.art === 'weizen') obj.push({ typ: 'biertraktor', seite: links, t: 1, tempo: 0.00021, ab: 300 });   // Kurt kommt mit dem Biertraktor
     if (sp.art === 'wurst') obj.push({ typ: 'grillwagen', seite: links, t: 1, tempo: 0.0002, ab: 300 });      // Ahmed schiebt den Grill
     if (sp.art === 'rohrzange') obj.forEach(function (o) { o.bild = 'rohrzange'; });
@@ -529,6 +545,10 @@
   }
   function erledigen(g) {
     if (!g.lebendig) return;
+    if (s.spezial && s.spezial.art === 'schaben') {                                   // IIIH! – zurück ins Dorf
+      if (g.pizzaFolge === 'heim' || g.art === 'fahrzeug') { if (g.art === 'fahrzeug' && !g.schreck) { g.schreck = true; } else return; }
+      flucht(g); s.spezial.erledigt++; return;
+    }
     g.lebendig = false; s.spezial.erledigt++;
     var k = koerper(g);
     if (s.spezial.blasen.length < 2 && zeit - (s.spezial.letzteBlase || 0) > 450) s.spezial.letzteBlase = zeit, s.spezial.blasen.push({ x: k.p.x, y: k.o - 4, t: s.spezial.art === 'geist' ? (s.spezial.erledigt % 2 ? '¿EH?' : '¡AY!') : TREFFER_WORTE[s.spezial.erledigt % TREFFER_WORTE.length], start: zeit, gr: 6 + g.t * 4 });
@@ -683,6 +703,9 @@
           x.fillStyle = COL.rot; x.beginPath(); x.moveTo(k.p.x - k.gr, k.o); x.lineTo(k.p.x + k.gr, k.o); x.lineTo(k.p.x, k.o - k.gr * 1.6); x.fill();   // Zipfelmütze
           x.fillStyle = COL.hell; x.fillRect(r2(k.p.x - k.gr * .5), r2(k.o + k.gr), r2(k.gr), Math.max(1, r2(k.gr * .6)));                                   // Bart
         }
+      } else if (o.typ === 'schabe' && fahrzeugBild('schabe_oben0')) {
+        var sb = fahrzeugBild('schabe_oben' + (Math.floor(o.sprung * 2) % 5)), sh = Math.round(4 + tt * 13), sw = Math.round(sh * sb.naturalWidth / sb.naturalHeight);
+        x.imageSmoothingEnabled = false; x.drawImage(sb, Math.round(px - sw / 2 + Math.sin(o.sprung * 3) * 2), Math.round(py - sh), sw, sh);
       } else if (o.typ === 'kaninchen' && fahrzeugBild('hase0')) {                    // Gerds Karnickel hoppeln den Weg hinauf
         var hb = fahrzeugBild('hase' + (Math.floor(o.sprung * 1.6) % 9)), hh = Math.round(5 + tt * 22), hw = Math.round(hh * hb.naturalWidth / hb.naturalHeight);
         var hopsY = Math.abs(Math.sin(o.sprung * 1.5)) * hh * .25;
@@ -900,6 +923,21 @@
         melden('PIZZA-BLITZ: LIEFERUNG! +1 HÜTTE +500' + (s.pizza.verteilt ? ' · ' + s.pizza.verteilt + '× SATT' : ''), COL.feuer); melden(spruch('lob', true), COL.feuer); s.pizza = null;
       }
     }
+    // HYGIENEKONTROLLE: aus der Hütte quellen Küchenschaben
+    if (s.welle >= 3 && s.zuSpawnen > 0 && !s.schwarm.length && zeit > s.naechsteKontrolle) {
+      if (s.naechsteKontrolle) {
+        melden('HYGIENEKONTROLLE! DIE SCHABEN SIND LOS!', '#c8792a');
+        for (var sc = 0; sc < 16; sc++) s.schwarm.push({ x: 120 + Math.random() * 80, y: 236 + Math.random() * 10, vx: (Math.random() - .5) * .05, vy: -(0.03 + Math.random() * .03), phase: Math.random() * 6 });
+      }
+      s.naechsteKontrolle = zeit + 45000 + Math.random() * 30000;
+    }
+    s.schwarm.forEach(function (sb) {
+      sb.x += sb.vx * dt; sb.y += sb.vy * dt; sb.phase += dt * .03;
+      if (Math.random() < .02) sb.vx = (Math.random() - .5) * .06;                                  // zickzack
+      s.gegner.forEach(function (g) { if (g.lebendig && !g.pizzaBis && g.art !== 'fahrzeug' && drin(koerper(g), sb.x, sb.y - 2)) flucht(g); });
+    });
+    s.schwarm = s.schwarm.filter(function (sb) { return sb.y > WEG_O - 4 && sb.x > -10 && sb.x < W + 10; });
+    s.toteSchaben = s.toteSchaben.filter(function (tsb) { return zeit - tsb.seit < 5000; });
     // Hinten an der Uferstraße: ein bisschen Verkehr (nur Kulisse)
     if (BILD_HINTERGRUND && !s.verkehr && zeit > s.naechsterVerkehr) {
       if (s.naechsterVerkehr) { var vl2 = Math.random() < .5, art = VERKEHR[Math.floor(Math.random() * VERKEHR.length)]; s.verkehr = { art: art, x: vl2 ? -40 : W + 40, dx: (vl2 ? 1 : -1) * art[2] }; }
@@ -912,6 +950,7 @@
       s.naechsterDackel = zeit + 18000 + Math.random() * 20000;
     }
     // Kumpel losschicken
+    if (s.mission && !s.kumpel && !s.missionErgebnis && !s.kumpels.length) { s.missionErgebnis = 'keiner'; melden('KEINER MEHR DA, DER ' + s.mission.wer + ' HOLEN KANN …', COL.grau); }   // sonst endet die Welle nie
     if (s.mission && !s.kumpel && s.kumpelStart && zeit > s.kumpelStart && !s.missionErgebnis && s.kumpels.length) {
       s.kumpel = { name: s.kumpels.shift(), seite: Math.random() < .5 ? 0 : 1, t: 1, phase: 'hin', wartenBis: 0, schritt: 0, faeuste: KUMPEL_FAEUSTE, blitz: 0, ruheBis: 0 }; s.kumpelStart = 0;
       melden(s.kumpel.name + ': ' + (spanier(s.kumpel.name) ? spruch('spanisch') : spruch('start', true)) + ' ' + s.mission.auftrag + '!', COL.blau);
@@ -1020,7 +1059,7 @@
     var missionOffen = s.mission && !s.missionErgebnis;
     if (s.zuSpawnen === 0 && s.gegner.length === 0 && s.geschosse.length === 0 && s.ketten.length === 0 && !missionOffen) {
       s.punkte += s.huette * 250;
-      s.leute = []; s.sani = []; s.dackel = null; s.pizza = null; s.leichen.forEach(function (l) { l.abgeholt = false; });
+      s.leute = []; s.sani = []; s.dackel = null; s.pizza = null; s.schwarm = []; s.leichen.forEach(function (l) { l.abgeholt = false; });
       if (s.welle % MORGEN_NACH === 0) {
         s.naechte++;
         s.morgenBonus = { vorrat: s.vorrat.length * 500, kumpels: s.kumpels.length * 300 };
@@ -2009,6 +2048,8 @@
     s.leute.forEach(leuteMalen);
     if (s.dackel) dackelMalen(s.dackel);
     if (s.pizza) pizzaMalen();
+    s.toteSchaben.forEach(function (tsb) { var tb = fahrzeugBild('schabe_tot' + (2 + Math.floor((zeit - tsb.seit) / 500) % 2)); if (tb) { var th = 4 + tiefeAusY(tsb.y) * 8, tw = th * tb.naturalWidth / tb.naturalHeight; x.imageSmoothingEnabled = false; x.drawImage(tb, Math.round(tsb.x - tw / 2), Math.round(tsb.y - th), Math.round(tw), Math.round(th)); } });
+    s.schwarm.forEach(function (sb) { var b = fahrzeugBild('schabe_oben' + (Math.floor(sb.phase) % 5)); if (!b) return; var h = Math.round(3 + tiefeAusY(sb.y) * 9), w = Math.round(h * b.naturalWidth / b.naturalHeight); x.imageSmoothingEnabled = false; x.drawImage(b, Math.round(sb.x - w / 2), Math.round(sb.y - h), w, h); });
     var alle = s.gegner.map(function (g) { return { t: g.t, mal: function () { gegnerMalen(g); } }; });
     if (s.kumpel) alle.push({ t: s.kumpel.t, mal: kumpelMalen });
     alle.sort(function (a, b) { return a.t - b.t; }).forEach(function (o) { o.mal(); });
