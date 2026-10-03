@@ -1342,12 +1342,41 @@
   }
   // Sonntagabend, 18 Uhr: das schafft keiner mehr
   // Sonntag, 9 Uhr: die Party ist vorbei – alle gehen brav in die Kirche. Die Überlebenden, die früher Heimgegangenen und das Dorf.
-  var KIRCHE = { knopf: 10500 };
+  var KIRCHE = { knopf: 12000 };
+  // Das Fliegende Spaghettimonster schwebt über dem Kirchturm – eine Kirche für alle
+  function spaghettimonster(px, py, t) {
+    if (t < 2200) return;
+    var an = Math.min(1, (t - 2200) / 1500), r = Math.round, by = py + Math.sin(zeit / 500) * 3;
+    x.globalAlpha = .18 * an; x.fillStyle = '#fff2b0'; x.beginPath(); x.arc(px, by, 30, 0, Math.PI * 2); x.fill();      // Heiligenschein
+    x.globalAlpha = an; x.lineWidth = 1.5;
+    for (var a = 0; a < 7; a++) {                                                                                       // Nudelärmchen
+      var ax = px - 18 + a * 6; x.strokeStyle = '#1b1612'; x.beginPath(); x.moveTo(ax, by + 2);
+      for (var k = 1; k <= 6; k++) x.lineTo(ax + Math.sin(zeit / 300 + a + k) * 3, by + 2 + k * 3); x.stroke();
+      x.strokeStyle = '#f2d27a'; x.lineWidth = 1; x.stroke(); x.lineWidth = 1.5;
+    }
+    x.fillStyle = '#1b1612'; x.beginPath(); x.ellipse(px, by, 20, 8, 0, 0, Math.PI * 2); x.fill();                        // Nudelknäuel
+    x.fillStyle = '#f2d27a'; x.beginPath(); x.ellipse(px, by, 19, 7, 0, 0, Math.PI * 2); x.fill();
+    x.strokeStyle = '#d9b45a'; x.lineWidth = 1; for (var n = 0; n < 9; n++) { x.beginPath(); x.arc(px - 14 + n * 3.5, by + (n % 2 ? 1 : -1), 3, 0, Math.PI); x.stroke(); }
+    [-7, 7].forEach(function (d) {                                                                                      // Fleischbällchen
+      x.fillStyle = '#1b1612'; x.beginPath(); x.arc(px + d, by - 3, 5, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#8a4a2a'; x.beginPath(); x.arc(px + d, by - 3, 4, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#b06a3a'; x.fillRect(r(px + d - 2), r(by - 6), 2, 2);
+    });
+    [-4, 4].forEach(function (d, i) {                                                                                   // Stielaugen
+      var ex = px + d * 1.6 + Math.sin(zeit / 400 + i) * 2, ey = by - 15;
+      x.strokeStyle = '#d9b45a'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(px + d, by - 6); x.lineTo(ex, ey + 2); x.stroke();
+      x.fillStyle = '#1b1612'; x.beginPath(); x.arc(ex, ey, 3, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#ffffff'; x.beginPath(); x.arc(ex, ey, 2.2, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#1b1612'; x.fillRect(r(ex), r(ey), 1, 1);
+    });
+    x.lineWidth = 1; x.globalAlpha = 1;
+  }
   var KIRCH_TEXTE = [
     { ab: 0,    t: 'SONNTAG, 9 UHR. DIE PARTY IST VORBEI.' },
-    { ab: 2600, t: 'ALLE GEHEN BRAV IN DIE KIRCHE.' },
-    { ab: 5200, t: 'AUCH DIE, DIE FRÜHER HEIMGEGANGEN SIND.' },
-    { ab: 7600, t: 'UND DAS DORF GLEICH MIT. WIE IN ECHT.' }
+    { ab: 2200, t: 'ALLE GEHEN IN DIE KIRCHE …' },
+    { ab: 4400, t: '… DES FLIEGENDEN SPAGHETTIMONSTERS.' },
+    { ab: 6600, t: 'AUCH DIE FRÜHER HEIMGEGANGENEN. UND DAS DORF.' },
+    { ab: 8800, t: 'EINE FÜR ALLE. VOR DER NUDEL SIND ALLE GLEICH.' }
   ];
   function tagLicht(staerke) {                                                       // die Nacht wird Morgen
     x.save(); x.globalCompositeOperation = 'screen'; x.fillStyle = 'rgba(105,85,55,' + (.55 * staerke) + ')'; x.fillRect(0, 0, W, H);
@@ -1370,7 +1399,7 @@
   // Wer alles verliert: Sonntagmorgen gehen alle in die Kirche – und einer wacht nackt vor der Tür auf
   var SCHANDE_TEXTE = [
     { ab: 0,    t: 'SONNTAG, 9 UHR. DIE GLOCKEN LÄUTEN.' },
-    { ab: 2400, t: 'ALLE GEHEN BRAV IN DIE KIRCHE …' },
+    { ab: 2400, t: 'ALLE GEHEN ZUM FLIEGENDEN SPAGHETTIMONSTER …' },
     { ab: 4800, t: '@ WACHT NACKT VOR DER KIRCHE AUF.' },
     { ab: 7400, t: 'DAS GANZE DORF SCHAUT ZU.' }
   ];
@@ -1410,8 +1439,9 @@
     var t = zeit - modusSeit, pano = vBild('panorama'), wer = name.map(function (i) { return ABC[i]; }).join('');
     if (!pano) { if (!HG_BURG) HG_BURG = burgBild(); x.drawImage(HG_BURG, 0, 0); }
     else { x.imageSmoothingEnabled = false; x.drawImage(pano, 0, 0); tagLicht(1); }
-    if (Math.floor(zeit / 700) % 2) text('BIMM', 228, 70, 8, '#ffe9a0'); else text('BAMM', 194, 66, 8, '#ffe9a0');
+    if (Math.floor(zeit / 700) % 2) text('BIMM', 234, 100, 8, '#ffe9a0'); else text('BAMM', 190, 104, 8, '#ffe9a0');
     var nx = 160, nu = 234;   // vorn im Bild, vor dem Zug
+    spaghettimonster(212, 100, t + 200);
     kirchZug(t, [], t > 4800 ? { x: 196, worte: ['JESSES!', 'HAHAHA!', 'SCHÄM DICH!', 'IST DAS NICHT …?', 'IGITT!', wer + '?!'] } : null);
     if (!nackterBildMalen(nx, nu, t)) { x.save(); x.translate(nx, nu); x.scale(2, 2); nackterMalen(0, 0, t); x.restore(); }
     x.fillStyle = 'rgba(11,16,32,.75)'; x.fillRect(0, 0, W, 32);
@@ -1428,19 +1458,20 @@
     var t = zeit - modusSeit, pano = vBild('panorama');
     if (!pano) { if (!HG_BURG) HG_BURG = burgBild(); x.drawImage(HG_BURG, 0, 0); }
     else { x.imageSmoothingEnabled = false; x.drawImage(pano, 0, 0); tagLicht(1); }
-    if (Math.floor(zeit / 700) % 2) { text('BIMM', 228, 70, 8, '#ffe9a0'); } else { text('BAMM', 194, 66, 8, '#ffe9a0'); }   // am Kirchturm   // die Glocken
+    if (Math.floor(zeit / 700) % 2) { text('BIMM', 234, 100, 8, '#ffe9a0'); } else { text('BAMM', 190, 104, 8, '#ffe9a0'); }   // am Kirchturm, unter dem Monster   // die Glocken
+    spaghettimonster(212, 58, t);
     var noch = s.kumpels.slice(); if (s.kumpel) noch.push(s.kumpel.name);
     kirchZug(t, noch);
     // Texte oben
     x.fillStyle = 'rgba(11,16,32,.75)'; x.fillRect(0, 0, W, 32);
     var zeilen = KIRCH_TEXTE.filter(function (z) { return t >= z.ab; }).slice(-2);
     zeilen.forEach(function (z, i) { var n = Math.floor((t - z.ab) / 35); text(z.t.slice(0, n), 8, 9 + i * 12, 9, i === zeilen.length - 1 ? COL.hell : COL.grau, 'left'); });
-    if (t > 9000) {
+    if (t > 10600) {
       x.fillStyle = 'rgba(11,16,32,.8)'; x.fillRect(0, 176, W, 64);
       demoLogoText('DURCHGEFEIERT!', 192);
       text('MIT ' + noch.length + (noch.length === 1 ? ' KUMPEL' : ' KUMPELS') + ' BIS SONNTAG 9 UHR · ' + s.punkte + ' PUNKTE', 160, 212, 7, COL.hell);
       text('DAS HAT SEIT 1995 KEINER MEHR GESCHAFFT. MONTAG IST EIN ANDERES PROBLEM.', 160, 222, 6, COL.grau);
-      if (t > KIRCHE.knopf && Math.floor(zeit / 500) % 2) text('KNOPF = AMEN', 160, 233, 8, COL.feuer);
+      if (t > KIRCHE.knopf && Math.floor(zeit / 500) % 2) text('KNOPF = RAMEN', 160, 233, 8, COL.feuer);
     }
   }
   function demoLogoText(wort, py) {
