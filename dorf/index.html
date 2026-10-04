@@ -141,7 +141,7 @@
     s = { dorf: DORF_ID, spieler: SPIELER, kapitel: 2, jahrNull: 1001, jahr: 1, jz: 0, leute: leute, nahrung: 34, holz: 18, saat: 8, vertrauen: 10, haeuser: 2, bauFortschritt: 0, ehen: 1,
           plan: { feld: 2, sammeln: 2, holz: 1, handeln: 0, bauen: 0, wache: 1, erkunden: 1, sippe: 1 },
           bericht: [], chronik: ['UM 1000 V. CHR.: VIELE GENERATIONEN NACH DEN ERSTEN AN DER BACH.'], frage: null, ende: null,
-          namenM: m.slice(6), namenW: w.slice(6), erfunden: ['flachs', 'hacke', 'bandkeramik', 'kaese', 'sonnenkreis', 'salz', 'einbaum', 'apfelwein'].concat(bekannt.filter(function (k) { return ['flachs', 'hacke', 'bandkeramik', 'kaese', 'sonnenkreis', 'salz', 'einbaum', 'apfelwein'].indexOf(k) < 0; })),
+          namenM: m.slice(6), namenW: w.slice(6), erfunden: ['holunder', 'flachs', 'hacke', 'bandkeramik', 'kaese', 'sonnenkreis', 'salz', 'einbaum', 'apfelwein'].concat(bekannt.filter(function (k) { return ['holunder', 'flachs', 'hacke', 'bandkeramik', 'kaese', 'sonnenkreis', 'salz', 'einbaum', 'apfelwein'].indexOf(k) < 0; })),
           salz: 6, bronze: 0, groll: 0, burgBau: 0, stadt: 0, salzWeg: false, handelZaehler: 0 };
     s.erfunden.forEach(werkstattBauen);
     AUFGABEN = AUFGABEN_K2; s.arbeiterNamen = arbeiter().map(function (p) { return p.name; }); figurenSchluessel = '';
@@ -402,7 +402,7 @@
       e(3, woelfe); e(1, baer);
       e(2, function (b) { s.nahrung += 3; b.push('🍄 PILZE UND NÜSSE: +3 NAHRUNG.'); }, 1, 1.3);
     } else {
-      e(3, function (b) { s.strengerWinter = true; b.push('❄️ EIN STRENGER WINTER. IHR BRAUCHT DOPPELT SO VIEL HOLZ.'); });
+      e(3, function (b) { s.strengerWinter = true; if (!s.holleErzaehlt) { s.holleErzaehlt = true; b.push('SAGE: VIEL SPÄTER ERZÄHLT MAN HIER BEI SO VIEL SCHNEE, FRAU HOLLE SCHÜTTLE IHRE BETTEN AUS.'); } b.push('❄️ EIN STRENGER WINTER. IHR BRAUCHT DOPPELT SO VIEL HOLZ.'); });
       e(3, woelfe); e(2, function (b) { b.push('🌨️ EIN MILDER WINTER.'); });
       e(2, krankheit);
       e(3, function (b) { s.frage = { text: 'DIE SIPPE AM ANDEREN UFER HUNGERT. IHR KÖNNT 6 NAHRUNG ABGEBEN.', ja: function () { if (s.nahrung >= 6) { s.nahrung -= 6; s.vertrauen = Math.min(ZIEL_VERTRAUEN, s.vertrauen + 25); return 'IHR GEBT AB. DIE SIPPE VERGISST DAS NICHT: VERTRAUEN +25.'; } return 'IHR HABT SELBST NICHT GENUG.'; }, nein: function () { s.vertrauen = Math.max(0, s.vertrauen - 10); return 'IHR BEHALTET ALLES. DRÜBEN WIRD GETUSCHELT: VERTRAUEN -10.'; } }; b.push('🥣 DIE SIPPE AM ANDEREN UFER HUNGERT …'); });
@@ -437,8 +437,8 @@
     }
     function krankheit(b) {
       var opfer = lebende().filter(function (q) { return q.alter < 5 || q.alter > 45; });
-      if (opfer.length && Math.random() < .5) { var q = zufall(opfer); q.lebt = false; b.push('🤒 EIN FIEBER GEHT UM. ' + q.name + ' ÜBERLEBT ES NICHT.'); chronik(q.name + ' STIRBT AM FIEBER.'); witwe(q); }
-      else b.push('🤒 EIN FIEBER GEHT UM, ABER ALLE ÜBERSTEHEN ES.');
+      if (opfer.length && Math.random() < (hat('holunder') ? .2 : .5)) { var q = zufall(opfer); q.lebt = false; b.push('🤒 EIN FIEBER GEHT UM. ' + q.name + ' ÜBERLEBT ES NICHT.'); chronik(q.name + ' STIRBT AM FIEBER.'); witwe(q); }
+      else b.push(hat('holunder') ? '🤒 EIN FIEBER GEHT UM. DER HOLLERTEE HILFT – ALLE ÜBERSTEHEN ES.' : '🤒 EIN FIEBER GEHT UM, ABER ALLE ÜBERSTEHEN ES.');
     }
   }
   function pruefeEnde() {
@@ -591,6 +591,10 @@
       wann: function () { return s.jahr >= 3 && SPIELER.name && lebende().some(function (p) { return p.name === SPIELER.name; }); },
       text: function () { return (SPIELER.w ? 'DIE KLEINE ' : 'DER KLEINE ') + SPIELER.name + ' GRÄBT AN DER QUELLE IMMER TIEFER – UND STÖSST AUF WASSER, DAS NIE VERSIEGT: DER ERSTE BRUNNEN.'; },
       folge: 'DÜRRE SCHADET DEN FELDERN KAUM NOCH.' },
+    { id: 'holunder', kapitel: 1, titel: 'DER HOLLERBUSCH', wahr: 'BELEGT: HOLUNDERSAMEN FINDET MAN IN STEINZEIT-DÖRFERN. BLÜTENTEE GEGEN FIEBER IST ALTE, ANERKANNTE HEILKUNDE. ROHE BEEREN NIE ESSEN – NUR GEKOCHT!',
+      wann: function () { return s.jahr >= 2 && s.jz <= 1; },
+      text: function () { return 'AM LANGHAUS WÄCHST EIN HOLLERBUSCH. ' + aeltesteFrau() + ' KOCHT AUS DEN WEISSEN BLÜTEN EINEN TEE GEGEN DAS FIEBER, AUS DEN SCHWARZEN BEEREN EIN MUS – UND DIE KINDER SCHNITZEN AUS DEN HOHLEN ZWEIGEN PFEIFEN.'; },
+      folge: 'FIEBER IST NICHT MEHR SO GEFÄHRLICH. KEINER HACKT DEN BUSCH UM.' },
     { id: 'bandkeramik', kapitel: 1, titel: 'DIE TÖPFE MIT DEN BÄNDERN', bild: 'erf_toepfern', wahr: 'BELEGT: DIE ERSTEN BAUERN HIER, DIE „BANDKERAMIKER“, VERZIERTEN IHRE TÖPFE SO – AB ETWA 5500 V. CHR.',
       wann: function () { return s.jahr >= 2; },
       text: function () { return aeltesteFrau() + ' FORMT TÖPFE AUS TON UND RITZT BÄNDER HINEIN – IN WELLEN UND WINKELN. DARIN HÄLT SICH DAS KORN.'; },
@@ -1119,6 +1123,15 @@
     if (Math.floor(zeit / 500) % 2) text('KNOPF = WEITER', 104, 184, 7, COL.hell, 'center');
   }
   // Namen: was die Leute damals sagten (kräftig) – und ganz blass, wie es heute heißt
+  function hollerMalen(gx, gy) {                                               // der Hollerbusch am Haus – den hackt keiner um
+    var X = (gx - kamera.x) * KACHEL, Y = (gy - kamera.y) * KACHEL, jz = s.jz;
+    x.fillStyle = '#4a3020'; x.fillRect(X - .5, Y - 4, 1.4, 5); x.fillRect(X - 3, Y - 3, 1.2, 4); x.fillRect(X + 2, Y - 3, 1.2, 4);
+    if (jz === 3) { x.fillStyle = '#6a5040'; x.fillRect(X - 5, Y - 8, 10, 1); x.fillRect(X - 3, Y - 10, 7, 1); return; }
+    x.fillStyle = jz === 2 ? '#5a6a2a' : '#2f6b2f'; x.beginPath(); x.ellipse(X, Y - 7, 7, 5, 0, 0, Math.PI * 2); x.fill();
+    x.fillStyle = jz === 2 ? '#7a8a3a' : '#3f8a3a'; x.beginPath(); x.ellipse(X - 1.5, Y - 8.5, 4, 3, 0, 0, Math.PI * 2); x.fill();
+    var farbe = jz === 1 || jz === 0 ? '#f4f0dc' : '#1a1020';
+    if (jz !== 0 || s.jahr % 1 === 0) for (var d = 0; d < 6; d++) { x.fillStyle = farbe; x.fillRect(X - 5 + (d * 7) % 10, Y - 11 + (d * 5) % 7, jz === 2 ? 1 : 1.8, jz === 2 ? 1 : 1.2); }
+  }
   function palisadeMalen() {                                                  // Pfahlring um das Dorf, Tor zur Bach hin
     var cx = (HEIM_POS.x + .5 - kamera.x) * KACHEL, cy = (HEIM_POS.y + .9 - kamera.y) * KACHEL, rx = 2.7 * KACHEL, ry = 2.1 * KACHEL;
     for (var w = 0; w < Math.PI * 2; w += .07) {
@@ -1234,6 +1247,7 @@
       if (tt === 'K' && s && s.werkstatt && s.werkstatt[ggy + ',' + ggx] && bildDa('haus_' + s.werkstatt[ggy + ',' + ggx])) bildMalen('haus_' + s.werkstatt[ggy + ',' + ggx], hx * KACHEL + 8, hy * KACHEL + 15, false, .8);
       if (tt === 'X' && bildDa('burgD1')) bildMalen('burgD' + burgStufe(), hx * KACHEL + 8, hy * KACHEL + 34, false, 1.15);
     }
+    if (s && hat('holunder')) hollerMalen(HEIM_POS.x - .9, HEIM_POS.y + .9);
     lebenMalen();
     if (modus === 'szene') szeneMalen();
     x.restore();
@@ -1367,7 +1381,7 @@
     var zl = umbruch(e.text, 44); if (zl.length > 3) zl = umbruch(e.text, 54);
     zl.forEach(function (z, i) { text(z, 160, 133 + i * (zl.length > 3 ? 9 : 11), zl.length > 3 ? 7 : 8, COL.hell, 'center'); });
     text(e.folge, 160, 172, 7, COL.gruen, 'center');
-    if (e.wahr) text(e.wahr, 160, 188, 6, COL.gruen, 'center');
+    if (e.wahr) { var wz = umbruch(e.wahr, 66); wz.forEach(function (z, i) { text(z, 160, 186 - (wz.length - 1) * 3 + i * 6, 5, COL.gruen, 'center'); }); }
     else if (e.entdeckung) text('FÜRS SPIEL ERZÄHLT – SO ODER SO ÄHNLICH KÖNNTE ES GEWESEN SEIN.', 160, 188, 6, COL.grau, 'center');
     else { text('FÜRS SPIEL ERFUNDEN. WER ES WIRKLICH WAR, WEISS KEINER –', 160, 184, 6, COL.grau, 'center');
     text('WAHRSCHEINLICH ABER DOCH EINER VON DER BACH.', 160, 191, 6, COL.grau, 'center'); }
@@ -1376,6 +1390,7 @@
   function erfindungsBild(id, X, Y) {                                           // kleine Platzhalter, bis Andreas' Bilder da sind
     var t = Math.floor(zeit / 300) % 2;
     if (id === 'flachs') { x.fillStyle = '#c8a050'; x.fillRect(X - 1, Y - 20, 2, 26); x.fillStyle = '#e8dcb8'; x.beginPath(); x.ellipse(X, Y - 6 + t, 8, 6, 0, 0, Math.PI * 2); x.fill(); x.fillStyle = '#8fb0e0'; for (var i = 0; i < 5; i++) x.fillRect(X - 14 + i * 7, Y + 10, 2, 6); }
+    else if (id === 'holunder') { x.fillStyle = '#4a3020'; x.fillRect(X - 1, Y - 2, 2, 12); x.fillStyle = '#2f6b2f'; x.beginPath(); x.ellipse(X, Y - 10, 18, 11, 0, 0, Math.PI * 2); x.fill(); for (var d = 0; d < 7; d++) { x.fillStyle = '#f4f0dc'; x.beginPath(); x.arc(X - 12 + d * 4, Y - 14 + (d % 3) * 4, 2.2, 0, Math.PI * 2); x.fill(); } x.fillStyle = '#1a1020'; for (var d2 = 0; d2 < 5; d2++) x.fillRect(X + 6 + (d2 % 2) * 2, Y - 6 + d2, 1.5, 1.5); }
     else if (id === 'kaese') { x.fillStyle = '#e8c25a'; x.beginPath(); x.moveTo(X - 14, Y + 6); x.lineTo(X + 14, Y + 6); x.lineTo(X + 4, Y - 10); x.fill(); x.fillStyle = '#c8a040'; x.fillRect(X - 4, Y - 1, 3, 3); x.fillRect(X + 4, Y + 2, 2, 2); }
     else if (id === 'sonnenkreis') { x.strokeStyle = '#8a6440'; x.lineWidth = 2; x.beginPath(); x.ellipse(X, Y, 26, 9, 0, 0, Math.PI * 2); x.stroke(); x.fillStyle = '#ffd25a'; x.beginPath(); x.arc(X + 26, Y - 4 - t * 2, 5, 0, Math.PI * 2); x.fill(); for (var pf = 0; pf < 14; pf++) { var w = pf / 14 * Math.PI * 2; if (Math.abs(Math.cos(w)) > .95) continue; x.fillStyle = '#5a3a1c'; x.fillRect(X + Math.cos(w) * 26, Y + Math.sin(w) * 9 - 6, 2, 6); } }
     else if (id === 'brunnen') { x.fillStyle = '#7b7f88'; x.fillRect(X - 12, Y - 2, 24, 10); x.fillStyle = '#3a6fb8'; x.fillRect(X - 8, Y, 16, 4); x.fillStyle = '#8a6440'; x.fillRect(X - 12, Y - 20, 2, 18); x.fillRect(X + 10, Y - 20, 2, 18); x.fillRect(X - 12, Y - 20, 24, 2); x.fillRect(X - 1, Y - 18 + t * 3, 2, 8); }
