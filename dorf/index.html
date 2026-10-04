@@ -803,6 +803,16 @@
     if (frei() > 0) return 'ES SITZEN NOCH ' + frei() + ' AM FEUER. GIB IHNEN ARBEIT – ODER V: ICH VERTEILE.';
     var essen = s.nahrung + (s.jz <= 2 ? erwarteteErnte() : 0);
     if (s.jz === 2 && erwarteteErnte()) return 'DIE FELDER SIND REIF. SCHICKT LEUTE AUFS FELD, SONST VERFAULT ES.';
+    if (s.kapitel === 3) {                                                      // Kapitel 3: der Alte nennt das nächste fehlende Ziel
+      if (essen < bedarfBisFruehling()) return 'ERST DAS ESSEN: ES REICHT NICHT BIS ZUM FRÜHLING. MEHR LEUTE ZUM JAGEN!';
+      if (!s.erzGefunden) return 'NÄCHSTES ZIEL: EISEN. SCHICKT LEUTE ZUM SCHMIEDEN – SIE SUCHEN DEN ROTEN STEIN.';
+      if (!hat('rennofen')) return 'NÄCHSTES ZIEL: DER RENNOFEN. MEHR LEUTE ZUM SCHMIEDEN, DANN STEHT ER BALD.';
+      if (s.eisenGesamt < 6) return 'NÄCHSTES ZIEL: 6 EISEN (' + s.eisenGesamt + '). JEDER SCHMIED BRAUCHT 3 HOLZ – SCHICKT AUCH LEUTE INS HOLZ.';
+      if (s.werkzeug < 1) return 'NÄCHSTES ZIEL: LASST DEN SCHMIED WERKZEUGE MACHEN, SOBALD 3 EISEN DA SIND.';
+      if (!s.bergBesucht) return 'NÄCHSTES ZIEL: SCHICKT EINEN KUNDSCHAFTER AUF DEN ALTEN BERG.';
+      var nb3 = schwaechsterNachbar(); if (nb3 && s.nachbarn[nb3] < 60) return 'NÄCHSTES ZIEL: FREUNDE IN ' + nb3 + ' (' + s.nachbarn[nb3] + '/60). SCHICKT LEUTE ZU DEN NACHBARN.';
+      if (lebende().length < 20) return 'NÄCHSTES ZIEL: 20 LEUTE (' + lebende().length + '). BAUT HÄUSER, DANN KOMMEN KINDER.';
+    }
     if (s.jz === 0 && s.saat > 0 && !s.plan.feld) return 'JETZT IST SÄZEIT. WER IM FRÜHLING NICHT SÄT, HUNGERT IM WINTER.';
     if (s.kapitel >= 2 && !kacheln('T').length) return 'FOLGT DEM WASSER: WO ES IN DEN GROSSEN FLUSS MÜNDET, WIRD GEHANDELT.';
     if (s.kapitel >= 2 && s.salzWeg && s.salz < salzBedarf()) return 'KEIN SALZ MEHR AUS DER ERDE. SCHICKT HÄNDLER ZUR MÜNDUNG.';
