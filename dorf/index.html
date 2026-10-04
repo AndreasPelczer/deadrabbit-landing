@@ -141,7 +141,7 @@
     s = { dorf: DORF_ID, spieler: SPIELER, kapitel: 2, jahrNull: 1001, jahr: 1, jz: 0, leute: leute, nahrung: 34, holz: 18, saat: 8, vertrauen: 10, haeuser: 2, bauFortschritt: 0, ehen: 1,
           plan: { feld: 2, sammeln: 2, holz: 1, handeln: 0, bauen: 0, wache: 1, erkunden: 1, sippe: 1 },
           bericht: [], chronik: ['UM 1000 V. CHR.: VIELE GENERATIONEN NACH DEN ERSTEN AN DER BACH.'], frage: null, ende: null,
-          namenM: m.slice(6), namenW: w.slice(6), erfunden: ['flachs', 'hacke', 'salz', 'einbaum', 'apfelwein'].concat(bekannt.filter(function (k) { return ['flachs', 'hacke', 'salz', 'einbaum', 'apfelwein'].indexOf(k) < 0; })),
+          namenM: m.slice(6), namenW: w.slice(6), erfunden: ['flachs', 'hacke', 'bandkeramik', 'kaese', 'sonnenkreis', 'salz', 'einbaum', 'apfelwein'].concat(bekannt.filter(function (k) { return ['flachs', 'hacke', 'bandkeramik', 'kaese', 'sonnenkreis', 'salz', 'einbaum', 'apfelwein'].indexOf(k) < 0; })),
           salz: 6, bronze: 0, groll: 0, burgBau: 0, stadt: 0, salzWeg: false, handelZaehler: 0 };
     s.erfunden.forEach(werkstattBauen);
     AUFGABEN = AUFGABEN_K2; s.arbeiterNamen = arbeiter().map(function (p) { return p.name; }); figurenSchluessel = '';
@@ -190,9 +190,9 @@
       } else if (jz === 2) {                                                     // ernten
         var reif = fk.filter(function (k) { return felder[k] === 'reif'; }), geerntet = Math.min(reif.length, p.feld * 2);
         var duerreFak = s.duerre ? (hat('brunnen') ? .9 : .6) : 1; s.duerre = false;   // die Dürre im Sommer trifft die Ernte – außer es gibt einen Brunnen
-        var ertrag = Math.round(geerntet * (ERNTE_FELD + (hat('hacke') ? 2 : 0)) * faktor * duerreFak * (hat('bronze') ? 1.33 : 1));
+        var ertrag = Math.round(geerntet * (ERNTE_FELD + (hat('hacke') ? 2 : 0) + (hat('sonnenkreis') ? 1 : 0)) * faktor * duerreFak * (hat('bronze') ? 1.33 : 1));
         reif.slice(0, geerntet).forEach(function (k) { felder[k] = 'leer'; });
-        s.nahrung += ertrag; s.saat += geerntet + Math.floor(geerntet / 2);
+        s.nahrung += ertrag + (hat('bandkeramik') ? 4 : 0); s.saat += geerntet + Math.floor(geerntet / 2);
         b.push(geerntet ? 'ERNTE: ' + geerntet + ' FELDER, +' + ertrag + ' NAHRUNG, +' + (geerntet + Math.floor(geerntet / 2)) + ' SAATGUT.' : 'NICHTS ZU ERNTEN.');
       } else if (jz === 1) { var n2 = p.feld * 2; s.nahrung += n2; b.push('DIE BAUERN JÄTEN UND SAMMELN DABEI BEEREN: +' + n2 + ' NAHRUNG.'); }
       else { var h2 = p.feld * 2; s.holz += h2; b.push('IM WINTER GEHEN DIE BAUERN INS HOLZ: +' + h2 + ' HOLZ.'); }
@@ -256,6 +256,7 @@
       s.nahrung = 0;
     } else s.hunger = 0;
     // Winter: Holz und Älterwerden
+    if (jz === 3 && hat('kaese')) { s.nahrung += 3; b.push('🧀 KÄSE AUS DEM VORRAT: +3 NAHRUNG.'); }
     if (jz === 3) {
       var holzBedarf = s.haeuser * holzWinter() * (s.strengerWinter ? 2 : 1); s.strengerWinter = false;
       s.holz -= holzBedarf; b.push('GEHEIZT: ' + holzBedarf + ' HOLZ.');
@@ -590,6 +591,18 @@
       wann: function () { return s.jahr >= 3 && SPIELER.name && lebende().some(function (p) { return p.name === SPIELER.name; }); },
       text: function () { return (SPIELER.w ? 'DIE KLEINE ' : 'DER KLEINE ') + SPIELER.name + ' GRÄBT AN DER QUELLE IMMER TIEFER – UND STÖSST AUF WASSER, DAS NIE VERSIEGT: DER ERSTE BRUNNEN.'; },
       folge: 'DÜRRE SCHADET DEN FELDERN KAUM NOCH.' },
+    { id: 'bandkeramik', kapitel: 1, titel: 'DIE TÖPFE MIT DEN BÄNDERN', bild: 'erf_toepfern', wahr: 'BELEGT: DIE ERSTEN BAUERN HIER, DIE „BANDKERAMIKER“, VERZIERTEN IHRE TÖPFE SO – AB ETWA 5500 V. CHR.',
+      wann: function () { return s.jahr >= 2; },
+      text: function () { return aeltesteFrau() + ' FORMT TÖPFE AUS TON UND RITZT BÄNDER HINEIN – IN WELLEN UND WINKELN. DARIN HÄLT SICH DAS KORN.'; },
+      folge: 'JEDEN HERBST VERDIRBT WENIGER: +4 NAHRUNG.' },
+    { id: 'kaese', kapitel: 1, titel: 'DER KÄSE', wahr: 'BELEGT: SIEBE MIT KÄSERESTEN GAB ES SCHON UM 5500 V. CHR.',
+      wann: function () { return s.jahr >= 4; },
+      text: function () { return 'MILCH STEHT ZU LANGE IN EINEM SIEBTOPF – UND WIRD FEST. ES SCHMECKT, UND ES HÄLT BIS IN DEN WINTER: DER ERSTE KÄSE.'; },
+      folge: 'IM WINTER +3 NAHRUNG.' },
+    { id: 'sonnenkreis', kapitel: 1, titel: 'DER SONNENKREIS', wahr: 'BELEGT: DIE KREISGRABENANLAGE VON GOSECK (SACHSEN-ANHALT) GAB ES UM 4900 V. CHR.',
+      wann: function () { return s.jahr >= 6; },
+      text: function () { return 'DIE ALTEN LEGEN EINEN RING AUS PFÄHLEN UND GRÄBEN AN. ZUR SONNENWENDE GEHT DIE SONNE GENAU IM TOR AUF – JETZT WEISS MAN, WANN GESÄT WIRD.'; },
+      folge: 'SÄEN ZUR RECHTEN ZEIT: JEDES FELD +1 BEI DER ERNTE.' },
     { id: 'salz', kapitel: 1, titel: 'PÖKELN', wann: function () { return s.jahr >= 4 && kacheln('Z').length > 0; },
       text: function () { return 'EINER VON DER BACH HAT EIN STÜCK FLEISCH AN DER SALZSTELLE VERGESSEN – UND SO DAS PÖKELN ERFUNDEN.'; },
       folge: 'IM WINTER BRINGT DIE JAGD DOPPELT SO VIEL.' },
@@ -1363,6 +1376,8 @@
   function erfindungsBild(id, X, Y) {                                           // kleine Platzhalter, bis Andreas' Bilder da sind
     var t = Math.floor(zeit / 300) % 2;
     if (id === 'flachs') { x.fillStyle = '#c8a050'; x.fillRect(X - 1, Y - 20, 2, 26); x.fillStyle = '#e8dcb8'; x.beginPath(); x.ellipse(X, Y - 6 + t, 8, 6, 0, 0, Math.PI * 2); x.fill(); x.fillStyle = '#8fb0e0'; for (var i = 0; i < 5; i++) x.fillRect(X - 14 + i * 7, Y + 10, 2, 6); }
+    else if (id === 'kaese') { x.fillStyle = '#e8c25a'; x.beginPath(); x.moveTo(X - 14, Y + 6); x.lineTo(X + 14, Y + 6); x.lineTo(X + 4, Y - 10); x.fill(); x.fillStyle = '#c8a040'; x.fillRect(X - 4, Y - 1, 3, 3); x.fillRect(X + 4, Y + 2, 2, 2); }
+    else if (id === 'sonnenkreis') { x.strokeStyle = '#8a6440'; x.lineWidth = 2; x.beginPath(); x.ellipse(X, Y, 26, 9, 0, 0, Math.PI * 2); x.stroke(); x.fillStyle = '#ffd25a'; x.beginPath(); x.arc(X + 26, Y - 4 - t * 2, 5, 0, Math.PI * 2); x.fill(); for (var pf = 0; pf < 14; pf++) { var w = pf / 14 * Math.PI * 2; if (Math.abs(Math.cos(w)) > .95) continue; x.fillStyle = '#5a3a1c'; x.fillRect(X + Math.cos(w) * 26, Y + Math.sin(w) * 9 - 6, 2, 6); } }
     else if (id === 'brunnen') { x.fillStyle = '#7b7f88'; x.fillRect(X - 12, Y - 2, 24, 10); x.fillStyle = '#3a6fb8'; x.fillRect(X - 8, Y, 16, 4); x.fillStyle = '#8a6440'; x.fillRect(X - 12, Y - 20, 2, 18); x.fillRect(X + 10, Y - 20, 2, 18); x.fillRect(X - 12, Y - 20, 24, 2); x.fillRect(X - 1, Y - 18 + t * 3, 2, 8); }
     else if (id === 'hacke') { x.fillStyle = '#8a6440'; x.fillRect(X - 1, Y - 18, 2, 30); x.fillStyle = '#9aa0a8'; x.fillRect(X - 1 - 8, Y - 20 + t, 10, 4); }
     else if (id === 'salz') { x.fillStyle = '#8a4a2a'; x.fillRect(X - 12, Y - 6, 14, 8); x.fillStyle = '#f4f6fa'; for (var j = 0; j < 10; j++) x.fillRect(X - 14 + (j * 7) % 26, Y - 10 + (j * 5) % 14, 2, 2); }
