@@ -265,7 +265,8 @@
     }
     anpassen(b); erfindungPruefen(b); s.bericht = b;                                                 // feste Berufe: jeder bleibt bei seiner Arbeit
     pruefeEnde();
-    setze(s.szenen.length ? 'szene' : 'bericht');
+    s.danach = s.szenen.length ? 'szene' : 'bericht';
+    setze(s.sequenzen && s.sequenzen.length ? 'sequenz' : s.danach);
   }
   // ---------- Kapitel 2: Handel, Salz, die Herrin, die Siedlung an der Mündung ----------
   function kapitel2Jahreszeit(b, p, jz) {
@@ -302,8 +303,8 @@
       else { var weg = Math.round(s.nahrung * .25); s.nahrung -= weg; s.salz = 0; b.push('🔴 ZU WENIG SALZ – ' + weg + ' NAHRUNG VERDIRBT IM WINTER.'); }
       s.groll = Math.min(100, s.groll + (s.jahr >= 2 ? 2 : 0));
     }
-    if (jz === 0 && s.jahr >= 2 && s.festJahr !== s.jahr && s.nahrung > bedarfBisFruehling() + 10) {   // Frühlingsfest, wenn genug da ist
-      s.festJahr = s.jahr; s.nahrung -= 8; s.groll = Math.max(0, s.groll - 6); s.vertrauen = Math.min(ZIEL_VERTRAUEN, s.vertrauen + 5); s.szenen.push({ art: 'fest' });
+    if (jz === 0 && hat('distelbier') && s.festJahr !== s.jahr && s.nahrung > bedarfBisFruehling() + 4) {   // Frühlingsfest, wenn genug da ist
+      s.festJahr = s.jahr; s.nahrung -= 8; s.groll = Math.max(0, s.groll - 6); s.vertrauen = Math.min(ZIEL_VERTRAUEN, s.vertrauen + 5); s.maifest = { jahr: s.jahr, start: 0 };
       b.push('🌸 FRÜHLINGSFEST! MAIBAUM, TANZ UND DISTELBIER: -8 NAHRUNG, DIE NACHBARN KOMMEN (VERTRAUEN +5), FÜR EINEN TAG VERGISST MAN DIE BURG.');
       if (!s.ersterMaibaum) { s.ersterMaibaum = true; b.push('DIE AN DER BACH BEHAUPTEN, SIE HÄTTEN DEN MAIBAUM ERFUNDEN. DIE VOM HÜGEL SAGEN: „WIE IMMER.“'); chronik('DAS ERSTE FRÜHLINGSFEST MIT MAIBAUM. (DIE AN DER BACH SAGEN, SIE HÄTTEN IHN ERFUNDEN.)'); }
     }
@@ -311,7 +312,7 @@
   }
   function herrinFordert(b) {
     var n = Math.min(4, 1 + Math.floor((s.jahr - 1) / 3)), stufeVorher = burgStufe();
-    if (!s.herrinBekannt) { s.herrinBekannt = true; s.szenen.push({ art: 'krieger' }); b.push('⚔️ BEWAFFNETE VOM BERG KOMMEN INS DORF. SIE SAGEN, IHRE HERRIN SEI JETZT AUCH EURE HERRIN.'); chronik('LEUTE VOM BERG SAGEN, IHRE HERRIN SEI UNSERE HERRIN.'); }
+    if (!s.herrinBekannt) { s.herrinBekannt = true; s.sequenzen = (s.sequenzen || []).concat([{ art: 'herrin' }]); b.push('⚔️ BEWAFFNETE VOM BERG KOMMEN INS DORF. SIE SAGEN, IHRE HERRIN SEI JETZT AUCH EURE HERRIN.'); chronik('LEUTE VOM BERG SAGEN, IHRE HERRIN SEI UNSERE HERRIN.'); }
     function fertig(t) { var neu = burgStufe(); if (neu > stufeVorher) t += ' ' + ['', '', 'UM DIE BURG STEHT JETZT EINE PALISADE.', 'DIE BURG BEKOMMT ERDWALL UND TROCKENMAUER.', 'DIE WETTENBURG IST FERTIG.'][neu]; return t; }
     s.frage = { herrin: true, text: 'DIE HERRIN AUF DEM BERG VERLANGT ' + n + ' MÄNNER FÜR DEN BAU IHRER BURG.', optionen: [
       { name: 'GEHORCHEN', fn: function () { s.burgBau += n; s.nahrung = Math.max(0, s.nahrung - n * 4); s.groll = Math.min(100, s.groll + 5 + n * 2); return fertig(n + ' MÄNNER SCHLEPPEN STÄMME UND STEINE DEN BERG HINAUF. DAHEIM FEHLEN SIE: -' + n * 4 + ' NAHRUNG.'); } },
@@ -319,7 +320,7 @@
       { name: 'VERWEIGERN', fn: function () {
         s.burgBau += 1; s.nahrung = Math.max(0, s.nahrung - 12); s.groll = Math.min(100, s.groll + 16);
         var opfer = arbeiter().filter(function (q) { return !q.w; }); var wer = opfer.length ? zufall(opfer) : null;
-        if (wer) { wer.lebt = false; witwe(wer); chronik(wer.name + ' WIRD VON DEN KRIEGERN DER HERRIN VERSCHLEPPT.'); }
+        if (wer) { var frau = wer.partner && wer.partner.lebt ? wer.partner.name : null; wer.lebt = false; witwe(wer); chronik(wer.name + ' WIRD VON DEN KRIEGERN DER HERRIN VERSCHLEPPT.'); s.sequenzen = (s.sequenzen || []).concat([{ art: 'verschleppt', name: wer.name, frau: frau }]); }
         return fertig('IHR VERWEIGERT. IHRE KRIEGER HOLEN 12 NAHRUNG' + (wer ? ' UND SCHLEPPEN ' + wer.name + ' MIT.' : '.')); } }
     ] };
   }
@@ -350,6 +351,37 @@
     s.jahr++;
   }
   // ---------- Ereignisse ----------
+  // Familiendrama: der Rat der Ältesten entscheidet. Aufgeschriebene Gesetze gab es nicht – die Gemeinschaft entschied.
+  var RAT_HINWEIS = 'SO WAR ES: GESCHRIEBENE GESETZE GAB ES NOCH NICHT. ES ENTSCHIED DIE GEMEINSCHAFT – OFT HART.';
+  function erwachsene() { return arbeiter().filter(function (q) { return q.name !== (SPIELER && SPIELER.name); }); }
+  function dramaEreignisse(e) {
+    var wer = erwachsene(); if (wer.length < 3 || (s.letztesDrama || 0) >= s.jahr) return;
+    e(1.5, function (b) {                                                       // Diebstahl
+      var dieb = zufall(wer), was = s.kapitel === 2 ? 'DEN OCHSEN VOM NACHBARN' : 'FLEISCH UND FELLE AUS DEM VORRAT'; s.letztesDrama = s.jahr;
+      b.push('⚖️ ' + dieb.name + ' HAT ' + was + ' GESTOHLEN. DER RAT DER ÄLTESTEN TRITT ZUSAMMEN …');
+      s.frage = { rat: true, hinweis: RAT_HINWEIS, text: dieb.name + ' HAT ' + was + ' GESTOHLEN. WAS BESCHLIESST DER RAT?', optionen: [
+        { name: 'BUSSE', fn: function () { s.nahrung = Math.max(0, s.nahrung - 4); chronik(dieb.name + ' MUSS FÜR EINEN DIEBSTAHL BÜSSEN.'); return dieb.name + ' MUSS DEN SCHADEN DOPPELT ERSETZEN. DIE FAMILIE ZAHLT: -4 NAHRUNG. DIE SACHE IST AUS DER WELT.'; } },
+        { name: 'VERBANNEN', fn: function () { dieb.lebt = false; witwe(dieb); s.groll = Math.max(0, (s.groll || 0) - 3); chronik(dieb.name + ' WIRD AUS DEM DORF VERBANNT.'); return dieb.name + ' MUSS DAS DORF VERLASSEN. ALLEIN IM WALD, OHNE SIPPE – DAS ÜBERLEBT KAUM EINER. ALLE HABEN ES GESEHEN.'; } },
+        { name: 'VERZEIHEN', fn: function () { s.nahrung = Math.max(0, s.nahrung - 6); s.nachsicht = (s.nachsicht || 0) + 1; return 'DER RAT VERZEIHT. DER VORRAT BLEIBT WEG (-6 NAHRUNG). MANCHE MURREN, DAS WERDE SICH RÄCHEN.'; } }] };
+    });
+    var jung = wer.filter(function (q) { return q.w && q.alter >= 15 && q.alter <= 28 && q.herkunft !== 'sippe'; });
+    if (jung.length) e(1.2, function (b) {                                      // Eine läuft zur Sippe drüben über
+      var sie = zufall(jung); s.letztesDrama = s.jahr;
+      b.push('💔 ' + sie.name + ' IST NACHTS ZU DEN VON DRÜBEN GELAUFEN – ZU EINEM, DEN SIE LIEBT.');
+      s.frage = { rat: true, hinweis: RAT_HINWEIS, text: sie.name + (sie.partner ? ' HAT IHREN MANN ' + sie.partner.name + ' VERLASSEN' : ' IST WEG') + ' UND LEBT JETZT DRÜBEN. WAS TUT IHR?', optionen: [
+        { name: 'ZURÜCKHOLEN', fn: function () { s.vertrauen = Math.max(0, s.vertrauen - 15); return 'IHR HOLT ' + sie.name + ' MIT GEWALT ZURÜCK. DRÜBEN VERGISST MAN DAS NICHT: VERTRAUEN -15.'; } },
+        { name: 'GEHEN LASSEN', fn: function () { sie.lebt = false; witwe(sie); s.vertrauen = Math.min(ZIEL_VERTRAUEN, s.vertrauen + 8); chronik(sie.name + ' GEHT ZU DEN VON DRÜBEN.'); return sie.name + ' BLEIBT DRÜBEN. DIE VON DRÜBEN SCHICKEN EIN GESCHENK: VERTRAUEN +8.'; } },
+        { name: 'BRAUTPREIS', fn: function () { sie.lebt = false; witwe(sie); s.nahrung += 8; s.vertrauen = Math.max(0, s.vertrauen - 4); chronik(sie.name + ' GEHT ZU DEN VON DRÜBEN – GEGEN EINEN BRAUTPREIS.'); return 'DIE VON DRÜBEN ZAHLEN EINEN BRAUTPREIS: +8 NAHRUNG. GANZ FROH IST KEINER DARÜBER.'; } }] };
+    });
+    if (hat('apfelwein') || hat('distelbier')) e(1.2, function (b) {           // Betrunken – die Wache verschlafen
+      var er = zufall(wer.filter(function (q) { return !q.w; }).concat(wer).slice(0, 6)); s.letztesDrama = s.jahr; s.nahrung = Math.max(0, s.nahrung - 4);
+      b.push('🍺 ' + er.name + ' HAT ZU VIEL ' + (hat('distelbier') ? 'DISTELBIER' : 'APFELWEIN') + ' GETRUNKEN UND AUF DER WACHE GESCHLAFEN. DER FUCHS WAR IM VORRAT: -4 NAHRUNG.');
+      s.frage = { rat: true, hinweis: 'SO WAR ES: BIER UND WEIN GAB ES FRÜH – DEN RAUSCH AUCH. GESTRAFT WURDE MIT SPOTT, ARBEIT ODER AUSSCHLUSS.', text: er.name + ' HAT BETRUNKEN DIE WACHE VERSCHLAFEN. WAS SOLL MIT IHM PASSIEREN?', optionen: [
+        { name: 'AUSLACHEN', fn: function () { return 'DAS GANZE DORF LACHT ÜBER ' + er.name + '. EIN JAHR LANG HEISST ER NUR NOCH „DER SCHLÄFER“.'; } },
+        { name: 'STRAFARBEIT', fn: function () { s.holz += 6; return er.name + ' SCHLÄGT DREI TAGE LANG HOLZ FÜR ALLE: +6 HOLZ.'; } },
+        { name: 'KEIN BIER MEHR', fn: function () { s.trocken = s.jahr; return er.name + ' BEKOMMT BEIM NÄCHSTEN FEST NICHTS. ER SCHMOLLT – ABER DIE WACHE HÄLT ER JETZT.'; } }] };
+    });
+  }
   function ereignisWuerfeln(jz) {
     var p = s.plan, liste = [];
     function e(gewicht, wirkung, faktor, wild) { liste.push({ g: gewicht, wirkung: wirkung, faktor: faktor, wild: wild }); }
@@ -385,6 +417,7 @@
         if (s.ehen === 1 && !flussDorf()) { b.push('SEIT DIESEM TAG SAGEN AUCH EURE LEUTE „DIE BACH“ – WIE DIE DRÜBEN.'); chronik('SEIT DIESEM TAG SAGEN AUCH WIR „DIE BACH“.'); }
       } };
     }
+    dramaEreignisse(e);
     if (Math.random() < .25) return null;                                       // manchmal passiert einfach nichts
     var summe = liste.reduce(function (a2, b2) { return a2 + b2.g; }, 0), r = Math.random() * summe;
     for (var i = 0; i < liste.length; i++) { r -= liste[i].g; if (r < 0) return liste[i]; }
@@ -422,19 +455,42 @@
   window.addEventListener('keydown', function (e) { if (modus === 'name' && e.key && (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Enter')) { if (e.key !== ' ') tippen.push(e.key); if (e.preventDefault) e.preventDefault(); if (e.key !== 'Enter' && e.key !== ' ') return; } if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].indexOf(e.key) >= 0) e.preventDefault(); tasten[e.key] = true; });
   window.addEventListener('keyup', function (e) { tasten[e.key] = false; });
   function aufLeinwand(cx, cy) { var r = c.getBoundingClientRect(); return { x: (cx - r.left) / r.width * W, y: (cy - r.top) / r.height * H }; }
-  c.addEventListener('mousedown', function (e) { maus.klick = aufLeinwand(e.clientX, e.clientY); e.preventDefault(); });
-  c.addEventListener('touchstart', function (e) { var t = e.changedTouches[0]; maus.klick = aufLeinwand(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+  var zieh = null, kneif = null;
+  function aufKarte(p) { return modus === 'planen' && p.x < SICHT_B * KACHEL && p.y > 14 && p.y < 180; }
+  function ziehBeginn(p) { zieh = { sx: p.x, sy: p.y, bewegt: false, start: ansichtJetzt() }; }
+  function ziehBewegen(p) {
+    var dx = p.x - zieh.sx, dy = p.y - zieh.sy; if (Math.abs(dx) + Math.abs(dy) > 4) zieh.bewegt = true; if (!zieh.bewegt) return;
+    var st = zieh.start; freiCam = camBegrenzen({ x: st.x - dx / (KACHEL * st.z), y: st.y - dy / (KACHEL * st.z), z: st.z }); camZiel = null;
+  }
+  function ziehEnde() { if (zieh && !zieh.bewegt) maus.karte = { x: zieh.sx, y: zieh.sy }; zieh = null; }
+  c.addEventListener('mousedown', function (e) { var p = aufLeinwand(e.clientX, e.clientY); e.preventDefault(); if (aufKarte(p)) ziehBeginn(p); else maus.klick = p; });
+  window.addEventListener('mousemove', function (e) { if (zieh) ziehBewegen(aufLeinwand(e.clientX, e.clientY)); });
+  window.addEventListener('mouseup', function () { ziehEnde(); });
+  c.addEventListener('wheel', function (e) { var p = aufLeinwand(e.clientX, e.clientY); if (!aufKarte(p)) return; e.preventDefault(); zoomUm(p, e.deltaY < 0 ? 1.15 : 1 / 1.15); }, { passive: false });
+  c.addEventListener('touchstart', function (e) {
+    e.preventDefault();
+    if (e.touches.length === 2) { var a = aufLeinwand(e.touches[0].clientX, e.touches[0].clientY), b = aufLeinwand(e.touches[1].clientX, e.touches[1].clientY); kneif = { d: Math.hypot(a.x - b.x, a.y - b.y), m: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } }; zieh = null; return; }
+    var t = e.changedTouches[0], p = aufLeinwand(t.clientX, t.clientY); if (aufKarte(p)) ziehBeginn(p); else maus.klick = p;
+  }, { passive: false });
+  c.addEventListener('touchmove', function (e) {
+    e.preventDefault();
+    if (kneif && e.touches.length === 2) { var a = aufLeinwand(e.touches[0].clientX, e.touches[0].clientY), b = aufLeinwand(e.touches[1].clientX, e.touches[1].clientY), d = Math.hypot(a.x - b.x, a.y - b.y); if (kneif.d > 10) zoomUm(kneif.m, d / kneif.d); kneif.d = d; return; }
+    if (zieh) { var t = e.changedTouches[0]; ziehBewegen(aufLeinwand(t.clientX, t.clientY)); }
+  }, { passive: false });
+  c.addEventListener('touchend', function (e) { e.preventDefault(); if (e.touches.length < 2) kneif = null; if (!e.touches.length) ziehEnde(); }, { passive: false });
   function lesen() {
     var e = { l: !!tasten.ArrowLeft, r: !!tasten.ArrowRight, o: !!tasten.ArrowUp, u: !!tasten.ArrowDown, a: !!tasten[' '] || !!tasten.Enter, b: !!tasten.n || !!tasten.N, k: !!tasten.k || !!tasten.K, v: !!tasten.v || !!tasten.V };
+    var zahlJetzt = 0; for (var zt = 1; zt <= 6; zt++) if (tasten[String(zt)]) zahlJetzt = zt;
     try { var pads = navigator.getGamepads ? navigator.getGamepads() : []; for (var i = 0; i < pads.length; i++) if (pads[i]) { var pd = pads[i];
       if (pd.axes[0] < -.5) e.l = true; if (pd.axes[0] > .5) e.r = true; if (pd.axes[1] < -.5) e.o = true; if (pd.axes[1] > .5) e.u = true;
       if (pd.buttons[0] && pd.buttons[0].pressed) e.a = true; if (pd.buttons[1] && pd.buttons[1].pressed) e.b = true; break; } } catch (er) {}
     var neu = {}; ['l', 'r', 'o', 'u', 'a', 'b', 'k', 'v'].forEach(function (k) { neu[k] = e[k] && !vorher[k]; vorher[k] = e[k]; });
-    neu.klick = maus.klick; maus.klick = null; return neu;
+    neu.zahl = zahlJetzt && zahlJetzt !== vorher.zahl ? zahlJetzt : 0; vorher.zahl = zahlJetzt;
+    neu.klick = maus.klick; maus.klick = null; neu.karte = maus.karte; maus.karte = null; return neu;
   }
 
   // ---------- Ablauf ----------
-  var PLAN_Y0 = 30, PLAN_ZEILE = 17;                                             // Lage der Aufgaben im Seitenfeld
+  var PLAN_Y0 = 56, PLAN_ZEILE = 14.5, SCHWER_Y = 26;                                                     // Lage im Seitenfeld: oben Schwerpunkte, darunter die Aufgaben                                             // Lage der Aufgaben im Seitenfeld
   function schritt(e) {
     if (modus === 'titel') {
       if (zeit - seit < 400) return;
@@ -474,19 +530,30 @@
     if (modus === 'planen') {
       if (e.o) wahl = (wahl + AUFGABEN.length) % (AUFGABEN.length + 1);
       if (e.u) wahl = (wahl + 1) % (AUFGABEN.length + 1);
-      if (e.k || (e.klick && e.klick.x < 208 && e.klick.y > 14 && e.klick.y < 190)) uebersicht = !uebersicht;
+      if (e.k) { freiCam = null; camZiel = null; uebersicht = !uebersicht; }
+      if (e.klick && e.klick.x < 208 && e.klick.y >= 180 && e.klick.y < 190) { freiCam = null; camZiel = null; uebersicht = false; }
+      if (e.karte) aufKarteGetippt(e.karte);
       if (e.v || (e.klick && e.klick.y > 200)) { s.plan = vorschlag(); s.arbeiterNamen = arbeiter().map(function (p) { return p.name; }); }
+      var gewaehltSchwer = null;
       if (e.klick && e.klick.x > 210) {
-        var zi = Math.floor((e.klick.y - PLAN_Y0 + 2) / PLAN_ZEILE);
-        if (zi >= 0 && zi < AUFGABEN.length) { wahl = zi; if (e.klick.x > 296) e.r = true; else if (e.klick.x < 232) e.l = true; }
+        if (e.klick.y >= SCHWER_Y && e.klick.y < SCHWER_Y + 24) { var si = Math.floor((e.klick.y - SCHWER_Y) / 12) * 3 + Math.floor((e.klick.x - 211) / 36); if (si >= 0 && si < 6) gewaehltSchwer = schwerpunkte()[si].id; }
+        var zi = Math.floor((e.klick.y - PLAN_Y0 + 7) / PLAN_ZEILE);
+        if (e.klick.y >= PLAN_Y0 - 7 && zi >= 0 && zi < AUFGABEN.length) { wahl = zi; if (e.klick.x > 296) e.r = true; else if (e.klick.x < 232) e.l = true; }
         if (e.klick.y > 172 && e.klick.y < 190) { wahl = AUFGABEN.length; e.a = true; }
       }
-      if (wahl < AUFGABEN.length) {
+      if (e.zahl) gewaehltSchwer = schwerpunkte()[e.zahl - 1].id;
+      if (gewaehltSchwer) schwerpunktSetzen(gewaehltSchwer);
+      else if (wahl < AUFGABEN.length) {
         var id = AUFGABEN[wahl].id;
-        if (e.r && frei() > 0) s.plan[id]++;
-        if (e.l && s.plan[id] > 0) s.plan[id]--;
-        if (e.a && frei() > 0) s.plan[id]++;
+        if (e.r) { if (frei() > 0) s.plan[id]++; else umschichten(id); s.schwerpunkt = null; }
+        if (e.l && s.plan[id] > 0) { s.plan[id]--; s.schwerpunkt = null; }
+        if (e.a) { if (frei() > 0) s.plan[id]++; else umschichten(id); s.schwerpunkt = null; }
       } else if (e.a) jahreszeitBeenden();
+      return;
+    }
+    if (modus === 'sequenz') {
+      var sq = s.sequenzen && s.sequenzen[0];
+      if (!sq || ((e.a || e.klick) && zeit - seit > 1200) || zeit - seit > SEQ_MS) { s.sequenzen.shift(); if (s.sequenzen.length) setze('sequenz'); else setze(s.danach || 'bericht'); }
       return;
     }
     if (modus === 'szene') {
@@ -504,7 +571,7 @@
       var nOpt = s.frage.optionen ? s.frage.optionen.length : 2;
       if (e.r || e.u) wahl = (wahl + 1) % nOpt; if (e.l || e.o) wahl = (wahl + nOpt - 1) % nOpt;
       if (e.klick && e.klick.y > 145) { wahl = Math.max(0, Math.min(nOpt - 1, Math.floor((e.klick.x - 30) / (260 / nOpt)))); e.a = true; }
-      if (e.a && zeit - seit > 300) { var antwort = s.frage.optionen ? s.frage.optionen[wahl].fn() : wahl === 0 ? s.frage.ja() : s.frage.nein(); s.frage = null; s.bericht = [antwort]; pruefeEnde(); setze('bericht'); }
+      if (e.a && zeit - seit > 300) { var antwort = s.frage.optionen ? s.frage.optionen[wahl].fn() : wahl === 0 ? s.frage.ja() : s.frage.nein(); s.frage = null; s.bericht = [antwort]; pruefeEnde(); s.danach = 'bericht'; setze(s.sequenzen && s.sequenzen.length ? 'sequenz' : 'bericht'); }
       return;
     }
     if (modus === 'wachstunde') { if ((e.a || e.klick) && zeit - seit > 900) nachDerWache(); return; }
@@ -556,6 +623,9 @@
     { id: 'faehre', kapitel: 2, bild: 'urphar', titel: 'DIE FÄHRE', wann: function () { return (s.handelZaehler || 0) >= 12; },
       text: function () { return 'EIN SEIL VON UFER ZU UFER, EIN FLOSS DARAN: DIE ERSTE FÄHRE ÜBER DEN MAIN. DIE AM MAIN KOMMEN JETZT ZU EUCH.'; },
       folge: 'JEDEN WINTER KOMMT BRONZE VON DRÜBEN.' },
+    { id: 'distelbier', kapitel: 2, bild: 'braukessel', titel: 'DAS DISTELBIER', tanz: true, wann: function () { return s.jahr >= 2; },
+      text: function () { return 'EINER VON DER BACH LÄSST GETREIDE MIT DISTELN UND KRÄUTERN GÄREN. ES SCHMECKT BITTER – UND MACHT FRÖHLICH. AB JETZT GIBT ES EINEN BRAUER IM DORF.'; },
+      folge: 'JEDEN FRÜHLING EIN MAIFEST: WENIGER GROLL, MEHR VERTRAUEN.' },
     { id: 'bronze', kapitel: 2, titel: 'BRONZE', wann: function () { return (s.bronze || 0) >= 2; },
       text: function () { return 'DER ERSTE SCHMIED AN DER BACH GIESST BRONZE. FÜR DIE ANDEREN SIEHT ES AUS WIE ZAUBEREI.'; },
       folge: 'BRONZENE SICHELN: DIE ERNTE WIRD UM EIN DRITTEL GRÖSSER.' }
@@ -576,7 +646,7 @@
   function erfindungPruefen(b) {
     s.erfunden = s.erfunden || [];
     for (var i = 0; i < ERFINDUNGEN.length; i++) { var e = ERFINDUNGEN[i];
-      if ((e.kapitel || 1) === (s.kapitel || 1) && !hat(e.id) && e.wann()) { s.erfunden.push(e.id); s.erfindungNeu = { id: e.id, titel: e.titel, text: e.text(), folge: e.folge, jahr: vorChristus(), entdeckung: !!e.entdeckung, bild: e.bild, wahr: e.wahr }; chronik(s.erfindungNeu.text); werkstattBauen(e.id); return; } }
+      if ((e.kapitel || 1) === (s.kapitel || 1) && !hat(e.id) && e.wann()) { s.erfunden.push(e.id); s.erfindungNeu = { id: e.id, titel: e.titel, text: e.text(), folge: e.folge, jahr: vorChristus(), entdeckung: !!e.entdeckung, bild: e.bild, wahr: e.wahr, tanz: !!e.tanz }; chronik(s.erfindungNeu.text); werkstattBauen(e.id); return; } }
   }
   function holzWinter() { return HOLZ_WINTER - (hat('flachs') ? 1 : 0); }
   // ---------- Hilfe für den Spieler: Vorschlag, Vorschau, Rat des Alten ----------
@@ -627,6 +697,32 @@
     }
     s.arbeiterNamen = arbeiter().map(function (p) { return p.name; });
   }
+  // Schwerpunkte: ein Tipp, und der Alte verteilt nach diesem Ziel (die Feldarbeit zur Saat- und Erntezeit bleibt immer)
+  function schwerpunkte() {
+    return [{ id: 'essen', name: '🍖 ESSEN' }, { id: 'holz', name: '🪵 HOLZ' }, { id: 'frieden', name: '🤝 FRIEDEN' },
+            { id: 'bauen', name: '🏠 BAUEN' }, s.kapitel === 2 ? { id: 'handel', name: '⛵ HANDEL' } : { id: 'erkunden', name: '🧭 FERNE' }, { id: 'alter', name: '👴 DER ALTE' }];
+  }
+  var GEWICHT = { essen: { sammeln: 3, feld: 2, holz: .6, wache: .4 }, holz: { holz: 3, sammeln: 1.2, feld: .8 }, frieden: { sippe: 2.5, wache: 2, sammeln: 1 },
+                  bauen: { bauen: 3, holz: 2, sammeln: 1 }, erkunden: { erkunden: 3, sammeln: 1.5, holz: .5 }, handel: { handeln: 3, sammeln: 1.5, holz: .8 } };
+  function schwerpunktSetzen(id) {
+    s.schwerpunkt = id;
+    if (id === 'alter') { s.plan = vorschlag(); return; }
+    var n = arbeiter().length, plan = leererPlan(), gw = GEWICHT[id];
+    var feldMuss = (s.jz === 0 && s.saat > 0) || (s.jz === 2 && erwarteteErnte()) ? Math.min(2, n) : 0;
+    if (s.jz === 3 && id === 'essen') feldMuss = 0;
+    plan.feld = feldMuss; var rest = n - feldMuss;
+    if (s.nahrung < bedarfBisFruehling() && id !== 'essen' && rest > 1) { plan.sammeln++; rest--; }        // nie verhungern lassen
+    var summe = 0, k; for (k in gw) if (plan[k] !== undefined) summe += gw[k];
+    var anteile = []; for (k in gw) if (plan[k] !== undefined) { var genau = rest * gw[k] / summe; plan[k] += Math.floor(genau); anteile.push([genau - Math.floor(genau), k]); }
+    anteile.sort(function (a2, b2) { return b2[0] - a2[0]; });
+    var ueber = n - verplantIn(plan); for (var i = 0; i < ueber; i++) plan[anteile[i % anteile.length][1]]++;
+    s.plan = plan;
+  }
+  function verplantIn(pl) { var v = 0; for (var k in pl) v += pl[k]; return v; }
+  function umschichten(id) {                                                   // ▶ ohne freie Leute: einer kommt von der größten anderen Arbeit
+    var von = null; AUFGABEN.forEach(function (a) { if (a.id !== id && s.plan[a.id] > 0 && (!von || s.plan[a.id] > s.plan[von])) von = a.id; });
+    if (von) { s.plan[von]--; s.plan[id]++; }
+  }
   function weiter() {
     if (s.ende) { vergessen(); setze('ende'); return; }
     s.jz = (s.jz + 1) % 4;
@@ -647,6 +743,14 @@
     function () { return 'MAN FLÜSTERT, DIE VON DRÜBEN HÄTTEN SALZ, DAS AUS DER ERDE KOMMT. WARUM HABEN WIR KEINS?'; },
     function () { return 'IM LANGHAUS SCHNARCHT EINER SO LAUT, DASS DIE WÖLFE DRAUSSEN ANTWORTEN.'; }
   ];
+  // Derweil in der Welt: was gleichzeitig woanders geschah (belegte Jahreszahlen, gerundet)
+  var WELT_K1 = ['IN MESOPOTAMIEN WACHSEN DIE ERSTEN STÄDTE, WIE ERIDU.', 'DIE SCHRIFT IST NOCH NICHT ERFUNDEN – NIRGENDWO AUF DER WELT.',
+    'AM NIL LEBEN BAUERN IN DÖRFERN. DIE PYRAMIDEN KOMMEN ERST IN ÜBER 2000 JAHREN.', 'IN CHINA BAUEN BAUERN AM GELBEN FLUSS HIRSE AN.',
+    'DAS RAD IST NOCH NICHT ERFUNDEN. ES KOMMT ERST IN RUND 1500 JAHREN.', 'AUF DEN BRITISCHEN INSELN STEHT NOCH KEIN STEIN VON STONEHENGE.'];
+  var WELT_K2 = ['DIE GROSSEN PYRAMIDEN IN ÄGYPTEN SIND SCHON ÜBER 1500 JAHRE ALT.', 'DIE PHÖNIZIER SCHREIBEN MIT EINEM ALPHABET – UNSER ABC STAMMT DAVON AB.',
+    'IN JERUSALEM HERRSCHT, SO ERZÄHLT DIE BIBEL, KÖNIG DAVID.', 'TROJA LIEGT SCHON IN TRÜMMERN.', 'IN CHINA HERRSCHEN DIE KÖNIGE DER ZHOU.',
+    'STONEHENGE STEHT SCHON SEIT ÜBER 1000 JAHREN.', 'WEITER IM OSTEN WURDE LÄNGST EINE BRONZESCHEIBE MIT SONNE, MOND UND STERNEN VERGRABEN – HEUTE: DIE HIMMELSSCHEIBE VON NEBRA.'];
+  function derweil() { var l = s.kapitel === 2 ? WELT_K2 : WELT_K1; return l[(s.jahr + (s.kapitel === 2 ? 3 : 0)) % l.length]; }
   function wachstundeText() {
     s.erzaehlt = s.erzaehlt || [];
     function neu(id, t) { if (s.erzaehlt.indexOf(id) >= 0) return null; s.erzaehlt.push(id); return t; }
@@ -904,6 +1008,10 @@
         traegt = { sammeln: '#8a4a2a', holz: '#a07a48', roden: '#a07a48', handeln: '#e8c25a', feld: s.jz === 2 ? '#e8c25a' : null }[f.art] || null; }
       if (sichtbar(fx, fy)) mensch(fx, fy, p, gehen, aktion, traegt);
     });
+    if (s.kapitel === 2 && hat('distelbier') && bildDa('braukessel')) {         // der Brauer am Kessel neben dem Feuer
+      bildMalen('braukessel', (FEUER.x - 1.4 - kamera.x) * KACHEL, (FEUER.y + .1 - kamera.y) * KACHEL, false, .45);
+      mensch(FEUER.x - 1.9, FEUER.y + .1, { name: 'BRAUER', alter: 40 }, false, 'bauen');
+    }
     if (s.kapitel === 2) for (var sf = 0; sf < 4; sf++) {                      // Schafe grasen vor der Palisade
       var sw = zeit / 4000 + sf * 1.7, sxp = HEIM_POS.x - 2.5 + Math.cos(sw) * .6 + sf * .5, syp = HEIM_POS.y + 3.2 + Math.sin(sw * 1.3) * .3 + (sf % 2) * .4;
       if (sichtbar(sxp, syp) && bildDa('schaf1')) bildMalen('schaf' + (1 + sf % 3), (sxp - kamera.x) * KACHEL, (syp - kamera.y) * KACHEL, Math.sin(sw) > 0, 1);
@@ -1008,9 +1116,23 @@
     var tx = cx + Math.cos(1.33) * rx, ty = cy + Math.sin(1.33) * ry;
     x.fillStyle = '#4a2e18'; x.fillRect(tx - 4, ty - 9, 1.6, 9); x.fillRect(tx + 3, ty - 9, 1.6, 9); x.fillStyle = '#8a6440'; x.fillRect(tx - 4, ty - 10, 9, 1.4);
   }
+  function maifestMalen() {                                                    // kleiner Einblender: Maibaum und Tanz, ein paar Sekunden lang
+    if (!s.maifest.start) s.maifest.start = zeit;
+    var t = zeit - s.maifest.start; if (t > 5500) return;
+    var a = Math.min(1, t / 150, (5500 - t) / 500), y0 = 112;
+    x.globalAlpha = a; x.fillStyle = 'rgba(16,19,27,.88)'; x.fillRect(4, y0, 200, 64); x.strokeStyle = COL.rosa; x.strokeRect(4.5, y0 + .5, 199, 63);
+    if (bildDa('maibaum')) bildMalen('maibaum', 30, y0 + 60, false, 1.4);
+    var h = Math.floor(zeit / 180) % 2;
+    if (bildDa('tanz_kreis1')) bildMalen('tanz_kreis1', 92, y0 + 58 - h, false, .9);
+    if (bildDa('tanz_paar' + (1 + Math.floor(t / 400) % 4))) bildMalen('tanz_paar' + (1 + Math.floor(t / 400) % 4), 160, y0 + 58 + h, false, 1);
+    if (bildDa('braukessel')) bildMalen('braukessel', 186, y0 + 60, false, .7);
+    text('🌸 MAIFEST!', 104, y0 + 9, 9, COL.feuer, 'center');
+    text('MAIBAUM, TANZ UND DISTELBIER', 104, y0 + 19, 6, COL.hell, 'center');
+    x.globalAlpha = 1;
+  }
   function zuBild(gx, gy) {
     var ox = 0, oy = 0;
-    if (massstab < 1) { ox = (SICHT_B * KACHEL / massstab - KARTE_B * KACHEL) / 2; oy = (SICHT_H * KACHEL / massstab - KARTE_H * KACHEL) / 2; }
+    if (ueberMitte) { ox = (SICHT_B * KACHEL / massstab - KARTE_B * KACHEL) / 2; oy = (SICHT_H * KACHEL / massstab - KARTE_H * KACHEL) / 2; }
     return { x: ((gx - kamera.x) * KACHEL + ox) * massstab, y: 14 + ((gy - kamera.y) * KACHEL + oy) * massstab };
   }
   function namenMalen() {
@@ -1030,30 +1152,61 @@
     x.restore();
   }
   var kamera = { x: 5, y: 3 }, massstab = 1, uebersicht = false;
+  // Freie Kamera: ziehen, zoomen, Orte antippen. freiCam = { x, y (linke obere Ecke in Kacheln), z (Maßstab) }
+  var freiCam = null, camZiel = null, ueberMitte = false;
+  function zMin() { return Math.min(SICHT_B / KARTE_B, SICHT_H / KARTE_H); }
+  function camBegrenzen(c2) {
+    c2.z = Math.max(zMin(), Math.min(2, c2.z));
+    var vw = SICHT_B / c2.z, vh = SICHT_H / c2.z;
+    c2.x = vw >= KARTE_B ? (KARTE_B - vw) / 2 : Math.max(0, Math.min(KARTE_B - vw, c2.x));
+    c2.y = vh >= KARTE_H ? (KARTE_H - vh) / 2 : Math.max(0, Math.min(KARTE_H - vh, c2.y));
+    return c2;
+  }
+  function ansichtJetzt() {
+    if (freiCam) return { x: freiCam.x, y: freiCam.y, z: freiCam.z };
+    var ox = 0, oy = 0;
+    if (ueberMitte) { ox = (SICHT_B * KACHEL / massstab - KARTE_B * KACHEL) / 2 / KACHEL; oy = (SICHT_H * KACHEL / massstab - KARTE_H * KACHEL) / 2 / KACHEL; }
+    return { x: kamera.x - ox, y: kamera.y - oy, z: massstab };
+  }
+  function zoomUm(p, f) {
+    var c2 = ansichtJetzt(), wx = c2.x + p.x / (KACHEL * c2.z), wy = c2.y + (p.y - 14) / (KACHEL * c2.z), nz = Math.max(zMin(), Math.min(2, c2.z * f));
+    freiCam = camBegrenzen({ x: wx - p.x / (KACHEL * nz), y: wy - (p.y - 14) / (KACHEL * nz), z: nz }); camZiel = null;
+  }
+  function hinFliegen(gx, gy, z) { var z2 = z || 1; camZiel = camBegrenzen({ x: gx + .5 - SICHT_B / 2 / z2, y: gy + .5 - SICHT_H / 2 / z2, z: z2 }); if (!freiCam) freiCam = ansichtJetzt(); }
+  function aufKarteGetippt(p) {                                                // ein Ort angetippt? dann hinfliegen – sonst Übersicht/Dorf umschalten
+    var c2 = ansichtJetzt(), gx = Math.floor(c2.x + p.x / (KACHEL * c2.z)), gy = Math.floor(c2.y + (p.y - 14) / (KACHEL * c2.z)), best = null;
+    for (var a = -1; a <= 1; a++) for (var b = -1; b <= 1; b++) { var y = gy + a, xx = gx + b; if (y < 0 || xx < 0 || y >= KARTE_H || xx >= KARTE_B || !sicht[y][xx]) continue; var t = karte[y][xx]; if ('XYTUSH'.indexOf(t) >= 0 && (!best || Math.abs(a) + Math.abs(b) < best.d)) best = { y: y, x: xx, d: Math.abs(a) + Math.abs(b), t: t }; }
+    if (best && !(freiCam && Math.abs(freiCam.z - 1) < .05 && Math.abs(freiCam.x + SICHT_B / 2 - best.x - .5) < 1 && Math.abs(freiCam.y + SICHT_H / 2 - best.y - .5) < 1)) { hinFliegen(best.x, best.y + (best.t === 'X' ? 1 : 0), 1); return; }
+    freiCam = null; camZiel = null; uebersicht = !uebersicht;
+  }
   function kameraRichten() {                                                    // Ausschnitt folgt dem Erkundeten; passt es nicht mehr, wird herausgezoomt
+    ueberMitte = false;
+    if (camZiel && freiCam) { var k2 = .14; freiCam.x += (camZiel.x - freiCam.x) * k2; freiCam.y += (camZiel.y - freiCam.y) * k2; freiCam.z += (camZiel.z - freiCam.z) * k2; if (Math.abs(camZiel.x - freiCam.x) + Math.abs(camZiel.y - freiCam.y) < .02) { freiCam = camZiel; camZiel = null; } }
+    if (freiCam) { massstab = freiCam.z; kamera.x = freiCam.x; kamera.y = freiCam.y; return; }
     var l = KARTE_B, r = 0, o = KARTE_H, u = 0;
     for (var y = 0; y < KARTE_H; y++) for (var xx = 0; xx < KARTE_B; xx++) if (sicht[y][xx]) { l = Math.min(l, xx); r = Math.max(r, xx); o = Math.min(o, y); u = Math.max(u, y); }
     if (!uebersicht || (r - l < SICHT_B && u - o < SICHT_H)) { massstab = 1;
       if (r - l >= SICHT_B || u - o >= SICHT_H) { var mb = BLICK && Math.abs(BLICK.y - HEIM_POS.y) < SICHT_H / 2 - 1 ? BLICK : HEIM_POS; l = r = mb.x; o = u = mb.y; }   /* zu groß: das Dorf in die Mitte */
       kamera.x = Math.max(0, Math.min(KARTE_B - SICHT_B, Math.round((l + r - SICHT_B + 1) / 2))); kamera.y = Math.max(0, Math.min(KARTE_H - SICHT_H, Math.round((o + u - SICHT_H + 1) / 2))); }
-    else { massstab = Math.min(SICHT_B / KARTE_B, SICHT_H / KARTE_H); kamera.x = 0; kamera.y = 0; }
+    else { massstab = zMin(); kamera.x = 0; kamera.y = 0; ueberMitte = true; }
   }
   function karteMalen() {
     kameraRichten();
-    var sb = massstab === 1 ? SICHT_B : KARTE_B, sh = massstab === 1 ? SICHT_H : KARTE_H;
+    var gx0 = Math.floor(kamera.x) - 1, gy0 = Math.floor(kamera.y) - 1, gx1 = Math.ceil(kamera.x + SICHT_B / massstab) + 1, gy1 = Math.ceil(kamera.y + SICHT_H / massstab) + 1;
+    if (ueberMitte) { gx0 = 0; gy0 = 0; gx1 = KARTE_B; gy1 = KARTE_H; }
     x.fillStyle = '#000'; x.fillRect(0, 14, SICHT_B * KACHEL, SICHT_H * KACHEL);
-    x.save(); x.translate(0, 14); x.scale(massstab, massstab);
-    if (massstab < 1) x.translate((SICHT_B * KACHEL / massstab - KARTE_B * KACHEL) / 2, (SICHT_H * KACHEL / massstab - KARTE_H * KACHEL) / 2);
-    for (var vy = 0; vy < sh; vy++) for (var vx = 0; vx < sb; vx++) {
-      var gx = kamera.x + vx, gy = kamera.y + vy, px = vx * KACHEL, py = vy * KACHEL;
+    x.save(); x.beginPath(); x.rect(0, 14, SICHT_B * KACHEL, SICHT_H * KACHEL); x.clip(); x.translate(0, 14); x.scale(massstab, massstab);
+    if (ueberMitte) x.translate((SICHT_B * KACHEL / massstab - KARTE_B * KACHEL) / 2, (SICHT_H * KACHEL / massstab - KARTE_H * KACHEL) / 2);
+    for (var gy = gy0; gy < gy1; gy++) for (var gx = gx0; gx < gx1; gx++) {
+      var px = (gx - kamera.x) * KACHEL, py = (gy - kamera.y) * KACHEL;
       if (gx < 0 || gy < 0 || gx >= KARTE_B || gy >= KARTE_H) { x.fillStyle = '#000'; x.fillRect(px, py, KACHEL, KACHEL); continue; }
       if (!sicht[gy][gx]) { x.fillStyle = '#0a0d14'; x.fillRect(px, py, KACHEL, KACHEL); x.fillStyle = '#141a26'; x.fillRect(px + (gx * 5) % 12, py + (gy * 7) % 12, 2, 2); continue; }
       kachelMalen(karte[gy][gx], px, py, gx, gy);
       if (SCHATTEN) { var sv = +SCHATTEN[gy][gx]; if (sv < 5) { x.fillStyle = 'rgba(10,20,10,' + ((5 - sv) * .065) + ')'; x.fillRect(px, py, KACHEL, KACHEL); } else if (sv > 5) { x.fillStyle = 'rgba(255,250,220,' + ((sv - 5) * .035) + ')'; x.fillRect(px, py, KACHEL, KACHEL); } }
     }
     if (s && s.kapitel === 2) palisadeMalen();
-    for (var hy = 0; hy < sh; hy++) for (var hx = 0; hx < sb; hx++) {                // Häuser obendrauf
-      var ggx = kamera.x + hx, ggy = kamera.y + hy; if (ggx >= KARTE_B || ggy >= KARTE_H || !sicht[ggy][ggx]) continue;
+    for (var ggy = Math.max(0, gy0); ggy < Math.min(KARTE_H, gy1); ggy++) for (var ggx = Math.max(0, gx0); ggx < Math.min(KARTE_B, gx1); ggx++) {   // Häuser obendrauf
+      var hx = ggx - kamera.x, hy = ggy - kamera.y; if (!sicht[ggy][ggx]) continue;
       var tt = karte[ggy][ggx];
       if (tt === 'H' && s && s.kapitel === 2 && bildDa('langhaus_bz')) { bildMalen('langhaus_bz', hx * KACHEL + 8, hy * KACHEL + 16, false, 1); if (Math.floor(zeit / 500 + ggx) % 2) { x.fillStyle = 'rgba(200,200,210,.6)'; x.fillRect(hx * KACHEL + 10, hy * KACHEL - 1, 1, 2); } }
       else if (tt === 'H' && bildDa('langhaus')) { bildMalen('langhaus', hx * KACHEL + 8, hy * KACHEL + 16, false, 1.45); if (Math.floor(zeit / 500 + ggx) % 2) { x.fillStyle = 'rgba(200,200,210,.6)'; x.fillRect(hx * KACHEL + 12, hy * KACHEL - 2, 1, 2); } }
@@ -1073,7 +1226,8 @@
     x.restore();
     x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(0, 14, SICHT_B * KACHEL, 1);
     namenMalen();
-    if (modus === 'planen') { x.fillStyle = 'rgba(16,19,27,.7)'; x.fillRect(2, 181, 74, 8); text(uebersicht ? 'K/TIPPEN: DORF' : 'K/TIPPEN: KARTE', 4, 185, 6, COL.grau); }
+    if (modus === 'planen' && s && s.maifest && s.maifest.jahr === s.jahr) maifestMalen();
+    if (modus === 'planen') { x.fillStyle = 'rgba(16,19,27,.78)'; x.fillRect(2, 180, 204, 9); text(freiCam ? '⌂ HIER TIPPEN: ZURÜCK ZUM DORF' : 'ZIEHEN · RAD/2 FINGER = ZOOM · ORT ANTIPPEN · K', 4, 184.5, 6, freiCam ? COL.feuer : COL.grau); }
   }
   function kopfleiste() {
     x.fillStyle = COL.dunkel; x.fillRect(0, 0, W, 13);
@@ -1084,12 +1238,18 @@
   function seitenfeld() {
     var l0 = 209; x.fillStyle = '#141824'; x.fillRect(l0, 14, W - l0, 176);
     var lebend = lebende();
-    text('LEUTE ' + lebend.length + '/' + s.haeuser * PLATZ_HAUS + '  FREI ' + frei(), l0 + 4, 21, 7, frei() ? COL.gruen : COL.grau);
+    text('LEUTE ' + lebend.length + '/' + s.haeuser * PLATZ_HAUS + '  FREI ' + frei(), l0 + 4, 20, 7, frei() ? COL.gruen : COL.grau);
+    schwerpunkte().forEach(function (sp, i) {                                   // Schwerpunkt-Knöpfe 3×2
+      var bx = l0 + 2 + (i % 3) * 36, by = SCHWER_Y + Math.floor(i / 3) * 12, an = s.schwerpunkt === sp.id;
+      x.fillStyle = an ? COL.feuer : '#2a3040'; x.fillRect(bx, by, 34, 11); x.fillStyle = an ? '#3a2a10' : '#1a1f2c'; x.fillRect(bx + 1, by + 1, 32, 9);
+      text(sp.name, bx + 17, by + 5.5, 5, an ? COL.feuer : COL.hell, 'center');
+    });
+    x.fillStyle = '#2a3040'; x.fillRect(l0 + 2, PLAN_Y0 - 8, W - l0 - 4, 1);
     AUFGABEN.forEach(function (a, i) {
-      var y = PLAN_Y0 + i * PLAN_ZEILE + 5, aktiv = wahl === i && modus === 'planen';
-      if (aktiv) { x.fillStyle = 'rgba(255,79,163,.2)'; x.fillRect(l0 + 1, y - 7, W - l0 - 2, 15); }
+      var y = PLAN_Y0 + i * PLAN_ZEILE, aktiv = wahl === i && modus === 'planen';
+      if (aktiv) { x.fillStyle = 'rgba(255,79,163,.2)'; x.fillRect(l0 + 1, y - 7, W - l0 - 2, 14); }
       text(a.name, l0 + 26, y - 1, 8, aktiv ? COL.feuer : COL.hell);
-      text('◀', l0 + 6, y, 8, s.plan[a.id] ? COL.hell : COL.grau); text('▶', W - 10, y, 8, frei() ? COL.hell : COL.grau);
+      text('◀', l0 + 6, y, 8, s.plan[a.id] ? COL.hell : COL.grau); text('▶', W - 10, y, 8, COL.hell);
       text(String(s.plan[a.id]), W - 20, y, 9, s.plan[a.id] ? COL.gruen : COL.grau, 'right');
     });
     var fertig = wahl === AUFGABEN.length && modus === 'planen';
@@ -1105,7 +1265,7 @@
       var essen = s.nahrung + (s.jz <= 2 ? erwarteteErnte() : 0), bed = bedarfBisFruehling();
       text('ESSEN BIS FRÜHLING ' + essen + '/' + bed, 4, 221, 7, ampel(essen, bed));
       text('HOLZ FÜR DEN WINTER ' + s.holz + '/' + holzBedarf(), 150, 221, 7, ampel(s.holz, holzBedarf()));
-      text('JEDER BLEIBT BEI SEINER ARBEIT · V ODER HIER TIPPEN: DER ALTE VERTEILT NEU', 4, 233, 6, COL.grau);
+      text('OBEN RECHTS EIN ZIEL WÄHLEN (TASTEN 1–6) · ▶ HOLT EINEN VON DER GRÖSSTEN ARBEIT', 4, 233, 6, COL.grau);
     }
   }
   function berichtMalen() {
@@ -1114,6 +1274,56 @@
     var zeilen = []; s.bericht.forEach(function (b) { umbruch(b, 50).forEach(function (z) { zeilen.push(z); }); });
     zeilen.slice(0, 15).forEach(function (z, i) { text(z, 22, 58 + i * 9.5, 7, /🔴/.test(z) ? COL.rot : /🟢|💍/.test(z) ? COL.gruen : COL.hell); });
     if (Math.floor(zeit / 500) % 2) text('KNOPF = WEITER', 160, 198, 8, COL.feuer, 'center');
+  }
+  // ---------- Zwischensequenzen: die Herrin kommt; ein Mann wird verschleppt ----------
+  var SEQ_MS = 9000;
+  function figurGross(k, X, Y, links, gr) { if (bildDa(k)) bildMalen(k, X, Y, links, gr); }
+  function buehne(nacht) {                                                     // Seitenansicht: Himmel, Hügel mit der Burg, Wiese, unser Langhaus, die Palisade
+    var g = x.createLinearGradient ? x.createLinearGradient(0, 0, 0, 150) : null;
+    if (g) { g.addColorStop(0, nacht ? '#1a1530' : '#7fb0e0'); g.addColorStop(1, nacht ? '#4a2a30' : '#d8e8f0'); x.fillStyle = g; } else x.fillStyle = '#7fb0e0';
+    x.fillRect(0, 0, W, 150);
+    x.fillStyle = '#2f5a2f'; x.beginPath(); x.moveTo(170, 150); x.quadraticCurveTo(250, 30, 330, 150); x.fill();
+    var st = burgStufe(), hx0 = 216, hy0 = 82;                                  // die Burg oben auf dem Hügel, von der Seite: Hütten, Palisade, Wall
+    x.fillStyle = '#3a5a2a'; x.fillRect(hx0, hy0 + 8, 72, 6);
+    for (var hh = 0; hh < 3 + st; hh++) { var bx = hx0 + 6 + hh * (60 / (3 + st)); x.fillStyle = '#5a3a1c'; x.fillRect(bx, hy0 - 2, 9, 10); x.fillStyle = nacht ? '#6a4a2a' : '#c9a25a'; x.beginPath(); x.moveTo(bx - 2, hy0); x.lineTo(bx + 4.5, hy0 - 7); x.lineTo(bx + 11, hy0); x.fill(); }
+    if (st >= 2) for (var pf = 0; pf < 36; pf++) { x.fillStyle = '#4a2e18'; x.fillRect(hx0 - 2 + pf * 2.1, hy0 + 2 - (pf % 2), 1.6, 8); }
+    if (st >= 3) { x.fillStyle = '#6b6f78'; x.fillRect(hx0 - 4, hy0 + 9, 80, 4); }
+    if (st >= 4) { x.fillStyle = '#4a2e18'; x.fillRect(hx0 + 30, hy0 - 14, 8, 22); x.fillStyle = nacht ? '#6a4a2a' : '#c9a25a'; x.fillRect(hx0 + 28, hy0 - 17, 12, 4); }
+    if (nacht) for (var fk = 0; fk < 5; fk++) { x.fillStyle = fk % 2 ? '#ffd25a' : '#e2553a'; x.fillRect(hx0 + 4 + fk * 15, hy0 - 4 - (Math.floor(zeit / 150 + fk) % 2), 2, 3); }
+    x.fillStyle = '#4f8f3e'; x.fillRect(0, 140, W, 100); x.fillStyle = '#3f7a32'; for (var i = 0; i < 40; i++) x.fillRect((i * 37) % W, 150 + (i * 13) % 80, 2, 1);
+    if (bildDa('langhaus_bz')) bildMalen('langhaus_bz', 70, 158, false, 2.2);
+    for (var p = 0; p < 30; p++) { var px = 6 + p * 5; if (px > 128 && px < 150) continue; x.fillStyle = '#4a2e18'; x.fillRect(px, 152, 3, 18); x.fillStyle = '#8a6440'; x.fillRect(px, 152, 2, 17); }
+  }
+  function sequenzMalen() {
+    var sq = s.sequenzen && s.sequenzen[0]; if (!sq) return;
+    var t = zeit - seit, schritt = Math.floor((zeit / 140)) % 4;
+    x.fillStyle = '#000'; x.fillRect(0, 0, W, H);
+    buehne(sq.art === 'verschleppt');
+    var leute = ['leute1', 'leute2', 'leute3', 'leute4', 'leute5', 'kind1', 'alte1'];
+    var zeilen;
+    if (sq.art === 'herrin') {
+      var ein = Math.min(1, t / 3200);                                         // die Krieger marschieren vom Berg herunter
+      for (var k = 0; k < 4; k++) figurGross('krieger' + (1 + (schritt + k) % 4), 340 - ein * 120 + k * 22, 212 + (k % 2) * 8, true, 3.6);
+      var hx = 340 - Math.min(1, Math.max(0, (t - 1800) / 2400)) * 150;
+      figurGross('herrin_gross', hx, 218, true, 1.7);
+      leute.forEach(function (k2, i) { var zur = t > 3500 ? Math.min(14, (t - 3500) / 80) : 0; figurGross(k2, 30 + i * 20 - zur, 222 + (i % 2) * 6, false, 3.4); });
+      zeilen = t < 2500 ? ['SIE KOMMEN VOM BERG HERUNTER.', 'MIT LANZEN, SCHILDEN UND HELMEN AUS BRONZE.']
+             : t < 5200 ? ['VORNEWEG EINE FRAU IN EINEM WEISSEN GEWAND.', 'DAS GANZE DORF STEHT VOR DEM TOR.']
+             : ['„ICH BIN EURE HERRIN. DER BERG GEHÖRT MIR – UND DAS TAL DAZU.', 'JEDEN HERBST SCHICKT IHR MIR MÄNNER UND KORN.“'];
+    } else {
+      var wegT = Math.min(1, t / 6000);                                        // zwei Krieger zerren ihn weg, die Frau läuft hinterher
+      var mx = 150 + wegT * 190;
+      figurGross('krieger' + (1 + schritt), mx + 22, 214, false, 3.6); figurGross('krieger' + (1 + (schritt + 2) % 4), mx - 24, 218, false, 3.6);
+      figurGross('lauf' + (1 + schritt), mx, 220, false, 2.6);
+      if (sq.frau) figurGross(t % 1200 < 600 ? 'leute1' : 'leute3', 100 + Math.min(1, t / 7000) * 110, 224, false, 3.4);
+      figurGross('kind' + (1 + Math.floor(t / 500) % 2), 60, 226, false, 3);
+            zeilen = t < 3000 ? ['DIE KRIEGER DER HERRIN HOLEN SICH, WAS IHR VERWEIGERT HABT.', 'UND SIE NEHMEN ' + sq.name + ' MIT.']
+             : t < 6000 ? [sq.frau ? sq.frau + ' LÄUFT HINTERHER, BIS ZUR BACH. WEITER TRAUT SIE SICH NICHT.' : 'NIEMAND HÄLT SIE AUF.', 'DIE KINDER SCHREIEN.']
+             : [sq.name + ' KOMMT NICHT WIEDER.', 'IN DIESER NACHT SCHLÄFT IM DORF KEINER.'];
+    }
+    x.fillStyle = 'rgba(8,10,16,.82)'; x.fillRect(0, 0, W, 36);
+    zeilen.forEach(function (z, i) { text(z, 160, 11 + i * 12, 8, i === 0 ? COL.feuer : COL.hell, 'center'); });
+    if (t > 1200 && Math.floor(zeit / 500) % 2) text('KNOPF = WEITER', 300, 232, 6, COL.grau, 'right');
   }
   function wachstundeMalen() {
     var t = zeit - seit, a = Math.min(1, t / 600);
@@ -1126,8 +1336,9 @@
     var bild = s.kapitel === 2 ? 'nachtfeuer2' : 'nachtfeuer';
     if (bildDa(bild)) { var d = DORF_BILD[bild], gr = Math.min(250 / (d[1] / 2), 62 / (d[2] / 2)); bildMalen(bild, 160, 128, false, gr); }
     x.fillStyle = 'rgba(255,170,60,' + (.05 + Math.sin(zeit / 180) * .02) + ')'; x.fillRect(19, 66, 282, 64);
-    umbruch(s.wacheText, 48).forEach(function (z, i) { text(z, 160, 146 + i * 11, 8, '#f1eee4', 'center'); });
-    if (t > 900 && Math.floor(zeit / 500) % 2) text('KNOPF = ZWEITER SCHLAF', 160, 206, 7, '#ffd25a', 'center');
+    umbruch(s.wacheText, 48).forEach(function (z, i) { text(z, 160, 142 + i * 10, 8, '#f1eee4', 'center'); });
+    text('DERWEIL IN DER WELT:', 160, 178, 6, '#8fd06a', 'center'); umbruch(derweil(), 60).forEach(function (z, i) { text(z, 160, 186 + i * 7, 6, '#bfe0a8', 'center'); });
+    if (t > 900 && Math.floor(zeit / 500) % 2) text('KNOPF = ZWEITER SCHLAF', 160, 208, 7, '#ffd25a', 'center');
   }
   function erfindungMalen() {
     var e = s.erfindungNeu; if (!e) return;
@@ -1139,6 +1350,7 @@
     if (bildDa('erf_' + e.id)) bildMalen('erf_' + e.id, 160, 125, false, 1);
     else if (e.bild && bildDa(e.bild)) { var eb = DORF_BILD[e.bild], gr = Math.min(200 / (eb[1] / 2), 54 / (eb[2] / 2)); bildMalen(e.bild, 160, 125, false, gr); }
     else erfindungsBild(e.id, 160, 100);
+    if (e.tanz) for (var tz = 0; tz < 2; tz++) { var tk = 'tanz_kreis' + (1 + tz); if (bildDa(tk)) bildMalen(tk, tz ? 236 : 84, 128 - (Math.floor(zeit / 180 + tz) % 2) * 2, tz === 1, .8); }
     var zl = umbruch(e.text, 44); if (zl.length > 3) zl = umbruch(e.text, 54);
     zl.forEach(function (z, i) { text(z, 160, 133 + i * (zl.length > 3 ? 9 : 11), zl.length > 3 ? 7 : 8, COL.hell, 'center'); });
     text(e.folge, 160, 172, 7, COL.gruen, 'center');
@@ -1159,7 +1371,9 @@
   }
   function frageMalen() {
     kasten(30, 70, 260, 110, COL.feuer);
-    if (s.frage.herrin && bildDa('herrin_zeigt')) { bildMalen('herrin_gross', 62, 147, false, 1.3); bildMalen('krieger_gross', 98, 147, true, 1.05); umbruch(s.frage.text, 30).forEach(function (z, i) { text(z, 190, 90 + i * 12, 9, COL.hell, 'center'); }); }
+    if (s.frage.hinweis) umbruch(s.frage.hinweis, 66).forEach(function (z, i) { text(z, 160, 172 + i * 5, 5, COL.grau, 'center'); });
+    if (s.frage.rat && bildDa('greis')) { bildMalen('greis', 52, 146, false, 2); bildMalen('alte1', 74, 146, false, 2); umbruch(s.frage.text, 32).forEach(function (z, i) { text(z, 186, 88 + i * 12, 8, COL.hell, 'center'); }); text('DER RAT DER ÄLTESTEN', 186, 78, 6, COL.feuer, 'center'); }
+    else if (s.frage.herrin && bildDa('herrin_zeigt')) { bildMalen('herrin_gross', 62, 147, false, 1.3); bildMalen('krieger_gross', 98, 147, true, 1.05); umbruch(s.frage.text, 30).forEach(function (z, i) { text(z, 190, 90 + i * 12, 9, COL.hell, 'center'); }); }
     else umbruch(s.frage.text, 40).forEach(function (z, i) { text(z, 160, 92 + i * 12, 9, COL.hell, 'center'); });
     var namen = s.frage.optionen ? s.frage.optionen.map(function (o) { return o.name; }) : ['ABGEBEN', 'BEHALTEN'], bw = 260 / namen.length;
     namen.forEach(function (o, i) {
@@ -1263,6 +1477,7 @@
     if (modus === 'ende') return endeMalen();
     karteMalen(); kopfleiste(); seitenfeld(); fussleiste();
     if (modus === 'szene') szeneTitel();
+    if (modus === 'sequenz') sequenzMalen();
     if (modus === 'bericht') berichtMalen();
     if (modus === 'frage') frageMalen();
     if (modus === 'erfindung') erfindungMalen();
