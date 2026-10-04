@@ -288,6 +288,11 @@
     ({ titel: titelMalen, vorspann: vorspannMalen, jahr: jahrMalen, bericht: berichtMalen, finsternis: finsternisMalen, klappe: klappeMalen, nacht: nachtMalen, sage: sageMalen })[modus]();
   }
   function tick(jetzt) { zeit = jetzt; schritt(lesen()); zeichnen(); requestAnimationFrame(tick); }
+  // Aus dem Spiel (index.html) kommt man mit ?finale=1&sprecher=NAME direkt in die Finsternis
+  try {
+    var q = typeof location !== 'undefined' ? location.search : '';
+    if (/finale=1/.test(q)) { var m = q.match(/sprecher=([^&]+)/); s = { jahr: 12, leute: 14, korn: 20, groll: 80, bau: 16, sprecher: m ? decodeURIComponent(m[1]).toUpperCase().slice(0, 12) : zufall(SPRECHER), bericht: [] }; modus = 'finsternis'; }
+  } catch (er) {}
   window.__burg = function () { return { s: s, modus: modus, wahl: wahl, setze: setze, neuesSpiel: neuesSpiel }; };   // nur zum Testen
   requestAnimationFrame(tick);
 }());
