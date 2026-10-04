@@ -130,7 +130,7 @@
       if (i >= NACHT.length) setze('sage');
       return;
     }
-    if (modus === 'sage') { if (weiterGedrueckt && zeit - seit > 3000) setze('titel'); return; }
+    if (modus === 'sage') { if (weiterGedrueckt && zeit - seit > 3000) { if (/finale=1/.test(location.search || '')) location.href = 'index.html?kapitel=3'; else setze('titel'); } return; }
   }
 
   // ---------- Malen ----------
@@ -270,7 +270,7 @@
     x.fillStyle = '#0b0d14'; x.fillRect(0, 0, W, H);
     bild('nacht6', 0, 0, W, H, .18);
     SAGE.forEach(function (z, i) { if (t > i * 600) text(z, 160, 20 + i * 14, 8, i === 0 || /GEFRAGT|SCHULD/.test(z) ? COL.feuer : COL.hell, 'center'); });
-    if (t > SAGE.length * 600 && Math.floor(zeit / 500) % 2) text('ENDE DES ANFANGS VON KAPITEL 2 · KNOPF = NOCHMAL', 160, 232, 7, COL.grau, 'center');
+    if (t > SAGE.length * 600 && Math.floor(zeit / 500) % 2) text((/finale=1/.test(location.search || '') ? 'KNOPF = WEITER ZU KAPITEL 3: DAS EISEN' : 'KNOPF = NOCHMAL'), 160, 232, 7, COL.grau, 'center');
   }
   function titelMalen() {
     x.fillStyle = '#000'; x.fillRect(0, 0, W, H);

@@ -61,7 +61,8 @@
     { id: 'erkunden',name: 'ERKUNDEN',  text: 'die Karte wird größer' },
     { id: 'sippe',   name: 'SIPPE',     text: 'die Sippe am anderen Ufer besuchen' }
   ];
-  var AUFGABEN_K1 = AUFGABEN, AUFGABEN_K2 = AUFGABEN.map(function (a) { return a.id === 'roden' ? { id: 'handeln', name: 'HANDELN', text: 'an der Mündung: Salz, Bronze' } : a; });
+  var AUFGABEN_K3 = null, AUFGABEN_K1 = AUFGABEN, AUFGABEN_K2 = AUFGABEN.map(function (a) { return a.id === 'roden' ? { id: 'handeln', name: 'HANDELN', text: 'an der Mündung: Salz, Bronze' } : a; });
+  AUFGABEN_K3 = AUFGABEN_K2.filter(function (a) { return a.id !== 'sippe'; }).concat([{ id: 'schmieden', name: 'SCHMIEDEN', text: 'Erz, Holzkohle, Rennofen: Eisen' }, { id: 'sippe', name: 'NACHBARN', text: 'die Nachbardörfer besuchen' }]);
 
   // ---------- Karte ----------
   // W Wald · G Wiese · B die Bach (Teilbach) · F Feld · H Langhaus · S Sippe · Q Quelle · R Fels · M der große Fluss (die Tauber – in sie fließt die Bach, sie selbst in den Main)
@@ -126,16 +127,70 @@
     var d = gespeichert(); if (!d) return false;
     s = d.s; karte = d.karte; sicht = d.sicht; felder = d.felder;
     DORF_ID = s.dorf || 'sachsenhausen'; if (s.spieler) SPIELER = s.spieler;
-    var dk = s.kapitel === 2 ? dorf().k2 : dorf().k1; KARTE_H = karte.length; KARTE_B = karte[0].length; SEITE = dk.seite; SCHATTEN = dk.schatten; ORTE = dk.orte;
+    var dk = s.kapitel >= 2 ? dorf().k2 : dorf().k1; KARTE_H = karte.length; KARTE_B = karte[0].length; SEITE = dk.seite; SCHATTEN = dk.schatten; ORTE = dk.orte;
     setzeHeim(d.heim ? d.heim.y : dk.heim[0], d.heim ? d.heim.x : dk.heim[1]);
     s.leute.forEach(function (p) { p.partner = p.partner >= 0 ? s.leute[p.partner] : null; });
-    AUFGABEN = s.kapitel === 2 ? AUFGABEN_K2 : AUFGABEN_K1; kopfZeile();
+    AUFGABEN = s.kapitel === 3 ? AUFGABEN_K3 : s.kapitel >= 2 ? AUFGABEN_K2 : AUFGABEN_K1; kopfZeile();
     s.szenen = []; figurenSchluessel = ''; setze('planen'); return true;
   }
   function merke(neu) { try { var m = JSON.parse(localStorage.getItem('dasdorf-merke')) || {}; if (neu) { for (var k in neu) m[k] = neu[k]; localStorage.setItem('dasdorf-merke', JSON.stringify(m)); } return m; } catch (er) { return {}; } }
-  function kapitelFrei(n) { return n === 1 || (n === 2 && !!merke().k2); }
+  function kapitelFrei(n) { var m = merke(); return n === 1 || (n === 2 && !!(m.k2 || m.k3)) || (n === 3 && !!m.k3); }
   function vergessen() { try { localStorage.removeItem(SPEICHER); } catch (e) {} }
   var VORSPANN_K2 = ['UM 1000 VOR CHRISTUS.', 'VIELE GENERATIONEN SIND VERGANGEN.', 'AUS DEM DORF AN DER BACH SIND BAUERN GEWORDEN.', 'SIE WEBEN, BRENNEN TON – UND HABEN EINE SALZSTELLE.', '', 'IRGENDWO FLIESST DIE BACH IN EINEN GRÖSSEREN FLUSS.', 'UND AUF EINEM BERG AM MAIN SITZT EINE, DIE SICH HERRIN NENNT.'];
+  // ================= KAPITEL 3: DAS EISEN (um 800 v. Chr.) =================
+  function nachbarSchnitt() { var k = Object.keys(s.nachbarn || {}); s.vertrauen = k.length ? Math.round(k.reduce(function (a, n) { return a + s.nachbarn[n]; }, 0) / k.length) : s.vertrauen; }
+  function schwaechsterNachbar() { var k = Object.keys(s.nachbarn || {}); return k.sort(function (a, b) { return s.nachbarn[a] - s.nachbarn[b]; })[0]; }
+  function kapitel3Starten() {
+    karteBauenK2();
+    var m = VORNAMEN_M, w = VORNAMEN_W, leute = [];
+    [[m[0], 32, false], [w[0], 30, true], [m[2], 27, false], [w[2], 25, true], [m[3], 21, false], [w[3], 20, true], [m[4], 44, false], [w[4], 42, true], [m[5], 17, false], [w[5], 16, true], [m[1], 9, false], [w[1], 7, true]].forEach(function (d) { leute.push(person(d[0], d[1], d[2])); });
+    leute[0].partner = leute[1]; leute[1].partner = leute[0]; leute[2].partner = leute[3]; leute[3].partner = leute[2]; leute[6].partner = leute[7]; leute[7].partner = leute[6];
+    if (SPIELER.name) leute.splice(10, 0, person(SPIELER.name, 12, SPIELER.w));
+    var nachbarn = {}; DORFKARTEN[DORF_ID].k2.orte.filter(function (o) { return o.art === 'S' || o.art === 'U'; }).slice(0, 3).forEach(function (o) { nachbarn[(o.name || 'DIE NACHBARN').toUpperCase()] = 30; });
+    s = { dorf: DORF_ID, spieler: SPIELER, kapitel: 3, jahrNull: 801, jahr: 1, jz: 0, leute: leute, nahrung: 44, holz: 26, saat: 10, vertrauen: 30, haeuser: 3, bauFortschritt: 0, ehen: 3,
+          plan: { feld: 3, sammeln: 2, holz: 2, handeln: 1, bauen: 0, wache: 1, erkunden: 1, schmieden: 1, sippe: 1 },
+          bericht: [], chronik: ['UM 800 V. CHR.: VIELE WINTER NACH DER NACHT AUF DEM BERG.'], frage: null, ende: null,
+          namenM: m.slice(7), namenW: w.slice(7), erfunden: ['flachs', 'hacke', 'bandkeramik', 'kaese', 'sonnenkreis', 'holunder', 'salz', 'einbaum', 'apfelwein', 'weben', 'toepfern', 'pflug', 'fischer', 'lastboot', 'anlegestelle', 'furt', 'faehre', 'distelbier', 'bronze'],
+          salz: 10, bronze: 2, eisen: 0, eisenGesamt: 0, werkzeug: 0, waffen: 0, groll: 0, burgBau: 16, stadt: 3, salzWeg: true, handelZaehler: 12, nachbarn: nachbarn, ofenArbeit: 0 };
+    nachbarSchnitt(); s.erfunden.forEach(werkstattBauen);
+    karte.forEach(function (z, y) { z.forEach(function (c, xx) { if (c === 'X' || c === 'T' || c === 'U') for (var a = -2; a <= 2; a++) for (var b2 = -2; b2 <= 2; b2++) if (sicht[y + a] && sicht[y + a][xx + b2] !== undefined) sicht[y + a][xx + b2] = true; }); });   // den alten Berg kennt jeder
+    AUFGABEN = AUFGABEN_K3; s.plan = vorschlag(); s.arbeiterNamen = arbeiter().map(function (p) { return p.name; }); figurenSchluessel = '';
+    kopfZeile(); vorspannSeite = 0; setze('vorspann3');
+  }
+  function kapitel3Jahreszeit(b, p, jz) {
+    if (p.erkunden && !s.bergBesucht) { s.bergBesucht = true; b.push('🧭 DIE KUNDSCHAFTER STEIGEN AUF DEN ALTEN BERG – OBWOHL DER ALTE ES NICHT GERN SIEHT.'); }
+    // Die Eisen-Kette: Erz finden → Holzkohle → Rennofen → Eisen
+    if (p.schmieden) {
+      if (!s.erzGefunden) { s.erzSuche = (s.erzSuche || 0) + p.schmieden; if (s.erzSuche >= 2) { s.erzGefunden = true; b.push('🟤 IN DER NASSEN WIESE AN ' + bach('dat') + ' FINDEN SIE ROSTROTE KLUMPEN: ERZ!'); chronik('IN DER WIESE WIRD ERZ GEFUNDEN.'); } else b.push('DIE SCHMIEDE SUCHEN NACH DEM ROTEN STEIN, VON DEM DIE HÄNDLER ERZÄHLEN.'); }
+      else if (!hat('rennofen')) { s.ofenArbeit += p.schmieden; b.push('AM OFEN WIRD GEBAUT: LEHM, STEINE, EIN LOCH FÜR DEN BLASEBALG (' + Math.min(4, s.ofenArbeit) + '/4).'); }
+      else {
+        var geht = Math.min(p.schmieden, Math.floor(s.holz / 3));
+        if (geht > 0) { s.holz -= geht * 3; s.eisen += geht; s.eisenGesamt += geht; b.push('🔥 DER RENNOFEN GLÜHT: ' + geht * 3 + ' HOLZ WERDEN ZU KOHLE – UND ' + geht + ' EISEN.'); }
+        else b.push('ZU WENIG HOLZ FÜR DIE HOLZKOHLE. DER OFEN BLEIBT KALT.');
+      }
+    }
+    // Werkzeuge oder Waffen?
+    if (s.eisen >= 3 && !s.frage) {
+      s.frage = { text: 'IHR HABT ' + s.eisen + ' STÜCK EISEN. WAS SOLL DER SCHMIED DARAUS MACHEN?', hinweis: 'SO WAR ES: FRÜHES EISEN WAR KOSTBAR. DER VORTEIL: ERZ GAB ES FAST ÜBERALL – ZINN FÜR BRONZE NICHT.', optionen: [
+        { name: 'WERKZEUGE', fn: function () { s.eisen -= 3; s.werkzeug++; chronik('DER SCHMIED MACHT ÄXTE UND SICHELN AUS EISEN.'); return 'ÄXTE UND SICHELN AUS EISEN: ERNTE UND HOLZ WERDEN MEHR.'; } },
+        { name: 'WAFFEN', fn: function () { s.eisen -= 3; s.waffen++; Object.keys(s.nachbarn).forEach(function (n) { s.nachbarn[n] = Math.max(0, s.nachbarn[n] - 6); }); nachbarSchnitt(); chronik('DER SCHMIED MACHT SPEERSPITZEN AUS EISEN.'); return 'EISERNE SPEERSPITZEN. DIE WEGE SIND SICHERER – ABER DIE NACHBARN SEHEN ES UND WERDEN VORSICHTIG: FREUNDSCHAFT -6.'; } },
+        { name: 'VERSCHENKEN', fn: function () { s.eisen -= 3; var nb = schwaechsterNachbar(); if (nb) s.nachbarn[nb] = Math.min(100, s.nachbarn[nb] + 20); nachbarSchnitt(); return 'IHR SCHENKT ' + (nb || 'DEN NACHBARN') + ' EIN EISERNES BEIL. SO EIN GESCHENK VERGISST MAN NICHT: FREUNDSCHAFT +20.'; } }] };
+    }
+    // Niemand bewacht mehr die Wege
+    if ((jz === 1 || jz === 2) && s.jahr >= 2 && Math.random() < .3) {
+      s.szenen.push({ art: 'raeuber', abgewehrt: s.waffen > 0 || p.wache >= 2 });
+      if (s.waffen > 0 || p.wache >= 2) { s.nahrung += 2; b.push('🗡️ RÄUBER LAUERN DEN HÄNDLERN AUF. ' + (s.waffen ? 'EURE EISERNEN SPEERE' : 'EURE WACHE') + ' VERTREIBT SIE.'); }
+      else { var weg = Math.min(s.salz, 4); s.salz -= weg; s.nahrung = Math.max(0, s.nahrung - 6); b.push('🗡️ RÄUBER ÜBERFALLEN DIE HÄNDLER AN DER MÜNDUNG: -' + weg + ' SALZ, -6 NAHRUNG. NIEMAND BEWACHT MEHR DIE WEGE.'); }
+    }
+    // Grenzen: Wald gehört plötzlich jemandem
+    if (jz === 0 && s.jahr >= 3 && !s.frage && Math.random() < .35) {
+      var nb2 = zufall(Object.keys(s.nachbarn));
+      s.frage = { rat: true, text: 'DIE VON ' + nb2 + ' SAGEN, DER WALD AM HANG GEHÖRE IHNEN. EURE LEUTE SCHLAGEN DORT SEIT JEHER HOLZ.', hinweis: 'SO WAR ES: MIT MEHR MENSCHEN KAMEN GRENZEN – WALD, WEIDE UND FELDER GEHÖRTEN NUN JEMANDEM.', optionen: [
+        { name: 'TEILEN', fn: function () { s.nachbarn[nb2] = Math.min(100, s.nachbarn[nb2] + 10); nachbarSchnitt(); s.holz = Math.max(0, s.holz - 4); return 'IHR TEILT DEN WALD MIT EINER GRENZE AUS STEINEN. -4 HOLZ, ABER FREUNDSCHAFT +10.'; } },
+        { name: 'BEHALTEN', fn: function () { if (s.waffen > 0) { s.nachbarn[nb2] = Math.max(0, s.nachbarn[nb2] - 8); nachbarSchnitt(); return 'EURE SPEERE GLÄNZEN. DIE VON ' + nb2 + ' ZIEHEN AB – UND VERGESSEN ES NICHT: -8.'; } s.nachbarn[nb2] = Math.max(0, s.nachbarn[nb2] - 15); nachbarSchnitt(); s.holz = Math.max(0, s.holz - 6); return 'ES KOMMT ZUM STREIT. EIN PAAR KÖPFE BLUTEN, HOLZ WIRD VERBRANNT: -6 HOLZ, FREUNDSCHAFT -15.'; } },
+        { name: 'TAUSCHEN', fn: function () { if (s.salz >= 3) { s.salz -= 3; s.nachbarn[nb2] = Math.min(100, s.nachbarn[nb2] + 5); nachbarSchnitt(); return 'IHR GEBT 3 SALZ FÜR DAS RECHT, WEITER HOLZ ZU SCHLAGEN. ALLE SIND ZUFRIEDEN.'; } return 'IHR HABT NICHTS ZUM TAUSCHEN. DIE SACHE BLEIBT OFFEN.'; } }] };
+    }
+  }
   function kapitel2Starten() {
     var bekannt = (s && s.erfunden) || [];
     karteBauenK2();
@@ -153,7 +208,7 @@
     kopfZeile(); setze('vorspann2');
   }
   function kopfZeile() {                                                         // die Überschrift über dem Spiel passt sich dem Kapitel an
-    try { var k = document.querySelector && document.querySelector('#kopf strong'); if (k) k.textContent = (s && s.kapitel === 2 ? 'DAS DORF – KAPITEL 2: DIE BURG AM MAIN' : ortText('DAS DORF – KAPITEL 1: DIE BACH')) + (s && s.dorf ? ' · ' + dorf().name : ''); } catch (er) {}
+    try { var k = document.querySelector && document.querySelector('#kopf strong'); if (k) k.textContent = (s && s.kapitel === 3 ? 'DAS DORF – KAPITEL 3: DAS EISEN' : s && s.kapitel >= 2 ? 'DAS DORF – KAPITEL 2: DIE BURG AM MAIN' : ortText('DAS DORF – KAPITEL 1: DIE BACH')) + (s && s.dorf ? ' · ' + dorf().name : ''); } catch (er) {}
   }
   function burgStufe() { return Math.min(4, 1 + Math.floor((s.burgBau || 0) / 4)); }
   function salzBedarf() { return Math.ceil(lebende().length / 4 / (hat('toepfern') ? 2 : 1)); }
@@ -195,7 +250,7 @@
       } else if (jz === 2) {                                                     // ernten
         var reif = fk.filter(function (k) { return felder[k] === 'reif'; }), geerntet = Math.min(reif.length, p.feld * 2);
         var duerreFak = s.duerre ? (hat('brunnen') ? .9 : .6) : 1; s.duerre = false;   // die Dürre im Sommer trifft die Ernte – außer es gibt einen Brunnen
-        var ertrag = Math.round(geerntet * (ERNTE_FELD + (hat('hacke') ? 2 : 0) + (hat('sonnenkreis') ? 1 : 0)) * faktor * duerreFak * (hat('bronze') ? 1.33 : 1));
+        var ertrag = Math.round(geerntet * (ERNTE_FELD + (hat('hacke') ? 2 : 0) + (hat('sonnenkreis') ? 1 : 0)) * faktor * duerreFak * (hat('bronze') ? 1.33 : 1) * (1 + .2 * Math.min(3, s.werkzeug || 0)));
         reif.slice(0, geerntet).forEach(function (k) { felder[k] = 'leer'; });
         s.nahrung += ertrag + (hat('bandkeramik') ? 4 : 0); s.saat += geerntet + Math.floor(geerntet / 2);
         b.push(geerntet ? 'ERNTE: ' + geerntet + ' FELDER, +' + ertrag + ' NAHRUNG, +' + (geerntet + Math.floor(geerntet / 2)) + ' SAATGUT.' : 'NICHTS ZU ERNTEN.');
@@ -207,7 +262,7 @@
     // Jagen und Sammeln
     if (p.sammeln) { var n = Math.round(p.sammeln * [2, 3, 3, hat('salz') ? 2 : 1][jz] * (ev && ev.wild ? ev.wild : 1)); s.nahrung += n; b.push('JAGEN UND SAMMELN: +' + n + ' NAHRUNG.'); }
     // Holz
-    if (p.holz) { var h = p.holz * 3; s.holz += h; b.push('HOLZ: +' + h + '.'); }
+    if (p.holz) { var h = p.holz * (3 + Math.min(2, s.werkzeug || 0)); s.holz += h; b.push('HOLZ: +' + h + '.'); }
     // Roden
     if (p.roden) {
       var wald = []; kacheln('W').filter(westlich).forEach(function (q) { if (nachbarn(q[0], q[1]).some(function (nb) { var t = karte[nb[0]][nb[1]]; return t === 'G' || t === 'F' || t === 'H'; })) wald.push(q); });
@@ -247,11 +302,12 @@
       if (fund === 'M' && !s.mainGesehen) { s.mainGesehen = true; chronik('DIE KUNDSCHAFTER SEHEN ZUM ERSTEN MAL DEN GROSSEN FLUSS.'); }
     }
     // Sippe besuchen
-    if (p.sippe) { s.besucht = true; var v = p.sippe * (s.kapitel === 2 ? (hat('apfelwein') ? 7 : 5) : (hat('apfelwein') ? 10 : 8)) + (hat('furt') ? p.sippe * 2 : 0); s.vertrauen = Math.min(ZIEL_VERTRAUEN, s.vertrauen + v); b.push('BESUCH BEI DER SIPPE: VERTRAUEN +' + v + '.'); if (s.vertrauen >= 30) b.push('DRÜBEN RUFT EINE: „' + zufall(MUNDART) + '“'); }
+    if (p.sippe) { s.besucht = true; var v = p.sippe * (s.kapitel >= 2 ? (hat('apfelwein') ? 7 : 5) : (hat('apfelwein') ? 10 : 8)) + (hat('furt') ? p.sippe * 2 : 0); if (s.kapitel === 3) { var nb = schwaechsterNachbar(); if (nb) { s.nachbarn[nb] = Math.min(100, s.nachbarn[nb] + v); b.push('BESUCH IN ' + nb + ': FREUNDSCHAFT +' + v + '.'); } nachbarSchnitt(); } else { s.vertrauen = Math.min(ZIEL_VERTRAUEN, s.vertrauen + v); b.push('BESUCH BEI DER SIPPE: VERTRAUEN +' + v + '.'); } if (s.vertrauen >= 30) b.push('DRÜBEN RUFT EINE: „' + zufall(MUNDART) + '“'); }
     // Ereignis auswerten
     if (ev) ev.wirkung(b);
     if (s.hochzeit) { s.hochzeit.wirkung(b); s.hochzeit = null; }
-    if (s.kapitel === 2) kapitel2Jahreszeit(b, p, jz);
+    if (s.kapitel >= 2) kapitel2Jahreszeit(b, p, jz);
+    if (s.kapitel === 3) kapitel3Jahreszeit(b, p, jz);
     // Essen
     var lebend = lebende(), bedarf = lebend.length * ESSEN[jz];
     s.nahrung -= bedarf; b.push('GEGESSEN: ' + bedarf + ' NAHRUNG.');
@@ -307,14 +363,14 @@
       var need = salzBedarf();
       if (s.salz >= need) { s.salz -= need; b.push('GEPÖKELT: ' + need + ' SALZ.'); }
       else { var weg = Math.round(s.nahrung * .25); s.nahrung -= weg; s.salz = 0; b.push('🔴 ZU WENIG SALZ – ' + weg + ' NAHRUNG VERDIRBT IM WINTER.'); }
-      s.groll = Math.min(100, s.groll + (s.jahr >= 2 ? 2 : 0));
+      if (s.kapitel === 2) s.groll = Math.min(100, s.groll + (s.jahr >= 2 ? 2 : 0));
     }
     if (jz === 0 && hat('distelbier') && s.festJahr !== s.jahr && s.nahrung > bedarfBisFruehling() + 4) {   // Frühlingsfest, wenn genug da ist
       s.festJahr = s.jahr; s.nahrung -= 8; s.groll = Math.max(0, s.groll - 6); s.vertrauen = Math.min(ZIEL_VERTRAUEN, s.vertrauen + 5); s.maifest = { jahr: s.jahr, start: 0 };
       b.push('🌸 FRÜHLINGSFEST! MAIBAUM, TANZ UND DISTELBIER: -8 NAHRUNG, DIE NACHBARN KOMMEN (VERTRAUEN +5), FÜR EINEN TAG VERGISST MAN DIE BURG.');
       if (!s.ersterMaibaum) { s.ersterMaibaum = true; b.push('DIE AN DER BACH BEHAUPTEN, SIE HÄTTEN DEN MAIBAUM ERFUNDEN. DIE VOM HÜGEL SAGEN: „WIE IMMER.“'); chronik('DAS ERSTE FRÜHLINGSFEST MIT MAIBAUM. (DIE AN DER BACH SAGEN, SIE HÄTTEN IHN ERFUNDEN.)'); }
     }
-    if (jz === 2 && s.jahr >= 2) herrinFordert(b);
+    if (jz === 2 && s.jahr >= 2 && s.kapitel === 2) herrinFordert(b);
   }
   function herrinFordert(b) {
     var n = Math.min(4, 1 + Math.floor((s.jahr - 1) / 3)), stufeVorher = burgStufe();
@@ -363,7 +419,7 @@
   function dramaEreignisse(e) {
     var wer = erwachsene(); if (wer.length < 3 || (s.letztesDrama || 0) >= s.jahr) return;
     e(1.5, function (b) {                                                       // Diebstahl
-      var dieb = zufall(wer), was = s.kapitel === 2 ? 'DEN OCHSEN VOM NACHBARN' : 'FLEISCH UND FELLE AUS DEM VORRAT'; s.letztesDrama = s.jahr;
+      var dieb = zufall(wer), was = s.kapitel >= 2 ? 'DEN OCHSEN VOM NACHBARN' : 'FLEISCH UND FELLE AUS DEM VORRAT'; s.letztesDrama = s.jahr;
       b.push('⚖️ ' + dieb.name + ' HAT ' + was + ' GESTOHLEN. DER RAT DER ÄLTESTEN TRITT ZUSAMMEN …');
       s.frage = { rat: true, hinweis: RAT_HINWEIS, text: dieb.name + ' HAT ' + was + ' GESTOHLEN. WAS BESCHLIESST DER RAT?', optionen: [
         { name: 'BUSSE', fn: function () { s.nahrung = Math.max(0, s.nahrung - 4); chronik(dieb.name + ' MUSS FÜR EINEN DIEBSTAHL BÜSSEN.'); return dieb.name + ' MUSS DEN SCHADEN DOPPELT ERSETZEN. DIE FAMILIE ZAHLT: -4 NAHRUNG. DIE SACHE IST AUS DER WELT.'; } },
@@ -458,6 +514,12 @@
   }
   function pruefeEnde() {
     if (!arbeiter().length) { s.ende = 'aus'; chronik('NIEMAND IST MEHR DA, DER DIE FELDER BESTELLT.'); return; }
+    if (s.kapitel === 3) {
+      if (s.eisenGesamt >= 6 && s.werkzeug >= 1 && hat('alteburg') && lebende().length >= 20 && Object.keys(s.nachbarn).every(function (n) { return s.nachbarn[n] >= 60; })) {
+        s.ende = 'feuer'; s.sequenzen = (s.sequenzen || []).concat([{ art: 'feuer' }]); chronik('AUF DEM ALTEN BERG BRENNT WIEDER EIN FEUER. SIE BAUEN AUF DEN ALTEN WÄLLEN.');
+      }
+      return;
+    }
     if (s.kapitel === 2) {
       if (burgStufe() === 4 && s.groll >= 70) { s.ende = 'burg'; var maenner = arbeiter().filter(function (p) { return !p.w; }); s.sprecher = maenner.length ? zufall(maenner).name : 'ARN'; chronik('DIE BURG IST FERTIG. DIE DÖRFER BRODELN.'); }
       return;
@@ -510,7 +572,8 @@
   }
 
   // ---------- Ablauf ----------
-  var PLAN_Y0 = 56, PLAN_ZEILE = 14.5, SCHWER_Y = 26;                                                     // Lage im Seitenfeld: oben Schwerpunkte, darunter die Aufgaben                                             // Lage der Aufgaben im Seitenfeld
+  var PLAN_Y0 = 56, SCHWER_Y = 26;
+  function planZeile() { return AUFGABEN.length > 8 ? 12.6 : 14.5; }                                                     // Lage im Seitenfeld: oben Schwerpunkte, darunter die Aufgaben                                             // Lage der Aufgaben im Seitenfeld
   function schritt(e) {
     if (modus === 'titel') {
       if (zeit - seit < 400) return;
@@ -529,6 +592,7 @@
       if ((e.a || e.b) && zeit - seit > 300) {
         if (e.b) { setze('titel'); return; }
         if (wahl === 0) { vergessen(); setze('dorfwahl'); }
+        else if (wahl === 2 && kapitelFrei(3)) { var m3 = merke(); DORF_ID = m3.dorf || 'sachsenhausen'; SPIELER = m3.spieler || { name: '', w: false }; vergessen(); kapitel3Starten(); }
         else if (wahl === 1 && kapitelFrei(2)) { var m = merke(); DORF_ID = m.dorf || 'sachsenhausen'; SPIELER = m.spieler || { name: '', w: false }; vergessen(); kapitel2Starten(); setze('zoomfahrt'); }
       }
       return;
@@ -562,6 +626,7 @@
       return;
     }
     if (modus === 'zoomfahrt') { if (zeit - seit > 7500 || ((e.a || e.klick) && zeit - seit > 1500)) setze('vorspann2'); return; }
+    if (modus === 'vorspann3') { if ((e.a || e.klick) && zeit - seit > 700) { vorspannSeite++; seit = zeit; if (vorspannSeite > 4) { vorspannSeite = 0; setze('planen'); speichern(); } } return; }
     if (modus === 'vorspann2') { if ((e.a || e.klick) && zeit - seit > 1500) { setze('planen'); speichern(); } return; }
     if (modus === 'vorspann') { if ((e.a || e.klick) && zeit - seit > 600) { vorspannSeite++; seit = zeit; if (vorspannSeite > 2) { vorspannSeite = 0; neuesSpiel(); } } return; }
     if (modus === 'planen') {
@@ -574,7 +639,7 @@
       var gewaehltSchwer = null;
       if (e.klick && e.klick.x > 210) {
         if (e.klick.y >= SCHWER_Y && e.klick.y < SCHWER_Y + 24) { var si = Math.floor((e.klick.y - SCHWER_Y) / 12) * 3 + Math.floor((e.klick.x - 211) / 36); if (si >= 0 && si < 6) gewaehltSchwer = schwerpunkte()[si].id; }
-        var zi = Math.floor((e.klick.y - PLAN_Y0 + 7) / PLAN_ZEILE);
+        var zi = Math.floor((e.klick.y - PLAN_Y0 + 7) / planZeile());
         if (e.klick.y >= PLAN_Y0 - 7 && zi >= 0 && zi < AUFGABEN.length) { wahl = zi; if (e.klick.x > 296) e.r = true; else if (e.klick.x < 232) e.l = true; }
         if (e.klick.y > 172 && e.klick.y < 190) { if (e.klick.x > 279) { s.schnell = true; jahreszeitBeenden(); return; } wahl = AUFGABEN.length; e.a = true; }
       }
@@ -616,7 +681,7 @@
     if (modus === 'wachstunde') { if ((e.a || e.klick) && zeit - seit > 900) nachDerWache(); return; }
     if (modus === 'freundesfest') { if (((e.a || e.klick) && zeit - seit > 2500) || zeit - seit > 16000) { if (s.jz === 0) s.schnell = false; nachDerWache(); } return; }
     if (modus === 'erfindung') { if ((e.a || e.klick) && zeit - seit > 900) { s.erfindungNeu = null; setze('planen'); speichern(); if (s.schnell && s.jz !== 0) jahreszeitBeenden(); } return; }
-    if (modus === 'ende') { if ((e.a || e.klick) && zeit - seit > 1500) { if (s.ende === 'dorf') { kapitel2Starten(); setze('zoomfahrt'); } else if (s.ende === 'burg' && typeof location !== 'undefined' && location.href) location.href = 'kapitel2.html?finale=1&sprecher=' + encodeURIComponent(s.sprecher || 'ARN'); else setze('titel'); } return; }
+    if (modus === 'ende') { if ((e.a || e.klick) && zeit - seit > 1500) { if (s.ende === 'dorf') { kapitel2Starten(); setze('zoomfahrt'); } else if (s.ende === 'burg' && typeof location !== 'undefined' && location.href) { merke({ k3: true, dorf: DORF_ID, spieler: SPIELER, sprecher: s.sprecher }); location.href = 'kapitel2.html?finale=1&sprecher=' + encodeURIComponent(s.sprecher || 'ARN'); } else setze('titel'); } return; }
   }
   // ---------- Erfindungen: kleine Einblendungen, wenn das Dorf etwas Neues kann (fürs Spiel erfunden – wer es wirklich war, weiß keiner) ----------
   var ERFINDUNGEN = [
@@ -682,6 +747,12 @@
     { id: 'distelbier', kapitel: 2, bild: 'braukessel', titel: 'DAS DISTELBIER', tanz: true, wann: function () { return s.jahr >= 2; },
       text: function () { return 'EINER VON DER BACH LÄSST GETREIDE MIT DISTELN UND KRÄUTERN GÄREN. ES SCHMECKT BITTER – UND MACHT FRÖHLICH. AB JETZT GIBT ES EINEN BRAUER IM DORF.'; },
       folge: 'JEDEN FRÜHLING EIN MAIFEST: WENIGER GROLL, MEHR VERTRAUEN.' },
+    { id: 'holzkohle', kapitel: 3, titel: 'DER KOHLENMEILER', wahr: 'BELEGT: FÜR EISEN BRAUCHTE MAN HOLZKOHLE – DAFÜR WURDE VIEL WALD GESCHLAGEN.', wann: function () { return !!s.erzGefunden; },
+      text: function () { return 'HOLZ, MIT ERDE ZUGEDECKT, GLIMMT TAGELANG UND WIRD ZU KOHLE. DIE BRENNT HEISSER ALS JEDES FEUER.'; }, folge: 'JETZT KANN DER RENNOFEN GEBAUT WERDEN (SCHMIEDEN).' },
+    { id: 'rennofen', kapitel: 3, titel: 'DER RENNOFEN', wahr: 'BELEGT: IM RENNOFEN WURDE AUS ERZ UND HOLZKOHLE EIN EISENKLUMPEN, DIE „LUPPE“, DIE DER SCHMIED AUSSCHMIEDETE.', wann: function () { return (s.ofenArbeit || 0) >= 4; },
+      text: function () { return 'EIN OFEN AUS LEHM, MANNSHOCH. UNTEN BLÄST DER BLASEBALG, OBEN KOMMEN ERZ UND KOHLE HINEIN. NACH EINEM TAG BRECHEN SIE IHN AUF – DRIN LIEGT EIN GLÜHENDER KLUMPEN: EISEN.'; }, folge: 'JEDER SCHMIED MACHT AUS 3 HOLZ 1 EISEN.' },
+    { id: 'alteburg', kapitel: 3, entdeckung: true, titel: 'DIE ALTE BURG', wann: function () { return !!s.bergBesucht; },
+      text: function () { var m = merke(); return 'OBEN AUF DEM BERG: VERKOHLTE PFOSTEN, EIN VERBEULTER BRONZEHELM UND ÜBERALL GESTRÜPP. DIE ALTEN SAGEN, HIER HAT EINER VON EUCH' + (m.sprecher ? ' – ' + m.sprecher + ' –' : '') + ' DER HERRIN DIE WAHRHEIT GESAGT. „DA OBEN BAUT MAN NICHT.“'; }, folge: '+2 BRONZE AUS DEN TRÜMMERN.' },
     { id: 'bronze', kapitel: 2, titel: 'BRONZE', wann: function () { return (s.bronze || 0) >= 2; },
       text: function () { return 'DER ERSTE SCHMIED AN DER BACH GIESST BRONZE. FÜR DIE ANDEREN SIEHT ES AUS WIE ZAUBEREI.'; },
       folge: 'BRONZENE SICHELN: DIE ERNTE WIRD UM EIN DRITTEL GRÖSSER.' }
@@ -700,6 +771,7 @@
     karte[q[0]][q[1]] = 'K'; s.werkstatt[q[0] + ',' + q[1]] = id;
   }
   function erfindungPruefen(b) {
+    if (s.kapitel === 3 && hat('alteburg') && !s.alteBronze) { s.alteBronze = true; s.bronze += 2; }
     s.erfunden = s.erfunden || [];
     for (var i = 0; i < ERFINDUNGEN.length; i++) { var e = ERFINDUNGEN[i];
       if ((e.kapitel || 1) === (s.kapitel || 1) && !hat(e.id) && e.wann()) { s.erfunden.push(e.id); s.erfindungNeu = { id: e.id, titel: e.titel, text: e.text(), folge: e.folge, jahr: vorChristus(), entdeckung: !!e.entdeckung, bild: e.bild, wahr: e.wahr, tanz: !!e.tanz }; chronik(s.erfindungNeu.text); werkstattBauen(e.id); return; } }
@@ -714,14 +786,15 @@
     var plan = leererPlan(), n = arbeiter().length, ziel = [];
     var leute = lebende().length, essen = s.nahrung + (s.jz <= 2 ? erwarteteErnte() : 0);
     if (s.jz === 0 && s.saat > 0) ziel.push('feld', 'feld');
-    if (!s.kapitel && !s.verbruedert && arbeiter().length >= 3) ziel.push('sippe');   // vor dem Fest: einer besucht immer die von drüben
+    if (!s.kapitel && !s.verbruedert && arbeiter().length >= 3) ziel.push('sippe');
+    if (s.kapitel === 3) { if (!s.bergBesucht) ziel.unshift('erkunden'); ziel.push('schmieden', 'sippe'); if (s.holz < 8) ziel.push('holz'); }   // vor dem Fest: einer besucht immer die von drüben
     if (s.jz === 2 && erwarteteErnte()) ziel.push('feld', 'feld');
     if (essen < bedarfBisFruehling() + 4) ziel.push('sammeln', 'sammeln');
     if (s.jz >= 1 && s.holz < holzBedarf() + 3) ziel.push('holz');
     if ((s.jz === 2 || s.jz === 3) && n >= 4) ziel.push('wache');
     if (s.jz === 1 && leute >= s.haeuser * PLATZ_HAUS - 1) ziel.push('bauen', 'bauen');
-    if (s.jz === 1) ziel.push(s.kapitel === 2 ? (kacheln('T').length ? 'handeln' : 'erkunden') : 'roden');
-    if (s.kapitel === 2 && s.salzWeg && s.salz < salzBedarf() + 2 && kacheln('T').length) ziel.unshift('handeln');
+    if (s.jz === 1) ziel.push(s.kapitel >= 2 ? (kacheln('T').length ? 'handeln' : 'erkunden') : 'roden');
+    if (s.kapitel >= 2 && s.salzWeg && s.salz < salzBedarf() + 2 && kacheln('T').length) ziel.unshift('handeln');
     ziel.push(s.verbruedert ? 'holz' : 'sippe', 'sammeln');
     for (var i = 0; i < n; i++) plan[ziel[i % ziel.length]]++;
     return plan;
@@ -731,8 +804,8 @@
     var essen = s.nahrung + (s.jz <= 2 ? erwarteteErnte() : 0);
     if (s.jz === 2 && erwarteteErnte()) return 'DIE FELDER SIND REIF. SCHICKT LEUTE AUFS FELD, SONST VERFAULT ES.';
     if (s.jz === 0 && s.saat > 0 && !s.plan.feld) return 'JETZT IST SÄZEIT. WER IM FRÜHLING NICHT SÄT, HUNGERT IM WINTER.';
-    if (s.kapitel === 2 && !kacheln('T').length) return 'FOLGT DEM WASSER: WO ES IN DEN GROSSEN FLUSS MÜNDET, WIRD GEHANDELT.';
-    if (s.kapitel === 2 && s.salzWeg && s.salz < salzBedarf()) return 'KEIN SALZ MEHR AUS DER ERDE. SCHICKT HÄNDLER ZUR MÜNDUNG.';
+    if (s.kapitel >= 2 && !kacheln('T').length) return 'FOLGT DEM WASSER: WO ES IN DEN GROSSEN FLUSS MÜNDET, WIRD GEHANDELT.';
+    if (s.kapitel >= 2 && s.salzWeg && s.salz < salzBedarf()) return 'KEIN SALZ MEHR AUS DER ERDE. SCHICKT HÄNDLER ZUR MÜNDUNG.';
     if (essen < bedarfBisFruehling()) return 'DAS ESSEN REICHT NICHT BIS ZUM FRÜHLING. MEHR LEUTE ZUM JAGEN!';
     if (s.jz >= 1 && s.holz < holzBedarf()) return 'DER WINTER KOMMT. IHR BRAUCHT ' + holzBedarf() + ' HOLZ, HABT ' + s.holz + '.';
     if (lebende().length >= s.haeuser * PLATZ_HAUS) return 'DAS LANGHAUS IST VOLL. BAUT EIN NEUES, SONST KOMMEN KEINE KINDER.';
@@ -741,8 +814,9 @@
   }
   // Feste Berufe: Tote und Alte fallen raus, wer neu anpacken kann, bekommt vom Alten die dringendste Arbeit
   function anpassen(b) {
-    var n = arbeiter().length, ordnung = ['erkunden', 'sippe', 'bauen', 'roden', 'handeln', 'wache', 'holz', 'sammeln', 'feld'];
-    while (verplant() > n) for (var i = 0; i < ordnung.length; i++) if (s.plan[ordnung[i]] > 0) { s.plan[ordnung[i]]--; break; }
+    var n = arbeiter().length, ordnung = ['erkunden', 'sippe', 'schmieden', 'bauen', 'roden', 'handeln', 'wache', 'holz', 'sammeln', 'feld'];
+    var sicherung = 200;                                                          // nie endlos: notfalls alles neu
+    while (verplant() > n && sicherung-- > 0) { var weg = false; for (var i = 0; i < ordnung.length; i++) if (s.plan[ordnung[i]] > 0) { s.plan[ordnung[i]]--; weg = true; break; } if (!weg) { for (var k in s.plan) if (s.plan[k] > 0) { s.plan[k]--; break; } } }
     var vorher = s.arbeiterNamen || [], neu = arbeiter().filter(function (p) { return vorher.indexOf(p.name) < 0; });
     var k = 0;
     while (frei() > 0) {
@@ -757,9 +831,9 @@
   // Schwerpunkte: ein Tipp, und der Alte verteilt nach diesem Ziel (die Feldarbeit zur Saat- und Erntezeit bleibt immer)
   function schwerpunkte() {
     return [{ id: 'essen', name: '🍖 ESSEN' }, { id: 'holz', name: '🪵 HOLZ' }, { id: 'frieden', name: '🤝 FRIEDEN' },
-            { id: 'bauen', name: '🏠 BAUEN' }, s.kapitel === 2 ? { id: 'handel', name: '⛵ HANDEL' } : { id: 'erkunden', name: '🧭 FERNE' }, { id: 'alter', name: '👴 DER ALTE' }];
+            s.kapitel === 3 ? { id: 'eisen', name: '🔩 EISEN' } : { id: 'bauen', name: '🏠 BAUEN' }, s.kapitel >= 2 ? { id: 'handel', name: '⛵ HANDEL' } : { id: 'erkunden', name: '🧭 FERNE' }, { id: 'alter', name: '👴 DER ALTE' }];
   }
-  var GEWICHT = { essen: { sammeln: 3, feld: 2, holz: .6, wache: .4 }, holz: { holz: 3, sammeln: 1.2, feld: .8 }, frieden: { sippe: 2.5, wache: 2, sammeln: 1 },
+  var GEWICHT = { eisen: { schmieden: 3, holz: 2.5, sammeln: 1 }, essen: { sammeln: 3, feld: 2, holz: .6, wache: .4 }, holz: { holz: 3, sammeln: 1.2, feld: .8 }, frieden: { sippe: 2.5, wache: 2, sammeln: 1 },
                   bauen: { bauen: 3, holz: 2, sammeln: 1 }, erkunden: { erkunden: 3, sammeln: 1.5, holz: .5 }, handel: { handeln: 3, sammeln: 1.5, holz: .8 } };
   function schwerpunktSetzen(id) {
     s.schwerpunkt = id;
@@ -810,11 +884,25 @@
   var WELT_K2 = ['DIE GROSSEN PYRAMIDEN IN ÄGYPTEN SIND SCHON ÜBER 1500 JAHRE ALT.', 'DIE PHÖNIZIER SCHREIBEN MIT EINEM ALPHABET – UNSER ABC STAMMT DAVON AB.',
     'IN JERUSALEM HERRSCHT, SO ERZÄHLT DIE BIBEL, KÖNIG DAVID.', 'TROJA LIEGT SCHON IN TRÜMMERN.', 'IN CHINA HERRSCHEN DIE KÖNIGE DER ZHOU.',
     'STONEHENGE STEHT SCHON SEIT ÜBER 1000 JAHREN.', 'WEITER IM OSTEN WURDE LÄNGST EINE BRONZESCHEIBE MIT SONNE, MOND UND STERNEN VERGRABEN – HEUTE: DIE HIMMELSSCHEIBE VON NEBRA.'];
-  function derweil() { var l = s.kapitel === 2 ? WELT_K2 : WELT_K1; return l[(s.jahr + (s.kapitel === 2 ? 3 : 0)) % l.length]; }
+  function derweil() { var l = s.kapitel === 3 ? WELT_K3 : s.kapitel >= 2 ? WELT_K2 : WELT_K1; return l[(s.jahr + (s.kapitel >= 2 ? 3 : 0)) % l.length]; }
+  var WELT_K3 = ['IN GRIECHENLAND WERDEN DIE ERSTEN OLYMPISCHEN SPIELE GEFEIERT.', 'AN EINEM FLUSS IN ITALIEN WÄCHST EIN DORF, DAS SPÄTER ROM HEISSEN WIRD.',
+    'IN HALLSTATT IN DEN ALPEN GRABEN BERGLEUTE SALZ TIEF AUS DEM BERG.', 'DIE PHÖNIZIER HABEN IN AFRIKA DIE STADT KARTHAGO GEGRÜNDET.', 'IN GRIECHENLAND ERZÄHLT MAN SICH VOM KRIEG UM TROJA – SPÄTER SAGT MAN, EIN DICHTER NAMENS HOMER HABE ES AUFGESCHRIEBEN.'];
+  function wachstundeK3() {
+    s.erzaehlt = s.erzaehlt || [];
+    function neu(id, t) { if (s.erzaehlt.indexOf(id) >= 0) return null; s.erzaehlt.push(id); return t; }
+    return (s.ende === 'feuer' && neu('feuer3', 'OBEN AUF DEM ALTEN BERG FLACKERT EIN LICHT. KEINER SAGT ETWAS.'))
+      || neu('daoben', 'DER ALTE SAGT: „DA OBEN BAUT MAN NICHT.“ WARUM, WEISS KEINER MEHR GENAU.')
+      || neu('zinn', 'EIN HÄNDLER LACHT: „DAS DUNKLE METALL BRAUCHT KEIN ZINN. DEN ROTEN STEIN DAFÜR FINDET IHR IN JEDER NASSEN WIESE.“')
+      || neu('herrin3', 'DIE KINDER ERZÄHLEN VON DER HERRIN AUF DEM BERG. EIN HÄNDLER HÄLT DAS FÜR UNSINN.')
+      || neu('fremde', 'DER FÄHRMANN ERZÄHLT: „HEUTE KAMEN FREMDE ÜBER DEN MAIN. SIE HATTEN SCHWERTER AUS EISEN.“')
+      || neu('hoefe', 'DRÜBEN HINTER DEN HÜGELN BAUEN SIE HÖFE. UND IM SÜDEN UND WESTEN, SAGT MAN, GROSSE HÖFE AUF DEN HÖHEN – FÜR MÄCHTIGE LEUTE.')
+      || 'ES IST STILL. NUR DER RENNOFEN KNACKT NOCH NACH.';
+  }
   function wachstundeText() {
     s.erzaehlt = s.erzaehlt || [];
     function neu(id, t) { if (s.erzaehlt.indexOf(id) >= 0) return null; s.erzaehlt.push(id); return t; }
-    if (s.kapitel === 2) {
+    if (s.kapitel === 3) return wachstundeK3();
+    if (s.kapitel >= 2) {
       var t = (s.groll >= 60 && neu('finsternis', 'DIE ÄLTESTE ERZÄHLT VON EINEM TAG, AN DEM DIE SONNE SCHWARZ WIRD. DANN, SAGT SIE LEISE, KOMMT DIE ZEIT.'))
         || (burgStufe() >= 4 && neu('feuer', 'OBEN AUF DEM BERG BRENNEN JEDE NACHT FEUER. VON HIER AUS KANN MAN SIE ZÄHLEN.'))
         || (s.groll >= 40 && neu('urphar', 'DIE AM MAIN SCHICKEN EINEN BOTEN – NACHTS, DAMIT ES KEINER SIEHT. ER FRAGT, WIE VIELE MÄNNER IHR HABT.'))
@@ -874,7 +962,7 @@
       if (jz === 3) { x.fillStyle = '#cfe4f4'; x.fillRect(px + 5, oben ? py : py + 5, 6, (oben ? 5 : 0) + 6 + (unten ? 5 : 0)); if (li) x.fillRect(px, py + 5, 11, 6); if (re) x.fillRect(px + 5, py + 5, 11, 6); }
     } else if (t === 'F' && bildDa('feld_leer')) {
       var zst = felder[gy + ',' + gx] || 'leer';
-      var fpre = s && s.kapitel === 2 && bildDa('feldbz_leer') ? 'feldbz_' : 'feld_';
+      var fpre = s && s.kapitel >= 2 && bildDa('feldbz_leer') ? 'feldbz_' : 'feld_';
       bildMalen(fpre + (zst === 'reif' ? 'reif' : zst === 'gesaet' ? (jz === 1 ? 'gruen' : 'gesaet') : 'leer'), px + 8, py + 14);
       if (jz === 3) { x.fillStyle = 'rgba(232,236,242,.75)'; x.fillRect(px, py + 4, 16, 10); }
     } else if ((t === 'H' && bildDa('langhaus')) || (t === 'S' && bildDa('huette'))) {
@@ -969,10 +1057,10 @@
     else if (aktion === 'waschen') k = t2 ? 'waschen1' : 'waschen2';
     else if (aktion === 'bauen') k = t2 ? 'bauen1' : 'bauen2';
     else if (aktion === 'speer' || aktion === 'jagen') k = 'speer';
-    else if (traegt === 'korb' && s && s.kapitel === 2 && gehen) k = 'haendler' + (1 + (p.name.charCodeAt(0) % 5));
+    else if (traegt === 'korb' && s && s.kapitel >= 2 && gehen) k = 'haendler' + (1 + (p.name.charCodeAt(0) % 5));
     else if (traegt) k = traegt;
     else if (gehen) k = 'lauf' + (1 + Math.floor(zeit / 140) % 4);
-    else if (s && s.kapitel === 2) { var hsh = (p.name.charCodeAt(0) * 7 + p.name.length) % 8; k = p.alter > 50 ? (p.w ? 'alte' + (1 + hsh % 3) : 'greis') : p.alter < 13 ? 'kind' + (1 + hsh % 2) : 'leute' + (1 + hsh); }
+    else if (s && s.kapitel >= 2) { var hsh = (p.name.charCodeAt(0) * 7 + p.name.length) % 8; k = p.alter > 50 ? (p.w ? 'alte' + (1 + hsh % 3) : 'greis') : p.alter < 13 ? 'kind' + (1 + hsh % 2) : 'leute' + (1 + hsh); }
     else k = p.w ? 'frau' : 'stehen';
     if (!bildDa(k)) return false;
     x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(X - 3, Y - .5, 6, 1);
@@ -1071,11 +1159,11 @@
         traegt = { sammeln: '#8a4a2a', holz: '#a07a48', roden: '#a07a48', handeln: '#e8c25a', feld: s.jz === 2 ? '#e8c25a' : null }[f.art] || null; }
       if (sichtbar(fx, fy)) mensch(fx, fy, p, gehen, aktion, traegt);
     });
-    if (s.kapitel === 2 && hat('distelbier') && bildDa('braukessel')) {         // der Brauer am Kessel neben dem Feuer
+    if (s.kapitel >= 2 && hat('distelbier') && bildDa('braukessel')) {         // der Brauer am Kessel neben dem Feuer
       bildMalen('braukessel', (FEUER.x - 1.4 - kamera.x) * KACHEL, (FEUER.y + .1 - kamera.y) * KACHEL, false, .45);
       mensch(FEUER.x - 1.9, FEUER.y + .1, { name: 'BRAUER', alter: 40 }, false, 'bauen');
     }
-    if (s.kapitel === 2) for (var sf = 0; sf < 4; sf++) {                      // Schafe grasen vor der Palisade
+    if (s.kapitel >= 2) for (var sf = 0; sf < 4; sf++) {                      // Schafe grasen vor der Palisade
       var sw = zeit / 4000 + sf * 1.7, sxp = HEIM_POS.x - 2.5 + Math.cos(sw) * .6 + sf * .5, syp = HEIM_POS.y + 3.2 + Math.sin(sw * 1.3) * .3 + (sf % 2) * .4;
       if (sichtbar(sxp, syp) && bildDa('schaf1')) bildMalen('schaf' + (1 + sf % 3), (sxp - kamera.x) * KACHEL, (syp - kamera.y) * KACHEL, Math.sin(sw) > 0, 1);
     }
@@ -1141,6 +1229,12 @@
       if (bildDa('tanz_kreis2')) bildMalen('tanz_kreis2', mx + 2 - Math.sin(t / 500) * 3, my + 9 + hops, true, .7);
       if (bildDa('tanz_paar' + (1 + Math.floor(t / 400) % 4))) bildMalen('tanz_paar' + (1 + Math.floor(t / 400) % 4), mx + 22, my + 6, false, .8);
       if (bildDa('beschwipst1')) bildMalen(Math.floor(t / 600) % 2 ? 'beschwipst1' : 'beschwipst2', mx - 30 + Math.sin(t / 300) * 2, my + 8, false, .7);
+    } else if (sz.art === 'raeuber') {                                          // Räuber am Weg zur Mündung
+      var tq = gesehene(function (y2, x2) { return karte[y2][x2] === 'T'; })[0], ziel3 = tq ? mitte(tq) : { x: HEIM_POS.x + 4, y: HEIM_POS.y - 3 };
+      var ar = sz.abgewehrt && t > 1400 ? Math.max(0, 1 - (t - 1400) / 900) : Math.min(1, t / 1400);
+      for (var rr = 0; rr < 3; rr++) { var pr = linie({ x: ziel3.x - 3, y: ziel3.y + 2 }, ziel3, ar * .8); mensch(pr.x + rr * .4, pr.y + (rr % 2) * .3, { name: 'R' + rr, alter: 30 }, true, null, null, true); }
+      mensch(ziel3.x + .3, ziel3.y + .2, { name: 'HAENDLER', alter: 40 }, false, null, 'korb');
+      if (sz.abgewehrt) mensch(ziel3.x - .6, ziel3.y + .3, { name: 'WACHE', alter: 28 }, false, 'speer');
     } else if (sz.art === 'krieger') {                                          // Bewaffnete vom Berg marschieren ins Dorf
       var xb = gesehene(function (y2, x2) { return karte[y2][x2] === 'X'; })[0], von2 = xb ? mitte(xb) : { x: HEIM_POS.x + 8, y: HEIM_POS.y - 6 };
       var nach2 = { x: HEIM_POS.x + 1.6, y: HEIM_POS.y + 1.2 }, a4 = Math.min(1, t / 2000);
@@ -1164,7 +1258,7 @@
     var sz = j.sz, t2 = { woelfe: sz.wache ? '🐺 WÖLFE! DIE WACHE STELLT SICH VOR DAS HAUS.' : '🐺 WÖLFE! KEINE WACHE AM HAUS …',
       hochwasser: '🌊 HOCHWASSER! ' + bach() + ' TRITT ÜBER DIE UFER.', hochzeit: '💍 EIN HOCHZEITSZUG KOMMT ' + bach('ueber') + '.',
       geburt: '👶 EIN KIND IST GEBOREN.', fremder: '🚶 EIN FREMDER KOMMT AUS DEM WALD.',
-      krieger: '⚔️ BEWAFFNETE VOM BERG KOMMEN INS DORF.', fest: '🌸 FRÜHLINGSFEST: MAIBAUM, TANZ UND DISTELBIER.', baer: sz.wache ? '🐻 EIN BÄR! DIE JÄGER STELLEN SICH IHM.' : '🐻 EIN BÄR KOMMT AUS DEM WALD!' }[sz.art];
+      krieger: '⚔️ BEWAFFNETE VOM BERG KOMMEN INS DORF.', raeuber: sz.abgewehrt ? '🗡️ RÄUBER AM WEG – SIE WERDEN VERTRIEBEN.' : '🗡️ RÄUBER ÜBERFALLEN DIE HÄNDLER!', fest: '🌸 FRÜHLINGSFEST: MAIBAUM, TANZ UND DISTELBIER.', baer: sz.wache ? '🐻 EIN BÄR! DIE JÄGER STELLEN SICH IHM.' : '🐻 EIN BÄR KOMMT AUS DEM WALD!' }[sz.art];
     x.fillStyle = 'rgba(16,19,27,.85)'; x.fillRect(4, 18, 200, 14); text(t2, 104, 25, 7, COL.feuer, 'center');
     if (Math.floor(zeit / 500) % 2) text('KNOPF = WEITER', 104, 184, 7, COL.hell, 'center');
   }
@@ -1177,6 +1271,13 @@
     x.fillStyle = jz === 2 ? '#7a8a3a' : '#3f8a3a'; x.beginPath(); x.ellipse(X - 1.5, Y - 8.5, 4, 3, 0, 0, Math.PI * 2); x.fill();
     var farbe = jz === 1 || jz === 0 ? '#f4f0dc' : '#1a1020';
     if (jz !== 0 || s.jahr % 1 === 0) for (var d = 0; d < 6; d++) { x.fillStyle = farbe; x.fillRect(X - 5 + (d * 7) % 10, Y - 11 + (d * 5) % 7, jz === 2 ? 1 : 1.8, jz === 2 ? 1 : 1.2); }
+  }
+  function ruineMalen(X, Y) {                                                  // die alte Burg: überwachsener Wall, verkohlte Pfosten
+    x.fillStyle = 'rgba(40,60,30,.85)'; x.beginPath(); x.ellipse(X, Y + 6, 22, 16, 0, 0, Math.PI * 2); x.fill();
+    x.strokeStyle = '#5a6a4a'; x.lineWidth = 3; x.beginPath(); x.ellipse(X, Y + 6, 19, 13, 0, 0, Math.PI * 2); x.stroke(); x.lineWidth = 1;
+    for (var i = 0; i < 14; i++) { var w = i / 14 * Math.PI * 2; if ((i * 7) % 3 === 0) continue; x.fillStyle = '#1a1410'; x.fillRect(X + Math.cos(w) * 19, Y + 6 + Math.sin(w) * 13 - 4, 1.5, 3 + (i % 3)); }
+    for (var b = 0; b < 9; b++) { x.fillStyle = b % 2 ? '#3f7a32' : '#2f6b2f'; x.beginPath(); x.arc(X - 14 + (b * 13) % 28, Y + (b * 7) % 14, 2.5, 0, Math.PI * 2); x.fill(); }
+    if (s && s.ende === 'feuer') { x.fillStyle = '#ffd25a'; x.fillRect(X - 1, Y, 2, 3); x.fillStyle = '#e2553a'; x.fillRect(X - 1.5, Y + 2, 3, 2); }
   }
   function palisadeMalen() {                                                  // Pfahlring um das Dorf, Tor zur Bach hin
     var cx = (HEIM_POS.x + .5 - kamera.x) * KACHEL, cy = (HEIM_POS.y + .9 - kamera.y) * KACHEL, rx = 2.7 * KACHEL, ry = 2.1 * KACHEL;
@@ -1211,13 +1312,13 @@
     if (!karte || modus === 'szene') return;
     x.save(); x.beginPath(); x.rect(0, 14, SICHT_B * KACHEL, SICHT_H * KACHEL); x.clip();
     var liste = ORTE.slice();
-    kacheln('S').slice(0, 1).forEach(function (q) { if (!liste.some(function (o) { return o.art === 'S'; })) liste.push({ name: null, alt: s && s.kapitel === 2 ? 'NACHBARN' : 'DIE SIPPE DRÜBEN', y: q[0], x: q[1], art: 'S' }); });
+    kacheln('S').slice(0, 1).forEach(function (q) { if (!liste.some(function (o) { return o.art === 'S'; })) liste.push({ name: null, alt: s && s.kapitel >= 2 ? 'NACHBARN' : 'DIE SIPPE DRÜBEN', y: q[0], x: q[1], art: 'S' }); });
     liste.forEach(function (o) {
       if (!sicht[o.y] || !sicht[o.y][o.x]) return;
       var p = zuBild(o.x + .5, o.y + (o.art === 'wasser' ? .5 : 1.25)), heute = o.name && o.name.toUpperCase();
       if (o.y === HEIM_POS.y && o.x === HEIM_POS.x) return;
       if (o.alt) { text(o.alt, p.x, p.y, 6, o.art === 'wasser' ? '#8fc0f0' : COL.feuer, 'center'); if (heute && heute !== o.alt) text(heute, p.x, p.y + 6, 5, 'rgba(241,238,228,.32)', 'center'); }
-      else if (heute && (massstab < 1 || s.kapitel === 2)) text(heute, p.x, p.y, 5, 'rgba(241,238,228,.32)', 'center');
+      else if (heute && (massstab < 1 || s.kapitel >= 2)) text(heute, p.x, p.y, 5, 'rgba(241,238,228,.32)', 'center');
     });
     var hp = zuBild(HEIM_POS.x + .5, HEIM_POS.y + 1.9);
     text('DEIN DORF', hp.x, hp.y, 6, COL.feuer, 'center'); text(dorf().name, hp.x, hp.y + 6, 5, 'rgba(241,238,228,.32)', 'center');
@@ -1276,13 +1377,13 @@
       kachelMalen(karte[gy][gx], px, py, gx, gy);
       if (SCHATTEN) { var sv = +SCHATTEN[gy][gx]; if (sv < 5) { x.fillStyle = 'rgba(10,20,10,' + ((5 - sv) * .065) + ')'; x.fillRect(px, py, KACHEL, KACHEL); } else if (sv > 5) { x.fillStyle = 'rgba(255,250,220,' + ((sv - 5) * .035) + ')'; x.fillRect(px, py, KACHEL, KACHEL); } }
     }
-    if (s && s.kapitel === 2) palisadeMalen();
+    if (s && s.kapitel >= 2) palisadeMalen();
     for (var ggy = Math.max(0, gy0); ggy < Math.min(KARTE_H, gy1); ggy++) for (var ggx = Math.max(0, gx0); ggx < Math.min(KARTE_B, gx1); ggx++) {   // Häuser obendrauf
       var hx = ggx - kamera.x, hy = ggy - kamera.y; if (!sicht[ggy][ggx]) continue;
       var tt = karte[ggy][ggx];
-      if (tt === 'H' && s && s.kapitel === 2 && bildDa('langhaus_bz')) { bildMalen('langhaus_bz', hx * KACHEL + 8, hy * KACHEL + 16, false, 1); if (Math.floor(zeit / 500 + ggx) % 2) { x.fillStyle = 'rgba(200,200,210,.6)'; x.fillRect(hx * KACHEL + 10, hy * KACHEL - 1, 1, 2); } }
+      if (tt === 'H' && s && s.kapitel >= 2 && bildDa('langhaus_bz')) { bildMalen('langhaus_bz', hx * KACHEL + 8, hy * KACHEL + 16, false, 1); if (Math.floor(zeit / 500 + ggx) % 2) { x.fillStyle = 'rgba(200,200,210,.6)'; x.fillRect(hx * KACHEL + 10, hy * KACHEL - 1, 1, 2); } }
       else if (tt === 'H' && bildDa('langhaus')) { bildMalen('langhaus', hx * KACHEL + 8, hy * KACHEL + 16, false, 1.45); if (Math.floor(zeit / 500 + ggx) % 2) { x.fillStyle = 'rgba(200,200,210,.6)'; x.fillRect(hx * KACHEL + 12, hy * KACHEL - 2, 1, 2); } }
-      if (tt === 'S' && s && s.kapitel === 2 && bildDa('huette_bz')) bildMalen('huette_bz', hx * KACHEL + 8, hy * KACHEL + 16, false, 1);
+      if (tt === 'S' && s && s.kapitel >= 2 && bildDa('huette_bz')) bildMalen('huette_bz', hx * KACHEL + 8, hy * KACHEL + 16, false, 1);
       else if (tt === 'S' && bildDa('huette')) bildMalen('huette', hx * KACHEL + 8, hy * KACHEL + 16, false, 1.05);
       if (tt === 'U' && bildDa('urphar')) bildMalen('urphar', hx * KACHEL + 8, hy * KACHEL + 18, false, .9);
       else if (tt === 'U' && bildDa('huette')) { bildMalen('huette', hx * KACHEL + 3, hy * KACHEL + 14, false, .7); bildMalen('huette', hx * KACHEL + 12, hy * KACHEL + 17, false, .7); }
@@ -1291,7 +1392,8 @@
       if (tt === 'Z' && bildDa('salz_ok')) bildMalen('salz_ok', hx * KACHEL + 8, hy * KACHEL + 15, false, .75);
       if (tt === 'R' && s && s.salzWeg && s.salzStelle === ggy + ',' + ggx && bildDa('salz_weg')) bildMalen('salz_weg', hx * KACHEL + 8, hy * KACHEL + 15, false, .75);
       if (tt === 'K' && s && s.werkstatt && s.werkstatt[ggy + ',' + ggx] && bildDa('haus_' + s.werkstatt[ggy + ',' + ggx])) bildMalen('haus_' + s.werkstatt[ggy + ',' + ggx], hx * KACHEL + 8, hy * KACHEL + 15, false, .8);
-      if (tt === 'X' && bildDa('burgD1')) bildMalen('burgD' + burgStufe(), hx * KACHEL + 8, hy * KACHEL + 34, false, 1.15);
+      if (tt === 'X' && s && s.kapitel === 3) ruineMalen(hx * KACHEL + 8, hy * KACHEL + 8);
+      else if (tt === 'X' && bildDa('burgD1')) bildMalen('burgD' + burgStufe(), hx * KACHEL + 8, hy * KACHEL + 34, false, 1.15);
     }
     if (s && hat('holunder')) hollerMalen(HEIM_POS.x - .9, HEIM_POS.y + .9);
     lebenMalen();
@@ -1299,6 +1401,12 @@
     x.restore();
     x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(0, 14, SICHT_B * KACHEL, 1);
     namenMalen();
+    if (modus === 'planen' && s && s.kapitel === 3) {
+      var z3 = [[s.eisenGesamt >= 6, '6 EISEN SCHMIEDEN (' + Math.min(6, s.eisenGesamt) + ')'], [s.werkzeug >= 1, 'EISERNE WERKZEUGE'], [hat('alteburg'), 'AUF DEN ALTEN BERG (ERKUNDEN)'], [lebende().length >= 20, '20 LEUTE (' + lebende().length + ')']];
+      Object.keys(s.nachbarn).forEach(function (n) { z3.push([s.nachbarn[n] >= 60, 'FREUNDE IN ' + n + ' (' + s.nachbarn[n] + ')']); });
+      x.fillStyle = 'rgba(16,19,27,.8)'; x.fillRect(2, 16, 118, 7 + z3.length * 7); text('ZIELE', 5, 20, 5, COL.feuer);
+      z3.forEach(function (zl, i) { var zy = 26 + i * 7; x.strokeStyle = zl[0] ? COL.gruen : COL.grau; x.strokeRect(5.5, zy - 2.5, 4, 4); if (zl[0]) { x.fillStyle = COL.gruen; x.fillRect(6.5, zy - 1.5, 2, 2); } text(zl[1], 12, zy, 5, zl[0] ? COL.gruen : COL.hell); });
+    }
     if (modus === 'planen' && s && !s.kapitel) {                               // wie weit ist es noch bis zum Freundschaftsfest?
       var ziele = s.verbruedert ? [[true, 'FREUNDSCHAFTSFEST'], [false, 'DORF GRÜNDEN – NOCH ' + (s.verbruedert + JAHRE_NACH_FEST - s.jahr) + ' JAHRE']]
         : [[Object.keys(felder).length > 0, 'FELDER ANLEGEN'], [s.holz >= holzBedarf(), 'HOLZ FÜR DEN WINTER (' + Math.min(s.holz, holzBedarf()) + '/' + holzBedarf() + ')'], [!!s.besucht, 'DIE VON DRÜBEN BESUCHEN'], [false, 'FREUNDSCHAFTSFEST (VERTRAUEN ' + Math.min(s.vertrauen, ZIEL_VERTRAUEN) + ' %)']];
@@ -1314,7 +1422,8 @@
   function kopfleiste() {
     x.fillStyle = COL.dunkel; x.fillRect(0, 0, W, 13);
     text(vorChristus() + ' · ' + JAHRESZEITEN[s.jz], 3, 7, 8, COL.feuer);
-    if (s.kapitel === 2) text('🍖' + s.nahrung + ' 🪵' + s.holz + ' 🌾' + s.saat + ' 🧂' + s.salz + ' 🤝' + s.vertrauen + ' 😠' + s.groll, 317, 7, 7, COL.hell, 'right');
+    if (s.kapitel === 3) text('🍖' + s.nahrung + ' 🪵' + s.holz + ' 🌾' + s.saat + ' 🧂' + s.salz + ' 🔩' + (s.eisen || 0) + ' 🤝' + s.vertrauen, 317, 7, 7, COL.hell, 'right');
+    else if (s.kapitel >= 2) text('🍖' + s.nahrung + ' 🪵' + s.holz + ' 🌾' + s.saat + ' 🧂' + s.salz + ' 🤝' + s.vertrauen + ' 😠' + s.groll, 317, 7, 7, COL.hell, 'right');
     else text('🍖' + s.nahrung + '  🪵' + s.holz + '  🌾' + s.saat + '  🤝' + s.vertrauen, 317, 7, 8, COL.hell, 'right');
   }
   function seitenfeld() {
@@ -1328,7 +1437,7 @@
     });
     x.fillStyle = '#2a3040'; x.fillRect(l0 + 2, PLAN_Y0 - 8, W - l0 - 4, 1);
     AUFGABEN.forEach(function (a, i) {
-      var y = PLAN_Y0 + i * PLAN_ZEILE, aktiv = wahl === i && modus === 'planen';
+      var y = PLAN_Y0 + i * planZeile(), aktiv = wahl === i && modus === 'planen';
       if (aktiv) { x.fillStyle = 'rgba(255,79,163,.2)'; x.fillRect(l0 + 1, y - 7, W - l0 - 2, 14); }
       text(a.name, l0 + 26, y - 1, 8, aktiv ? COL.feuer : COL.hell);
       text('◀', l0 + 6, y, 8, s.plan[a.id] ? COL.hell : COL.grau); text('▶', W - 10, y, 8, COL.hell);
@@ -1367,9 +1476,10 @@
     if (g) { g.addColorStop(0, nacht ? '#1a1530' : '#7fb0e0'); g.addColorStop(1, nacht ? '#4a2a30' : '#d8e8f0'); x.fillStyle = g; } else x.fillStyle = '#7fb0e0';
     x.fillRect(0, 0, W, 150);
     x.fillStyle = '#2f5a2f'; x.beginPath(); x.moveTo(170, 150); x.quadraticCurveTo(250, 30, 330, 150); x.fill();
-    var st = burgStufe(), hx0 = 216, hy0 = 82;                                  // die Burg oben auf dem Hügel, von der Seite: Hütten, Palisade, Wall
+    var st = s.kapitel === 3 ? 0 : burgStufe(), hx0 = 216, hy0 = 82;
+    if (s.kapitel === 3) { for (var rp = 0; rp < 20; rp++) { x.fillStyle = '#1a1410'; x.fillRect(hx0 + rp * 3.6, hy0 + 3 - (rp % 3), 1.6, 4 + (rp % 2) * 2); } x.fillStyle = '#3f6a32'; for (var gb = 0; gb < 8; gb++) { x.beginPath(); x.arc(hx0 + 4 + gb * 9, hy0 + 8, 4, 0, Math.PI * 2); x.fill(); } if (s.ende === 'feuer' || nacht) { x.fillStyle = '#ffd25a'; x.fillRect(hx0 + 34, hy0 - 2 - (Math.floor(zeit / 140) % 2), 3, 5); x.fillStyle = '#e2553a'; x.fillRect(hx0 + 33, hy0 + 2, 5, 3); } }                                  // die Burg oben auf dem Hügel, von der Seite: Hütten, Palisade, Wall
     x.fillStyle = '#3a5a2a'; x.fillRect(hx0, hy0 + 8, 72, 6);
-    for (var hh = 0; hh < 3 + st; hh++) { var bx = hx0 + 6 + hh * (60 / (3 + st)); x.fillStyle = '#5a3a1c'; x.fillRect(bx, hy0 - 2, 9, 10); x.fillStyle = nacht ? '#6a4a2a' : '#c9a25a'; x.beginPath(); x.moveTo(bx - 2, hy0); x.lineTo(bx + 4.5, hy0 - 7); x.lineTo(bx + 11, hy0); x.fill(); }
+    if (!(s.kapitel === 3 && s.ende !== 'feuer')) for (var hh = 0; hh < 3 + st; hh++) { var bx = hx0 + 6 + hh * (60 / (3 + st)); x.fillStyle = '#5a3a1c'; x.fillRect(bx, hy0 - 2, 9, 10); x.fillStyle = nacht ? '#6a4a2a' : '#c9a25a'; x.beginPath(); x.moveTo(bx - 2, hy0); x.lineTo(bx + 4.5, hy0 - 7); x.lineTo(bx + 11, hy0); x.fill(); }
     if (st >= 2) for (var pf = 0; pf < 36; pf++) { x.fillStyle = '#4a2e18'; x.fillRect(hx0 - 2 + pf * 2.1, hy0 + 2 - (pf % 2), 1.6, 8); }
     if (st >= 3) { x.fillStyle = '#6b6f78'; x.fillRect(hx0 - 4, hy0 + 9, 80, 4); }
     if (st >= 4) { x.fillStyle = '#4a2e18'; x.fillRect(hx0 + 30, hy0 - 14, 8, 22); x.fillStyle = nacht ? '#6a4a2a' : '#c9a25a'; x.fillRect(hx0 + 28, hy0 - 17, 12, 4); }
@@ -1378,14 +1488,39 @@
     if (bildDa('langhaus_bz')) bildMalen('langhaus_bz', 70, 158, false, 2.2);
     for (var p = 0; p < 30; p++) { var px = 6 + p * 5; if (px > 128 && px < 150) continue; x.fillStyle = '#4a2e18'; x.fillRect(px, 152, 3, 18); x.fillStyle = '#8a6440'; x.fillRect(px, 152, 2, 17); }
   }
+  function axtMalen(X, Y, gr, glanz) {                                         // die eiserne Axt in Nahaufnahme
+    x.fillStyle = '#6b4a2c'; x.fillRect(X - 1.5 * gr, Y - 20 * gr, 3 * gr, 40 * gr); x.fillStyle = '#8a6440'; x.fillRect(X - 1.5 * gr, Y - 20 * gr, 1.2 * gr, 40 * gr);
+    x.fillStyle = '#3a3e46'; x.beginPath(); x.moveTo(X + 1 * gr, Y - 18 * gr); x.lineTo(X + 16 * gr, Y - 24 * gr); x.quadraticCurveTo(X + 20 * gr, Y - 14 * gr, X + 16 * gr, Y - 4 * gr); x.lineTo(X + 1 * gr, Y - 10 * gr); x.fill();
+    x.fillStyle = '#8a929c'; x.fillRect(X + 15 * gr, Y - 22 * gr, 1.5 * gr, 16 * gr);
+    if (glanz) { x.fillStyle = 'rgba(255,255,255,' + (.4 + Math.sin(zeit / 150) * .3) + ')'; x.fillRect(X + 12 * gr, Y - 20 * gr, 1 * gr, 3 * gr); }
+  }
+  function vorspann3Malen() {
+    var t = zeit - seit, a = Math.min(1, t / 500), sv = vorspannSeite;
+    x.fillStyle = '#000'; x.fillRect(0, 0, W, H);
+    var zeilen = ['VIELE WINTER SIND VERGANGEN.', 'DIE BURG AUF DEM BERG IST GESCHICHTE.', 'ABER DER MAIN IST NOCH DA.', 'UND MIT DEM FLUSS KOMMT ETWAS NEUES.', 'EISEN.'];
+    x.globalAlpha = a;
+    if (sv === 1) { buehne(false); }
+    if (sv === 2) { x.fillStyle = '#7fb0e0'; x.fillRect(0, 0, W, 120); x.fillStyle = '#3a6fb8'; x.fillRect(0, 120, W, 120); for (var wv = 0; wv < 30; wv++) { x.fillStyle = '#8fc0f0'; x.fillRect((wv * 37 + zeit / 30) % W, 130 + (wv * 13) % 100, 6, 1); } if (bildDa('boot')) bildMalen('boot', 160 + Math.sin(zeit / 900) * 20, 190, false, 3); if (bildDa('haendler1')) { bildMalen('haendler1', 40, 120, false, 2.4); bildMalen('haendler3', 280, 120, true, 2.4); } }
+    if (sv === 3) { x.fillStyle = '#2a1e14'; x.fillRect(0, 0, W, H); x.fillStyle = '#6b4a2c'; x.fillRect(30, 150, 260, 14); if (bildDa('haendler2')) bildMalen('haendler2', 230, 150, true, 3.2); axtMalen(130, 146, 1.6, false); }
+    if (sv === 4) { x.fillStyle = '#120c08'; x.fillRect(0, 0, W, H); x.fillStyle = 'rgba(255,140,40,.12)'; x.beginPath(); x.arc(160, 120, 90, 0, Math.PI * 2); x.fill(); axtMalen(150, 150, 4, true); }
+    x.globalAlpha = 1;
+    x.fillStyle = 'rgba(0,0,0,.6)'; x.fillRect(0, 200, W, 40);
+    text(zeilen[Math.min(4, sv)], 160, 214, sv === 4 ? 14 : 9, sv === 4 ? COL.feuer : COL.hell, 'center');
+    text('KAPITEL 3: DAS EISEN · UM 800 V. CHR.', 160, 230, 6, COL.grau, 'center');
+    if (t > 700 && Math.floor(zeit / 500) % 2) text(sv === 4 ? 'KNOPF = LOS' : 'KNOPF = WEITER', 300, 192, 6, COL.feuer, 'right');
+  }
   function sequenzMalen() {
     var sq = s.sequenzen && s.sequenzen[0]; if (!sq) return;
     var t = zeit - seit, schritt = Math.floor((zeit / 140)) % 4;
     x.fillStyle = '#000'; x.fillRect(0, 0, W, H);
-    buehne(sq.art === 'verschleppt');
+    buehne(sq.art === 'verschleppt' || sq.art === 'feuer');
     var leute = ['leute1', 'leute2', 'leute3', 'leute4', 'leute5', 'kind1', 'alte1'];
     var zeilen;
-    if (sq.art === 'herrin') {
+    if (sq.art === 'feuer') {
+      zeilen = t < 3000 ? ['AUF DEM ALTEN BERG BRENNT WIEDER EIN FEUER.', 'KEINER WEISS, WER ES ANGEZÜNDET HAT.'] : t < 6000 ? ['EIN PAAR LEUTE SIND HINAUFGEZOGEN.', 'SIE HABEN EISERNE ÄXTE DABEI.'] : ['SIE BAUEN AUF DEN ALTEN WÄLLEN.', 'FORTSETZUNG FOLGT …'];
+      leute.forEach(function (k2, i) { figurGross(k2, 30 + i * 18, 222 + (i % 2) * 6, false, 3.2); });
+      if (t > 3000) for (var kl = 0; kl < 4; kl++) figurGross('lauf' + (1 + (schritt + kl) % 4), 150 + Math.min(1, (t - 3000) / 3000) * 80 + kl * 12, 200 - Math.min(1, (t - 3000) / 3000) * 40, false, 1.4);
+    } else if (sq.art === 'herrin') {
       var ein = Math.min(1, t / 3200);                                         // die Krieger marschieren vom Berg herunter
       for (var k = 0; k < 4; k++) figurGross('krieger' + (1 + (schritt + k) % 4), 340 - ein * 120 + k * 22, 212 + (k % 2) * 8, true, 3.6);
       var hx = 340 - Math.min(1, Math.max(0, (t - 1800) / 2400)) * 150;
@@ -1452,7 +1587,7 @@
     if (bildDa('mond')) x.drawImage(BILD.mond, 250, 28, 40, 40);
     text('DIE WACHSTUNDE', 160, 38, 12, '#cfe0ff', 'center');
     text('ZWISCHEN ERSTEM UND ZWEITEM SCHLAF', 160, 52, 6, '#8fa0c8', 'center');
-    var bild = s.kapitel === 2 ? 'nachtfeuer2' : 'nachtfeuer';
+    var bild = s.kapitel >= 2 ? 'nachtfeuer2' : 'nachtfeuer';
     if (bildDa(bild)) { var d = DORF_BILD[bild], gr = Math.min(250 / (d[1] / 2), 62 / (d[2] / 2)); bildMalen(bild, 160, 128, false, gr); }
     x.fillStyle = 'rgba(255,170,60,' + (.05 + Math.sin(zeit / 180) * .02) + ')'; x.fillRect(19, 66, 282, 64);
     umbruch(s.wacheText, 48).forEach(function (z, i) { text(z, 160, 142 + i * 10, 8, '#f1eee4', 'center'); });
@@ -1556,8 +1691,8 @@
   function menuePunkte() { var l = []; if (gespeichert()) l.push('FORTSETZEN'); l.push('NEUES SPIEL', 'KAPITEL', 'CREDITS'); return l; }
   var KAPITEL = [{ n: 1, titel: 'DIE BACH', bild: 'karte_k1', text: 'EINE FAMILIE SUCHT EINEN PLATZ ZUM BLEIBEN.', zeit: 'UM 5000 V. CHR.' },
                  { n: 2, titel: 'DIE BURG AM MAIN', bild: 'karte_k2', text: 'HANDEL, SALZ – UND EINE HERRIN AUF DEM BERG.', zeit: 'UM 1000 V. CHR.' },
-                 { n: 3, titel: 'DER HEIMKEHRER', bild: 'karte_k3', text: 'EINER ZIEHT IN DIE WELT – UND KOMMT ZURÜCK.', zeit: 'BIS 450 N. CHR.' },
-                 { n: 4, titel: 'DIE SACHSEN', bild: 'karte_k4', text: 'NEUE KOMMEN. DAS DORF BEKOMMT EINEN NAMEN.', zeit: 'UM 800 N. CHR.' }];
+                 { n: 3, titel: 'DAS EISEN', bild: 'karte_k3', text: 'DIE BURG IST WEG. MIT DEM FLUSS KOMMT ETWAS NEUES.', zeit: 'UM 800 V. CHR.' },
+                 { n: 4, titel: 'DER HEIMKEHRER', bild: 'karte_k4', text: 'AUF DEN ALTEN WÄLLEN – UND EINER KOMMT AUS ROM ZURÜCK.', zeit: 'BIS 450 N. CHR.' }];
   function titelMalen() {
     var t = zeit - seit;
     x.fillStyle = '#05070d'; x.fillRect(0, 0, W, H);
@@ -1596,7 +1731,7 @@
     if (bildDa('titelszene')) { x.globalAlpha = .25; x.drawImage(BILD.titelszene, 0, 0, W, 184); x.globalAlpha = 1; }
     text('KAPITEL', 160, 16, 12, COL.feuer, 'center');
     KAPITEL.forEach(function (k, i) { kapitelKarte(k, 6 + i * 78, 34, 74, 150, i === wahl, true); });
-    text(wahl === 1 && !kapitelFrei(2) ? 'KAPITEL 2 GIBT ES, WENN DEIN DORF IN KAPITEL 1 GEGRÜNDET IST.' : wahl > 1 ? 'DIESES KAPITEL WIRD GERADE NOCH GEBAUT.' : 'KNOPF ODER NOCHMAL TIPPEN = LOS', 160, 194, 6, COL.hell, 'center');
+    text(wahl === 1 && !kapitelFrei(2) ? 'KAPITEL 2 GIBT ES, WENN DEIN DORF IN KAPITEL 1 GEGRÜNDET IST.' : wahl === 2 && !kapitelFrei(3) ? 'KAPITEL 3 GIBT ES NACH DER NACHT AUF DER BURG.' : wahl > 2 ? 'DIESES KAPITEL WIRD GERADE NOCH GEBAUT.' : 'KNOPF ODER NOCHMAL TIPPEN = LOS', 160, 194, 6, COL.hell, 'center');
     text('◀ ▶ WÄHLEN · HIER UNTEN TIPPEN = ZURÜCK', 160, 222, 6, COL.grau, 'center');
   }
   function creditsMalen() {
@@ -1674,9 +1809,9 @@
     if (t > 2500 && Math.floor(zeit / 500) % 2) text('KNOPF = LOS', 160, 222, 8, COL.feuer, 'center');
   }
   function endeMalen() {
-    var gut = s.ende === 'dorf' || s.ende === 'burg';
+    var gut = s.ende === 'dorf' || s.ende === 'burg' || s.ende === 'feuer';
     x.fillStyle = gut ? '#132018' : '#1a0e10'; x.fillRect(0, 0, W, H);
-    text(s.ende === 'burg' ? 'DIE BURG STEHT – UND DER GROLL IST GROSS' : s.ende === 'dorf' ? 'DAS DORF IST GEGRÜNDET – NOCH OHNE NAMEN' : 'DIE MULDE ' + bach('an') + ' IST WIEDER LEER', 160, 18, 9, gut ? COL.gruen : COL.rot, 'center');
+    text(s.ende === 'feuer' ? 'FORTSETZUNG FOLGT …' : s.ende === 'burg' ? 'DIE BURG STEHT – UND DER GROLL IST GROSS' : s.ende === 'dorf' ? 'DAS DORF IST GEGRÜNDET – NOCH OHNE NAMEN' : 'DIE MULDE ' + bach('an') + ' IST WIEDER LEER', 160, 18, 9, gut ? COL.gruen : COL.rot, 'center');
     text('IM ' + s.jahr + '. JAHR · ' + lebende().length + ' LEUTE · ' + s.ehen + ' HOCHZEITEN MIT DER SIPPE', 160, 32, 7, COL.hell, 'center');
     text('DIE CHRONIK', 160, 46, 8, COL.feuer, 'center');
     var zeilen = []; s.chronik.forEach(function (c2) { umbruch(c2, 56).forEach(function (z) { zeilen.push(z); }); });
@@ -1693,6 +1828,7 @@
     if (modus === 'name') return nameMalen();
     if (modus === 'vorspann') return vorspannSeitenMalen();
     if (modus === 'zoomfahrt') return zoomfahrtMalen();
+    if (modus === 'vorspann3') return vorspann3Malen();
     if (modus === 'vorspann2') return vorspannMalen(VORSPANN_K2, 'KAPITEL 2: DIE BURG AM MAIN');
     if (modus === 'freundesfest') return freundesfestMalen();
     if (modus === 'ende') return endeMalen();
@@ -1705,7 +1841,8 @@
     if (modus === 'wachstunde') wachstundeMalen();
   }
   function tick(jetzt) { zeit = jetzt; schritt(lesen()); zeichnen(); requestAnimationFrame(tick); }
-  window.__dorf = function () { return { dorfId: modus === 'dorfwahl' ? dorfReihe()[wahl] : DORF_ID, kapitel2Starten: kapitel2Starten, s: s, modus: modus, wahl: wahl, karte: karte, sicht: sicht, felder: felder, jahreszeitBeenden: jahreszeitBeenden, neuesSpiel: neuesSpiel }; };   // nur zum Testen
+  window.__dorf = function () { return { kapitel3Starten: kapitel3Starten, dorfId: modus === 'dorfwahl' ? dorfReihe()[wahl] : DORF_ID, kapitel2Starten: kapitel2Starten, s: s, modus: modus, wahl: wahl, karte: karte, sicht: sicht, felder: felder, jahreszeitBeenden: jahreszeitBeenden, neuesSpiel: neuesSpiel }; };   // nur zum Testen
+  try { if (typeof location !== 'undefined' && /kapitel=3/.test(location.search)) { var m4 = merke(); DORF_ID = m4.dorf || 'sachsenhausen'; SPIELER = m4.spieler || { name: '', w: false }; neuesSpiel(); kapitel3Starten(); } } catch (er) {}
   try { if (typeof location !== 'undefined' && /kapitel=2/.test(location.search)) { neuesSpiel(); kapitel2Starten(); } } catch (er) {}   // Abkürzung zum Ausprobieren: index.html?kapitel=2
   requestAnimationFrame(tick);
 }());
