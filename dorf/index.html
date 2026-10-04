@@ -113,6 +113,7 @@
           plan: { feld: 2, sammeln: 1, holz: 0, roden: 0, bauen: 0, wache: 0, erkunden: 0, sippe: 0 },
           bericht: [], chronik: ['JAHR 1: ARN UND ULA KOMMEN MIT IHRER FAMILIE AN DEN BACH' + (SPIELER.name ? ' – UND MIT IHNEN ' + SPIELER.name + '.' : '.')], frage: null, ende: null, namenM: VORNAMEN_M.slice(4), namenW: VORNAMEN_W.slice(2) };
     s.arbeiterNamen = arbeiter().map(function (p) { return p.name; });
+    s.woerter = []; wortNeu('derBach'); wortNeu('mulde'); wortNeu('sippe');
     setze('planen'); speichern();
   }
   var SPEICHER = 'dasdorf-echte-karte';                                        // neuer Name: alte Spielstände (ausgedachte Karte) passen nicht mehr
@@ -155,17 +156,18 @@
     nachbarSchnitt(); s.erfunden.forEach(werkstattBauen);
     karte.forEach(function (z, y) { z.forEach(function (c, xx) { if (c === 'X' || c === 'T' || c === 'U') for (var a = -2; a <= 2; a++) for (var b2 = -2; b2 <= 2; b2++) if (sicht[y + a] && sicht[y + a][xx + b2] !== undefined) sicht[y + a][xx + b2] = true; }); });   // den alten Berg kennt jeder
     AUFGABEN = AUFGABEN_K3; s.plan = vorschlag(); s.arbeiterNamen = arbeiter().map(function (p) { return p.name; }); figurenSchluessel = '';
+    s.woerter = (merke().woerter || []).filter(function (w) { return !w.bis || w.bis > 2; }); if (!s.woerter.length) { wortNeu(flussDorf() ? 'moa' : 'dieBach'); wortNeu('moa'); wortNeu('salz'); wortNeu('zinn'); }
     kopfZeile(); vorspannSeite = 0; setze('vorspann3');
   }
   function kapitel3Jahreszeit(b, p, jz) {
-    if (p.erkunden && !s.bergBesucht) { s.bergBesucht = true; b.push('🧭 DIE KUNDSCHAFTER STEIGEN AUF DEN ALTEN BERG – OBWOHL DER ALTE ES NICHT GERN SIEHT.'); }
+    if (p.erkunden && !s.bergBesucht) { s.bergBesucht = true; wortNeu('brandberg', b, 'SO NENNEN IHN JETZT ALLE. WARUM, WISSEN DIE KINDER SCHON NICHT MEHR.'); b.push('🧭 DIE KUNDSCHAFTER STEIGEN AUF DEN ALTEN BERG – OBWOHL DER ALTE ES NICHT GERN SIEHT.'); }
     // Die Eisen-Kette: Erz finden → Holzkohle → Rennofen → Eisen
     if (p.schmieden) {
-      if (!s.erzGefunden) { s.erzSuche = (s.erzSuche || 0) + p.schmieden; if (s.erzSuche >= 2) { s.erzGefunden = true; b.push('🟤 IN DER NASSEN WIESE AN ' + bach('dat') + ' FINDEN SIE ROSTROTE KLUMPEN: ERZ!'); chronik('IN DER WIESE WIRD ERZ GEFUNDEN.'); } else b.push('DIE SCHMIEDE SUCHEN NACH DEM ROTEN STEIN, VON DEM DIE HÄNDLER ERZÄHLEN.'); }
+      if (!s.erzGefunden) { s.erzSuche = (s.erzSuche || 0) + p.schmieden; if (s.erzSuche >= 2) { s.erzGefunden = true; wortNeu('isarno', b, 'SO NENNEN DIE HÄNDLER DAS DUNKLE METALL.'); b.push('🟤 IN DER NASSEN WIESE AN ' + bach('dat') + ' FINDEN SIE ROSTROTE KLUMPEN: ERZ!'); chronik('IN DER WIESE WIRD ERZ GEFUNDEN.'); } else b.push('DIE SCHMIEDE SUCHEN NACH DEM ROTEN STEIN, VON DEM DIE HÄNDLER ERZÄHLEN.'); }
       else if (!hat('rennofen')) { s.ofenArbeit += p.schmieden; b.push('AM OFEN WIRD GEBAUT: LEHM, STEINE, EIN LOCH FÜR DEN BLASEBALG (' + Math.min(4, s.ofenArbeit) + '/4).'); }
       else {
         var geht = Math.min(p.schmieden, Math.floor(s.holz / 3));
-        if (geht > 0) { s.holz -= geht * 3; s.eisen += geht; s.eisenGesamt += geht; b.push('🔥 DER RENNOFEN GLÜHT: ' + geht * 3 + ' HOLZ WERDEN ZU KOHLE – UND ' + geht + ' EISEN.'); }
+        if (geht > 0) { s.holz -= geht * 3; s.eisen += geht; s.eisenGesamt += geht; wortNeu('eisen', b, 'AUS DEM FREMDEN WORT MACHEN EURE LEUTE IHR EIGENES.'); b.push('🔥 DER RENNOFEN GLÜHT: ' + geht * 3 + ' HOLZ WERDEN ZU KOHLE – UND ' + geht + ' EISEN.'); }
         else b.push('ZU WENIG HOLZ FÜR DIE HOLZKOHLE. DER OFEN BLEIBT KALT.');
       }
     }
@@ -205,6 +207,7 @@
           salz: 6, bronze: 0, groll: 0, burgBau: 0, stadt: 0, salzWeg: false, handelZaehler: 0 };
     s.erfunden.forEach(werkstattBauen);
     AUFGABEN = AUFGABEN_K2; s.arbeiterNamen = arbeiter().map(function (p) { return p.name; }); figurenSchluessel = '';
+    s.woerter = (merke().woerter || []).slice(); if (!s.woerter.length) { wortNeu(flussDorf() ? 'moa' : 'dieBach'); wortNeu('sippe'); wortNeu('moa'); }
     kopfZeile(); setze('vorspann2');
   }
   function kopfZeile() {                                                         // die Überschrift über dem Spiel passt sich dem Kapitel an
@@ -218,6 +221,31 @@
   function verplant() { var n = 0; for (var k in s.plan) n += s.plan[k]; return n; }
   function frei() { return arbeiter().length - verplant(); }
   function chronik(t) { s.chronik.push('JAHR ' + s.jahr + ': ' + t); }
+  // ================= DAS WORTSYSTEM =================
+  // grad beantwortet: Haben Menschen an diesem Ort, zu dieser Zeit, so gesprochen? (BELEGT / UMSTRITTEN / ERFUNDEN)
+  // Wortliste: docs/IDEE-WORTSYSTEM.md (erarbeitet mit Andreas). Ein Lehnwort kommt mit seinem Gegenstand.
+  var WORTLISTE = {
+    derBach: { form: 'DER BACH', bedeutung: 'FLIESSENDES WASSER', grad: 'ERFUNDEN', von: 'EURE LEUTE', seitKapitel: 1 },
+    dieBach: { form: 'DIE BACH', bedeutung: 'FLIESSENDES WASSER', grad: 'ERFUNDEN', von: 'DIE DRÜBEN', seitKapitel: 1 },
+    moa:     { form: 'MOA', bedeutung: 'DER GROSSE FLUSS', grad: 'ERFUNDEN', von: 'EURE LEUTE', seitKapitel: 1 },
+    mulde:   { form: 'MULDE', bedeutung: 'DIE SONNIGE SENKE', grad: 'ERFUNDEN', von: 'EURE LEUTE', seitKapitel: 1 },
+    sippe:   { form: 'SIPPE', bedeutung: 'DIE, MIT DENEN MAN ISST', grad: 'ERFUNDEN', von: 'BEIDE', seitKapitel: 1 },
+    salz:    { form: 'SALZ', bedeutung: 'DAS WEISSE ZEUG VON WEIT HER', grad: 'ERFUNDEN', von: 'HÄNDLER', seitKapitel: 2, quelle: 'DIE SACHE IST BELEGT, DIE FORM AM MAIN NICHT' },
+    zinn:    { form: 'ZINN', bedeutung: 'DAS METALL IM ERZ', grad: 'ERFUNDEN', von: 'HÄNDLER', seitKapitel: 2 },
+    herrinberg: { form: 'BERG DER HERRIN', bedeutung: 'IHR NAME FÜR DEN BERG', grad: 'ERFUNDEN', von: 'DIE HERRIN', seitKapitel: 2, bis: 2 },
+    isarno:  { form: '*ĪSARNO-', bedeutung: 'DAS DUNKLE METALL', grad: 'UMSTRITTEN', von: 'HÄNDLER', seitKapitel: 3, quelle: 'KELTISCH ERSCHLOSSEN (PFEIFER, DWDS)' },
+    eisen:   { form: 'EISEN', bedeutung: 'DAS DUNKLE METALL', grad: 'ERFUNDEN', von: 'EURE LEUTE', seitKapitel: 3 },
+    brandberg: { form: 'DER SCHWARZE BERG', bedeutung: 'DER VERBRANNTE BERG', grad: 'ERFUNDEN', von: 'EURE LEUTE', seitKapitel: 3 }
+  };
+  function wortNeu(id, b, satz) {                                                // ein Wort kommt ins Dorf – einmal, mit Meldung
+    s.woerter = s.woerter || [];
+    if (s.woerter.some(function (w) { return w.id === id; })) return;
+    var w = WORTLISTE[id]; if (!w) return;
+    var neu = { id: id }; for (var k in w) neu[k] = w[k]; neu.kapitel = s.kapitel || 1; s.woerter.push(neu);
+    if (b) b.push('🗣️ NEUES WORT: „' + w.form + '“' + (satz ? ' – ' + satz : ' – ' + w.bedeutung + '.'));
+  }
+  function wortWeg(id, b, satz) { s.woerter = (s.woerter || []).filter(function (w) { return w.id !== id; }); if (b && satz) b.push('🗣️ ' + satz); }
+  function woerterMitnehmen() { return (s.woerter || []).filter(function (w) { return !w.bis || w.bis > (s.kapitel || 1); }); }
   function vergeben(n) { return s.leute.some(function (p) { return p.name === n; }); }
   function freierName(liste, ersatz) { for (var i = 0; i < liste.length; i++) if (!vergeben(liste[i])) return liste[i]; return ersatz + ' ' + (s.leute.length + 1); }
   function neuerName(w) { var l = w ? s.namenW : s.namenM; while (l.length && vergeben(l[0])) l.shift(); return l.length ? l.shift() : freierName(w ? VORNAMEN_W : VORNAMEN_M, w ? 'KLEINE' : 'KLEINER'); }
@@ -299,7 +327,7 @@
       }
       b.push('ERKUNDET: ' + neuGesehen + ' NEUE FLECKEN.' + (fund === 'Q' ? ' EINE QUELLE!' : fund === 'M' ? ' DER GROSSE FLUSS – DIE BACH FLIESST HINEIN!' : fund === 'R' ? ' FELSEN MIT FEUERSTEIN!' : ''));
       if (fund === 'Q') s.nahrung += 3; if (fund === 'R') s.holz += 0;
-      if (fund === 'M' && !s.mainGesehen) { s.mainGesehen = true; chronik('DIE KUNDSCHAFTER SEHEN ZUM ERSTEN MAL DEN GROSSEN FLUSS.'); }
+      if (fund === 'M' && !s.mainGesehen) { s.mainGesehen = true; wortNeu('moa', b, 'SO NENNEN EURE LEUTE DEN GROSSEN FLUSS.'); chronik('DIE KUNDSCHAFTER SEHEN ZUM ERSTEN MAL DEN GROSSEN FLUSS.'); }
     }
     // Sippe besuchen
     if (p.sippe) { s.besucht = true; var v = p.sippe * (s.kapitel >= 2 ? (hat('apfelwein') ? 7 : 5) : (hat('apfelwein') ? 10 : 8)) + (hat('furt') ? p.sippe * 2 : 0); if (s.kapitel === 3) { var nb = schwaechsterNachbar(); if (nb) { s.nachbarn[nb] = Math.min(100, s.nachbarn[nb] + v); b.push('BESUCH IN ' + nb + ': FREUNDSCHAFT +' + v + '.'); } nachbarSchnitt(); } else { s.vertrauen = Math.min(ZIEL_VERTRAUEN, s.vertrauen + v); b.push('BESUCH BEI DER SIPPE: VERTRAUEN +' + v + '.'); } if (s.vertrauen >= 30) b.push('DRÜBEN RUFT EINE: „' + zufall(MUNDART) + '“'); }
@@ -345,6 +373,7 @@
           if (s.handelZaehler % 4 === 0) { s.bernstein = (s.bernstein || 0) + 1; s.vertrauen = Math.min(ZIEL_VERTRAUEN, s.vertrauen + 3); b.push('🟠 BERNSTEIN! IHR SCHENKT EIN STÜCK DEN NACHBARN: VERTRAUEN +3.'); }
         }
         s.salz += salzRein; s.bronze += bronzeRein;
+        if (salzRein) wortNeu('salz', b, 'DIE HÄNDLER NENNEN DAS WEISSE ZEUG SO.'); if (bronzeRein) wortNeu('zinn', b, 'OHNE ZINN KEINE BRONZE – UND KEINER WEISS, WO ES HERKOMMT.');
         b.push('HANDEL AN DER MÜNDUNG: +' + salzRein + ' SALZ' + (bronzeRein ? ', +' + bronzeRein + ' BRONZE' : '') + (salzRein ? '.' : ' – IHR HATTET NICHTS ÜBRIG ZUM TAUSCHEN.'));
         var stadtVorher = s.stadt; s.stadt = Math.min(3, Math.floor(s.handelZaehler / 4));
         if (s.stadt > stadtVorher) { b.push('🏘️ AN DER MÜNDUNG STEHT JETZT ' + ['', 'EINE HÜTTE NEBEN DEM FISCHER', 'EIN KLEINER WEILER', 'EINE RICHTIGE SIEDLUNG'][s.stadt] + '.'); chronik('AN DER MÜNDUNG WÄCHST EINE SIEDLUNG.'); }
@@ -374,7 +403,7 @@
   }
   function herrinFordert(b) {
     var n = Math.min(4, 1 + Math.floor((s.jahr - 1) / 3)), stufeVorher = burgStufe();
-    if (!s.herrinBekannt) { s.herrinBekannt = true; s.sequenzen = (s.sequenzen || []).concat([{ art: 'herrin' }]); b.push('⚔️ BEWAFFNETE VOM BERG KOMMEN INS DORF. SIE SAGEN, IHRE HERRIN SEI JETZT AUCH EURE HERRIN.'); chronik('LEUTE VOM BERG SAGEN, IHRE HERRIN SEI UNSERE HERRIN.'); }
+    if (!s.herrinBekannt) { wortNeu('herrinberg', b, 'SO SOLL DER BERG JETZT HEISSEN, SAGT SIE.'); s.herrinBekannt = true; s.sequenzen = (s.sequenzen || []).concat([{ art: 'herrin' }]); b.push('⚔️ BEWAFFNETE VOM BERG KOMMEN INS DORF. SIE SAGEN, IHRE HERRIN SEI JETZT AUCH EURE HERRIN.'); chronik('LEUTE VOM BERG SAGEN, IHRE HERRIN SEI UNSERE HERRIN.'); }
     function fertig(t) { var neu = burgStufe(); if (neu > stufeVorher) t += ' ' + ['', '', 'UM DIE BURG STEHT JETZT EINE PALISADE.', 'DIE BURG BEKOMMT ERDWALL UND TROCKENMAUER.', 'DIE WETTENBURG IST FERTIG.'][neu]; return t; }
     s.frage = { herrin: true, text: 'DIE HERRIN AUF DEM BERG VERLANGT ' + n + ' MÄNNER FÜR DEN BAU IHRER BURG.', optionen: [
       { name: 'GEHORCHEN', fn: function () { s.burgBau += n; s.nahrung = Math.max(0, s.nahrung - n * 4); s.groll = Math.min(100, s.groll + 5 + n * 2); return fertig(n + ' MÄNNER SCHLEPPEN STÄMME UND STEINE DEN BERG HINAUF. DAHEIM FEHLEN SIE: -' + n * 4 + ' NAHRUNG.'); } },
@@ -476,7 +505,7 @@
         var q = zufall(ledig), w = !q.w, neu = person(freierName(w ? SIPPE_W : SIPPE_M, w ? 'TOCHTER DRÜBEN' : 'SOHN DRÜBEN'), q.alter - 2 + Math.floor(Math.random() * 5), w, 'sippe');
         q.partner = neu; neu.partner = q; s.leute.push(neu); s.ehen++; s.szenen.push({ art: 'hochzeit' }); s.vertrauen = Math.min(ZIEL_VERTRAUEN, s.vertrauen + 10);
         b.push('💍 HOCHZEIT! ' + q.name + ' HEIRATET ' + neu.name + ' VON DER SIPPE DRÜBEN.'); chronik(q.name + ' HEIRATET ' + neu.name + ' VON DER SIPPE. ' + (s.ehen > 1 ? 'WIEDER GEHT' : 'ZUM ERSTEN MAL GEHT') + ' EINE BRÜCKE ÜBER DIE BACH.');
-        if (s.ehen === 1 && !flussDorf()) { b.push('SEIT DIESEM TAG SAGEN AUCH EURE LEUTE „DIE BACH“ – WIE DIE DRÜBEN.'); chronik('SEIT DIESEM TAG SAGEN AUCH WIR „DIE BACH“.'); }
+        if (s.ehen === 1 && !flussDorf()) { wortNeu('dieBach'); wortWeg('derBach'); b.push('SEIT DIESEM TAG SAGEN AUCH EURE LEUTE „DIE BACH“ – WIE DIE DRÜBEN.'); chronik('SEIT DIESEM TAG SAGEN AUCH WIR „DIE BACH“.'); }
       } };
     }
     dramaEreignisse(e);
@@ -508,6 +537,7 @@
     neu[0].partner = neu[1]; neu[1].partner = neu[0];
     s.haeuser++; s.nahrung += 10; s.holz += 6; s.plan.sippe = 0;
     if (!s.ehen && !flussDorf()) { s.bericht.push('SEIT DIESEM TAG SAGEN AUCH EURE LEUTE „DIE BACH“ – WIE DIE VON DRÜBEN.'); chronik('SEIT DIESEM TAG SAGEN AUCH WIR „DIE BACH“.'); }
+    if (!flussDorf()) { wortNeu('dieBach'); wortWeg('derBach'); }
     s.bericht.push('🎉 100 % VERTRAUEN! DIE SIPPE VON DRÜBEN FEIERT MIT EUCH – UND BLEIBT. ' + neu.length + ' NEUE LEUTE, IHRE VORRÄTE UND IHRE HÜTTEN GEHÖREN JETZT ZUM DORF.');
     chronik('DAS GROSSE FREUNDSCHAFTSFEST. DIE BEIDEN SIPPEN WERDEN EINS.');
     anpassen(s.bericht);
@@ -681,7 +711,8 @@
     if (modus === 'wachstunde') { if ((e.a || e.klick) && zeit - seit > 900) nachDerWache(); return; }
     if (modus === 'freundesfest') { if (((e.a || e.klick) && zeit - seit > 2500) || zeit - seit > 16000) { if (s.jz === 0) s.schnell = false; nachDerWache(); } return; }
     if (modus === 'erfindung') { if ((e.a || e.klick) && zeit - seit > 900) { s.erfindungNeu = null; setze('planen'); speichern(); if (s.schnell && s.jz !== 0) jahreszeitBeenden(); } return; }
-    if (modus === 'ende') { if ((e.a || e.klick) && zeit - seit > 1500) { if (s.ende === 'dorf') { kapitel2Starten(); setze('zoomfahrt'); } else if (s.ende === 'burg' && typeof location !== 'undefined' && location.href) { merke({ k3: true, dorf: DORF_ID, spieler: SPIELER, sprecher: s.sprecher }); location.href = 'kapitel2.html?finale=1&sprecher=' + encodeURIComponent(s.sprecher || 'ARN'); } else setze('titel'); } return; }
+    if (modus === 'ende' && !s.endeSeite && (s.woerter || []).length && (s.ende === 'dorf' || s.ende === 'burg' || s.ende === 'feuer')) { if ((e.a || e.klick) && zeit - seit > 1500) { s.endeSeite = 1; seit = zeit; } return; }
+    if (modus === 'ende') { if ((e.a || e.klick) && zeit - seit > 1200) { if (s.ende === 'dorf') { kapitel2Starten(); setze('zoomfahrt'); } else if (s.ende === 'burg' && typeof location !== 'undefined' && location.href) { merke({ k3: true, dorf: DORF_ID, spieler: SPIELER, sprecher: s.sprecher, woerter: woerterMitnehmen() }); location.href = 'kapitel2.html?finale=1&sprecher=' + encodeURIComponent(s.sprecher || 'ARN'); } else setze('titel'); } return; }
   }
   // ---------- Erfindungen: kleine Einblendungen, wenn das Dorf etwas Neues kann (fürs Spiel erfunden – wer es wirklich war, weiß keiner) ----------
   var ERFINDUNGEN = [
@@ -865,7 +896,7 @@
     if (von) { s.plan[von]--; s.plan[id]++; }
   }
   function weiter() {
-    if (s.ende) { if (s.ende === 'dorf' && !s.kapitel) merke({ k2: true, dorf: DORF_ID, spieler: SPIELER }); vergessen(); setze('ende'); return; }
+    if (s.ende) { if (s.ende === 'dorf' && !s.kapitel) merke({ k2: true, dorf: DORF_ID, spieler: SPIELER, woerter: woerterMitnehmen() }); vergessen(); setze('ende'); return; }
     s.jz = (s.jz + 1) % 4;
     if (s.festJetzt) { s.festJetzt = false; setze('freundesfest'); return; }
     if (s.jz === 0) s.schnell = false;
@@ -885,6 +916,7 @@
     function () { return 'ZWEI SCHLEICHEN SICH NACHTS HEIMLICH ZUR BACH – ZUM SCHMUSEN. AM MORGEN WEISS ES DAS GANZE DORF.'; },
     function () { return 'DIE ÄLTESTE ZÄHLT DIE STERNE UND SAGT, DER NÄCHSTE WINTER WIRD LANG. SIE HAT MEISTENS RECHT.'; },
     function () { return 'MAN FLÜSTERT, DIE VON DRÜBEN HÄTTEN SALZ, DAS AUS DER ERDE KOMMT. WARUM HABEN WIR KEINS?'; },
+    function () { return 'MAMA SAGEN DIE KLEINEN. NICHT WEIL ES EIN ALTES WORT IST – WEIL DER MUND BEIM SAUGEN GESCHLOSSEN IST. SO IST ES ÜBERALL AUF DER WELT.'; },
     function () { return 'IM LANGHAUS SCHNARCHT EINER SO LAUT, DASS DIE WÖLFE DRAUSSEN ANTWORTEN.'; }
   ];
   // Derweil in der Welt: was gleichzeitig woanders geschah (belegte Jahreszahlen, gerundet)
@@ -1818,7 +1850,21 @@
     VORSPANN_JETZT.forEach(function (z, i) { var n = Math.max(0, Math.min(z.length, zeichen - schon)); schon += z.length + 8; if (n) text(z.slice(0, n), 160, 50 + i * 16, 8, i === VORSPANN_JETZT.length - 1 ? COL.feuer : COL.hell, 'center'); });
     if (t > 2500 && Math.floor(zeit / 500) % 2) text('KNOPF = LOS', 160, 222, 8, COL.feuer, 'center');
   }
+  function wortkastenMalen() {
+    x.fillStyle = '#0b0e16'; x.fillRect(0, 0, W, H);
+    text('WAS IHR SAGT', 160, 14, 12, COL.feuer, 'center');
+    text('DAS WORT', 14, 30, 6, COL.grau, 'left'); text('WOHER', 150, 30, 6, COL.grau, 'left'); text('WIE SICHER', 230, 30, 6, COL.grau, 'left');
+    var farbe = { BELEGT: COL.gruen, UMSTRITTEN: COL.feuer, ERFUNDEN: COL.grau };
+    (s.woerter || []).forEach(function (w, i) {
+      var y = 40 + i * (s.woerter.length > 10 ? 13.5 : 15.5); text('„' + w.form + '“', 14, y, 7, COL.hell, 'left'); text(w.bedeutung, 14, y + 6.5, 5, COL.grau, 'left');
+      text(w.von, 150, y, 6, COL.hell, 'left'); text(w.grad, 230, y, 6, farbe[w.grad] || COL.hell, 'left');
+    });
+    var unten = s.kapitel ? (s.kapitel === 3 ? ['DER FLUSS BLIEB.', 'SEINE NAMEN NICHT.'] : ['MANCHE WÖRTER KAMEN MIT DEN DINGEN.', 'MANCHE GINGEN MIT DEN MENSCHEN.']) : ['DIESE WÖRTER HABEN WIR ERFUNDEN.', 'WIE SIE WIRKLICH SPRACHEN, WEISS NIEMAND.'];
+    text(unten[0], 160, 206, 8, COL.feuer, 'center'); text(unten[1], 160, 217, 8, COL.feuer, 'center');
+    if (zeit - seit > 1200 && Math.floor(zeit / 500) % 2) text('KNOPF = WEITER', 160, 232, 6, COL.grau, 'center');
+  }
   function endeMalen() {
+    if (s.endeSeite === 1) return wortkastenMalen();
     var gut = s.ende === 'dorf' || s.ende === 'burg' || s.ende === 'feuer';
     x.fillStyle = gut ? '#132018' : '#1a0e10'; x.fillRect(0, 0, W, H);
     text(s.ende === 'feuer' ? 'FORTSETZUNG FOLGT …' : s.ende === 'burg' ? 'DIE BURG STEHT – UND DER GROLL IST GROSS' : s.ende === 'dorf' ? 'DAS DORF IST GEGRÜNDET – NOCH OHNE NAMEN' : 'DIE MULDE ' + bach('an') + ' IST WIEDER LEER', 160, 18, 9, gut ? COL.gruen : COL.rot, 'center');
