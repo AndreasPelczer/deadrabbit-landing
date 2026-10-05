@@ -1246,6 +1246,7 @@
     if (modus === 'wachstunde') { if ((e.a || e.klick) && zeit - seit > 900) nachDerWache(); return; }
     if (modus === 'freundesfest') { if (((e.a || e.klick) && zeit - seit > 2500) || zeit - seit > 16000) { if (s.jz === 0) s.schnell = false; nachDerWache(); } return; }
     if (modus === 'erfindung') { if ((e.a || e.klick) && zeit - seit > 900) { s.erfindungNeu = null; setze('planen'); speichern(); if (s.schnell && s.jz !== 0) jahreszeitBeenden(); } return; }
+    if (modus === 'ende' && s.endeSeite === 1 && !s.satzGezeigt) { if ((e.a || e.klick) && zeit - seit > 1200) { s.satzGezeigt = true; seit = zeit; } return; }   // Wortkasten → zwei Sätze → weiter
     if (modus === 'ende' && !s.endeSeite && (s.woerter || []).length && (s.ende === 'dorf' || s.ende === 'burg' || s.ende === 'feuer' || s.ende === 'waelle' || s.ende === 'urkunde' || s.ende === 'pfarrei')) { if ((e.a || e.klick) && zeit - seit > 1500) { s.endeSeite = 1; seit = zeit; } return; }
     if (modus === 'ende' && s.ende === 'waelle' && s.endeSeite >= 1) { if ((e.a || e.klick) && zeit - seit > 1500) { if (s.endeSeite === 1) { s.endeSeite = 2; seit = zeit; } else { merke({ k5: true, dorf: DORF_ID, spieler: SPIELER, woerter: woerterMitnehmen() }); zwischenStarten('k4'); } } return; }
     if (modus === 'ende' && s.ende === 'urkunde' && s.endeSeite >= 1) { if ((e.a || e.klick) && zeit - seit > 1500) { if (s.endeSeite < 2) { s.endeSeite++; seit = zeit; } else { merke({ k6: true, dorf: DORF_ID, spieler: SPIELER, woerter: woerterMitnehmen() }); kapitel6Starten(); } } return; }
@@ -2635,6 +2636,33 @@
     VORSPANN_JETZT.forEach(function (z, i) { var n = Math.max(0, Math.min(z.length, zeichen - schon)); schon += z.length + 8; if (n) text(z.slice(0, n), 160, 50 + i * 16, 8, i === VORSPANN_JETZT.length - 1 ? COL.feuer : COL.hell, 'center'); });
     if (t > 2500 && Math.floor(zeit / 500) % 2) text('KNOPF = LOS', 160, 222, 8, COL.feuer, 'center');
   }
+  // Die zwei Sätze (docs/woerter-pfeifer.md): jedes Wort bei Pfeifer nachgesehen, der Satz von uns zusammengesetzt. Leere Zeilen bleiben leer.
+  var SAETZE = [
+    { heute: 'WIR GEHEN ZUM WASSER', leer: 'SO KLANG ES – DAS WISSEN WIR NICHT.', zeilen: [null, null, null,
+      { t: '*WĪZ · ? · *TA · *WATAR', g: 'UMSTRITTEN', n: 'GERMANISCH ERSCHLOSSEN' }, { t: 'WIR · GANGAN · ZI · WAZZAR', g: 'BELEGT', n: 'ALTHOCHDEUTSCH' }, { t: 'WIR · GANGEN · ZE · WAZZER', g: 'BELEGT', n: 'MITTELHOCHDEUTSCH' }] },
+    { heute: 'ICH SCHREIBE DEINEN NAMEN', leer: 'DIESEN SATZ GAB ES HIER NOCH NICHT.', zeilen: [null, null, null, null,
+      { t: 'IH · SCRĪBAN · THĪN · NAMO', g: 'BELEGT', n: 'ALTHOCHDEUTSCH' }, { t: 'ICH · SCHRĪBEN · DĪN · NAME', g: 'BELEGT', n: 'MITTELHOCHDEUTSCH' }] }];
+  var SATZ_ZEIT = ['UM 5000 V. CHR.', 'UM 1000 V. CHR.', 'UM 800 V. CHR.', 'UM 400', 'UM 800', 'UM 1200'];
+  function satztafelMalen() {
+    x.fillStyle = '#0b0e16'; x.fillRect(0, 0, W, H);
+    text('ZWEI SÄTZE DURCH DIE ZEIT', 160, 12, 10, COL.feuer, 'center');
+    var bis = Math.min(6, s.kapitel || 1), farbe = { BELEGT: COL.gruen, UMSTRITTEN: COL.feuer }, y = 26;
+    SAETZE.forEach(function (sa) {
+      text('„' + sa.heute + '“', 10, y, 7, COL.hell, 'left'); y += 9;
+      for (var k = 0; k < bis; k++) {
+        var z = sa.zeilen[k]; text('KAP. ' + (k + 1) + ' · ' + SATZ_ZEIT[k], 14, y, 5, COL.grau, 'left');
+        if (z) { text(z.t, 100, y, 6.5, COL.hell, 'left'); text(z.n, 312, y, 4.5, farbe[z.g] || COL.hell, 'right'); }
+        else text(sa.leer, 100, y, 5.5, '#7a7f8c', 'left');
+        y += 8.5;
+      }
+      text('HEUTE', 14, y, 5, COL.grau, 'left'); text(sa.heute, 100, y, 6.5, COL.feuer, 'left'); y += 13;
+    });
+    text('JEDES WORT BEI PFEIFER (DWDS) NACHGESEHEN – DEN SATZ HABEN WIR ZUSAMMENGESETZT.', 160, y, 5, COL.gruen, 'center');
+    text('„WISSEN WIR NICHT“ IST ETWAS ANDERES ALS „GAB ES NICHT“.', 160, y + 8, 5.5, '#c9b8f0', 'center');
+    text('HAUS: DAS DING STEHT SEIT KAPITEL 1. DAS WORT (AHD. HŪS) KENNT MAN NUR BIS INS', 160, y + 19, 5, COL.hell, 'center');
+    text('GERMANISCHE – VIELLEICHT VERWANDT MIT HAUT UND HÜTTE: „DAS BEDECKENDE“.', 160, y + 26, 5, COL.hell, 'center');
+    if (zeit - seit > 1200 && Math.floor(zeit / 500) % 2) text('KNOPF = WEITER', 160, 233, 6, COL.grau, 'center');
+  }
   function wortkastenMalen() {
     x.fillStyle = '#0b0e16'; x.fillRect(0, 0, W, H);
     text('WAS IHR SAGT', 160, 14, 12, COL.feuer, 'center');
@@ -2667,7 +2695,7 @@
     if (t > 1500 && Math.floor(zeit / 500) % 2) text(i >= 3 ? 'KNOPF = ZUM TITEL' : i === 0 ? 'KNOPF = WEITER' : s.ende === 'urkunde' && i === 2 ? 'KNOPF = KAPITEL 6' : 'KNOPF = WEITER', 312, 234, 5, COL.feuer, 'right');
   }
   function endeMalen() {
-    if (s.endeSeite === 1) return wortkastenMalen();
+    if (s.endeSeite === 1) return s.satzGezeigt ? satztafelMalen() : wortkastenMalen();
     if (s.endeSeite >= 2) return ausblickMalen(s.ende === 'waelle' ? 0 : s.endeSeite);
     var gut = s.ende === 'dorf' || s.ende === 'burg' || s.ende === 'feuer' || s.ende === 'waelle' || s.ende === 'urkunde' || s.ende === 'pfarrei';
     x.fillStyle = gut ? '#132018' : '#1a0e10'; x.fillRect(0, 0, W, H);
