@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>DAS DORF</title>
+<title>DAS DORF AN DER BACH</title>
 <style>
   body { margin: 0; padding-inline: 16px; box-sizing: border-box; min-height: 100vh; display: grid; place-items: center; background: #10131b; color: #f1eee4; font-family: system-ui, sans-serif; }
   main { width: 100%; max-width: 960px; }
@@ -21,7 +21,7 @@
 <body>
 <main>
   <div id="kopf">
-    <strong>DAS DORF – KAPITEL 1: DIE BACH</strong>
+    <strong>DAS DORF AN DER BACH – KAPITEL 1: DIE BACH</strong>
     <span class="hilfe">Pfeile/Stick: wählen und Leute verteilen · Leertaste/Knopf: weiter · oder antippen</span>
   </div>
   <canvas id="spiel" width="640" height="480"></canvas>
@@ -671,7 +671,7 @@
     kopfZeile(); setze('vorspann2');
   }
   function kopfZeile() {                                                         // die Überschrift über dem Spiel passt sich dem Kapitel an
-    try { var k = document.querySelector && document.querySelector('#kopf strong'); if (k) k.textContent = (s && s.kapitel === 6 ? 'DAS DORF – KAPITEL 6: DIE BURG AUF DEM BERG' : s && s.kapitel === 5 ? 'DAS DORF – KAPITEL 5: URFARE' : s && s.kapitel === 4 ? 'DAS DORF – KAPITEL 4: DIE ALTEN WÄLLE' : s && s.kapitel === 3 ? 'DAS DORF – KAPITEL 3: DAS EISEN' : s && s.kapitel >= 2 ? 'DAS DORF – KAPITEL 2: DIE BURG AM MAIN' : ortText('DAS DORF – KAPITEL 1: DIE BACH')) + (s && s.dorf ? ' · ' + dorf().name : ''); } catch (er) {}
+    try { var k = document.querySelector && document.querySelector('#kopf strong'); if (k) k.textContent = (s && s.kapitel === 6 ? 'DAS DORF AN DER BACH – KAPITEL 6: DIE BURG AUF DEM BERG' : s && s.kapitel === 5 ? 'DAS DORF AN DER BACH – KAPITEL 5: URFARE' : s && s.kapitel === 4 ? 'DAS DORF AN DER BACH – KAPITEL 4: DIE ALTEN WÄLLE' : s && s.kapitel === 3 ? 'DAS DORF AN DER BACH – KAPITEL 3: DAS EISEN' : s && s.kapitel >= 2 ? 'DAS DORF AN DER BACH – KAPITEL 2: DIE BURG AM MAIN' : ortText('DAS DORF AN DER BACH – KAPITEL 1: DIE BACH')) + (s && s.dorf ? ' · ' + dorf().name : ''); } catch (er) {}
   }
   function burgStufe() { return Math.min(4, 1 + Math.floor((s.burgBau || 0) / 4)); }
   function salzBedarf() { return Math.ceil(lebende().length / 4 / (hat('toepfern') ? 2 : 1)); }
@@ -2590,8 +2590,8 @@
     var g = x.createLinearGradient ? x.createLinearGradient(0, 0, 160, 0) : null;            // links dunkler, damit das Menü lesbar ist
     if (g) { g.addColorStop(0, 'rgba(5,7,13,.85)'); g.addColorStop(1, 'rgba(5,7,13,0)'); x.fillStyle = g; x.fillRect(0, 0, 170, 184); }
     x.fillStyle = 'rgba(255,170,60,' + (.04 + Math.sin(zeit / 160) * .02) + ')'; x.fillRect(150, 110, 120, 74);   // das Feuer flackert
-    x.save(); x.font = 'bold 30px monospace'; x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillStyle = '#3a1a00'; x.fillText('DAS DORF', 13, 27); x.fillStyle = '#ffd25a'; x.fillText('DAS DORF', 11, 25); x.restore();
-    text('UM 5000 VOR CHRISTUS', 12, 46, 7, COL.hell, 'left');
+    x.save(); x.font = 'bold 30px monospace'; x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillStyle = '#3a1a00'; x.fillText('DAS DORF', 13, 22); x.fillStyle = '#ffd25a'; x.fillText('DAS DORF', 11, 20); x.font = 'bold 13px monospace'; x.fillStyle = '#3a1a00'; x.fillText('AN DER BACH', 13, 41); x.fillStyle = '#ffd25a'; x.fillText('AN DER BACH', 12, 40); x.restore();
+    text('7000 JAHRE WERDHEIM A MOA', 12, 53, 6.5, COL.hell, 'left');
     var punkte = menuePunkte(), mw = menueWahl == null ? 0 : menueWahl;
     punkte.forEach(function (pk, i) {
       var y = 69 + i * 16, an = i === mw;
@@ -2627,7 +2627,7 @@
   function creditsMalen() {
     x.fillStyle = '#05070d'; x.fillRect(0, 0, W, H);
     if (bildDa('titelszene')) { x.globalAlpha = .2; x.drawImage(BILD.titelszene, 0, 0, W, 184); x.globalAlpha = 1; }
-    var z = [['DAS DORF', COL.feuer, 12], ['', 0, 6], ['IDEE, GESCHICHTE UND MUNDART', COL.feuer, 6], ['ANDREAS – AUS DEM DORF AN DER BACH', COL.hell, 7], ['', 0, 4],
+    var z = [['DAS DORF AN DER BACH', COL.feuer, 12], ['7000 JAHRE WERDHEIM A MOA', COL.hell, 6], ['', 0, 4], ['IDEE, GESCHICHTE UND MUNDART', COL.feuer, 6], ['ANDREAS – AUS DEM DORF AN DER BACH', COL.hell, 7], ['', 0, 4],
       ['BILDER', COL.feuer, 6], ['NACH ANDREAS\' ENTWÜRFEN UND BILDBÖGEN', COL.hell, 7], ['', 0, 4],
       ['ERSTE SPIELER', COL.feuer, 6], ['KINDER AUS DER GEGEND – DANKE FÜRS AUSPROBIEREN!', COL.hell, 7], ['', 0, 4],
       ['KARTEN', COL.feuer, 6], ['KARTENDATEN © OPENSTREETMAP-MITWIRKENDE (ODBL)', COL.hell, 6], ['HÖHEN: COPERNICUS DEM GLO-30, © DLR E.V. 2010–2014 UND', COL.hell, 5], ['© AIRBUS DEFENCE AND SPACE GMBH 2014–2018, BEREITGESTELLT UNTER', COL.hell, 5], ['COPERNICUS VON DER EUROPÄISCHEN UNION UND DER ESA', COL.hell, 5], ['', 0, 4],
