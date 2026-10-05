@@ -2577,12 +2577,12 @@
   }
   var menueWahl = null, vorspannSeite = 0;
   function menuePunkte() { var l = []; if (gespeichert()) l.push('FORTSETZEN'); l.push('NEUES SPIEL', 'KAPITEL', 'STUFE: ' + STUFE_NAME[STUFE], 'CREDITS'); return l; }
-  var KAPITEL = [{ n: 1, titel: 'DIE BACH', bild: 'karte_k1', text: 'EINE FAMILIE SUCHT EINEN PLATZ ZUM BLEIBEN.', zeit: 'UM 5000 V. CHR.' },
-                 { n: 2, titel: 'DIE BURG AM MAIN', bild: 'seqbg', text: 'HANDEL, SALZ – UND EINE HERRIN AUF DEM BERG.', zeit: 'UM 1000 V. CHR.' },
-                 { n: 3, titel: 'DAS EISEN', bild: 'k3bild', text: 'DIE BURG IST WEG. MIT DEM FLUSS KOMMT ETWAS NEUES.', zeit: 'UM 800 V. CHR.' },
-                 { n: 4, titel: 'DIE ALTEN WÄLLE', bild: 'seqbg4', text: 'WER AN EURE TÜR KLOPFT, BRINGT ETWAS MIT.', zeit: 'UM 400 N. CHR.' },
-                 { n: 5, titel: 'URFARE', bild: 'k5_ueberfahrt', text: 'EINER KOMMT MIT FEDER UND FRAGT: WIE HEISST EUER ORT?', zeit: 'UM 800 N. CHR.' },
-                 { n: 6, titel: 'DIE BURG AUF DEM BERG', bild: 'k6_burg2', ersatz: 'ausblick2', text: 'DROBEN WÄCHST EINE BURG.', zeit: 'UM 1100 N. CHR.' }];
+  var KAPITEL = [{ n: 1, epoche: 'JUNGSTEINZEIT', titel: 'DIE BACH', bild: 'karte_k1', text: 'EINE FAMILIE SUCHT EINEN PLATZ ZUM BLEIBEN.', zeit: 'UM 5000 V. CHR.' },
+                 { n: 2, epoche: 'BRONZEZEIT', titel: 'DIE BURG AM MAIN', bild: 'seqbg', text: 'HANDEL, SALZ – UND EINE HERRIN AUF DEM BERG.', zeit: 'UM 1000 V. CHR.' },
+                 { n: 3, epoche: 'EISENZEIT', titel: 'DAS EISEN', bild: 'k3bild', text: 'DIE BURG IST WEG. MIT DEM FLUSS KOMMT ETWAS NEUES.', zeit: 'UM 800 V. CHR.' },
+                 { n: 4, epoche: 'VÖLKERWANDERUNG', titel: 'DIE ALTEN WÄLLE', bild: 'seqbg4', text: 'WER AN EURE TÜR KLOPFT, BRINGT ETWAS MIT.', zeit: 'UM 400 N. CHR.' },
+                 { n: 5, epoche: 'FRÜHMITTELALTER', titel: 'URFARE', bild: 'k5_ueberfahrt', text: 'EINER KOMMT MIT FEDER UND FRAGT: WIE HEISST EUER ORT?', zeit: 'UM 800 N. CHR.' },
+                 { n: 6, epoche: 'HOCHMITTELALTER', titel: 'DIE BURG AUF DEM BERG', bild: 'k6_burg2', ersatz: 'ausblick2', text: 'DROBEN WÄCHST EINE BURG.', zeit: 'UM 1100 N. CHR.' }];
   function titelMalen() {
     var t = zeit - seit;
     x.fillStyle = '#05070d'; x.fillRect(0, 0, W, H);
@@ -2602,13 +2602,13 @@
     KAPITEL.forEach(function (k, i) { kapitelKarte(k, 4 + i * 52.4, 188, 50, 48, i === 0, false); });
   }
   function kapitelKarte(k, l, o, b, h, hell, gross) {
-    var frei = kapitelFrei(k.n) || k.n === 1, aktiv = hell; if (k.ersatz && !bildDa(k.bild)) k = { n: k.n, titel: k.titel, bild: k.ersatz, text: k.text, zeit: k.zeit };
+    var frei = kapitelFrei(k.n) || k.n === 1, aktiv = hell; if (k.ersatz && !bildDa(k.bild)) k = { n: k.n, epoche: k.epoche, titel: k.titel, bild: k.ersatz, text: k.text, zeit: k.zeit };
     x.fillStyle = '#0b0e16'; x.fillRect(l, o, b, h); x.strokeStyle = aktiv ? COL.feuer : '#3a3f4a'; x.lineWidth = 1; x.strokeRect(l + .5, o + .5, b - 1, h - 1);
-    var bh = gross ? h * .55 : h - 14;
+    var bh = gross ? h * .55 : h - 24;
     if (bildDa(k.bild)) { x.globalAlpha = frei ? 1 : .35; x.imageSmoothingEnabled = true; var im0 = BILD[k.bild], zw = b - 4, sw = im0.naturalWidth, sh = im0.naturalHeight, ziel = zw / bh, quelle = sw / sh, cw = quelle > ziel ? sh * ziel : sw, ch = quelle > ziel ? sh : sw / ziel; x.drawImage(im0, (sw - cw) / 2, (sh - ch) / 2, cw, ch, l + 2, o + 11, zw, bh); x.imageSmoothingEnabled = false; x.globalAlpha = 1; }
     if (!frei) { x.fillStyle = '#c8ccd2'; x.fillRect(l + b / 2 - 5, o + 11 + bh / 2 - 2, 10, 8); x.strokeStyle = '#c8ccd2'; x.beginPath(); x.arc(l + b / 2, o + 11 + bh / 2 - 2, 3.5, Math.PI, 0); x.stroke(); }
     if (gross) { text('KAPITEL ' + k.n, l + 3, o + 6, 6, aktiv ? COL.feuer : COL.hell, 'left'); }
-    else { text('KAPITEL ' + k.n, l + 3, o + 5, 4.5, aktiv ? COL.feuer : COL.hell, 'left'); }
+    else { text('KAPITEL ' + k.n, l + 3, o + 5, 4.5, aktiv ? COL.feuer : COL.hell, 'left'); text(k.epoche || '', l + b / 2, o + bh + 16, 4.3, aktiv ? COL.feuer : COL.hell, 'center'); text(frei ? k.zeit : 'SPÄTER', l + b / 2, o + bh + 21.5, 3.8, frei ? COL.gruen : COL.grau, 'center'); }
     if (gross) {
       umbruch(k.titel, 10).forEach(function (z, i) { text(z, l + 4, o + 17 + bh + i * 9, 7, aktiv ? COL.feuer : COL.hell, 'left'); });
       var ty = o + 17 + bh + umbruch(k.titel, 10).length * 9;
