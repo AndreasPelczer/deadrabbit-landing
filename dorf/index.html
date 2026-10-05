@@ -135,6 +135,12 @@
     s.szenen = []; figurenSchluessel = ''; setze('planen'); return true;
   }
   function merke(neu) { try { var m = JSON.parse(localStorage.getItem('dasdorf-merke')) || {}; if (neu) { for (var k in neu) m[k] = neu[k]; localStorage.setItem('dasdorf-merke', JSON.stringify(m)); } return m; } catch (er) { return {}; } }
+  // Schwierigkeit (Andreas, 05.10.: Leia 7, Franz 12, der Vater): bleibt nur auf diesem Gerät, im Menü umstellbar
+  var STUFE = merke().stufe || 'normal', STUFEN = ['leicht', 'normal', 'hart'], STUFE_NAME = { leicht: 'GEMÜTLICH', normal: 'NORMAL', hart: 'HART' };
+  function stufeSetzen(st) { STUFE = st; merke({ stufe: st }); }
+  function pech() { return STUFE === 'leicht' ? .35 : STUFE === 'hart' ? 1.3 : 1; }          // Räuber, Brand, Bär, Fieber
+  function verbrauchF() { return STUFE === 'leicht' ? .8 : STUFE === 'hart' ? 1.15 : 1; }    // Essen und Holz
+  function zehntF() { return STUFE === 'leicht' ? .6 : STUFE === 'hart' ? 1.25 : 1; }
   function kapitelFrei(n) { var m = merke(); if (m.k6) return n <= 6; return n === 1 || (n === 5 && !!m.k5) || (n === 4 && !!m.k5) || (n === 3 && !!m.k5) || (n === 2 && !!m.k5) || (n === 2 && !!(m.k2 || m.k3 || m.k4)) || (n === 3 && !!(m.k3 || m.k4)) || (n === 4 && !!m.k4); }
   function vergessen() { try { localStorage.removeItem(SPEICHER); } catch (e) {} }
   var VORSPANN_K2 = ['UM 1000 VOR CHRISTUS.', 'VIELE GENERATIONEN SIND VERGANGEN.', 'AUS DEM DORF AN DER BACH SIND BAUERN GEWORDEN.', 'SIE WEBEN, BRENNEN TON – UND HABEN EINE SALZSTELLE.', '', 'IRGENDWO FLIESST DIE BACH IN EINEN GRÖSSEREN FLUSS.', 'UND AUF EINEM BERG AM MAIN SITZT EINE, DIE SICH HERRIN NENNT.'];
@@ -201,7 +207,7 @@
     // Niemand bewacht mehr die Wege
     if (s.brand) brandWeiter(b, p);
     if (s.gefangene && !s.frage) gefangeneUrteil();
-    if ((jz === 1 || jz === 2) && s.jahr >= 2 && !(s.raeuberRuhe > s.jahr) && Math.random() < .3) {
+    if ((jz === 1 || jz === 2) && s.jahr >= 2 && !(s.raeuberRuhe > s.jahr) && Math.random() < .3 * pech()) {
       var schutz = s.waffen > 0 || p.wache >= 2 || hat('mauer');
       s.szenen.push({ art: 'raeuber', abgewehrt: schutz });
       s.ueberfaelle = (s.ueberfaelle || 0) + 1;
@@ -209,7 +215,7 @@
         ? [['ue_wald', 'IM WALD AM WEG LAUERN SIE.', 'WEGELAGERER – SIE WARTEN AUF DIE HÄNDLER.'], ['ue_alarm', 'DOCH JEMAND HAT SIE GESEHEN.', 'DAS DORF SCHLÄGT ALARM.'], ['ue_zaun', 'AM ZAUN STEHEN SIE ZUSAMMEN.', 'MIT SPEEREN UND SCHILDEN.'], ['ue_kampf', 'ES IST KURZ UND HART.', 'DANN FLIEHEN DIE RÄUBER IN DEN WALD.']]
         : [['ue_wald', 'IM WALD AM WEG LAUERN SIE.', 'WEGELAGERER – SIE WARTEN AUF DIE HÄNDLER.'], ['ue_haendler', 'DER WAGEN IST ZU LANGSAM.', 'NIEMAND IST DA, DER IHN SCHÜTZT.'], ['ue_danach', 'DIE HÄNDLER KOMMEN MIT LEEREN HÄNDEN.', 'UND NICHT ALLE KOMMEN ZURÜCK.']] }]);
       if (schutz && !s.gefangene && Math.random() < .6) { s.gefangene = true; b.push('⛓️ ZWEI RÄUBER WURDEN GEFANGEN. SIE SITZEN IM STALL – NÄCHSTE JAHRESZEIT SPRICHT DER ÄLTESTE DAS URTEIL.'); }
-      if (!schutz && !s.brand && Math.random() < .5) { s.brand = { stufe: 0 }; b.push('🔥 AUF DER FLUCHT STECKEN SIE DIE SCHEUNE AM DORFRAND IN BRAND. DAS FELD DANEBEN BRENNT MIT.'); }
+      if (!schutz && !s.brand && Math.random() < .5 * pech()) { s.brand = { stufe: 0 }; b.push('🔥 AUF DER FLUCHT STECKEN SIE DIE SCHEUNE AM DORFRAND IN BRAND. DAS FELD DANEBEN BRENNT MIT.'); }
       if (schutz) { s.nahrung += 2; b.push('🗡️ RÄUBER LAUERN DEN HÄNDLERN AUF. ' + (hat('mauer') ? 'EURE STEINMAUER' : s.waffen ? 'EURE EISERNEN SPEERE' : 'EURE WACHE') + ' VERTREIBT SIE.'); }
       else { var weg = Math.min(s.salz, 4); s.salz -= weg; s.nahrung = Math.max(0, s.nahrung - 6); b.push('🗡️ RÄUBER ÜBERFALLEN DIE HÄNDLER AN DER MÜNDUNG: -' + weg + ' SALZ, -6 NAHRUNG. NIEMAND BEWACHT MEHR DIE WEGE.'); }
     }
@@ -466,14 +472,14 @@
   }
   function kapitel5Jahreszeit(b, p, jz) {
     if (s.jahr >= 1 && jz === 1 && !s.schreiberDa && !s.frage) schreiberKommt(b);
-    if (jz === 3 && s.jahr >= 2 && !s.viehdieb && Math.random() < .5) {
+    if (jz === 3 && s.jahr >= 2 && !s.viehdieb && Math.random() < .5 * pech()) {
       s.viehdieb = true; var geschuetzt = p.wache >= 2 || s.waffen > 0;
       if (geschuetzt) b.push('🐄 NACHTS WOLLEN DIEBE DAS VIEH HOLEN. DIE WACHE BEMERKT SIE – SIE FLIEHEN OHNE BEUTE.');
       else { s.nahrung = Math.max(0, s.nahrung - 10); b.push('🔴 NACHTS HOLEN DIEBE ZWEI KÜHE AUS DEM STALL: -10 NAHRUNG. MEHR WACHE HÄTTE GEHOLFEN.'); }
       s.sequenzen = (s.sequenzen || []).concat([{ art: 'bilder', bilder: geschuetzt ? [['ue_vieh', 'MITTEN IN DER NACHT, IM MONDLICHT …', 'ZWEI SCHATTEN AM STALL.'], ['ue_alarm', 'DIE WACHE RUFT. FACKELN, HUNDE, GESCHREI.', 'DIE DIEBE RENNEN DAVON.']] : [['ue_vieh', 'MITTEN IN DER NACHT, IM MONDLICHT …', 'ZWEI SCHATTEN AM STALL.'], ['ue_flucht', 'ALS JEMAND AUFWACHT, IST ES ZU SPÄT.', 'DIE KÜHE SIND FORT.']] }]);
     }
     if (jz === 2) {                                                            // der Zehnt im Herbst
-      var z = Math.max(2, Math.ceil(s.nahrung * .1)) * (s.strafe ? 2 : 1); if (s.strafe) { s.strafe = false; b.push('📜 DER GRAF HAT ES NICHT VERGESSEN: DIESES JAHR NIMMT DER ZEHNT DOPPELT.'); } s.nahrung = Math.max(0, s.nahrung - z); s.zehntJahre++;
+      var z = Math.max(1, Math.round(Math.max(2, Math.ceil(s.nahrung * .1)) * zehntF())) * (s.strafe ? 2 : 1); if (s.strafe) { s.strafe = false; b.push('📜 DER GRAF HAT ES NICHT VERGESSEN: DIESES JAHR NIMMT DER ZEHNT DOPPELT.'); } s.nahrung = Math.max(0, s.nahrung - z); s.zehntJahre++;
       if (s.zehntJahre === 1 && !s.erfindungNeu) s.erfindungNeu = { id: 'zehnt', titel: 'DIE ABGABE', neu: true, bild: 'k5_abgabe', text: 'DER GRUNDHERR SCHICKT SEINEN MANN. JEDER ZEHNTE SACK KORN GEHÖRT JETZT IHM – UND DER SCHREIBER SCHREIBT ES AUF.', folge: 'JEDEN HERBST GEHT EIN ZEHNTEL DER NAHRUNG WEG.', jahr: vorChristus(), wahr: 'BELEGT: DER ZEHNT WAR EINE ABGABE AN KIRCHE UND GRUNDHERREN. DAHER HAT DIE ZEHNTSCHEUNE IHREN NAMEN.' };
       wortNeu('zehnt', b, 'DER ZEHNTE TEIL GEHÖRT JETZT DEM GRUNDHERRN.'); b.push('⛪ DER ZEHNT FÜR DEN GRUNDHERRN: -' + z + ' NAHRUNG. DER SCHREIBER HAKT ES AB.');
     }
@@ -658,7 +664,7 @@
     if (s.kapitel === 4) kapitel4Jahreszeit(b, p, jz);
     if (s.kapitel >= 3) kapitel3Jahreszeit(b, p, jz);
     // Essen
-    var lebend = lebende(), bedarf = lebend.length * ESSEN[jz];
+    var lebend = lebende(), bedarf = Math.round(lebend.length * ESSEN[jz] * verbrauchF());
     s.nahrung -= bedarf; b.push('GEGESSEN: ' + bedarf + ' NAHRUNG.');
     if (s.nahrung < 0) {
       s.hunger = (s.hunger || 0) + 1;
@@ -668,7 +674,7 @@
     // Winter: Holz und Älterwerden
     if (jz === 3 && hat('kaese')) { s.nahrung += 3; b.push('🧀 KÄSE AUS DEM VORRAT: +3 NAHRUNG.'); }
     if (jz === 3) {
-      var holzBedarf = s.haeuser * holzWinter() * (s.strengerWinter ? 2 : 1); s.strengerWinter = false;
+      var holzBedarf = Math.round(s.haeuser * holzWinter() * (s.strengerWinter ? 2 : 1) * verbrauchF()); s.strengerWinter = false;
       s.holz -= holzBedarf; b.push('GEHEIZT: ' + holzBedarf + ' HOLZ.');
       if (s.holz < -2) { s.holz = 0; frieren(b); }
       else if (s.holz < 0) { s.holz = 0; b.push('🟠 DAS HOLZ REICHT KNAPP NICHT. ALLE FRIEREN, ABER ALLE ÜBERLEBEN.'); }
@@ -838,17 +844,17 @@
       s.szenen.push({ art: 'woelfe', wache: p.wache > 0 });
       if (p.wache > 0) { s.nahrung += 2; b.push('🐺 WÖLFE SCHLEICHEN UM DAS LANGHAUS. DIE WACHE VERTREIBT SIE UND ERLEGT EINEN: +2 NAHRUNG.'); return; }
       var verlust = Math.min(s.nahrung, 6); s.nahrung -= verlust; b.push('🐺 WÖLFE! KEINE WACHE – SIE HOLEN SICH ' + verlust + ' NAHRUNG AUS DEM VORRAT.');
-      var kinder = lebende().filter(function (q) { return q.alter < 6; }); if (kinder.length && Math.random() < .2) { var k = zufall(kinder); k.lebt = false; b.push('🔴 ' + k.name + ' WIRD VON DEN WÖLFEN GEHOLT.'); chronik(k.name + ' WIRD VON WÖLFEN GEHOLT.'); }
+      var kinder = lebende().filter(function (q) { return q.alter < 6; }); if (kinder.length && Math.random() < .2 * pech()) { var k = zufall(kinder); k.lebt = false; b.push('🔴 ' + k.name + ' WIRD VON DEN WÖLFEN GEHOLT.'); chronik(k.name + ' WIRD VON WÖLFEN GEHOLT.'); }
     }
     function baer(b) {
       s.szenen.push({ art: 'baer', wache: p.wache > 1 });
       if (p.wache > 1) { s.nahrung += 8; b.push('🐻 EIN BÄR! ZWEI WACHEN STELLEN IHN: +8 NAHRUNG UND EIN FELL.'); return; }
-      var a3 = arbeiter(); if (a3.length && Math.random() < .5) { var q = zufall(a3); q.lebt = false; b.push('🔴 EIN BÄR! ' + q.name + ' STIRBT BEI DER BEGEGNUNG.'); chronik(q.name + ' WIRD VON EINEM BÄREN GETÖTET.'); witwe(q); }
+      var a3 = arbeiter(); if (a3.length && Math.random() < .5 * pech()) { var q = zufall(a3); q.lebt = false; b.push('🔴 EIN BÄR! ' + q.name + ' STIRBT BEI DER BEGEGNUNG.'); chronik(q.name + ' WIRD VON EINEM BÄREN GETÖTET.'); witwe(q); }
       else { s.nahrung = Math.max(0, s.nahrung - 5); b.push('🐻 EIN BÄR PLÜNDERT DEN VORRAT: -5 NAHRUNG.'); }
     }
     function krankheit(b) {
       var opfer = lebende().filter(function (q) { return q.alter < 5 || q.alter > 45; });
-      if (opfer.length && Math.random() < (hat('holunder') ? .2 : .5)) { var q = zufall(opfer); q.lebt = false; b.push('🤒 EIN FIEBER GEHT UM. ' + q.name + ' ÜBERLEBT ES NICHT.'); chronik(q.name + ' STIRBT AM FIEBER.'); witwe(q); }
+      if (opfer.length && Math.random() < (hat('holunder') ? .2 : .5) * pech()) { var q = zufall(opfer); q.lebt = false; b.push('🤒 EIN FIEBER GEHT UM. ' + q.name + ' ÜBERLEBT ES NICHT.'); chronik(q.name + ' STIRBT AM FIEBER.'); witwe(q); }
       else b.push(hat('holunder') ? '🤒 EIN FIEBER GEHT UM. DER HOLLERTEE HILFT – ALLE ÜBERSTEHEN ES.' : '🤒 EIN FIEBER GEHT UM, ABER ALLE ÜBERSTEHEN ES.');
     }
   }
@@ -954,7 +960,7 @@
       if (e.b) { vergessen(); setze('dorfwahl'); return; }
       if (e.klick) { punkte.forEach(function (pk, i) { if (e.klick.x < 130 && e.klick.y > 62 + i * 16 && e.klick.y < 76 + i * 16) { menueWahl = i; e.a = true; } }); if (e.klick.y > 176) { menueWahl = punkte.indexOf('KAPITEL'); e.a = true; } }
       if (e.a) { var wahlP = punkte[menueWahl]; menueWahl = null;
-        if (wahlP === 'FORTSETZEN') laden(); else if (wahlP === 'NEUES SPIEL') { vergessen(); setze('dorfwahl'); } else if (wahlP === 'KAPITEL') setze('kapitelwahl'); else setze('credits'); }
+        if (wahlP === 'FORTSETZEN') laden(); else if (wahlP === 'NEUES SPIEL') { vergessen(); setze('dorfwahl'); } else if (wahlP === 'KAPITEL') setze('kapitelwahl'); else if (wahlP.indexOf('STUFE') === 0) { stufeSetzen(STUFEN[(STUFEN.indexOf(STUFE) + 1) % 3]); menueWahl = punkte.indexOf(wahlP); } else setze('credits'); }
       return;
     }
     if (modus === 'kapitelwahl') {
@@ -996,11 +1002,17 @@
         TASTEN.forEach(function (zeile, zi) { if (ky > 118 + zi * 22 && ky < 136 + zi * 22) { var ti = Math.floor((kx - 16) / 29); if (ti >= 0 && ti < zeile.length) { var tz = zeile[ti]; if (tz === '←') SPIELER.name = SPIELER.name.slice(0, -1); else if (SPIELER.name.length < 10) SPIELER.name += tz; } } });
         if (ky > 186 && ky < 208 && kx > 100 && kx < 220) fertig = true;
       }
-      if ((fertig || (e.a && !e.klick)) && zeit - seit > 400) setze('vorspann');
+      if ((fertig || (e.a && !e.klick)) && zeit - seit > 400) { setze('alter'); wahl = STUFEN.indexOf(STUFE); }
       return;
     }
     if (modus === 'zoomfahrt') { if (zeit - seit > 7500 || ((e.a || e.klick) && zeit - seit > 1500)) setze('vorspann2'); return; }
     if (modus === 'pause') { if ((e.a || e.klick) && zeit - seit > 1500) setze('titel'); return; }   // „Genug für heute“: zurück ins Menü, dort FORTSETZEN
+    if (modus === 'alter') {
+      if (e.l) wahl = Math.max(0, wahl - 1); if (e.r) wahl = Math.min(2, wahl + 1);
+      if (e.klick && e.klick.y > 44 && e.klick.y < 190) { var ai = Math.floor((e.klick.x - 10) / 100); if (ai >= 0 && ai < 3) { wahl = ai; e.a = true; } }
+      if (e.a && zeit - seit > 400) { stufeSetzen(STUFEN[wahl]); setze('vorspann'); }
+      return;
+    }
     if (modus === 'vorspann5') { if ((e.a || e.klick) && zeit - seit > 700) { vorspannSeite++; seit = zeit; if (vorspannSeite > 2) { vorspannSeite = 0; setze('planen'); speichern(); } } return; }
     if (modus === 'vorspann4') { if ((e.a || e.klick) && zeit - seit > 700) { vorspannSeite++; seit = zeit; if (vorspannSeite > COMIC_K4.length) { vorspannSeite = 0; setze('planen'); speichern(); } } return; }
     if (modus === 'vorspann3') { if ((e.a || e.klick) && zeit - seit > 700) { vorspannSeite++; seit = zeit; if (vorspannSeite > COMIC_K3.length - 1) { vorspannSeite = 0; setze('planen'); speichern(); } } return; }
@@ -1167,8 +1179,8 @@
   function holzWinter() { return Math.max(1, HOLZ_WINTER - (hat('flachs') ? 1 : 0) - (hat('ziegel') ? 1 : 0)); }
   // ---------- Hilfe für den Spieler: Vorschlag, Vorschau, Rat des Alten ----------
   function erwarteteErnte() { return Object.keys(felder).filter(function (k) { return felder[k] !== 'leer'; }).length * ERNTE_FELD; }
-  function bedarfBisFruehling() { var n = lebende().length, b = 0; for (var j = s.jz; j < 4; j++) b += n * ESSEN[j]; return b; }
-  function holzBedarf() { return s.haeuser * holzWinter(); }
+  function bedarfBisFruehling() { var n = lebende().length, b = 0; for (var j = s.jz; j < 4; j++) b += n * ESSEN[j]; return Math.round(b * verbrauchF()); }
+  function holzBedarf() { return Math.round(s.haeuser * holzWinter() * verbrauchF()); }
   function ampel(haben, brauchen) { return haben >= brauchen ? COL.gruen : haben >= brauchen * .6 ? COL.feuer : COL.rot; }
   function vorschlag() {
     var plan = leererPlan(), n = arbeiter().length, ziel = [];
@@ -1999,7 +2011,13 @@
   }
   // Bericht nach Andreas' Vorschlag: oben Vorräte und Dorf mit Veränderung, dann was passiert ist, unten der Alte
   var BERICHT_PRO_SEITE = 9;
-  function berichtZeilen() { var z = []; s.bericht.forEach(function (b) { umbruch(b, 60).forEach(function (t, i) { z.push({ t: t, weiter: i > 0, roh: b }); }); }); return z; }
+  function kurzBericht(alle) {                                                // GEMÜTLICH: höchstens 3 Meldungen, die wichtigen zuerst
+    if (alle.length <= 3) return alle;
+    var wichtig = /🔴|🎉|💍|⚔️|🗡️|🔥|⛓️|✒️|😂|🏰|🏘️|🏙️|📜|⛪|🐄|🤒|NEU|STIRBT|GEBOREN/;
+    var w = alle.filter(function (b) { return wichtig.test(b); }), rest = alle.filter(function (b) { return !wichtig.test(b); });
+    var nimm = w.concat(rest).slice(0, 3); return alle.filter(function (b) { return nimm.indexOf(b) >= 0; }).concat(['… UND NOCH ' + (alle.length - 3) + ' KLEINIGKEITEN.']);
+  }
+  function berichtZeilen() { var z = []; (STUFE === 'leicht' ? kurzBericht(s.bericht) : s.bericht).forEach(function (b) { umbruch(b, 60).forEach(function (t, i) { z.push({ t: t, weiter: i > 0, roh: b }); }); }); return z; }
   function berichtSeiten() { return Math.max(1, Math.ceil(berichtZeilen().length / BERICHT_PRO_SEITE)); }
   function berichtMalen() {
     var v = s.vorher || {}, jzAlt = v.jz != null ? v.jz : s.jz;
@@ -2292,6 +2310,21 @@
     text('WEITERE DÖRFER FOLGEN: DÖRLESBERG, REICHOLZHEIM, NASSIG, URPHAR …', 160, 66 + Object.keys(DORFKARTEN).length * 28 + 10, 6, COL.grau, 'center');
     text('PFEILE + KNOPF ODER ANTIPPEN', 160, 226, 7, COL.feuer, 'center');
   }
+  function alterMalen() {
+    x.fillStyle = '#05070d'; x.fillRect(0, 0, W, H);
+    text('WIE ALT BIST DU?', 160, 22, 12, COL.feuer, 'center');
+    [['BIS 8 JAHRE', 'GEMÜTLICH', ['DER ALTE HILFT VIEL.', 'MEHR VORRÄTE,', 'WENIGER UNGLÜCK,', 'KURZE BERICHTE.'], 'kind1'],
+     ['9 BIS 12', 'NORMAL', ['SO, WIE DAS DORF', 'WIRKLICH WAR –', 'MIT GLÜCK UND PECH.'], 'leute2'],
+     ['ÄLTER', 'HART', ['KNAPPE VORRÄTE,', 'MEHR RÄUBER,', 'HÖHERER ZEHNT.'], 'greis']].forEach(function (k, i) {
+      var l = 12 + i * 100, an = wahl === i;
+      x.fillStyle = '#0b0e16'; x.fillRect(l, 44, 96, 146); x.strokeStyle = an ? COL.feuer : '#3a3f4a'; x.lineWidth = 1; x.strokeRect(l + .5, 44.5, 95, 145);
+      if (bildDa(k[3])) bildMalen(k[3], l + 48, 100, false, 2.4);
+      text(k[0], l + 48, 114, 9, an ? COL.feuer : COL.hell, 'center'); text(k[1], l + 48, 127, 7, an ? COL.feuer : COL.gruen, 'center');
+      k[2].forEach(function (z, j) { text(z, l + 48, 142 + j * 10, 6, COL.hell, 'center'); });
+    });
+    text('BLEIBT NUR AUF DIESEM GERÄT. IM MENÜ JEDERZEIT ÄNDERBAR.', 160, 204, 6, COL.grau, 'center');
+    if (zeit - seit > 400 && Math.floor(zeit / 500) % 2) text('◀ ▶ WÄHLEN · KNOPF ODER ANTIPPEN = LOS', 160, 222, 7, COL.feuer, 'center');
+  }
   function nameMalen() {
     x.fillStyle = '#0b1020'; x.fillRect(0, 0, W, H);
     text('WIE HEISST DU?', 160, 22, 12, COL.feuer, 'center');
@@ -2305,7 +2338,7 @@
     text('TIPPEN ODER MIT DER TASTATUR SCHREIBEN · ENTER = FERTIG', 160, 226, 6, COL.grau, 'center');
   }
   var menueWahl = null, vorspannSeite = 0;
-  function menuePunkte() { var l = []; if (gespeichert()) l.push('FORTSETZEN'); l.push('NEUES SPIEL', 'KAPITEL', 'CREDITS'); return l; }
+  function menuePunkte() { var l = []; if (gespeichert()) l.push('FORTSETZEN'); l.push('NEUES SPIEL', 'KAPITEL', 'STUFE: ' + STUFE_NAME[STUFE], 'CREDITS'); return l; }
   var KAPITEL = [{ n: 1, titel: 'DIE BACH', bild: 'karte_k1', text: 'EINE FAMILIE SUCHT EINEN PLATZ ZUM BLEIBEN.', zeit: 'UM 5000 V. CHR.' },
                  { n: 2, titel: 'DIE BURG AM MAIN', bild: 'seqbg', text: 'HANDEL, SALZ – UND EINE HERRIN AUF DEM BERG.', zeit: 'UM 1000 V. CHR.' },
                  { n: 3, titel: 'DAS EISEN', bild: 'k3bild', text: 'DIE BURG IST WEG. MIT DEM FLUSS KOMMT ETWAS NEUES.', zeit: 'UM 800 V. CHR.' },
@@ -2328,7 +2361,7 @@
       text((an ? '▶ ' : '  ') + pk, 14, y, 8, an ? COL.feuer : COL.hell, 'left');
       if (pk === 'FORTSETZEN' && an) { var alt = gespeichert(); if (alt) text(DORFKARTEN[alt.s.dorf || 'sachsenhausen'].name + ' · JAHR ' + alt.s.jahr, 14, y + 9, 5, COL.grau, 'left'); }
     });
-    KAPITEL.forEach(function (k, i) { kapitelKarte(k, 4 + i * 63, 188, 60, 48, i === 0, false); });
+    KAPITEL.forEach(function (k, i) { kapitelKarte(k, 4 + i * 52.4, 188, 50, 48, i === 0, false); });
   }
   function kapitelKarte(k, l, o, b, h, hell, gross) {
     var frei = kapitelFrei(k.n) || k.n === 1, aktiv = hell; if (k.ersatz && !bildDa(k.bild)) k = { n: k.n, titel: k.titel, bild: k.ersatz, text: k.text, zeit: k.zeit };
@@ -2489,6 +2522,7 @@
     if (modus === 'credits') return creditsMalen();
     if (modus === 'dorfwahl') return dorfwahlMalen();
     if (modus === 'name') return nameMalen();
+    if (modus === 'alter') return alterMalen();
     if (modus === 'vorspann') return vorspannSeitenMalen();
     if (modus === 'zoomfahrt') return zoomfahrtMalen();
     if (modus === 'vorspann3') return comicMalen(COMIC_K3);
