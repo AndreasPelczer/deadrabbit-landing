@@ -73,13 +73,12 @@
 <header><div class="innen">
   <div class="von">pelczer.de · Arbeitsplatz</div>
   <h1 id="gruss">Hallo Romina – hier entsteht deine neue Webseite.</h1>
-  <p class="einleitung" id="einleitung">Schau dir die Entwürfe an, sag, was dir gefällt, und ändere die Texte direkt. Lade Bilder hoch. Alles, was du hier einträgst, kommt bei Andreas an – er baut es ein. Du musst nichts erklären und nichts abstimmen.</p>
+  <p class="einleitung" id="einleitung">Hier gestaltest du deine neue Webseite mit. Schreib einfach, was du willst – Andreas baut es ein.</p>
   <nav role="tablist">
-    <button role="tab" data-reiter="entwuerfe" aria-selected="true">Entwürfe</button>
-    <button role="tab" data-reiter="texte">Texte</button>
-    <button role="tab" data-reiter="entscheidungen">Entscheidungen</button>
-    <button role="tab" data-reiter="bilder">Bilder</button>
-    <button role="tab" data-reiter="app">Für die App</button>
+    <button role="tab" data-reiter="entwuerfe" aria-selected="true">1 · Entwürfe</button>
+    <button role="tab" data-reiter="texte">2 · Texte</button>
+    <button role="tab" data-reiter="bilder">3 · Fotos</button>
+    <button role="tab" data-reiter="app">4 · Für die App</button>
     <button role="tab" data-reiter="verlauf">Verlauf</button>
   </nav>
 </div></header>
@@ -89,7 +88,7 @@
 <!-- ENTWÜRFE -->
 <section data-seite="entwuerfe">
   <h2>Vier Entwürfe</h2>
-  <p class="hilfe">Oben unser Vorschlag, darunter die drei Richtungen vom Treffen am 26.09. Tippe auf „Ansehen“, dann sag mit einem Klick, wie er dir gefällt – und schreib dazu, was du ändern würdest.</p>
+  <p class="hilfe">Tippe auf ein Bild, um den Entwurf groß zu sehen. Dann ein Klick: gefällt mir, geht so, eher nicht – und wenn du magst, ein paar Worte dazu.</p>
   <div id="entwurfListe"></div>
 </section>
 
@@ -100,21 +99,14 @@
   <div id="textListe"></div>
 </section>
 
-<!-- ENTSCHEIDUNGEN -->
-<section data-seite="entscheidungen" hidden>
-  <h2>Vier Entscheidungen</h2>
-  <p class="hilfe">Ein Klick genügt. Wenn du etwas dazu sagen möchtest, schreib es ins Feld darunter.</p>
-  <div id="entscheidungListe"></div>
-</section>
-
 <!-- BILDER -->
 <section data-seite="bilder" hidden>
-  <h2>Bilder</h2>
+  <h2>Fotos</h2>
   <p class="hilfe">Fotos vom Handy hochladen oder ein Bild einfügen (kopieren und hier einfügen). Sag kurz, wofür das Bild ist. Die Bilder werden vor dem Senden verkleinert.</p>
   <div class="karte">
     <label for="bildZweck">Wofür ist das Bild?</label>
     <select id="bildZweck">
-      <option>Startseite – großes Bild oben</option><option>Über uns / Familie</option><option>Team / Fahrer</option><option>Lkw / Fahrzeuge</option><option>Container</option><option>Wertstoffhof</option><option>Logo</option><option>Sonstiges</option>
+      <option>Mein Vater</option><option>Startseite – großes Bild oben</option><option>Über uns / Familie</option><option>Team / Fahrer</option><option>Lkw / Fahrzeuge</option><option>Container</option><option>Wertstoffhof</option><option>Logo</option><option>Sonstiges</option>
     </select>
     <label for="bildText">Dazu sagen (wer/was ist zu sehen?)</label>
     <input type="text" id="bildText" placeholder="z. B. Papa mit dem ersten Lkw, 1988">
@@ -125,6 +117,7 @@
       <p id="bildMeldung"></p>
     </div>
   </div>
+  <div id="entscheidungListe"></div>
   <div class="bilder" id="bilderListe"></div>
 </section>
 
@@ -186,11 +179,11 @@
 // ---- Einstellungen ----
 var API = 'https://funk-portal.a-pelczer.workers.dev';   // Cloudflare-Worker
 var ENTWUERFE = [
-  { id: 'vorschlag', titel: 'Unser Vorschlag', bild: 'entwuerfe/vorschlag.png', link: 'entwuerfe/vorschlag.html', liebling: true,
-    text: 'Hell, ruhig, mit eurem Lkw vorn und der Familie im Mittelpunkt.', gruende: ["Wir haben 18 Containerdienst-Seiten aus ganz Deutschland verglichen – vom Familienbetrieb bis zum großen Portal. Das machen die guten anders:", "Ein Anruf-Knopf ganz oben, auf jedem Bildschirm. Auf dem Handy zeigen das nur 6 von 18 Seiten.", "Der erste Blick sagt: Familienbetrieb seit 1986, aus Marktheidenfeld. So machen es die überzeugendsten Familienbetriebe im Vergleich.", "Euer eigener Lkw statt eines Fotos aus dem Katalog. Der stärkste erste Eindruck im ganzen Vergleich war genau so ein Bild.", "„Ab 5 m³“ – der nächste Mitbewerber in eurer Gegend fängt erst bei 7 m³ an.", "Der Wertstoffhof bekommt einen eigenen Platz – für viele der Grund, die Seite überhaupt zu öffnen.", "Kein Shop, kein Preisrechner, kein Chat: Die guten kleinen Seiten gewinnen über Klarheit und das Telefon, nicht über Technik – und brauchen kaum Pflege."] },
-  { id: 'a', titel: 'Richtung A – Handfest', bild: 'entwuerfe/a.png', link: 'entwuerfe/richtungen.html#a', text: 'Dunkel und kräftig, die große pinke „1986“. (Skizze vom 26.09. – einige Zahlen darin sind noch vom alten Stand, z. B. 3–30 m³.)' },
-  { id: 'b', titel: 'Richtung B – Familienbetrieb', bild: 'entwuerfe/b.png', link: 'entwuerfe/richtungen.html#b', text: 'Hell und warm, die Familie steht im Vordergrund. (Skizze vom 26.09. – Angaben teils noch alter Stand.)' },
-  { id: 'c', titel: 'Richtung C – Klar', bild: 'entwuerfe/c.png', link: 'entwuerfe/richtungen.html#c', text: 'Schlicht und aufgeräumt. (Skizze vom 26.09. – Angaben teils noch alter Stand.)' }
+  { id: 'a', titel: 'Richtung A – Handfest', bild: 'entwuerfe/a.png', link: 'entwuerfe/richtungen.html#a', text: 'Dunkel und kräftig: die große pinke „1986“ und euer pinker Lkw.' },
+  { id: 'b', titel: 'Richtung B – Familienbetrieb', bild: 'entwuerfe/b.png', link: 'entwuerfe/richtungen.html#b', text: 'Hell und warm: die Familie im Vordergrund, dazu der weiße Lkw mit „Ihre Nr. 1 seit 1986“.' },
+  { id: 'c', titel: 'Richtung C – Klar und schnell', bild: 'entwuerfe/c.png', link: 'entwuerfe/richtungen.html#c', text: 'Gleich zur Sache: Welcher Container passt? Öffnungszeiten und Wertstoffhof auf einen Blick.' },
+  { id: 'vorschlag', titel: 'Unser Vorschlag', bild: 'entwuerfe/vorschlag.png', link: 'entwuerfe/vorschlag.html', liebling: true, extra: { text: 'Dazu gehört die Seite über deinen Vater ↗', link: 'entwuerfe/gruender.html' },
+    text: 'Hell und ruhig, eure Lkw vorn, die Familie und dein Vater im Mittelpunkt.', gruende: ["Wir haben 18 Containerdienst-Seiten aus ganz Deutschland verglichen – vom Familienbetrieb bis zum großen Portal. Das machen die guten anders:", "Ein Anruf-Knopf ganz oben, auf jedem Bildschirm. Auf dem Handy zeigen das nur 6 von 18 Seiten.", "Der erste Blick sagt: Familienbetrieb seit 1986, aus Marktheidenfeld. So machen es die überzeugendsten Familienbetriebe im Vergleich.", "Euer eigener Lkw statt eines Fotos aus dem Katalog. Der stärkste erste Eindruck im ganzen Vergleich war genau so ein Bild.", "„Ab 5 m³“ – der nächste Mitbewerber in eurer Gegend fängt erst bei 7 m³ an.", "Der Wertstoffhof bekommt einen eigenen Platz – für viele der Grund, die Seite überhaupt zu öffnen.", "Kein Shop, kein Preisrechner, kein Chat: Die guten kleinen Seiten gewinnen über Klarheit und das Telefon, nicht über Technik – und brauchen kaum Pflege."] }
 ];
 var TEXTE = [
   { id: 'ueberschrift', titel: 'Große Überschrift oben', jetzt: 'Ihre Nummer 1 für Container – seit 1986.' },
@@ -199,15 +192,13 @@ var TEXTE = [
   { id: 'abroll', titel: 'Abrollcontainer', jetzt: 'Die großen bis 30 m³ – für Baustellen, Abriss und alles, wofür eine Mulde nicht reicht.' },
   { id: 'wertstoffhof', titel: 'Wertstoffhof', jetzt: 'Jeden 1. Samstag im Monat von 8 bis 12 Uhr geöffnet – zum Selbst-Anliefern.' },
   { id: 'ueberuns', titel: 'Über uns', jetzt: '1986 hat Johann Funk den Containerdienst gegründet. Heute führt seine Tochter Romina Funk den Betrieb weiter: mit demselben Anspruch, mit dem Team, das die Gegend kennt, und mit kurzen Wegen – ein Anruf genügt.' },
-  { id: 'vater', titel: 'Der Satz über deinen Vater', jetzt: '„Was mein Vater aufgebaut hat, führen wir weiter – zuverlässig, wie seit 40 Jahren.“' },
+  { id: 'vater', titel: 'Der Satz über deinen Vater (auf der Startseite)', jetzt: '„Was mein Vater aufgebaut hat, führen wir weiter – zuverlässig, wie seit 40 Jahren.“' },
+  { id: 'vater-seite', titel: 'Für die Seite über deinen Vater: Was soll man über ihn wissen? Ein Satz von ihm, eine Geschichte, etwas, das nur er so gemacht hat.', jetzt: '' },
   { id: 'ablauf', titel: '„So einfach geht’s“ (drei Schritte)', jetzt: 'Anrufen – Container kommt – wir holen ab.' },
   { id: 'sonstiges', titel: 'Was sonst noch auf die Seite soll', jetzt: '' }
 ];
 var ENTSCHEIDUNGEN = [
-  { id: 'entruempelung', frage: 'Entrümpelung', hilfe: 'Im selben Landkreis bietet auch die Funk Entrümpelung GmbH deines Bruders Entrümpelung an – zwei Firmen mit demselben Angebot verwirren Google und die Branchenbücher.', wahl: ['Bleibt bei uns auf der Seite', 'Wir verweisen auf meinen Bruder', 'Weiß ich noch nicht'] },
-  { id: 'preise', frage: 'Preise auf der Seite?', hilfe: '', wahl: ['Ja, „ab … €“ je Größe', 'Nein, nur auf Anfrage', 'Weiß ich noch nicht'] },
-  { id: 'foto', frage: 'Wer soll auf der Seite zu sehen sein?', hilfe: '', wahl: ['Ich selbst', 'Das Team / die Fahrer', 'Nur Lkw und Container', 'Weiß ich noch nicht'] },
-  { id: 'vater', frage: 'Soll dein Vater als Gründer genannt werden?', hilfe: 'Im Vorschlag steht ein Absatz über ihn und ein Satz von dir.', wahl: ['Ja, so wie im Vorschlag', 'Ja, aber anders formuliert', 'Lieber nicht'] }
+  { id: 'foto', frage: 'Wer soll auf der Webseite zu sehen sein?', hilfe: '', wahl: ['Ich selbst', 'Das Team / die Fahrer', 'Nur Lkw und Container', 'Weiß ich noch nicht'] }
 ];
 
 // ---- Zugang ----
@@ -246,7 +237,7 @@ function entwuerfeZeigen() {
     var knopf = el('button', { class: 'knopf voll klein', type: 'button', text: 'Senden', onclick: function () {
       if (!urteil && !feld.value.trim()) return melde(meldung, false, 'Bitte erst einen Daumen wählen oder etwas schreiben');
       senden({ bereich: 'entwurf', schluessel: w.id, inhalt: (urteil ? '[' + urteil + '] ' : '') + feld.value.trim() }, meldung, knopf).then(function () { feld.value = ''; }); } });
-    var gruende = w.gruende && w.gruende.length ? el('ul', { class: 'gruende' }, w.gruende.map(function (g) { return el('li', { text: g }); })) : null;
+    var gruende = w.gruende && w.gruende.length ? el('div', {}, [el('p', { text: w.gruende[0], style: 'margin:8px 0 0' }), el('ul', { class: 'gruende' }, w.gruende.slice(1).map(function (g) { return el('li', { text: g }); }))]) : null;
     liste.appendChild(el('div', { class: 'karte' + (w.liebling ? ' liebling' : '') }, [
       el('div', { class: 'entwurf' }, [
         el('a', { href: w.link, target: '_blank', rel: 'noopener' }, [el('img', { src: w.bild, alt: w.titel, loading: 'lazy' })]),
@@ -254,7 +245,7 @@ function entwuerfeZeigen() {
           w.liebling ? el('span', { class: 'band', text: 'Unser Favorit' }) : null,
           el('h3', { text: w.titel }), el('p', { text: w.text }),
           gruende ? el('p', { html: '<b>Warum wir ihn vorschlagen:</b>', style: 'margin:10px 0 0' }) : null, gruende,
-          el('div', { class: 'reihe' }, [el('a', { class: 'knopf leer klein', href: w.link, target: '_blank', rel: 'noopener', text: 'Ansehen ↗' })]),
+          el('div', { class: 'reihe' }, [el('a', { class: 'knopf leer klein', href: w.link, target: '_blank', rel: 'noopener', text: 'Ansehen ↗' }), w.extra ? el('a', { class: 'knopf leer klein', href: w.extra.link, target: '_blank', rel: 'noopener', text: w.extra.text }) : null]),
           wahl, feld, el('div', { class: 'reihe' }, [knopf, meldung]),
           vorher ? el('p', { class: 'bisher', text: 'Zuletzt von dir: ' + vorher.inhalt }) : null ]) ]) ]));
   });
@@ -321,7 +312,7 @@ function appVorbelegen() { var v = letzter('app', 'fragebogen'); if (!v) return;
   for (var k in d) { if (Array.isArray(d[k])) f.querySelectorAll('input[name=' + k + ']').forEach(function (x) { x.checked = d[k].indexOf(x.value) >= 0; }); else if (f.elements[k]) f.elements[k].value = d[k]; } } catch (e) {} }
 
 // ---- Verlauf (für Andreas: Eingang mit Abhaken) ----
-var NAMEN = { entwurf: 'Entwurf', text: 'Text', entscheidung: 'Entscheidung', bild: 'Bild', app: 'App-Angaben', notiz: 'Notiz' };
+var NAMEN = { entwurf: 'Entwurf', text: 'Text', entscheidung: 'Frage', bild: 'Foto', app: 'App-Angaben', notiz: 'Notiz' };
 function lesbar(e) { if (e.bereich === 'entscheidung') { try { var j = JSON.parse(e.inhalt); return j.wahl + (j.dazu ? ' – ' + j.dazu : ''); } catch (x) {} }
   if (e.bereich === 'app') { try { var d = JSON.parse(e.inhalt), z = []; for (var k in d) { var w = Array.isArray(d[k]) ? d[k].join(', ') : d[k]; if (w) z.push(k + ': ' + w); } return z.join('\n'); } catch (x) {} } return e.inhalt; }
 function verlaufZeigen() {
@@ -344,7 +335,7 @@ function start() {
     if (ROLLE === 'admin') { document.getElementById('gruss').textContent = 'Eingang – was Romina geschickt hat'; document.getElementById('verlaufTitel').textContent = 'Eingang'; document.getElementById('verlaufHilfe').textContent = 'Neu = noch nicht eingebaut. Nach dem Einbau abhaken.'; document.getElementById('einleitung').textContent = 'Du siehst alles wie Romina – plus den Eingang. Was eingebaut ist, abhaken: dann sieht sie „übernommen“.'; }
     return laden(); }).then(function () { entwuerfeZeigen(); texteZeigen(); entscheidungenZeigen(); appVorbelegen();
     if (ROLLE === 'admin') document.querySelector('nav button[data-reiter="verlauf"]').click(); })
-    .catch(function (e) { document.getElementById('ohneZugang').hidden = false; document.querySelector('#ohneZugang p').textContent = e.message === 'kein Zugang' ? 'Der Link ist nicht (mehr) gültig. Bitte bei Andreas melden.' : 'Gerade nicht erreichbar (' + e.message + '). Bitte später noch einmal.'; });
+    .catch(function (e) { document.getElementById('app').hidden = true; document.getElementById('ohneZugang').hidden = false; document.querySelector('#ohneZugang p').textContent = e.message === 'kein Zugang' ? 'Der Link ist nicht (mehr) gültig. Bitte bei Andreas melden.' : 'Gerade nicht erreichbar (' + e.message + '). Bitte später noch einmal.'; });
 }
 window.addEventListener('hashchange', function () { if (/[#&](k|a)=/.test(location.hash)) location.reload(); });
 start();
