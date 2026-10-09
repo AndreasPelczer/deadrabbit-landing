@@ -47,7 +47,9 @@
 // Funk Tour, Fassung 2 (09.10.2026) – nach Raphi-Maß: der Fahrer sieht nur SEINE Tour, immer nur EINEN Handgriff, nie mehr als 2 Knöpfe.
 // Mops-Übergabe: Romina übergibt die Tour → der Fahrer übernimmt mit einem Knopf → am Abend gibt er sie zurück. Erledigt ist nicht übernommen.
 // Plan aus funk-core (`funk plan`); jeder Handgriff wird ein Ereignis im funk-core-Format. Simulation: echte Orte, erfundene Kunden.
-// Fahrer-Link: #lkw=Iveco bzw. #lkw=MAN · Büro-Link: #buero. Fotos bleiben auf diesem Gerät.
+// Fahrer-Link: #lkw=Iveco bzw. #lkw=MAN · Büro-Link: #buero.
+// Zwei Betriebsarten: OHNE Schlüssel alles auf diesem Gerät (Präsentation: drei Handys nebeneinander teilen sich den Browser-Speicher);
+// MIT Tour-Schlüssel (#k=…) über den Worker – dann sieht das Büro auf einem anderen Handy sofort, was die Fahrer tun.
 var SZENARIO = {
   "auftraege": [
     {
@@ -1060,12 +1062,48 @@ var SZENARIO = {
   ],
   "befunde": []
 }
-;
-var SPEICHER = 'funkTour_v2';
-function neuerTag() { return { lkw: null, uebernommen: {}, abgegeben: {}, erledigt: {}, problem: {}, ereignisse: [], fotos: {}, meldungen: [] }; }
-var Z = laden() || neuerTag();
-function laden() { try { return JSON.parse(localStorage.getItem(SPEICHER)); } catch (e) { return null; } }
-function sichern() { try { localStorage.setItem(SPEICHER, JSON.stringify(Z)); } catch (e) {} }
+, API = 'https://funk-portal.a-pelczer.workers.dev';
+var SPEICHER = 'funkTour_v3', WARTE_SP = 'funkTour_warte', LKW_SP = 'funkTour_lkw';
+var HASH = new URLSearchParams(location.hash.slice(1)), DEMO = /[?&]demo=1/.test(location.search);
+var SCHLUESSEL = DEMO ? '' : HASH.get('k') || '';
+try { if (SCHLUESSEL) localStorage.setItem('funkTourSchluessel', SCHLUESSEL); else if (!DEMO) SCHLUESSEL = localStorage.getItem('funkTourSchluessel') || ''; } catch (e) {}
+if (HASH.get('k') && history.replaceState) { HASH.delete('k'); history.replaceState(null, '', location.pathname + location.search + (HASH.toString() ? '#' + HASH.toString().replace(/=$/, '').replace(/=&/g, '&') : '')); }   // Schlüssel nicht in der Adresszeile stehen lassen
+var LIVE = !!SCHLUESSEL && API.indexOf('http') === 0;
+var EINTRAEGE = [], WARTE = [], Z = null, LKW = null, NETZ = true;
+function lies(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } }
+function schreib(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+LKW = DEMO ? null : lies(LKW_SP, null); WARTE = LIVE ? lies(WARTE_SP, []) : [];
+if (!LIVE) EINTRAEGE = lies(SPEICHER, []);
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+// Der Zustand wird immer aus den Einträgen abgeleitet – nie getrennt gespeichert (wie in funk-core)
+function ableiten() {
+  var z = { uebernommen: {}, abgegeben: {}, erledigt: {}, problem: {}, ereignisse: [], fotos: {}, meldungen: [] };
+  EINTRAEGE.forEach(function (e) { var d = e.daten || {};
+    if (e.art === 'uebernommen') z.uebernommen[e.lkw] = d.zeit;
+    else if (e.art === 'abgegeben') z.abgegeben[e.lkw] = d.zeit;
+    else if (e.art === 'erledigt') { z.erledigt[d.schritt] = d.zeit; if (d.ereignis) { z.ereignisse.push(d.ereignis); if (d.ereignis.foto && e.foto) z.fotos[d.ereignis.foto] = e.foto; } }
+    else if (e.art === 'problem') { (d.schritte || []).forEach(function (x) { z.problem[x] = true; }); z.meldungen.push({ lkw: e.lkw, zeit: d.zeit, text: d.text, foto: e.foto }); }
+    else if (e.art === 'meldung') z.meldungen.push({ lkw: e.lkw, zeit: d.zeit, text: d.text }); });
+  Z = z; LKW = LKW; }
+function melden(art, daten, foto) {   // ein Knopfdruck = ein Eintrag; ohne Netz wartet er im Handy und geht später raus
+  var e = { art: art, lkw: LKW, daten: Object.assign({ uid: uid() }, daten), foto: foto || null };
+  EINTRAEGE.push(e); ableiten();
+  if (LIVE) { WARTE.push(e); schreib(WARTE_SP, WARTE); senden(); } else schreib(SPEICHER, EINTRAEGE); }
+function api(weg, daten) { return fetch(API + weg, { method: daten ? 'POST' : 'GET', headers: Object.assign({ 'x-schluessel': SCHLUESSEL }, daten ? { 'content-type': 'application/json' } : {}), body: daten ? JSON.stringify(daten) : undefined })
+  .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
+var sendet = false;
+function senden() { if (sendet || !WARTE.length) return; sendet = true; var e = WARTE[0];
+  api('/tour/eintrag', { art: e.art, lkw: e.lkw, daten: e.daten, foto: e.foto }).then(function (r) { e.id = r.id; WARTE.shift(); schreib(WARTE_SP, WARTE); NETZ = true; sendet = false; senden(); },
+    function () { NETZ = false; sendet = false; }); }
+var maxId = 0;
+function holen() {   // neue Einträge vom Worker; wurde die Vorführung neu gestartet, alles frisch laden
+  return api('/tour/eintraege?seit=' + maxId).then(function (r) {
+    if (r.max < maxId) { maxId = 0; EINTRAEGE = []; WARTE = []; schreib(WARTE_SP, []); return holen(); }
+    var bekannt = {}; EINTRAEGE.forEach(function (e) { bekannt[e.daten.uid] = e; });
+    var neu = false; r.eintraege.forEach(function (e) { maxId = Math.max(maxId, e.id); var b = bekannt[e.daten.uid]; if (b) b.id = e.id; else { EINTRAEGE.push(e); neu = true; } });
+    NETZ = true; ableiten(); if (r.eintraege.length === 200) return holen(); return neu; }, function () { NETZ = false; return false; }); }
+function neuStarten() { if (LIVE) api('/tour/neu', {}).then(function () { maxId = 0; EINTRAEGE = []; ableiten(); zeigen(); }); else { EINTRAEGE = []; schreib(SPEICHER, []); ableiten(); zeigen(); } }
+function jetztIso() { var d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 19); }
 function el(t, a, k) { var e = document.createElement(t); if (a) for (var x in a) { if (x === 'text') e.textContent = a[x]; else if (x === 'html') e.innerHTML = a[x]; else if (x.slice(0, 2) === 'on') e.addEventListener(x.slice(2), a[x]); else e.setAttribute(x, a[x]); } (k || []).forEach(function (c) { if (c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); }); return e; }
 function uhr(iso) { return iso.slice(11, 16); }
 var AUFTRAG = {}; SZENARIO.auftraege.forEach(function (a) { AUFTRAG[a.nummer] = a; });
@@ -1120,24 +1158,24 @@ function karte(st, jetztId) {
 }
 
 // ---- Ereignis + Beweisfoto ----
-function zeitpunkt(st) { var d = new Date(st.stopp.ankunft + 'Z'); d.setUTCMinutes(d.getUTCMinutes() + (st.ziel === 'Hof' ? 2 : 8)); return d.toISOString().slice(0, 19); }
+function zeitpunkt(st) { if (LIVE) return jetztIso(); var d = new Date(st.stopp.ankunft + 'Z'); d.setUTCMinutes(d.getUTCMinutes() + (st.ziel === 'Hof' ? 2 : 8)); return d.toISOString().slice(0, 19); }
 function erledigen(st, foto) {
   var name = null;
   if (st.ereignis) {
     var zeit = zeitpunkt(st), art = st.ereignis === 'Gestellt' ? { Gestellt: { abfallart: st.auftrag.abfallart } } : st.ereignis;
-    if (foto) { name = 'BF-' + st.container + '-' + zeit.replace(/[-:T]/g, '').slice(0, 12) + '.jpg'; Z.fotos[name] = foto; }
-    Z.ereignisse.push({ zeitpunkt: zeit, container: st.container, ort: st.stopp.ort, fahrer: tourVon(Z.lkw).fahrer, foto: name, wiegeschein_kg: null, art: art, _lkw: Z.lkw, _ziel: st.ziel });
+    if (foto) name = 'BF-' + st.container + '-' + zeit.replace(/[-:T]/g, '').slice(0, 12) + '.jpg';
+    var ereignis = { zeitpunkt: zeit, container: st.container, ort: st.stopp.ort, fahrer: tourVon(LKW).fahrer, foto: name, wiegeschein_kg: null, art: art, _lkw: LKW, _ziel: st.ziel };
   }
-  Z.erledigt[st.id] = uhr(zeitpunkt(st)); sichern(); quittung(foto);
+  melden('erledigt', { schritt: st.id, zeit: uhr(zeitpunkt(st)), ereignis: ereignis || null }, foto); quittung(foto);
 }
 function stempeln(quelle, st, fertig) {
   var img = new Image(); img.onload = function () {
-    var b = 900, h = Math.round(b * img.height / img.width), c = el('canvas'); c.width = b; c.height = h; var g = c.getContext('2d'); g.drawImage(img, 0, 0, b, h);
+    var b = 720, h = Math.round(b * img.height / img.width), c = el('canvas'); c.width = b; c.height = h; var g = c.getContext('2d'); g.drawImage(img, 0, 0, b, h);
     var titel = { Gestellt: '✓ GESTELLT', Abgeholt: '✓ ABGEHOLT', Abgekippt: '✓ ABGEKIPPT' }[st.ereignis] || '⚠ PROBLEM', z = zeitpunkt(st);
     g.fillStyle = 'rgba(20,18,16,.8)'; g.fillRect(0, h - 120, b, 120); g.fillStyle = '#E5007E'; g.fillRect(0, h - 120, 14, 120);
-    g.fillStyle = '#fff'; g.font = '800 40px system-ui,-apple-system,sans-serif'; g.fillText(titel + ' · ' + st.groesse + ' m³ · ' + st.container, 34, h - 68);
-    g.fillStyle = '#e8e2d6'; g.font = '600 26px system-ui,-apple-system,sans-serif'; g.fillText('📍 ' + st.ziel + ', ' + stadt(st.stopp.ort) + '   🕒 ' + z.slice(8, 10) + '.' + z.slice(5, 7) + '. ' + z.slice(11, 16), 34, h - 26);
-    fertig(c.toDataURL('image/jpeg', 0.72)); }; img.src = quelle; }
+    g.fillStyle = '#fff'; g.font = '800 32px system-ui,-apple-system,sans-serif'; g.fillText(titel + ' · ' + st.groesse + ' m³ · ' + st.container, 30, h - 70);
+    g.fillStyle = '#e8e2d6'; g.font = '600 21px system-ui,-apple-system,sans-serif'; g.fillText('📍 ' + st.ziel + ', ' + stadt(st.stopp.ort) + '   🕒 ' + z.slice(8, 10) + '.' + z.slice(5, 7) + '. ' + z.slice(11, 16), 34, h - 26);
+    fertig(c.toDataURL('image/jpeg', 0.7)); }; img.src = quelle; }
 function beispielFoto(st) {
   var c = el('canvas'); c.width = 900; c.height = 675; var g = c.getContext('2d'), hm = g.createLinearGradient(0, 0, 0, 420); hm.addColorStop(0, '#9cc8ec'); hm.addColorStop(1, '#dbeaf5');
   g.fillStyle = hm; g.fillRect(0, 0, 900, 420); g.fillStyle = st.stopp.art === 'Entsorgung' ? '#b8a07a' : '#8fbf63'; g.fillRect(0, 420, 900, 255); g.fillStyle = '#9d9a93'; g.fillRect(0, 470, 900, 90);
@@ -1154,29 +1192,30 @@ var H = document.getElementById('handy');
 function bild(kinder) { H.innerHTML = ''; kinder.forEach(function (k) { if (k) H.appendChild(k); }); window.scrollTo(0, 0); }
 function knoepfe(ja, nein) { return el('div', { class: 'knoepfe' }, [ja ? el('button', { class: 'k ja', text: ja[0], onclick: ja[1] }) : null, nein ? el('button', { class: 'k nein', text: nein[0], onclick: nein[1] }) : null]); }
 function kopf(st, jetzt) { var f = st.filter(function (s) { return Z.erledigt[s.id] || Z.problem[s.id]; }).length;
-  return el('div', {}, [el('div', { class: 'kopf' }, [el('span', { text: '🚛 ' + Z.lkw + ' · ' + fahrer(Z.lkw) }), el('b', { text: f + ' / ' + st.length })]),
+  return el('div', {}, [el('div', { class: 'kopf' }, [el('span', { text: '🚛 ' + LKW + ' · ' + fahrer(LKW) }), el('b', { text: f + ' / ' + st.length })]),
     el('div', { class: 'fortschritt' }, st.map(function (s) { return el('i', { class: Z.erledigt[s.id] || Z.problem[s.id] ? 'f' : s === jetzt ? 'j' : '' }); }))]); }
 
 function zeigen() {
+  ableiten();
   if (location.hash.indexOf('buero') >= 0) return buero();
-  var m = location.hash.match(/lkw=([^&]+)/); if (m && tourVon(decodeURIComponent(m[1]))) { Z.lkw = decodeURIComponent(m[1]); sichern(); }
-  if (!Z.lkw) return werFaehrt();
-  var st = schritte(tourVon(Z.lkw));
-  if (!Z.uebernommen[Z.lkw]) return uebergabe(st);
+  var m = location.hash.match(/lkw=([^&]+)/); if (m && tourVon(decodeURIComponent(m[1]))) { LKW = decodeURIComponent(m[1]); if (!DEMO) schreib(LKW_SP, LKW); ableiten(); }
+  if (!LKW) return werFaehrt();
+  var st = schritte(tourVon(LKW));
+  if (!Z.uebernommen[LKW]) return uebergabe(st);
   var jetzt = st.filter(function (s) { return !Z.erledigt[s.id] && !Z.problem[s.id]; })[0];
-  if (!jetzt) return Z.abgegeben[Z.lkw] ? feierabend(st) : rueckgabe(st);
+  if (!jetzt) return Z.abgegeben[LKW] ? feierabend(st) : rueckgabe(st);
   schritt(st, jetzt);
 }
 function werFaehrt() {   // nur beim allerersten Öffnen ohne Fahrer-Link
   bild([el('div', { class: 'gross' }, [el('p', { class: 'wort', text: 'Funk Tour' }), el('h1', { text: 'Welcher Lkw?' }), el('p', { class: 'klein', text: 'Einmal antippen. Das Handy merkt es sich.' })]),
-    knoepfe(['🚛 ' + PLAN.touren[0].fahrzeug, function () { Z.lkw = PLAN.touren[0].fahrzeug; sichern(); zeigen(); }], PLAN.touren[1] ? ['🚛 ' + PLAN.touren[1].fahrzeug, function () { Z.lkw = PLAN.touren[1].fahrzeug; sichern(); zeigen(); }] : null)]);
+    knoepfe(['🚛 ' + PLAN.touren[0].fahrzeug, function () { LKW = PLAN.touren[0].fahrzeug; if (!DEMO) schreib(LKW_SP, LKW); zeigen(); }], PLAN.touren[1] ? ['🚛 ' + PLAN.touren[1].fahrzeug, function () { LKW = PLAN.touren[1].fahrzeug; if (!DEMO) schreib(LKW_SP, LKW); zeigen(); }] : null)]);
 }
 function uebergabe(st) {   // Romina übergibt – der Fahrer übernimmt mit EINEM Knopf
   var kunden = st.filter(function (s) { return s.ziel !== 'Hof'; }), ende = st[st.length - 1].stopp.abfahrt;
-  bild([el('div', { class: 'kopf' }, [el('span', { text: '🚛 ' + Z.lkw + ' · ' + fahrer(Z.lkw) }), el('b', { text: 'Di 13.10.' })]),
+  bild([el('div', { class: 'kopf' }, [el('span', { text: '🚛 ' + LKW + ' · ' + fahrer(LKW) }), el('b', { text: 'Di 13.10.' })]),
     el('p', { class: 'wort', text: 'Deine Tour heute' }), el('h1', { text: 'Romina gibt dir ' + kunden.length + ' Stopps' }),
     karte(st, null), el('p', { class: 'klein', text: 'Los 07:00 · fertig ca. ' + uhr(ende) + ' Uhr' }),
-    knoepfe(['✓ Übernehmen', function () { Z.uebernommen[Z.lkw] = '07:00'; sichern(); zeigen(); }], ['✋ Passt nicht – Büro anrufen', function () { Z.meldungen.push({ lkw: Z.lkw, zeit: '07:00', text: 'Tour passt nicht – bitte anrufen' }); sichern(); bild([el('div', { class: 'gross' }, [el('p', { class: 'ok', text: '📞' }), el('h1', { text: 'Romina weiß Bescheid', style: 'text-align:center' }), el('p', { class: 'klein', text: 'Sie ruft dich an.', style: 'text-align:center' })]), knoepfe(['Zurück zur Tour', zeigen])]); }])]);
+    knoepfe(['✓ Übernehmen', function () { melden('uebernommen', { zeit: LIVE ? uhr(jetztIso()) : '07:00' }); zeigen(); }], ['✋ Passt nicht – Büro anrufen', function () { melden('meldung', { zeit: LIVE ? uhr(jetztIso()) : '07:00', text: 'Tour passt nicht – bitte anrufen' }); bild([el('div', { class: 'gross' }, [el('p', { class: 'ok', text: '📞' }), el('h1', { text: 'Romina weiß Bescheid', style: 'text-align:center' }), el('p', { class: 'klein', text: 'Sie ruft dich an.', style: 'text-align:center' })]), knoepfe(['Zurück zur Tour', zeigen])]); }])]);
 }
 function schritt(st, s) {
   var k = s.stopp.ort.koordinate;
@@ -1194,21 +1233,22 @@ function quittung(mitFoto) {   // kurze Bestätigung, dann von selbst weiter
 function problem(st, s) {
   bild([kopf(st, s), el('div', { class: 'gross' }, [el('p', { class: 'wort', text: 'Geht nicht' }), el('h1', { text: 'Mach ein Foto davon' }), el('p', { class: 'was', text: 'Romina sieht es sofort und ruft dich an.' })]),
     knoepfe(['📸 Foto an Romina', function () { foto({ stopp: s.stopp, ereignis: null, groesse: s.groesse, container: s.container || '–', ziel: s.ziel }, function (d) {
-      Z.meldungen.push({ lkw: Z.lkw, zeit: uhr(zeitpunkt(s)), text: s.ziel + ': ' + s.tun + ' geht nicht', foto: d }); Z.problem[s.id] = true; st.slice(st.indexOf(s) + 1).forEach(function (x) { if (s.auftrag && x.auftrag === s.auftrag) Z.problem[x.id] = true; }); sichern(); quittung(true); }); }], ['← Zurück', zeigen])]);
+      var aus = [s.id]; st.slice(st.indexOf(s) + 1).forEach(function (x) { if (s.auftrag && x.auftrag === s.auftrag) aus.push(x.id); });
+      melden('problem', { schritte: aus, zeit: uhr(zeitpunkt(s)), text: s.ziel + ': ' + s.tun + ' geht nicht' }, d); quittung(true); }); }], ['← Zurück', zeigen])]);
 }
 function rueckgabe(st) {   // am Abend: Tour zurück an Romina
   var f = st.filter(function (s) { return Z.erledigt[s.id]; }).length;
   bild([kopf(st, null), el('p', { class: 'wort', text: 'Feierabend' }), el('h1', { text: f + ' von ' + st.length + ' erledigt' }), karte(st, null),
-    knoepfe(['✓ Tour an Romina zurückgeben', function () { Z.abgegeben[Z.lkw] = uhr(st[st.length - 1].stopp.abfahrt); sichern(); zeigen(); }], null)]);
+    knoepfe(['✓ Tour an Romina zurückgeben', function () { melden('abgegeben', { zeit: LIVE ? uhr(jetztIso()) : uhr(st[st.length - 1].stopp.abfahrt) }); zeigen(); }], null)]);
 }
 function feierabend(st) {
-  bild([el('div', { class: 'gross' }, [el('p', { class: 'ok', text: '🍺' }), el('h1', { text: 'Danke! Schönen Feierabend.', style: 'text-align:center' }), el('p', { class: 'klein', text: 'Romina hat deine Tour um ' + Z.abgegeben[Z.lkw] + ' zurückbekommen – mit jedem Foto.', style: 'text-align:center' })]),
-    knoepfe(null, ['↺ Neuer Tag (Simulation von vorn)', function () { var lkw = Z.lkw; Z = neuerTag(); Z.lkw = lkw; sichern(); zeigen(); }])]);
+  bild([el('div', { class: 'gross' }, [el('p', { class: 'ok', text: '🍺' }), el('h1', { text: 'Danke! Schönen Feierabend.', style: 'text-align:center' }), el('p', { class: 'klein', text: 'Romina hat deine Tour um ' + Z.abgegeben[LKW] + ' zurückbekommen – mit jedem Foto.', style: 'text-align:center' })]),
+    (LIVE ? null : knoepfe(null, ['↺ Neuer Tag (Simulation von vorn)', neuStarten]))]);
 }
 
 // ---- Büro (eigener Link #buero): Romina sieht alles, der Fahrer nicht ----
 function buero() {
-  var kinder = [el('div', { class: 'kopf' }, [el('span', { text: '🏢 Romina · Büro' }), el('b', { text: 'Di 13.10.' })]), el('h1', { text: 'Heute' })];
+  var kinder = [el('div', { class: 'kopf' }, [el('span', { text: '🏢 Romina · Büro' }), el('b', { text: LIVE ? (NETZ ? '● live' : '○ kein Netz') : 'Di 13.10.' })]), el('h1', { text: 'Heute' })];
   PLAN.touren.forEach(function (t) { var st = schritte(t), f = st.filter(function (s) { return Z.erledigt[s.id]; }).length, u = Z.uebernommen[t.fahrzeug], a = Z.abgegeben[t.fahrzeug];
     kinder.push(el('div', { class: 'karte2' }, [el('h3', { text: '🚛 ' + t.fahrzeug + ' · ' + fahrer(t.fahrzeug) }),
       el('div', { class: 'balken' }, [el('i', { style: 'width:' + Math.round(100 * f / st.length) + '%' })]),
@@ -1219,11 +1259,17 @@ function buero() {
     kinder.push(el('div', { class: 'karte2' }, [el('h3', { text: { Gestellt: '✓ Gestellt', Abgeholt: '✓ Abgeholt', Abgekippt: '✓ Abgekippt' }[art] + ' · ' + e._ziel }), el('div', { class: 'klein', text: '🚛 ' + e._lkw + ' · ' + uhr(e.zeitpunkt) + ' · ' + e.container }), Z.fotos[e.foto] ? el('img', { class: 'bild', src: Z.fotos[e.foto], alt: '' }) : null])); });
   var sauber = SZENARIO.ereignisse.concat(Z.ereignisse.map(function (e) { var k = {}; for (var x in e) if (x[0] !== '_') k[x] = e[x]; return k; })).sort(function (a, b) { return a.zeitpunkt < b.zeitpunkt ? -1 : a.zeitpunkt > b.zeitpunkt ? 1 : 0; });
   kinder.push(el('details', {}, [el('summary', { text: '📋 Ereignisprotokoll (für den App-Motor)', class: 'klein' }), el('pre', { text: JSON.stringify(sauber, null, 2) })]));
-  bild(kinder);
+  var neu = el('button', { class: 'k nein', text: '↺ Vorführung von vorn', style: 'margin-top:14px', onclick: function () { if (neu.dataset.sicher) neuStarten(); else { neu.dataset.sicher = 1; neu.textContent = 'Wirklich alles löschen? Nochmal tippen'; } } });
+  kinder.push(neu);
+  var y = window.scrollY; bild(kinder); window.scrollTo(0, y);
 }
 addEventListener('hashchange', zeigen);
-addEventListener('storage', function () { Z = laden() || neuerTag(); zeigen(); });   // Büro im zweiten Tab aktualisiert sich von selbst
-zeigen();
+function istBuero() { return location.hash.indexOf('buero') >= 0; }
+addEventListener('storage', function (e) { if (e.key !== SPEICHER) return; var vorher = EINTRAEGE.length; EINTRAEGE = lies(SPEICHER, []);   // Präsentation: das Büro-Handy daneben sieht sofort, was die Fahrer tun
+  if (istBuero() || EINTRAEGE.length < vorher) zeigen(); });
+if (LIVE) { H.innerHTML = '<div class="gross"><p class="ok">⏳</p></div>'; holen().then(function () { WARTE.forEach(function (w) { if (!EINTRAEGE.some(function (e) { return e.daten.uid === w.daten.uid; })) EINTRAEGE.push(w); }); zeigen(); senden(); });
+  setInterval(function () { senden(); var netzVorher = NETZ; holen().then(function (neu) { if (istBuero() && (neu || NETZ !== netzVorher)) zeigen(); }); }, 3000); }
+else zeigen();
 </script>
 </body>
 </html>
