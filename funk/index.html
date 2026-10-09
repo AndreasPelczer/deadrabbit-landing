@@ -63,6 +63,10 @@
   .marke{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:#EEE9DF}
   .marke.neu{background:var(--gelb)}.marke.übernommen,.marke.erledigt{background:#D7F0E0;color:#1D6B40}
   .verlauf pre{white-space:pre-wrap;font:inherit;margin:0}
+  .kann{margin:6px 0 10px;padding-left:0;list-style:none}.kann li{position:relative;padding:6px 0 6px 28px;border-top:1px solid var(--linie)}.kann li:first-child{border-top:0}.kann li:before{content:"✓";position:absolute;left:4px;top:6px;color:var(--gruen);font-weight:900}
+  .wunsch{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+  .wunsch .text{flex:1 1 280px}.wunsch .text b{display:block}.wunsch .text span{font-size:14.5px;color:var(--grau)}
+  .wunsch .wahl button[aria-pressed="true"].muss{background:var(--pink);border-color:var(--pink)}
   .gitter2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}@media (max-width:640px){.gitter2{grid-template-columns:1fr}}
   .kreuze label{display:flex;gap:8px;align-items:flex-start;font-weight:500;margin:6px 0}
   .kreuze input{margin-top:5px}
@@ -86,7 +90,7 @@
     <button role="tab" data-reiter="entwuerfe" aria-selected="true">1 · Entwürfe</button>
     <button role="tab" data-reiter="texte">2 · Texte</button>
     <button role="tab" data-reiter="bilder">3 · Fotos</button>
-    <button role="tab" data-reiter="app">4 · Für die App</button>
+    <button role="tab" data-reiter="app">4 · Die App</button>
     <button role="tab" data-reiter="verlauf">Verlauf</button>
   </nav>
 </div></header>
@@ -104,19 +108,9 @@
     <div id="vaterListe"></div>
   </div>
   <div style="margin-top:34px">
-    <h2>So könnte eure App aussehen 📱</h2>
-    <p class="hilfe">Drei Handys an einem Tag: zwei Fahrer und du im Büro. Tippe bei einem Fahrer – und schau, was rechts bei dir ankommt. Die Kunden sind erfunden, die Orte echt.</p>
-    <div class="schritte3">
-      <div><b>1 · Übergabe</b><br>Du gibst die Tour, der Fahrer übernimmt mit einem Knopf – mit Karte.</div>
-      <div><b>2 · Ein Handgriff</b><br>Immer nur „das jetzt“. Zwei Knöpfe: Foto – fertig, oder: geht nicht.</div>
-      <div><b>3 · Beweisfoto</b><br>Gestellt, abgeholt, abgekippt: Du siehst es sofort, mit Zeit und Ort.</div>
-    </div>
-    <div class="handys">
-      <div class="handyrahmen"><div class="geh"><iframe src="tour/index.html?demo=1#lkw=Iveco" title="Fahrer mit dem Iveco" loading="lazy"></iframe></div><b>Fahrer 1</b><span>Iveco</span></div>
-      <div class="handyrahmen"><div class="geh"><iframe src="tour/index.html?demo=1#lkw=MAN" title="Fahrer mit dem MAN" loading="lazy"></iframe></div><b>Fahrer 2</b><span>MAN</span></div>
-      <div class="handyrahmen"><div class="geh" style="background:var(--pink)"><iframe src="tour/index.html?demo=1#buero" title="Romina im Büro" loading="lazy"></iframe></div><b>Du im Büro</b><span>siehst alles sofort</span></div>
-    </div>
-    <div class="reihe"><button class="knopf leer klein" type="button" id="tourNeu">↺ Den Tag von vorn</button></div>
+    <h2>Und so könnte eure App aussehen 📱</h2>
+    <div class="karte" style="border:2px solid var(--pink)"><p style="margin:0 0 10px">Zwei Fahrer und du im Büro – zum Ausprobieren, auf drei Handys nebeneinander.</p>
+      <div class="reihe"><button class="knopf voll" type="button" onclick="document.querySelector('nav button[data-reiter=app]').click();">📱 Zur App (Reiter 4)</button></div></div>
   </div>
   <div style="margin-top:34px">
     <h2>Und noch etwas für deinen Sohn 🎁</h2>
@@ -168,46 +162,53 @@
 
 <!-- APP -->
 <section data-seite="app" hidden>
-  <h2>Für die App: Touren, Container, Mannschaft</h2>
-  <p class="hilfe">Für die Container- und Tourenplaner-App, die wir auf dem Schirm haben. Fülle aus, was du weißt – Lücken sind kein Problem. Grobe Zahlen reichen.</p>
-  <form id="appForm" class="karte">
-    <h3>Was drückt am meisten?</h3>
-    <p class="bisher">Hake an, was dir den Alltag am meisten erleichtern würde (gern mehrere).</p>
-    <div class="kreuze">
-      <label><input type="checkbox" name="drueckt" value="Standorte">Wissen, welcher Container wo steht</label>
-      <label><input type="checkbox" name="drueckt" value="Touren">Kürzeste Touren planen (Kunde → Deponie → nächster Kunde)</label>
-      <label><input type="checkbox" name="drueckt" value="Kalender">Zeitplan / Kalender für Stellen, Wechseln, Abholen</label>
-      <label><input type="checkbox" name="drueckt" value="Mitarbeiter">Fahrer und Fahrzeuge einteilen</label>
-      <label><input type="checkbox" name="drueckt" value="Übergabe">Übergabe beim Kunden mit Foto und Ort (nur beim Abstellen/Abholen)</label>
-      <label><input type="checkbox" name="drueckt" value="Standzeit">Erinnerung, wenn ein Container zu lange steht</label>
-      <label><input type="checkbox" name="drueckt" value="Abrechnung">Abrechnung: Miettage, Gewicht, Abfallart, Fahrten</label>
-      <label><input type="checkbox" name="drueckt" value="Kunde benachrichtigen">Kunde bekommt Bescheid („Lkw kommt in 30 Minuten“)</label>
-      <label><input type="checkbox" name="drueckt" value="Online-Anfrage">Kunde bestellt selbst online (Größe, Menge, Termin)</label>
+  <h2>Die App: was sie kann – und was dazukommt</h2>
+  <p class="hilfe">Was schon geht, zum Ausprobieren auf drei Handys – noch mit erfundenen Kunden. Und darunter entscheidest du, was als Nächstes kommt.</p>
+
+  <div class="karte">
+    <h3>✓ Das kann sie schon</h3>
+    <ul class="kann">
+      <li><b>Tour übergeben:</b> Du gibst die Tour, der Fahrer übernimmt sie mit einem Knopf – mit Karte und Uhrzeit.</li>
+      <li><b>Ein Handgriff nach dem anderen:</b> Der Fahrer sieht immer nur, was jetzt dran ist. Zwei Knöpfe, mehr nicht.</li>
+      <li><b>Beweisfoto:</b> Gestellt, abgeholt, abgekippt – du siehst es im Büro sofort, mit Zeit und Ort.</li>
+      <li><b>„Geht nicht“:</b> Der Fahrer schickt ein Foto, du weißt Bescheid, bevor das Telefon klingelt.</li>
+      <li><b>Wo steht welche Mulde?</b> Das rechnet die App aus den Beweisfotos – niemand muss eine Liste führen.</li>
+      <li><b>Steht zu lange:</b> Die App sagt, welche Mulde über ihrer Frist beim Kunden steht.</li>
+      <li><b>Tagesplan:</b> Die App schlägt vor, welcher Lkw wann wohin fährt – und achtet auf die Öffnungszeiten der Deponie.</li>
+    </ul>
+  </div>
+    <h3 style="margin:26px 0 4px">📱 Probier sie aus</h3>
+    <p class="hilfe">Drei Handys an einem Tag: zwei Fahrer und du im Büro. Tippe bei einem Fahrer – und schau, was rechts bei dir ankommt. Die Kunden sind erfunden, die Orte echt.</p>
+    <div class="handys">
+      <div class="handyrahmen"><div class="geh"><iframe src="tour/index.html?demo=1#lkw=Iveco" title="Fahrer mit dem Iveco" loading="lazy"></iframe></div><b>Fahrer 1</b><span>Iveco</span></div>
+      <div class="handyrahmen"><div class="geh"><iframe src="tour/index.html?demo=1#lkw=MAN" title="Fahrer mit dem MAN" loading="lazy"></iframe></div><b>Fahrer 2</b><span>MAN</span></div>
+      <div class="handyrahmen"><div class="geh" style="background:var(--pink)"><iframe src="tour/index.html?demo=1#buero" title="Romina im Büro" loading="lazy"></iframe></div><b>Du im Büro</b><span>siehst alles sofort</span></div>
     </div>
-    <h3 style="margin-top:20px">Fahrzeuge und Container</h3>
-    <div class="gitter2">
-      <div><label>Absetzkipper (Anzahl)</label><input type="number" name="absetzkipper" min="0"></div>
-      <div><label>Abrollkipper (Anzahl)</label><input type="number" name="abrollkipper" min="0"></div>
-    </div>
-    <label>Container ungefähr – welche Größen, wie viele?</label>
-    <textarea name="container" placeholder="z. B. 20× 5 m³ Absetz, 10× 7 m³, 8× 30 m³ Abroll …"></textarea>
-    <h3 style="margin-top:20px">Mannschaft und Aufträge</h3>
-    <div class="gitter2">
-      <div><label>Fahrer (Anzahl)</label><input type="number" name="fahrer" min="0"></div>
-      <div><label>Im Büro (Anzahl)</label><input type="number" name="buero" min="0"></div>
-      <div><label>Aufträge pro Tag (ungefähr)</label><input type="number" name="auftraege_tag" min="0"></div>
-      <div><label>Wie lange steht ein Container meist?</label><input type="text" name="standzeit" placeholder="z. B. 3–7 Tage"></div>
-    </div>
-    <label>Wie kommen Aufträge rein?</label>
-    <div class="kreuze" style="display:flex;flex-wrap:wrap;gap:4px 18px">
-      <label><input type="checkbox" name="kanal" value="Telefon">Telefon</label><label><input type="checkbox" name="kanal" value="WhatsApp">WhatsApp</label><label><input type="checkbox" name="kanal" value="E-Mail">E-Mail</label><label><input type="checkbox" name="kanal" value="persönlich">persönlich</label>
-    </div>
-    <label>Wohin wird entsorgt? (Deponie, Kompost, Wertstoffhof …)</label>
-    <textarea name="ziele"></textarea>
-    <label>Was nervt im Moment am meisten? Was soll die App auf keinen Fall?</label>
-    <textarea name="frei"></textarea>
-    <div class="reihe" style="margin-top:14px"><button class="knopf voll" type="submit">Angaben senden</button><span id="appMeldung"></span></div>
-  </form>
+    <div class="reihe"><button class="knopf leer klein" type="button" id="tourNeu">↺ Den Tag von vorn</button></div>
+
+
+  <h3 style="margin:26px 0 4px">Was soll dazukommen?</h3>
+  <p class="hilfe">Ein Klick pro Zeile reicht – er ist sofort gespeichert. Du kannst es jederzeit ändern.</p>
+  <div id="wunschListe"></div>
+
+  <details class="karte" style="margin-top:22px">
+    <summary style="cursor:pointer;font-weight:700">Ein paar Zahlen, wenn du magst <span class="bisher">(grob reicht, Lücken sind kein Problem)</span></summary>
+    <form id="appForm" style="margin-top:12px">
+      <div class="gitter2">
+        <div><label>Absetzkipper (Anzahl)</label><input type="number" name="absetzkipper" min="0"></div>
+        <div><label>Abrollkipper (Anzahl)</label><input type="number" name="abrollkipper" min="0"></div>
+        <div><label>Fahrer (Anzahl)</label><input type="number" name="fahrer" min="0"></div>
+        <div><label>Wie lange darf eine Mulde stehen?</label><input type="text" name="standzeit" placeholder="z. B. 14 Tage"></div>
+      </div>
+      <label>Container ungefähr – welche Größen, wie viele?</label>
+      <textarea name="container" placeholder="z. B. 20× 5 m³, 10× 7 m³, 8× 10 m³ …"></textarea>
+      <label>Wohin wird entsorgt? (Deponie, Kompost, Wertstoffhof …)</label>
+      <textarea name="ziele"></textarea>
+      <label>Was soll die App auf keinen Fall?</label>
+      <textarea name="frei"></textarea>
+      <div class="reihe" style="margin-top:14px"><button class="knopf voll" type="submit">Senden</button><span id="appMeldung"></span></div>
+    </form>
+  </details>
 </section>
 
 <!-- VERLAUF -->
@@ -389,11 +390,32 @@ function bilderZeigen() { var l = document.getElementById('bilderListe'); l.inne
 
 // ---- App ----
 document.getElementById('appForm').addEventListener('submit', function (ev) { ev.preventDefault();
-  var f = ev.target, d = {}; ['absetzkipper', 'abrollkipper', 'container', 'fahrer', 'buero', 'auftraege_tag', 'standzeit', 'ziele', 'frei'].forEach(function (n) { d[n] = f.elements[n].value.trim(); });
-  d.drueckt = [].slice.call(f.querySelectorAll('input[name=drueckt]:checked')).map(function (x) { return x.value; });
-  d.kanal = [].slice.call(f.querySelectorAll('input[name=kanal]:checked')).map(function (x) { return x.value; });
+  var f = ev.target, d = {}; ['absetzkipper', 'abrollkipper', 'container', 'fahrer', 'standzeit', 'ziele', 'frei'].forEach(function (n) { d[n] = f.elements[n].value.trim(); });
   senden({ bereich: 'app', schluessel: 'fragebogen', inhalt: JSON.stringify(d) }, document.getElementById('appMeldung'), f.querySelector('button[type=submit]')); });
-function appVorbelegen() { var v = letzter('app', 'fragebogen'); if (!v) return; try { var d = JSON.parse(v.inhalt), f = document.getElementById('appForm');
+// Wünsche: ein Klick = gespeichert (muss / wäre schön / brauche ich nicht)
+var WUENSCHE = [
+  { id: 'auftrag-eintragen', titel: 'Anruf → Auftrag in drei Tipps', text: 'Während du telefonierst: Kunde, Größe, Tag – fertig. Der Auftrag landet im Tagesplan.' },
+  { id: 'kunde-bescheid', titel: 'Der Kunde bekommt Bescheid', text: '„Ihr Container kommt in 30 Minuten“ – und danach das Foto: steht.' },
+  { id: 'wechsel-runde', titel: 'Wechsel und mehrere Kunden auf einer Runde', text: 'Leer hin, voll mit, gleich weiter zum nächsten – statt jedes Mal zurück auf den Hof.' },
+  { id: 'abrechnung', titel: 'Abrechnung vorbereiten', text: 'Miettage, Gewicht vom Wiegeschein und Fahrten pro Auftrag – fertig für die Rechnung.' },
+  { id: 'wiegeschein', titel: 'Wiegeschein abtippen lassen', text: 'Der Fahrer fotografiert den Schein, die App liest das Gewicht selbst heraus.' },
+  { id: 'altkleider', titel: 'Altkleidercontainer', text: 'Leerungsrunden für feste Standorte – falls ihr welche habt.' },
+  { id: 'wertstoffhof', titel: 'Wertstoffhof-Samstag', text: 'Wer hat was angeliefert – schnell erfasst am ersten Samstag im Monat.' },
+  { id: 'online-bestellen', titel: 'Kunden bestellen selbst online', text: 'Größe, Abfallart, Termin – du bestätigst nur noch.' }
+];
+function wuenscheZeigen() {
+  var l = document.getElementById('wunschListe'); l.innerHTML = '';
+  WUENSCHE.forEach(function (w) {
+    var vorher = letzter('app', 'wunsch-' + w.id), meldung = el('span', { class: 'bisher' }), wahl = el('div', { class: 'reihe wahl', style: 'margin:0' });
+    [['muss', '❗ Muss', 'muss'], ['wäre schön', '👍 Wäre schön', ''], ['brauche ich nicht', '✖ Brauche ich nicht', '']].forEach(function (o) {
+      var b = el('button', { type: 'button', class: o[2], 'aria-pressed': String(!!vorher && vorher.inhalt === o[0]), text: o[1], onclick: function () {
+        wahl.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        senden({ bereich: 'app', schluessel: 'wunsch-' + w.id, inhalt: o[0] }, meldung, null); } });
+      wahl.appendChild(b); });
+    l.appendChild(el('div', { class: 'karte wunsch' }, [el('div', { class: 'text' }, [el('b', { text: w.titel }), el('span', { text: w.text })]), el('div', {}, [wahl, meldung])]));
+  });
+}
+function appVorbelegen() { wuenscheZeigen(); var v = letzter('app', 'fragebogen'); if (!v) return; try { var d = JSON.parse(v.inhalt), f = document.getElementById('appForm');
   for (var k in d) { if (Array.isArray(d[k])) f.querySelectorAll('input[name=' + k + ']').forEach(function (x) { x.checked = d[k].indexOf(x.value) >= 0; }); else if (f.elements[k]) f.elements[k].value = d[k]; } } catch (e) {} }
 
 // ---- Verlauf (für Andreas: Eingang mit Abhaken) ----
