@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Arbeitsplatz Webseite – Containerdienst Funk</title>
+<style>
+  :root{--pink:#E5007E;--pink-hell:#FCE6F1;--tinte:#22201C;--grau:#6B665E;--linie:#E4DED3;--papier:#FAF7F1;--weiss:#fff;--gruen:#2E8B57;--gelb:#FFE45C}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--papier);color:var(--tinte);font:17px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .innen{max-width:980px;margin:0 auto;padding:0 18px}
+  header{background:var(--weiss);border-bottom:1px solid var(--linie)}
+  header .innen{padding-top:18px;padding-bottom:14px}
+  .von{font-size:13px;color:var(--grau);letter-spacing:.06em;text-transform:uppercase}
+  h1{margin:4px 0 6px;font-size:clamp(26px,4.5vw,38px);letter-spacing:-.02em;line-height:1.1}
+  .einleitung{margin:0;color:var(--grau);max-width:60ch}
+  nav{display:flex;gap:6px;flex-wrap:wrap;margin-top:16px}
+  nav button{font:inherit;font-size:15px;font-weight:600;border:1px solid var(--linie);background:var(--papier);color:var(--tinte);padding:9px 14px;border-radius:999px;cursor:pointer}
+  nav button[aria-selected="true"]{background:var(--tinte);color:#fff;border-color:var(--tinte)}
+  main{padding:26px 0 70px}
+  section[hidden]{display:none!important}
+  h2{font-size:24px;letter-spacing:-.01em;margin:0 0 4px}
+  .hilfe{color:var(--grau);margin:0 0 20px;max-width:62ch}
+  .karte{background:var(--weiss);border:1px solid var(--linie);border-radius:14px;padding:18px;margin-bottom:16px}
+  .karte h3{margin:0 0 4px;font-size:19px}
+  .karte p{margin:0 0 10px}
+  .liebling{border:2px solid var(--pink);box-shadow:0 8px 28px rgba(229,0,126,.12)}
+  .band{display:inline-block;background:var(--pink);color:#fff;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;margin-bottom:8px}
+  .entwurf{display:grid;grid-template-columns:220px 1fr;gap:18px;align-items:start}
+  .entwurf img{width:100%;border-radius:10px;border:1px solid var(--linie);display:block;aspect-ratio:3/4;object-fit:cover;object-position:top}
+  @media (max-width:640px){.entwurf{grid-template-columns:1fr}.entwurf img{aspect-ratio:16/10}}
+  .gruende{margin:8px 0 12px;padding-left:20px}.gruende li{margin:4px 0}
+  .knopf{display:inline-block;font:inherit;font-weight:700;font-size:15.5px;border:0;border-radius:10px;padding:11px 16px;cursor:pointer;text-decoration:none}
+  .knopf.voll{background:var(--pink);color:#fff}.knopf.leer{background:transparent;border:2px solid var(--tinte);color:var(--tinte)}
+  .knopf.klein{font-size:14px;padding:7px 12px}
+  .reihe{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .wahl button{font:inherit;font-size:15px;border:1px solid var(--linie);background:var(--papier);border-radius:10px;padding:8px 12px;cursor:pointer}
+  .wahl button[aria-pressed="true"]{background:var(--tinte);color:#fff;border-color:var(--tinte)}
+  label{display:block;font-weight:600;font-size:15px;margin:12px 0 4px}
+  textarea,input[type=text],input[type=number],select{width:100%;font:inherit;font-size:16px;border:1px solid #D5CDBF;border-radius:10px;padding:10px 12px;background:#fff;color:var(--tinte)}
+  textarea{min-height:84px;resize:vertical}
+  .bisher{font-size:14px;color:var(--grau);margin:2px 0 0}
+  .gespeichert{color:var(--gruen);font-weight:700;font-size:14px}
+  .fehler{color:#B3261E;font-weight:700;font-size:14px}
+  .ablage{border:2px dashed #CFC6B6;border-radius:14px;padding:24px;text-align:center;background:#fff}
+  .ablage.drueber{border-color:var(--pink);background:var(--pink-hell)}
+  .bilder{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:14px}
+  .bilder figure{margin:0;background:#fff;border:1px solid var(--linie);border-radius:10px;overflow:hidden}
+  .bilder img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+  .bilder figcaption{font-size:13px;padding:6px 8px;color:var(--grau)}
+  .verlauf{list-style:none;margin:0;padding:0}
+  .verlauf li{background:#fff;border:1px solid var(--linie);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:15px}
+  .verlauf .kopf{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--grau);margin-bottom:4px}
+  .marke{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:#EEE9DF}
+  .marke.neu{background:var(--gelb)}.marke.übernommen,.marke.erledigt{background:#D7F0E0;color:#1D6B40}
+  .verlauf pre{white-space:pre-wrap;font:inherit;margin:0}
+  .gitter2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}@media (max-width:640px){.gitter2{grid-template-columns:1fr}}
+  .kreuze label{display:flex;gap:8px;align-items:flex-start;font-weight:500;margin:6px 0}
+  .kreuze input{margin-top:5px}
+  .zugang{max-width:520px;margin:60px auto;text-align:center}
+  .warten{opacity:.6;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div id="ohneZugang" class="zugang innen" hidden>
+  <h1>Kein Zugang</h1>
+  <p class="einleitung">Diese Seite öffnet sich nur über den persönlichen Link von Andreas.</p>
+</div>
+
+<div id="app" hidden>
+<header><div class="innen">
+  <div class="von">pelczer.de · Arbeitsplatz</div>
+  <h1 id="gruss">Hallo Romina – hier entsteht deine neue Webseite.</h1>
+  <p class="einleitung" id="einleitung">Schau dir die Entwürfe an, sag, was dir gefällt, und ändere die Texte direkt. Lade Bilder hoch. Alles, was du hier einträgst, kommt bei Andreas an – er baut es ein. Du musst nichts erklären und nichts abstimmen.</p>
+  <nav role="tablist">
+    <button role="tab" data-reiter="entwuerfe" aria-selected="true">Entwürfe</button>
+    <button role="tab" data-reiter="texte">Texte</button>
+    <button role="tab" data-reiter="entscheidungen">Entscheidungen</button>
+    <button role="tab" data-reiter="bilder">Bilder</button>
+    <button role="tab" data-reiter="app">Für die App</button>
+    <button role="tab" data-reiter="verlauf">Verlauf</button>
+  </nav>
+</div></header>
+
+<main><div class="innen">
+
+<!-- ENTWÜRFE -->
+<section data-seite="entwuerfe">
+  <h2>Vier Entwürfe</h2>
+  <p class="hilfe">Oben unser Vorschlag, darunter die drei Richtungen vom Treffen am 26.09. Tippe auf „Ansehen“, dann sag mit einem Klick, wie er dir gefällt – und schreib dazu, was du ändern würdest.</p>
+  <div id="entwurfListe"></div>
+</section>
+
+<!-- TEXTE -->
+<section data-seite="texte" hidden>
+  <h2>Texte für die Startseite</h2>
+  <p class="hilfe">So stehen die Texte im Vorschlag. Ändere sie einfach so, wie du sie haben möchtest, und tippe auf „Speichern“. Ganze Sätze, Stichworte, beides ist gut.</p>
+  <div id="textListe"></div>
+</section>
+
+<!-- ENTSCHEIDUNGEN -->
+<section data-seite="entscheidungen" hidden>
+  <h2>Vier Entscheidungen</h2>
+  <p class="hilfe">Ein Klick genügt. Wenn du etwas dazu sagen möchtest, schreib es ins Feld darunter.</p>
+  <div id="entscheidungListe"></div>
+</section>
+
+<!-- BILDER -->
+<section data-seite="bilder" hidden>
+  <h2>Bilder</h2>
+  <p class="hilfe">Fotos vom Handy hochladen oder ein Bild einfügen (kopieren und hier einfügen). Sag kurz, wofür das Bild ist. Die Bilder werden vor dem Senden verkleinert.</p>
+  <div class="karte">
+    <label for="bildZweck">Wofür ist das Bild?</label>
+    <select id="bildZweck">
+      <option>Startseite – großes Bild oben</option><option>Über uns / Familie</option><option>Team / Fahrer</option><option>Lkw / Fahrzeuge</option><option>Container</option><option>Wertstoffhof</option><option>Logo</option><option>Sonstiges</option>
+    </select>
+    <label for="bildText">Dazu sagen (wer/was ist zu sehen?)</label>
+    <input type="text" id="bildText" placeholder="z. B. Papa mit dem ersten Lkw, 1988">
+    <div class="ablage" id="ablage" style="margin-top:14px">
+      <p style="margin:0 0 10px"><b>Bilder hierher ziehen</b> oder</p>
+      <label class="knopf voll" style="display:inline-block;margin:0">Fotos auswählen<input type="file" id="bildDatei" accept="image/*" multiple hidden></label>
+      <p class="bisher" style="margin-top:10px">Auf dem Computer kannst du ein kopiertes Bild auch mit Strg/⌘ + V einfügen.</p>
+      <p id="bildMeldung"></p>
+    </div>
+  </div>
+  <div class="bilder" id="bilderListe"></div>
+</section>
+
+<!-- APP -->
+<section data-seite="app" hidden>
+  <h2>Für die App: Touren, Container, Mannschaft</h2>
+  <p class="hilfe">Für die Container- und Tourenplaner-App, die wir auf dem Schirm haben. Fülle aus, was du weißt – Lücken sind kein Problem. Grobe Zahlen reichen.</p>
+  <form id="appForm" class="karte">
+    <h3>Was drückt am meisten?</h3>
+    <p class="bisher">Hake an, was dir den Alltag am meisten erleichtern würde (gern mehrere).</p>
+    <div class="kreuze">
+      <label><input type="checkbox" name="drueckt" value="Standorte">Wissen, welcher Container wo steht</label>
+      <label><input type="checkbox" name="drueckt" value="Touren">Kürzeste Touren planen (Kunde → Deponie → nächster Kunde)</label>
+      <label><input type="checkbox" name="drueckt" value="Kalender">Zeitplan / Kalender für Stellen, Wechseln, Abholen</label>
+      <label><input type="checkbox" name="drueckt" value="Mitarbeiter">Fahrer und Fahrzeuge einteilen</label>
+      <label><input type="checkbox" name="drueckt" value="Übergabe">Übergabe beim Kunden mit Foto und Ort (nur beim Abstellen/Abholen)</label>
+      <label><input type="checkbox" name="drueckt" value="Standzeit">Erinnerung, wenn ein Container zu lange steht</label>
+      <label><input type="checkbox" name="drueckt" value="Abrechnung">Abrechnung: Miettage, Gewicht, Abfallart, Fahrten</label>
+      <label><input type="checkbox" name="drueckt" value="Kunde benachrichtigen">Kunde bekommt Bescheid („Lkw kommt in 30 Minuten“)</label>
+      <label><input type="checkbox" name="drueckt" value="Online-Anfrage">Kunde bestellt selbst online (Größe, Menge, Termin)</label>
+    </div>
+    <h3 style="margin-top:20px">Fahrzeuge und Container</h3>
+    <div class="gitter2">
+      <div><label>Absetzkipper (Anzahl)</label><input type="number" name="absetzkipper" min="0"></div>
+      <div><label>Abrollkipper (Anzahl)</label><input type="number" name="abrollkipper" min="0"></div>
+    </div>
+    <label>Container ungefähr – welche Größen, wie viele?</label>
+    <textarea name="container" placeholder="z. B. 20× 5 m³ Absetz, 10× 7 m³, 8× 30 m³ Abroll …"></textarea>
+    <h3 style="margin-top:20px">Mannschaft und Aufträge</h3>
+    <div class="gitter2">
+      <div><label>Fahrer (Anzahl)</label><input type="number" name="fahrer" min="0"></div>
+      <div><label>Im Büro (Anzahl)</label><input type="number" name="buero" min="0"></div>
+      <div><label>Aufträge pro Tag (ungefähr)</label><input type="number" name="auftraege_tag" min="0"></div>
+      <div><label>Wie lange steht ein Container meist?</label><input type="text" name="standzeit" placeholder="z. B. 3–7 Tage"></div>
+    </div>
+    <label>Wie kommen Aufträge rein?</label>
+    <div class="kreuze" style="display:flex;flex-wrap:wrap;gap:4px 18px">
+      <label><input type="checkbox" name="kanal" value="Telefon">Telefon</label><label><input type="checkbox" name="kanal" value="WhatsApp">WhatsApp</label><label><input type="checkbox" name="kanal" value="E-Mail">E-Mail</label><label><input type="checkbox" name="kanal" value="persönlich">persönlich</label>
+    </div>
+    <label>Wohin wird entsorgt? (Deponie, Kompost, Wertstoffhof …)</label>
+    <textarea name="ziele"></textarea>
+    <label>Was nervt im Moment am meisten? Was soll die App auf keinen Fall?</label>
+    <textarea name="frei"></textarea>
+    <div class="reihe" style="margin-top:14px"><button class="knopf voll" type="submit">Angaben senden</button><span id="appMeldung"></span></div>
+  </form>
+</section>
+
+<!-- VERLAUF -->
+<section data-seite="verlauf" hidden>
+  <h2 id="verlaufTitel">Was du schon geschickt hast</h2>
+  <p class="hilfe" id="verlaufHilfe">Alles, was hier ankommt, sieht Andreas. „übernommen“ heißt: ist eingebaut.</p>
+  <ul class="verlauf" id="verlaufListe"></ul>
+</section>
+
+</div></main>
+</div>
+
+<script>
+// ---- Einstellungen ----
+var API = 'https://funk-portal.a-pelczer.workers.dev';   // Cloudflare-Worker
+var ENTWUERFE = [
+  { id: 'vorschlag', titel: 'Unser Vorschlag', bild: 'entwuerfe/vorschlag.png', link: 'entwuerfe/vorschlag.html', liebling: true,
+    text: 'Hell, ruhig, mit eurem Lkw vorn und der Familie im Mittelpunkt.', gruende: ["Wir haben 18 Containerdienst-Seiten aus ganz Deutschland verglichen – vom Familienbetrieb bis zum großen Portal. Das machen die guten anders:", "Ein Anruf-Knopf ganz oben, auf jedem Bildschirm. Auf dem Handy zeigen das nur 6 von 18 Seiten.", "Der erste Blick sagt: Familienbetrieb seit 1986, aus Marktheidenfeld. So machen es die überzeugendsten Familienbetriebe im Vergleich.", "Euer eigener Lkw statt eines Fotos aus dem Katalog. Der stärkste erste Eindruck im ganzen Vergleich war genau so ein Bild.", "„Ab 5 m³“ – der nächste Mitbewerber in eurer Gegend fängt erst bei 7 m³ an.", "Der Wertstoffhof bekommt einen eigenen Platz – für viele der Grund, die Seite überhaupt zu öffnen.", "Kein Shop, kein Preisrechner, kein Chat: Die guten kleinen Seiten gewinnen über Klarheit und das Telefon, nicht über Technik – und brauchen kaum Pflege."] },
+  { id: 'a', titel: 'Richtung A – Handfest', bild: 'entwuerfe/a.png', link: 'entwuerfe/richtungen.html#a', text: 'Dunkel und kräftig, die große pinke „1986“. (Skizze vom 26.09. – einige Zahlen darin sind noch vom alten Stand, z. B. 3–30 m³.)' },
+  { id: 'b', titel: 'Richtung B – Familienbetrieb', bild: 'entwuerfe/b.png', link: 'entwuerfe/richtungen.html#b', text: 'Hell und warm, die Familie steht im Vordergrund. (Skizze vom 26.09. – Angaben teils noch alter Stand.)' },
+  { id: 'c', titel: 'Richtung C – Klar', bild: 'entwuerfe/c.png', link: 'entwuerfe/richtungen.html#c', text: 'Schlicht und aufgeräumt. (Skizze vom 26.09. – Angaben teils noch alter Stand.)' }
+];
+var TEXTE = [
+  { id: 'ueberschrift', titel: 'Große Überschrift oben', jetzt: 'Ihre Nummer 1 für Container – seit 1986.' },
+  { id: 'unterzeile', titel: 'Satz darunter', jetzt: 'Container von 5 bis 30 m³ für Bauschutt, Sperrmüll und Grünschnitt. In Marktheidenfeld, Würzburg, Wertheim und Umgebung.' },
+  { id: 'absetz', titel: 'Absetzcontainer', jetzt: 'Für Bauschutt, Sperrmüll und Grünschnitt – die handlichen Mulden für Haus, Hof und Baustelle.' },
+  { id: 'abroll', titel: 'Abrollcontainer', jetzt: 'Die großen bis 30 m³ – für Baustellen, Abriss und alles, wofür eine Mulde nicht reicht.' },
+  { id: 'wertstoffhof', titel: 'Wertstoffhof', jetzt: 'Jeden 1. Samstag im Monat von 8 bis 12 Uhr geöffnet – zum Selbst-Anliefern.' },
+  { id: 'ueberuns', titel: 'Über uns', jetzt: '1986 hat Johann Funk den Containerdienst gegründet. Heute führt seine Tochter Romina Funk den Betrieb weiter: mit demselben Anspruch, mit dem Team, das die Gegend kennt, und mit kurzen Wegen – ein Anruf genügt.' },
+  { id: 'vater', titel: 'Der Satz über deinen Vater', jetzt: '„Was mein Vater aufgebaut hat, führen wir weiter – zuverlässig, wie seit 40 Jahren.“' },
+  { id: 'ablauf', titel: '„So einfach geht’s“ (drei Schritte)', jetzt: 'Anrufen – Container kommt – wir holen ab.' },
+  { id: 'sonstiges', titel: 'Was sonst noch auf die Seite soll', jetzt: '' }
+];
+var ENTSCHEIDUNGEN = [
+  { id: 'entruempelung', frage: 'Entrümpelung', hilfe: 'Im selben Landkreis bietet auch die Funk Entrümpelung GmbH deines Bruders Entrümpelung an – zwei Firmen mit demselben Angebot verwirren Google und die Branchenbücher.', wahl: ['Bleibt bei uns auf der Seite', 'Wir verweisen auf meinen Bruder', 'Weiß ich noch nicht'] },
+  { id: 'preise', frage: 'Preise auf der Seite?', hilfe: '', wahl: ['Ja, „ab … €“ je Größe', 'Nein, nur auf Anfrage', 'Weiß ich noch nicht'] },
+  { id: 'foto', frage: 'Wer soll auf der Seite zu sehen sein?', hilfe: '', wahl: ['Ich selbst', 'Das Team / die Fahrer', 'Nur Lkw und Container', 'Weiß ich noch nicht'] },
+  { id: 'vater', frage: 'Soll dein Vater als Gründer genannt werden?', hilfe: 'Im Vorschlag steht ein Absatz über ihn und ein Satz von dir.', wahl: ['Ja, so wie im Vorschlag', 'Ja, aber anders formuliert', 'Lieber nicht'] }
+];
+
+// ---- Zugang ----
+var h = new URLSearchParams(location.hash.slice(1)), SCHLUESSEL = h.get('k') || h.get('a') || '';
+try { if (SCHLUESSEL) sessionStorage.setItem('funkPortal', SCHLUESSEL); else SCHLUESSEL = sessionStorage.getItem('funkPortal') || ''; } catch (e) {}
+if (SCHLUESSEL && history.replaceState) history.replaceState(null, '', location.pathname);   // Schlüssel nicht in der Adresszeile stehen lassen
+var ROLLE = null, EINTRAEGE = [];
+function api(pfad, daten) {
+  return fetch(API + pfad, { method: daten ? 'POST' : 'GET', headers: Object.assign({ 'x-schluessel': SCHLUESSEL }, daten ? { 'content-type': 'application/json' } : {}), body: daten ? JSON.stringify(daten) : undefined })
+    .then(function (r) { if (r.status === 401) throw new Error('kein Zugang'); return r.json().then(function (j) { if (!r.ok) throw new Error(j.fehler || ('Fehler ' + r.status)); return j; }); });
+}
+function el(t, a, kinder) { var e = document.createElement(t); if (a) for (var k in a) { if (k === 'text') e.textContent = a[k]; else if (k === 'html') e.innerHTML = a[k]; else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), a[k]); else e.setAttribute(k, a[k]); } (kinder || []).forEach(function (c) { if (c) e.appendChild(c); }); return e; }
+function melde(ziel, ok, text) { ziel.textContent = text; ziel.className = ok ? 'gespeichert' : 'fehler'; if (ok) setTimeout(function () { if (ziel.textContent === text) ziel.textContent = ''; }, 4000); }
+function senden(eintrag, meldung, knopf) {
+  if (knopf) knopf.classList.add('warten');
+  return api('/eintrag', eintrag).then(function () { melde(meldung, true, '✓ Gespeichert – kommt bei Andreas an'); laden(); })
+    .catch(function (e) { melde(meldung, false, 'Nicht gespeichert: ' + e.message + ' – bitte später noch einmal'); })
+    .then(function () { if (knopf) knopf.classList.remove('warten'); });
+}
+function letzter(bereich, schluessel) { for (var i = 0; i < EINTRAEGE.length; i++) if (EINTRAEGE[i].bereich === bereich && EINTRAEGE[i].schluessel === schluessel) return EINTRAEGE[i]; return null; }
+
+// ---- Reiter ----
+document.querySelectorAll('nav button').forEach(function (b) { b.addEventListener('click', function () {
+  document.querySelectorAll('nav button').forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+  document.querySelectorAll('section[data-seite]').forEach(function (s) { s.hidden = s.getAttribute('data-seite') !== b.getAttribute('data-reiter'); });
+  window.scrollTo(0, 0); }); });
+
+// ---- Entwürfe ----
+function entwuerfeZeigen() {
+  var liste = document.getElementById('entwurfListe'); liste.innerHTML = '';
+  ENTWUERFE.forEach(function (w) {
+    var vorher = letzter('entwurf', w.id), urteil = null, meldung = el('span'), feld = el('textarea', { placeholder: 'Was gefällt dir, was würdest du ändern?' });
+    var wahl = el('div', { class: 'reihe wahl' });
+    [['gefällt mir', '👍 Gefällt mir'], ['geht so', '🤔 Geht so'], ['eher nicht', '👎 Eher nicht']].forEach(function (o) {
+      var b = el('button', { type: 'button', 'aria-pressed': 'false', text: o[1], onclick: function () { urteil = o[0]; wahl.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); } }); wahl.appendChild(b); });
+    var knopf = el('button', { class: 'knopf voll klein', type: 'button', text: 'Senden', onclick: function () {
+      if (!urteil && !feld.value.trim()) return melde(meldung, false, 'Bitte erst einen Daumen wählen oder etwas schreiben');
+      senden({ bereich: 'entwurf', schluessel: w.id, inhalt: (urteil ? '[' + urteil + '] ' : '') + feld.value.trim() }, meldung, knopf).then(function () { feld.value = ''; }); } });
+    var gruende = w.gruende && w.gruende.length ? el('ul', { class: 'gruende' }, w.gruende.map(function (g) { return el('li', { text: g }); })) : null;
+    liste.appendChild(el('div', { class: 'karte' + (w.liebling ? ' liebling' : '') }, [
+      el('div', { class: 'entwurf' }, [
+        el('a', { href: w.link, target: '_blank', rel: 'noopener' }, [el('img', { src: w.bild, alt: w.titel, loading: 'lazy' })]),
+        el('div', {}, [
+          w.liebling ? el('span', { class: 'band', text: 'Unser Favorit' }) : null,
+          el('h3', { text: w.titel }), el('p', { text: w.text }),
+          gruende ? el('p', { html: '<b>Warum wir ihn vorschlagen:</b>', style: 'margin:10px 0 0' }) : null, gruende,
+          el('div', { class: 'reihe' }, [el('a', { class: 'knopf leer klein', href: w.link, target: '_blank', rel: 'noopener', text: 'Ansehen ↗' })]),
+          wahl, feld, el('div', { class: 'reihe' }, [knopf, meldung]),
+          vorher ? el('p', { class: 'bisher', text: 'Zuletzt von dir: ' + vorher.inhalt }) : null ]) ]) ]));
+  });
+}
+
+// ---- Texte ----
+function texteZeigen() {
+  var liste = document.getElementById('textListe'); liste.innerHTML = '';
+  TEXTE.forEach(function (t) {
+    var vorher = letzter('text', t.id), feld = el('textarea'), meldung = el('span');
+    feld.value = vorher ? vorher.inhalt : t.jetzt;
+    var knopf = el('button', { class: 'knopf voll klein', type: 'button', text: 'Speichern', onclick: function () { senden({ bereich: 'text', schluessel: t.id, inhalt: feld.value.trim() }, meldung, knopf); } });
+    liste.appendChild(el('div', { class: 'karte' }, [el('label', { text: t.titel, style: 'margin-top:0' }), feld,
+      vorher ? el('p', { class: 'bisher', text: 'Deine Fassung vom ' + vorher.zeit.slice(8, 10) + '.' + vorher.zeit.slice(5, 7) + '. · ' + vorher.status }) : (t.jetzt ? el('p', { class: 'bisher', text: 'So steht es im Vorschlag.' }) : null),
+      el('div', { class: 'reihe' }, [knopf, meldung])]));
+  });
+}
+
+// ---- Entscheidungen ----
+function entscheidungenZeigen() {
+  var liste = document.getElementById('entscheidungListe'); liste.innerHTML = '';
+  ENTSCHEIDUNGEN.forEach(function (d) {
+    var vorher = letzter('entscheidung', d.id), gewaehlt = null, meldung = el('span'), feld = el('textarea', { placeholder: 'Dazu sagen (freiwillig)' });
+    if (vorher) { try { var j = JSON.parse(vorher.inhalt); gewaehlt = j.wahl; feld.value = j.dazu || ''; } catch (e) {} }
+    var wahl = el('div', { class: 'reihe wahl' });
+    d.wahl.forEach(function (w) { var b = el('button', { type: 'button', 'aria-pressed': w === gewaehlt ? 'true' : 'false', text: w, onclick: function () { gewaehlt = w; wahl.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); } }); wahl.appendChild(b); });
+    var knopf = el('button', { class: 'knopf voll klein', type: 'button', text: 'Speichern', onclick: function () {
+      if (!gewaehlt) return melde(meldung, false, 'Bitte eine Antwort anklicken');
+      senden({ bereich: 'entscheidung', schluessel: d.id, inhalt: JSON.stringify({ wahl: gewaehlt, dazu: feld.value.trim() }) }, meldung, knopf); } });
+    liste.appendChild(el('div', { class: 'karte' }, [el('h3', { text: d.frage }), d.hilfe ? el('p', { class: 'bisher', text: d.hilfe }) : null, wahl, feld, el('div', { class: 'reihe' }, [knopf, meldung])]));
+  });
+}
+
+// ---- Bilder ----
+function verkleinern(datei) { return new Promise(function (ok, fehl) {
+  var r = new FileReader(); r.onerror = fehl; r.onload = function () { var i = new Image(); i.onerror = function () { fehl(new Error('kein Bild')); }; i.onload = function () {
+    var m = 1600, s = Math.min(1, m / Math.max(i.width, i.height)), c = document.createElement('canvas'); c.width = Math.round(i.width * s); c.height = Math.round(i.height * s);
+    c.getContext('2d').drawImage(i, 0, 0, c.width, c.height); var q = 0.85, d = c.toDataURL('image/jpeg', q); while (d.length > 850000 && q > 0.4) { q -= 0.1; d = c.toDataURL('image/jpeg', q); } ok(d); }; i.src = r.result; }; r.readAsDataURL(datei); }); }
+function bilderSenden(dateien) {
+  var meldung = document.getElementById('bildMeldung'), zweck = document.getElementById('bildZweck').value, dazu = document.getElementById('bildText').value.trim(), n = 0;
+  dateien = [].slice.call(dateien).filter(function (f) { return /^image\//.test(f.type); }); if (!dateien.length) return;
+  meldung.className = ''; meldung.textContent = 'Wird gesendet …';
+  dateien.reduce(function (p, f) { return p.then(function () { return verkleinern(f).then(function (d) { return api('/eintrag', { bereich: 'bild', schluessel: zweck, inhalt: dazu || f.name || '', bild: d }); }).then(function () { n++; }); }); }, Promise.resolve())
+    .then(function () { melde(meldung, true, '✓ ' + n + (n === 1 ? ' Bild' : ' Bilder') + ' gesendet'); document.getElementById('bildText').value = ''; laden(); })
+    .catch(function (e) { melde(meldung, false, (n ? n + ' gesendet, dann ' : '') + 'Fehler: ' + e.message); laden(); });
+}
+document.getElementById('bildDatei').addEventListener('change', function (e) { bilderSenden(e.target.files); e.target.value = ''; });
+var ablage = document.getElementById('ablage');
+['dragenter', 'dragover'].forEach(function (t) { ablage.addEventListener(t, function (e) { e.preventDefault(); ablage.classList.add('drueber'); }); });
+['dragleave', 'drop'].forEach(function (t) { ablage.addEventListener(t, function (e) { e.preventDefault(); ablage.classList.remove('drueber'); }); });
+ablage.addEventListener('drop', function (e) { bilderSenden(e.dataTransfer.files); });
+document.addEventListener('paste', function (e) { var sb = document.querySelector('section[data-seite="bilder"]'); if (sb.hidden) return; var f = [].slice.call(e.clipboardData.items || []).filter(function (i) { return i.kind === 'file'; }).map(function (i) { return i.getAsFile(); }); if (f.length) bilderSenden(f); });
+var BILDURL = {};
+function bildLaden(id, img) { if (BILDURL[id]) { img.src = BILDURL[id]; return; } fetch(API + '/bild?id=' + id, { headers: { 'x-schluessel': SCHLUESSEL } }).then(function (r) { return r.blob(); }).then(function (b) { BILDURL[id] = URL.createObjectURL(b); img.src = BILDURL[id]; }).catch(function () {}); }
+function bilderZeigen() { var l = document.getElementById('bilderListe'); l.innerHTML = ''; EINTRAEGE.filter(function (e) { return e.bereich === 'bild' && e.hat_bild; }).forEach(function (e) { var img = el('img', { alt: e.inhalt }); bildLaden(e.id, img); l.appendChild(el('figure', {}, [img, el('figcaption', { text: e.schluessel + (e.inhalt ? ' · ' + e.inhalt : '') })])); }); }
+
+// ---- App ----
+document.getElementById('appForm').addEventListener('submit', function (ev) { ev.preventDefault();
+  var f = ev.target, d = {}; ['absetzkipper', 'abrollkipper', 'container', 'fahrer', 'buero', 'auftraege_tag', 'standzeit', 'ziele', 'frei'].forEach(function (n) { d[n] = f.elements[n].value.trim(); });
+  d.drueckt = [].slice.call(f.querySelectorAll('input[name=drueckt]:checked')).map(function (x) { return x.value; });
+  d.kanal = [].slice.call(f.querySelectorAll('input[name=kanal]:checked')).map(function (x) { return x.value; });
+  senden({ bereich: 'app', schluessel: 'fragebogen', inhalt: JSON.stringify(d) }, document.getElementById('appMeldung'), f.querySelector('button[type=submit]')); });
+function appVorbelegen() { var v = letzter('app', 'fragebogen'); if (!v) return; try { var d = JSON.parse(v.inhalt), f = document.getElementById('appForm');
+  for (var k in d) { if (Array.isArray(d[k])) f.querySelectorAll('input[name=' + k + ']').forEach(function (x) { x.checked = d[k].indexOf(x.value) >= 0; }); else if (f.elements[k]) f.elements[k].value = d[k]; } } catch (e) {} }
+
+// ---- Verlauf (für Andreas: Eingang mit Abhaken) ----
+var NAMEN = { entwurf: 'Entwurf', text: 'Text', entscheidung: 'Entscheidung', bild: 'Bild', app: 'App-Angaben', notiz: 'Notiz' };
+function lesbar(e) { if (e.bereich === 'entscheidung') { try { var j = JSON.parse(e.inhalt); return j.wahl + (j.dazu ? ' – ' + j.dazu : ''); } catch (x) {} }
+  if (e.bereich === 'app') { try { var d = JSON.parse(e.inhalt), z = []; for (var k in d) { var w = Array.isArray(d[k]) ? d[k].join(', ') : d[k]; if (w) z.push(k + ': ' + w); } return z.join('\n'); } catch (x) {} } return e.inhalt; }
+function verlaufZeigen() {
+  var l = document.getElementById('verlaufListe'); l.innerHTML = '';
+  if (!EINTRAEGE.length) { l.appendChild(el('li', { text: 'Noch nichts geschickt.' })); return; }
+  EINTRAEGE.forEach(function (e) {
+    var kopf = el('div', { class: 'kopf' }, [el('span', { class: 'marke ' + e.status, text: e.status }), el('span', { text: NAMEN[e.bereich] + ' · ' + e.schluessel }), el('span', { text: e.zeit.replace('T', ' ').slice(0, 16) + ' UTC' })]);
+    var kinder = [kopf, el('pre', { text: lesbar(e) })];
+    if (e.hat_bild) { var img = el('img', { style: 'max-width:180px;border-radius:8px;margin-top:6px;display:block', alt: '' }); bildLaden(e.id, img); kinder.push(img); }
+    if (ROLLE === 'admin' && e.status === 'neu') kinder.push(el('div', { class: 'reihe' }, [el('button', { class: 'knopf leer klein', type: 'button', text: '✓ übernommen', onclick: function () { api('/status', { id: e.id, status: 'übernommen' }).then(laden); } })]));
+    l.appendChild(el('li', {}, kinder));
+  });
+}
+
+function laden() { return api('/eintraege').then(function (j) { EINTRAEGE = j.eintraege || []; bilderZeigen(); verlaufZeigen();
+  var neu = EINTRAEGE.filter(function (e) { return e.status === 'neu'; }).length; var b = document.querySelector('nav button[data-reiter="verlauf"]'); b.textContent = ROLLE === 'admin' ? 'Eingang' + (neu ? ' (' + neu + ' neu)' : '') : 'Verlauf'; }); }
+function start() {
+  if (!SCHLUESSEL) { document.getElementById('ohneZugang').hidden = false; return; }
+  api('/wer').then(function (j) { ROLLE = j.rolle; document.getElementById('app').hidden = false;
+    if (ROLLE === 'admin') { document.getElementById('gruss').textContent = 'Eingang – was Romina geschickt hat'; document.getElementById('verlaufTitel').textContent = 'Eingang'; document.getElementById('verlaufHilfe').textContent = 'Neu = noch nicht eingebaut. Nach dem Einbau abhaken.'; document.getElementById('einleitung').textContent = 'Du siehst alles wie Romina – plus den Eingang. Was eingebaut ist, abhaken: dann sieht sie „übernommen“.'; }
+    return laden(); }).then(function () { entwuerfeZeigen(); texteZeigen(); entscheidungenZeigen(); appVorbelegen();
+    if (ROLLE === 'admin') document.querySelector('nav button[data-reiter="verlauf"]').click(); })
+    .catch(function (e) { document.getElementById('ohneZugang').hidden = false; document.querySelector('#ohneZugang p').textContent = e.message === 'kein Zugang' ? 'Der Link ist nicht (mehr) gültig. Bitte bei Andreas melden.' : 'Gerade nicht erreichbar (' + e.message + '). Bitte später noch einmal.'; });
+}
+window.addEventListener('hashchange', function () { if (/[#&](k|a)=/.test(location.hash)) location.reload(); });
+start();
+</script>
+</body>
+</html>
