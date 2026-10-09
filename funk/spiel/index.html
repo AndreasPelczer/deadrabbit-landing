@@ -2,7 +2,8 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Funk-Übungshof</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#87b8e0;font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-user-select:none;user-select:none;touch-action:none}
@@ -25,7 +26,22 @@
   #knoepfe .gruppe{display:flex;gap:10px;pointer-events:auto}
   #knoepfe button{width:72px;height:72px;border-radius:50%;border:0;background:rgba(255,255,255,.82);font-size:30px;font-weight:900;color:#22201C;touch-action:none}
   #knoepfe button.gross{width:92px;height:92px;background:#E5007E;color:#fff;font-size:16px}
-  #ende{position:fixed;inset:0;display:none;place-items:center;background:rgba(229,0,126,.92);color:#fff;z-index:15;text-align:center}
+  #ende{position:fixed;inset:0;display:none;place-items:center;background:rgba(229,0,126,.92);color:#fff;z-index:15;text-align:center;overflow:auto;padding:20px}
+  #auftrag{max-width:min(520px,calc(100vw - 190px))}
+  #handy{right:14px;top:64px;width:clamp(130px,19vw,200px);background:#1b1a18;border:2px solid #3a3835;border-radius:22px;padding:8px 8px 10px;box-shadow:0 8px 24px rgba(0,0,0,.35);text-shadow:none}
+  #handy .kopf{display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:#ffb3d9;padding:2px 6px 6px}
+  #karte{width:100%;border-radius:14px;display:block;background:#dfe9d3}
+  #handyZiel{font-size:12.5px;font-weight:700;color:#fff;padding:6px 4px 0;line-height:1.3}
+  #beweis{position:fixed;right:14px;top:50%;width:min(360px,80vw);transform:translate(130%,-50%);transition:transform .5s cubic-bezier(.2,1.3,.4,1);background:#1b1a18;border:2px solid #3a3835;border-radius:24px;padding:12px;z-index:12;color:#fff;box-shadow:0 14px 40px rgba(0,0,0,.45);pointer-events:none}
+  #beweis.zeigen{transform:translate(0,-50%)}
+  #beweis img{width:100%;border-radius:14px;display:block}
+  #beweis .titel{font-weight:900;color:#ffb3d9;font-size:15px;margin:0 4px 8px}
+  #beweisStatus{font-size:15px;font-weight:700;margin:10px 4px 2px;line-height:1.35}
+  #blitz{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:11;transition:opacity .6s}
+  #bericht{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;max-width:760px;margin:16px auto 22px;text-align:left}
+  #bericht figure{margin:0;background:rgba(0,0,0,.25);border-radius:14px;padding:6px}
+  #bericht img{width:100%;border-radius:10px;display:block}
+  #bericht figcaption{font-size:13px;font-weight:700;padding:6px 4px 2px;line-height:1.3}
 </style>
 </head>
 <body>
@@ -33,7 +49,7 @@
   <div style="font-size:64px">🚛</div>
   <h1>Funk-Übungshof</h1>
   <p>Fahr den rosa Absetzkipper wie ein Profi: Mulden holen, genau absetzen, rückwärts einparken.</p>
-  <div class="tasten">⬆️⬇️⬅️➡️ oder W A S D – fahren<br>Leertaste – Mulde aufnehmen / absetzen<br>K – Kamera von oben · M – Ton an/aus</div>
+  <div class="tasten">⬆️⬇️⬅️➡️ oder W A S D – fahren<br>Leertaste – Mulde aufnehmen / absetzen<br>K – Kamera von oben · M – Ton an/aus<br>📱 Das Tour-Handy zeigt dir den Weg – und macht bei jedem Auftrag das Beweisfoto für die Chefin.</div>
   <button id="los">Los geht's!</button>
 </div></div>
 <div id="auftrag" class="hud"><small>Auftrag</small><b id="auftragText">…</b></div>
@@ -41,11 +57,14 @@
 <div id="tempo" class="hud">0 km/h</div>
 <div id="meldung" class="hud"></div>
 <div id="blase" class="hud"></div>
+<div id="handy" class="hud"><div class="kopf"><span>📱 Funk Tour</span><span id="handyFotos">📸 0</span></div><canvas id="karte"></canvas><div id="handyZiel">…</div></div>
+<div id="beweis"><div class="titel">📸 Beweisfoto</div><img id="beweisBild" alt="Beweisfoto"><div id="beweisStatus"></div></div>
+<div id="blitz"></div>
 <div id="knoepfe">
   <div class="gruppe"><button data-t="links">◀</button><button data-t="rechts">▶</button></div>
   <div class="gruppe"><button data-t="zurueck">▼</button><button class="gross" data-t="aktion">Mulde</button><button data-t="vor">▲</button></div>
 </div>
-<div id="ende"><div><div style="font-size:70px">🏆</div><h1 style="font-size:48px;margin:0">Alle Aufträge geschafft!</h1><p id="endeText" style="font-size:22px"></p><button id="nochmal">Noch eine Runde</button></div></div>
+<div id="ende"><div><div style="font-size:70px">🏆</div><h1 style="font-size:48px;margin:0">Alle Aufträge geschafft!</h1><p id="endeText" style="font-size:22px"></p><div id="berichtKopf" style="font-size:18px;font-weight:800;display:none">📋 Dein Tagesbericht – so hat die Chefin deinen Tag gesehen:</div><div id="bericht"></div><button id="nochmal">Noch eine Runde</button></div></div>
 
 <script>/**
  * @license
@@ -3889,8 +3908,8 @@ function melde(t, dauer) { var m = document.getElementById('meldung'); m.textCon
 var MOPS_SAETZE = ['Super gemacht, Juniorchef!', 'Genau wie der Opa!', 'Das sitzt!', 'Wuff! Perfekt!', 'Profi am Steuer!'];
 function mopsJubel(t) { mopsSprung = 2.2; var b = document.getElementById('blase'); b.textContent = t || MOPS_SAETZE[Math.floor(Math.random() * MOPS_SAETZE.length)]; b.style.display = 'block'; clearTimeout(mopsJubel.t); mopsJubel.t = setTimeout(function () { b.style.display = 'none'; }, 2600); }
 function sterneVergeben(abstand, winkel) { var s = abstand < 0.7 && winkel < 0.18 ? 3 : abstand < 1.4 && winkel < 0.35 ? 2 : 1; sterne += s; document.getElementById('sterne').textContent = '⭐ ' + sterne; melde('⭐'.repeat(s) + (s === 3 ? '  Perfekt!' : s === 2 ? '  Gut!' : '  Geschafft!'), 2200); mopsJubel(); try { localStorage.setItem('funkHofSterne', String(Math.max(sterne, +(localStorage.getItem('funkHofSterne') || 0)))); } catch (e) {} }
-function naechster() { nr++; if (nr >= AUFTRAEGE.length) { setTimeout(fertig, 1600); return; } if (auftrag().start) auftrag().start(); auftragZeigen(); }
-function fertig() { document.getElementById('endeText').textContent = sterne + ' Sterne' + (rumms ? ' · ' + rumms + '× gerummst' : ' · kein einziger Rumms!'); document.getElementById('ende').style.display = 'grid'; }
+function naechster() { nr++; if (nr >= AUFTRAEGE.length) { ZIEL_JETZT = null; for (var k in ZIELE) ZIELE[k].rahmen.visible = false; setTimeout(fertig, 1600); return; } if (auftrag().start) auftrag().start(); auftragZeigen(); }
+function fertig() { document.getElementById('endeText').textContent = sterne + ' Sterne' + (rumms ? ' · ' + rumms + '× gerummst' : ' · kein einziger Rumms!'); berichtZeigen(); document.getElementById('ende').style.display = 'grid'; }
 
 // ---------- Mulde aufnehmen / absetzen ----------
 function winkelDiff(a, b) { var d = ((a - b) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI; return Math.abs(d); }
@@ -3912,7 +3931,7 @@ function arbeitWeiter(dt) {
   if (w.art === 'auf') {                      // erst Arme nach hinten (leer), Mulde anhängen, dann mit Mulde nach vorn
     if (!w.dran && t >= 0.5) { w.dran = true; szene.remove(w.mulde.g); muldeHalter.add(w.mulde.g); w.mulde.g.position.set(0, 0, 0); w.mulde.g.rotation.set(0, Math.PI / 2, 0); }
     hub(t < 0.5 ? t * 2 : 1 - (t - 0.5) * 2);
-    if (t >= 1) { L.ladung = w.mulde; MULDEN.splice(MULDEN.indexOf(w.mulde), 1); L.arbeit = null; melde('Mulde ist drauf!', 1100); auftragZeigen(); }
+    if (t >= 1) { L.ladung = w.mulde; MULDEN.splice(MULDEN.indexOf(w.mulde), 1); L.arbeit = null; melde('Mulde ist drauf!', 1100); var aa = auftrag(); if (aa && aa.holen === 'haus') beweisfoto('abgeholt', w.mulde, ZIELE.haus.name); auftragZeigen(); }
   } else if (w.art === 'ab') {
     hub(t < 0.5 ? t * 2 : 1 - (t - 0.5) * 2);
     if (!w.los && t >= 0.5) { w.los = true; var m = w.mulde, wp = new THREE.Vector3(); m.g.getWorldPosition(wp); muldeHalter.remove(m.g); m.g.position.set(wp.x, 0, wp.z); m.g.rotation.set(0, L.dreh + Math.PI / 2, 0); szene.add(m.g); MULDEN.push(m); L.ladung = null; pruefeAbsetzen(m); }
@@ -3921,7 +3940,7 @@ function arbeitWeiter(dt) {
 }
 function pruefeAbsetzen(m) {
   var a = auftrag(); if (!a || a.parken) return; var z = ZIELE[a.ziel], d = Math.hypot(m.g.position.x - z.x, m.g.position.z - z.z), wd = winkelDiff(m.g.rotation.y, z.dreh); wd = Math.min(wd, Math.PI - wd);
-  if (d < 3) { sterneVergeben(d, wd); naechster(); } else melde('Abgesetzt – aber nicht im gelben Rahmen.', 1800);
+  if (d < 3) { sterneVergeben(d, wd); beweisfoto(a.ziel === 'wertstoffhof' ? 'abgeliefert' : 'gestellt', m, z.name); naechster(); } else melde('Abgesetzt – aber nicht im gelben Rahmen.', 1800);
 }
 
 // ---------- Steuerung ----------
@@ -3984,7 +4003,10 @@ function schleife(ms) { var dt = Math.min(0.05, (ms - letzt) / 1000 || 0); letzt
     var b = document.getElementById('blase'); if (b.style.display === 'block') { var p = mops.position.clone(); p.y += 2.1; p.project(kamera); b.style.left = ((p.x + 1) / 2 * innerWidth) + 'px'; b.style.top = ((1 - p.y) / 2 * innerHeight) + 'px'; } }
   var nahTor = Math.hypot(L.x - 0, L.z - 11) < 16; schrankeOffen += ((nahTor ? 1 : 0) - schrankeOffen) * Math.min(1, dt * 2.5); schranke.rotation.z = schrankeOffen * 1.45;
   if (arbeiter && gestartet) arbeiterWeiter(dt); if (gestartet) baumoepseWeiter(dt); kettenWeiter(); blase2Weiter();
-  kameraWeiter(dt); renderer.render(szene, kamera); requestAnimationFrame(schleife); }
+  routeWeiter(); kameraWeiter(dt); renderer.render(szene, kamera);
+  if (FOTO_WUNSCH && uhr >= FOTO_WUNSCH.wann) { beweisZeigen(fotoMachen()); renderer.render(szene, kamera); }
+  if (uhr - karteZuletzt > 0.1) { karteZuletzt = uhr; karteMalen(); }
+  requestAnimationFrame(schleife); }
 function arbeiterWeiter(dt) {                          // der Hofmops läuft seine Runde, bleibt stehen, wenn der Lkw nah ist
   var A = arbeiter, g = A.g, d = Math.hypot(L.x - g.position.x, L.z - g.position.z);
   A.sprung = Math.max(0, A.sprung - dt);
@@ -3999,6 +4021,82 @@ function arbeiterWeiter(dt) {                          // der Hofmops läuft sei
   var lauf = d >= 9 && A.warte <= 0 && dz2 >= 0.3;
   g.position.y = A.grund + (lauf ? Math.abs(Math.sin(uhr * 9)) * 0.12 : 0) + Math.abs(Math.sin(A.sprung * 7)) * (A.sprung > 0 ? 1.0 : 0);
 }
+
+// ---------- Tour-Handy: Route + Beweisfoto (die Routenplaner-App, im Spiel gezeigt) ----------
+// Straßennetz als kleiner Baum: Tor → Straße → Kreuzung → Kunden. Hof-Ziele erreicht man innerhalb des Zauns direkt.
+var KNOTEN = { tor: [0, 4], torAussen: [0, 16], kreuz: [0, 42], bau: [-32, 42], gruen: [30, 42], strEnde: [0, 64] };
+var KANTEN = [['tor', 'torAussen'], ['torAussen', 'kreuz'], ['kreuz', 'bau'], ['kreuz', 'gruen'], ['kreuz', 'strEnde']];
+var ANSCHLUSS = { baustelle: 'bau', garten: 'gruen', haus: 'strEnde' };   // alles andere hängt am Tor
+function imHof(x, z) { return z < 11 && Math.abs(x) < 32; }
+function zielSchluessel() { for (var k in ZIELE) if (ZIELE[k] === ZIEL_JETZT) return k; return null; }
+function wegSuchen(von, nach) { var vor = {}; vor[von] = von; var q = [von];
+  while (q.length) { var n = q.shift(); if (n === nach) break; KANTEN.forEach(function (k) { var m = k[0] === n ? k[1] : k[1] === n ? k[0] : null; if (m && !(m in vor)) { vor[m] = n; q.push(m); } }); }
+  var w = [nach]; while (w[0] !== von) w.unshift(vor[w[0]]); return w; }
+function routePunkte() {
+  var zk = zielSchluessel(); if (!zk) return null; var Z = ZIELE[zk], p = [[L.x, L.z]], zielKnoten = ANSCHLUSS[zk] || 'tor', drin = imHof(L.x, L.z);
+  if (Math.hypot(Z.x - L.x, Z.z - L.z) < 14 || (drin && !ANSCHLUSS[zk])) { p.push([Z.x, Z.z]); return p; }
+  var w;
+  if (drin) w = wegSuchen('tor', zielKnoten);
+  else {                                            // auf welcher Straße steht er gerade? Dort einhängen und in Zielrichtung weiter
+    var best = null; KANTEN.forEach(function (k) { var a = KNOTEN[k[0]], b = KNOTEN[k[1]], dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((L.x - a[0]) * dx + (L.z - a[1]) * dz) / (dx * dx + dz * dz))), qx = a[0] + dx * t, qz = a[1] + dz * t, d = Math.hypot(L.x - qx, L.z - qz); if (!best || d < best.d) best = { d: d, k: k, q: [qx, qz] }; });
+    p.push(best.q); var w0 = wegSuchen(best.k[0], zielKnoten); w = w0.indexOf(best.k[1]) >= 0 ? wegSuchen(best.k[1], zielKnoten) : w0;
+  }
+  w.forEach(function (n) { p.push(KNOTEN[n]); }); p.push([Z.x, Z.z]); return p; }
+var PUNKTE = [], punktGeo = new THREE.CircleGeometry(0.4, 12), punktMat = new THREE.MeshBasicMaterial({ color: 0xff3fa4, transparent: true, opacity: 0.85 });
+for (var pi = 0; pi < 70; pi++) { var pm = new THREE.Mesh(punktGeo, punktMat); pm.rotation.x = -Math.PI / 2; pm.visible = false; szene.add(pm); PUNKTE.push(pm); }
+var ROUTE = null, ROUTE_LAENGE = 0;
+function routeWeiter() {                            // rosa Punkte auf dem Boden, die zum Ziel wandern
+  ROUTE = gestartet && !L.arbeit ? routePunkte() : null; ROUTE_LAENGE = 0; var abstand = 2.4, rest = 4 + (uhr * 3) % abstand, i = 0;
+  if (ROUTE) for (var s = 0; s < ROUTE.length - 1; s++) { var a = ROUTE[s], b = ROUTE[s + 1], len = Math.hypot(b[0] - a[0], b[1] - a[1]); ROUTE_LAENGE += len;
+    while (rest < len && i < PUNKTE.length) { var t = rest / len; PUNKTE[i].position.set(a[0] + (b[0] - a[0]) * t, 0.07, a[1] + (b[1] - a[1]) * t); PUNKTE[i].visible = true; i++; rest += abstand; }
+    rest -= len; }
+  for (; i < PUNKTE.length; i++) PUNKTE[i].visible = false; }
+// Die kleine Karte auf dem Handy (Norden oben = wie Kamera K von oben)
+var karte = document.getElementById('karte'), kg = karte.getContext('2d'), KX0 = -62, KX1 = 62, KZ0 = -40, KZ1 = 82, karteZuletzt = -1;
+function karteMalen() {
+  var w = karte.clientWidth || 160, dpr = Math.min(2, devicePixelRatio || 1), h = w * (KZ1 - KZ0) / (KX1 - KX0);
+  if (karte.width !== Math.round(w * dpr)) { karte.width = Math.round(w * dpr); karte.height = Math.round(h * dpr); karte.style.height = h + 'px'; }
+  var s = karte.width / (KX1 - KX0), g = kg; function X(x) { return (x - KX0) * s; } function Y(z) { return (z - KZ0) * s; }
+  function rechteck(x, z, b, t, c) { g.fillStyle = c; g.fillRect(X(x - b / 2), Y(z - t / 2), b * s, t * s); }
+  g.fillStyle = '#dfe9d3'; g.fillRect(0, 0, karte.width, karte.height);
+  rechteck(0, -12, 64, 46, '#c9c6bf'); rechteck(-21, -22, 16, 14, '#a9a6a0'); rechteck(-32, 50, 22, 18, '#e3cf9f'); rechteck(32, 50, 22, 18, '#b9dca5');
+  rechteck(0, 40, 10, 60, '#8a8985'); rechteck(0, 42, 70, 9, '#8a8985'); rechteck(10, 64, 14, 8, '#8a8985'); rechteck(0, 76, 9, 7, '#d9c7a8'); rechteck(38, 56, 7, 6, '#d9c7a8');
+  if (ZIEL_JETZT) { var r = (3 + Math.sin(uhr * 5)) * s; g.fillStyle = '#ffd21f'; g.strokeStyle = '#22201C'; g.lineWidth = 1.5 * dpr; g.beginPath(); g.arc(X(ZIEL_JETZT.x), Y(ZIEL_JETZT.z), r, 0, Math.PI * 2); g.fill(); g.stroke(); }
+  if (ROUTE) { g.strokeStyle = '#E5007E'; g.lineWidth = 3.2 * dpr; g.lineJoin = g.lineCap = 'round'; g.setLineDash([5 * dpr, 4 * dpr]); g.lineDashOffset = -uhr * 14 * dpr; g.beginPath(); ROUTE.forEach(function (p, i) { if (i) g.lineTo(X(p[0]), Y(p[1])); else g.moveTo(X(p[0]), Y(p[1])); }); g.stroke(); g.setLineDash([]); }
+  g.save(); g.translate(X(L.x), Y(L.z)); g.rotate(-L.dreh + Math.PI); g.fillStyle = '#fff'; g.strokeStyle = '#E5007E'; g.lineWidth = 2 * dpr; var k = 5 * dpr;   // Lkw als Pfeil
+  g.beginPath(); g.moveTo(0, -k * 1.4); g.lineTo(k, k); g.lineTo(0, k * 0.4); g.lineTo(-k, k); g.closePath(); g.fill(); g.stroke(); g.restore();
+  var zt = document.getElementById('handyZiel'), a = auftrag(), txt = !gestartet ? 'Tour wird geladen …' : !a ? '✅ Tour fertig' : L.arbeit ? '⏳ Mulde in Arbeit …' : ZIEL_JETZT ? '➡ ' + ZIEL_JETZT.name + (ROUTE_LAENGE > 6 ? ' · noch ' + Math.round(ROUTE_LAENGE / 5) * 5 + ' m' : ' · da!') : '';
+  if (zt.textContent !== txt) zt.textContent = txt; }
+// Beweisfoto: ein zweiter Kamerablick von der Seite, mit Stempel – geht sofort an die Chefin im Büro
+var fotoKam = new THREE.PerspectiveCamera(46, 1, 0.1, 300), FOTO_WUNSCH = null, BEWEISE = [];
+var FOTO_TITEL = { gestellt: '✓ GESTELLT', abgeholt: '✓ ABGEHOLT', abgeliefert: '✓ ABGELIEFERT' };
+var CHEFIN_SAETZE = ['„Passt, danke!“ 👍', '„Sauber gestellt!“ 💪', '„Kunde ist informiert.“ ✔', '„So schaut das aus!“ 💗'];
+function beweisfoto(art, mulde, ort) { FOTO_WUNSCH = { art: art, mulde: mulde, ort: ort, wann: uhr + (art === 'abgeholt' ? 0.2 : 0.9) }; }   // kurz warten, bis die Arme wieder oben sind
+function fotoMachen() {
+  var w = FOTO_WUNSCH; FOTO_WUNSCH = null; var p = new THREE.Vector3(); w.mulde.g.getWorldPosition(p); var f = vorn(), q = [f[1], -f[0]];
+  fotoKam.position.set(p.x + q[0] * 8.5 - f[0] * 3, 3.4, p.z + q[1] * 8.5 - f[1] * 3); fotoKam.aspect = renderer.domElement.width / renderer.domElement.height; fotoKam.updateProjectionMatrix(); fotoKam.lookAt(p.x + f[0] * 1.5, 1.1, p.z + f[1] * 1.5);
+  var ringWar = ring.visible; ring.visible = false; PUNKTE.forEach(function (m) { m.visible = false; });
+  renderer.render(szene, fotoKam); ring.visible = ringWar;
+  var src = renderer.domElement, sw = src.width, sh = src.height, cw = Math.min(sw, sh * 4 / 3), ch = cw * 3 / 4, c = document.createElement('canvas'); c.width = 640; c.height = 480; var g = c.getContext('2d');
+  g.drawImage(src, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, 640, 480);
+  var d = new Date(), wann = d.toLocaleDateString('de-DE') + ' · ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
+  g.fillStyle = 'rgba(20,18,16,.8)'; g.fillRect(0, 384, 640, 96); g.fillStyle = '#E5007E'; g.fillRect(0, 384, 12, 96);
+  g.fillStyle = '#fff'; g.font = '800 32px system-ui,-apple-system,sans-serif'; g.fillText(FOTO_TITEL[w.art] + ' · ' + w.mulde.groesse + ' m³' + (w.mulde.voll ? ' (voll)' : ''), 28, 424);
+  g.fillStyle = '#e8e2d6'; g.font = '600 21px system-ui,-apple-system,sans-serif'; g.fillText('📍 ' + w.ort + '   🕒 ' + wann, 28, 460);
+  g.fillStyle = 'rgba(229,0,126,.9)'; g.fillRect(470, 16, 154, 36); g.fillStyle = '#fff'; g.font = '800 18px system-ui,-apple-system,sans-serif'; g.fillText('📱 Funk Tour', 484, 41);
+  var b = { bild: c.toDataURL('image/jpeg', 0.82), art: w.art, ort: w.ort, groesse: w.mulde.groesse, wann: wann }; BEWEISE.push(b); return b; }
+function klick(frei, dauer, lautst) { if (!T || !ton) return; var c = T.ctx, o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = frei; g.gain.setValueAtTime(lautst, c.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dauer); o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + dauer); }
+function beweisZeigen(b) {
+  var k = document.getElementById('beweis'), st = document.getElementById('beweisStatus'), bl = document.getElementById('blitz');
+  bl.style.transition = 'none'; bl.style.opacity = 0.85; requestAnimationFrame(function () { bl.style.transition = ''; bl.style.opacity = 0; });
+  klick(2400, 0.06, 0.12); setTimeout(function () { klick(1600, 0.08, 0.1); }, 70);                     // Auslöser
+  document.getElementById('beweisBild').src = b.bild; st.innerHTML = '📤 Geht an die Chefin im Büro …'; k.className = 'zeigen';
+  document.getElementById('handyFotos').textContent = '📸 ' + BEWEISE.length;
+  clearTimeout(beweisZeigen.t1); clearTimeout(beweisZeigen.t2);
+  beweisZeigen.t1 = setTimeout(function () { st.innerHTML = '✅ Chefin hat es gesehen<br><span style="color:#ffb3d9">' + CHEFIN_SAETZE[(BEWEISE.length - 1) % CHEFIN_SAETZE.length] + '</span>'; klick(880, 0.18, 0.08); setTimeout(function () { klick(1320, 0.25, 0.08); }, 120); }, 1400);
+  beweisZeigen.t2 = setTimeout(function () { k.className = ''; }, 5200); }
+function berichtZeigen() { if (!BEWEISE.length) return; document.getElementById('berichtKopf').style.display = 'block';
+  document.getElementById('bericht').innerHTML = BEWEISE.map(function (b) { return '<figure><img src="' + b.bild + '" alt=""><figcaption>' + FOTO_TITEL[b.art] + ' · ' + b.groesse + ' m³<br><span style="font-weight:500">' + b.ort + '</span></figcaption></figure>'; }).join(''); }
 var blase2 = null;
 function blaseZeigen(g, t) { if (!blase2) { blase2 = document.createElement('div'); blase2.className = 'hud'; blase2.id = 'blase2'; blase2.style.cssText = 'background:#fff;color:#22201C;font-weight:800;font-size:16px;padding:6px 10px;border-radius:12px;text-shadow:none;transform:translate(-50%,-100%);white-space:nowrap'; document.body.appendChild(blase2); }
   blase2.textContent = t; blase2.style.display = 'block'; blase2.ziel = g; clearTimeout(blaseZeigen.t); blaseZeigen.t = setTimeout(function () { blase2.style.display = 'none'; }, 2200); }
