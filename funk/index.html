@@ -92,7 +92,7 @@
   <div id="entwurfListe"></div>
   <div style="margin-top:34px">
     <h2>Die Seite über deinen Vater</h2>
-    <p class="hilfe">Nur wenn du magst – und erst, wenn du so weit bist. Drei Vorschläge, nur für dich sichtbar. Du entscheidest, ob, wann und wie viel davon auf die Webseite kommt.</p>
+    <p class="hilfe">Nur wenn du magst – und erst, wenn du so weit bist. Dieselbe Seite in drei Fassungen, nur für dich sichtbar. Du entscheidest, ob, wann und wie viel davon auf die Webseite kommt.</p>
     <div id="vaterListe"></div>
   </div>
   <div style="margin-top:34px">
@@ -105,6 +105,7 @@
           <span class="band">Funk-Übungshof</span>
           <h3>Der Juniorchef fährt den rosa Absetzkipper</h3>
           <p>Mulden holen, genau absetzen, rückwärts in die Halle – mit Rückfahrwarner, Ketten am Haken und euren Möpsen auf dem Hof. Die Aufträge nennen die echten Größen: 5er, 7er, 10er.</p>
+          <p>Neu: ein <b>Tour-Handy</b> zeigt den Weg, und bei jedem Auftrag geht ein <b>Beweisfoto</b> an dich ins Büro – mit Anrufen von Nachbarn und Kunden, bei denen das Foto alles klärt. So, wie es später die App kann.</p>
           <p class="bisher">Am Computer: Pfeiltasten und Leertaste. Auf dem Tablet: Knöpfe auf dem Bildschirm.</p>
           <div class="reihe"><a class="knopf voll" href="spiel/index.html" target="_blank" rel="noopener">Spielen 🚛</a></div>
         </div>
@@ -200,9 +201,9 @@
 // ---- Einstellungen ----
 var API = 'https://funk-portal.a-pelczer.workers.dev';   // Cloudflare-Worker
 var ENTWUERFE = [
-  { id: 'a', titel: 'Richtung A – Handfest', bild: 'entwuerfe/a.png', link: 'entwuerfe/richtungen.html#a', text: 'Dunkel und kräftig: die große pinke „1986“ und euer pinker Lkw.' },
-  { id: 'b', titel: 'Richtung B – Familienbetrieb', bild: 'entwuerfe/b.png', link: 'entwuerfe/richtungen.html#b', text: 'Hell und warm: die Familie im Vordergrund, dazu der weiße Lkw mit „Ihre Nr. 1 seit 1986“.' },
-  { id: 'c', titel: 'Richtung C – Klar und schnell', bild: 'entwuerfe/c.png', link: 'entwuerfe/richtungen.html#c', text: 'Gleich zur Sache: Welcher Container passt? Öffnungszeiten und Wertstoffhof auf einen Blick.' },
+  { id: 'a', titel: 'Richtung A – Handfest', bild: 'entwuerfe/a.png', link: 'entwuerfe/richtungen.html#a', text: 'Dunkel und kräftig: die große pinke „1986“ und euer pinker Lkw.', erklaerung: { idee: 'Selbstbewusst wie die Schrift auf eurem Lkw: Die Jahreszahl steht groß da, der pinke Lkw vorn. So wirkt ein Betrieb, der seit 40 Jahren weiß, was er tut.', plus: ['„Seit wann“ sieht man sofort – so machen es die überzeugendsten Familienbetriebe im Vergleich („Seit 2005“, „Seit 1927“).', 'Euer eigener Lkw im Bild statt eines Katalogfotos – das war im Vergleich der stärkste erste Eindruck.'], minus: ['Dunkle Seiten sind am Handy in der Sonne schwerer zu lesen.', 'Wirkt eher nach Baustelle und Gewerbe als nach Familie mit Gartenabfall.'] } },
+  { id: 'b', titel: 'Richtung B – Familienbetrieb', bild: 'entwuerfe/b.png', link: 'entwuerfe/richtungen.html#b', text: 'Hell und warm: die Familie im Vordergrund, dazu der weiße Lkw mit „Ihre Nr. 1 seit 1986“.', erklaerung: { idee: 'Menschen zuerst: Wer anruft, soll vorher schon wissen, mit wem er spricht.', plus: ['„Sie sprechen direkt mit der Inhaberin“ – genau das stellt einer der besten Familienbetriebe im Vergleich nach vorn.', 'Der Spruch „Ihre Nr. 1 seit 1986“ steht wirklich auf eurem Lkw – kein ausgedachter Werbetext.', 'Hell und freundlich spricht Privatkunden an, die zum ersten Mal einen Container brauchen.'], minus: ['Lebt von guten Fotos von euch – ohne Familienfoto fehlt das Herzstück (dazu die Frage im Reiter „Fotos“).', 'Für Baufirmen, die nur schnell bestellen wollen, ist es etwas weniger „zur Sache“.'] } },
+  { id: 'c', titel: 'Richtung C – Klar und schnell', bild: 'entwuerfe/c.png', link: 'entwuerfe/richtungen.html#c', text: 'Gleich zur Sache: Welcher Container passt? Öffnungszeiten und Wertstoffhof auf einen Blick.', erklaerung: { idee: 'Für alle, die nur eines wissen wollen: Welche Mulde brauche ich, und wann habt ihr auf?', plus: ['„Welche Größe?“ ist die häufigste Frage. Die guten Seiten im Vergleich zeigen die Größen zum Anfassen – mit Maßen oder einem Bild je Mulde.', 'Öffnungszeiten und Wertstoffhof sieht man sofort, ohne zu suchen.', 'Am Handy schnell erfasst.'], minus: ['Wenig Persönliches: Familie und Geschichte treten zurück.', 'Sieht schneller aus wie viele andere Containerdienste.'] } },
   { id: 'vorschlag', titel: 'Unser Vorschlag', bild: 'entwuerfe/vorschlag.png', link: 'entwuerfe/vorschlag.html', liebling: true,
     text: 'Hell und ruhig, eure Lkw vorn, die Familie und dein Vater im Mittelpunkt.', gruende: ["Wir haben 18 Containerdienst-Seiten aus ganz Deutschland verglichen – vom Familienbetrieb bis zum großen Portal. Das machen die guten anders:", "Ein Anruf-Knopf ganz oben, auf jedem Bildschirm. Auf dem Handy zeigen das nur 6 von 18 Seiten.", "Der erste Blick sagt: Familienbetrieb seit 1986, aus Marktheidenfeld. So machen es die überzeugendsten Familienbetriebe im Vergleich.", "Euer eigener Lkw statt eines Fotos aus dem Katalog. Der stärkste erste Eindruck im ganzen Vergleich war genau so ein Bild.", "„Ab 5 m³“ – der nächste Mitbewerber in eurer Gegend fängt erst bei 7 m³ an.", "Der Wertstoffhof bekommt einen eigenen Platz – für viele der Grund, die Seite überhaupt zu öffnen.", "Kein Shop, kein Preisrechner, kein Chat: Die guten kleinen Seiten gewinnen über Klarheit und das Telefon, nicht über Technik – und brauchen kaum Pflege."] }
 ];
@@ -218,8 +219,6 @@ var TEXTE = [
   { id: 'abroll', titel: 'Abrollcontainer', jetzt: 'Die großen bis 30 m³ – für Baustellen, Abriss und alles, wofür eine Mulde nicht reicht.' },
   { id: 'wertstoffhof', titel: 'Wertstoffhof', jetzt: 'Jeden 1. Samstag im Monat von 8 bis 12 Uhr geöffnet – zum Selbst-Anliefern.' },
   { id: 'ueberuns', titel: 'Über uns', jetzt: '1986 hat Johann Funk den Containerdienst gegründet. Heute führt seine Tochter Romina Funk den Betrieb weiter: mit demselben Anspruch, mit dem Team, das die Gegend kennt, und mit kurzen Wegen – ein Anruf genügt.' },
-  { id: 'vater', titel: 'Der Satz über deinen Vater (auf der Startseite)', jetzt: '„Was mein Vater aufgebaut hat, führen wir weiter – zuverlässig, wie seit 40 Jahren.“' },
-  { id: 'vater-seite', titel: 'Für die Seite über deinen Vater: Was soll man über ihn wissen? Ein Satz von ihm, eine Geschichte, etwas, das nur er so gemacht hat.', jetzt: '' },
   { id: 'ablauf', titel: '„So einfach geht’s“ (drei Schritte)', jetzt: 'Anrufen – Container kommt – wir holen ab.' },
   { id: 'sonstiges', titel: 'Was sonst noch auf die Seite soll', jetzt: '' }
 ];
@@ -271,6 +270,9 @@ function entwuerfeZeigen() {
           w.liebling ? el('span', { class: 'band', text: 'Unser Favorit' }) : null,
           el('h3', { text: w.titel }), el('p', { text: w.text }),
           gruende ? el('p', { html: '<b>Warum wir ihn vorschlagen:</b>', style: 'margin:10px 0 0' }) : null, gruende,
+          w.erklaerung ? el('div', {}, [el('p', { html: '<b>Die Idee dahinter:</b> ', style: 'margin:10px 0 0' }, [document.createTextNode(w.erklaerung.idee)]),
+            el('p', { html: '<b>👍 Was dafür spricht</b>', style: 'margin:8px 0 0' }), el('ul', { class: 'gruende' }, w.erklaerung.plus.map(function (g) { return el('li', { text: g }); })),
+            el('p', { html: '<b>🤔 Was man bedenken sollte</b>', style: 'margin:4px 0 0' }), el('ul', { class: 'gruende' }, w.erklaerung.minus.map(function (g) { return el('li', { text: g }); }))]) : null,
           el('div', { class: 'reihe' }, [el('a', { class: 'knopf leer klein', href: w.link, target: '_blank', rel: 'noopener', text: 'Ansehen ↗' }), w.extra ? el('a', { class: 'knopf leer klein', href: w.extra.link, target: '_blank', rel: 'noopener', text: w.extra.text }) : null]),
           wahl, feld, el('div', { class: 'reihe' }, [knopf, meldung]),
           vorher ? el('p', { class: 'bisher', text: 'Zuletzt von dir: ' + vorher.inhalt }) : null ]) ]) ]));
@@ -287,21 +289,25 @@ function seiteOeffnen(name) {
 }
 function vaterZeigen() {
   var liste = document.getElementById('vaterListe'); liste.innerHTML = '';
+  var vorher = null; ['vater', 'vater-frech', 'vater-ruhig', 'vater-geschichte'].forEach(function (id) { var e = letzter('entwurf', id); if (e && (!vorher || e.zeit > vorher.zeit)) vorher = e; });
+  var fassung = null, urteil = null, meldung = el('span'), feld = el('textarea', { placeholder: 'Was soll anders sein? Was fehlt? Ein Satz von ihm, eine Geschichte, etwas, das nur er so gemacht hat … (freiwillig)' });
+  var fassungen = el('div', { class: 'reihe wahl', style: 'flex-direction:column;align-items:stretch' });
   VATER.forEach(function (w) {
-    var vorher = letzter('entwurf', w.id), urteil = null, meldung = el('span'), feld = el('textarea', { placeholder: 'Was soll anders sein? Was fehlt? (freiwillig)' });
-    var wahl = el('div', { class: 'reihe wahl' });
-    [['so nehmen', '❤️ So nehmen'], ['mit Änderungen', '✏️ Mit Änderungen'], ['noch nicht', '⏳ Noch nicht']].forEach(function (o) {
-      var b = el('button', { type: 'button', 'aria-pressed': 'false', text: o[1], onclick: function () { urteil = o[0]; wahl.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); } }); wahl.appendChild(b); });
-    var knopf = el('button', { class: 'knopf voll klein', type: 'button', text: 'Senden', onclick: function () {
-      if (!urteil && !feld.value.trim()) return melde(meldung, false, 'Bitte erst etwas auswählen oder schreiben');
-      senden({ bereich: 'entwurf', schluessel: w.id, inhalt: (urteil ? '[' + urteil + '] ' : '') + feld.value.trim() }, meldung, knopf).then(function () { feld.value = ''; }); } });
-    liste.appendChild(el('div', { class: 'karte' + (w.empfohlen ? ' liebling' : '') }, [
-      w.empfohlen ? el('span', { class: 'band', text: 'Unser Vorschlag' }) : null,
-      el('h3', { text: w.titel }), el('p', { text: w.text }),
-      el('div', { class: 'reihe' }, [el('button', { class: 'knopf leer klein', type: 'button', text: 'Ansehen ↗', onclick: function () { seiteOeffnen(w.seite); } })]),
-      wahl, feld, el('div', { class: 'reihe' }, [knopf, meldung]),
-      vorher ? el('p', { class: 'bisher', text: 'Zuletzt von dir: ' + vorher.inhalt }) : null ]));
+    var b = el('button', { type: 'button', 'aria-pressed': 'false', style: 'text-align:left', onclick: function () { fassung = w.titel; fassungen.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); } }, [
+      el('b', { text: w.titel + (w.empfohlen ? '  · unser Vorschlag' : '') }), el('br'), el('span', { text: w.text, style: 'font-weight:400' })]);
+    var ansehen = el('button', { class: 'knopf leer klein', type: 'button', text: 'Ansehen ↗', onclick: function () { seiteOeffnen(w.seite); } });
+    fassungen.appendChild(el('div', { style: 'display:flex;gap:8px;align-items:center' }, [b, ansehen])); b.style.flex = '1';
   });
+  var wahl = el('div', { class: 'reihe wahl' });
+  [['so nehmen', '❤️ So nehmen'], ['mit Änderungen', '✏️ Mit Änderungen'], ['noch nicht', '⏳ Noch nicht']].forEach(function (o) {
+    var b = el('button', { type: 'button', 'aria-pressed': 'false', text: o[1], onclick: function () { urteil = o[0]; wahl.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); } }); wahl.appendChild(b); });
+  var knopf = el('button', { class: 'knopf voll klein', type: 'button', text: 'Senden', onclick: function () {
+    if (!fassung && !urteil && !feld.value.trim()) return melde(meldung, false, 'Bitte erst eine Fassung oder einen Knopf wählen – oder etwas schreiben');
+    senden({ bereich: 'entwurf', schluessel: 'vater', inhalt: (fassung ? '[Fassung: ' + fassung + '] ' : '') + (urteil ? '[' + urteil + '] ' : '') + feld.value.trim() }, meldung, knopf).then(function () { feld.value = ''; }); } });
+  liste.appendChild(el('div', { class: 'karte liebling' }, [
+    el('p', { html: '<b>1. Welche Fassung gefällt dir am besten?</b> Tippe auf „Ansehen“, um sie zu lesen.', style: 'margin-top:0' }), fassungen,
+    el('p', { html: '<b>2. Und wie geht es weiter?</b>', style: 'margin:14px 0 0' }), wahl, feld, el('div', { class: 'reihe' }, [knopf, meldung]),
+    vorher ? el('p', { class: 'bisher', text: 'Zuletzt von dir: ' + vorher.inhalt }) : null ]));
 }
 
 // ---- Texte ----

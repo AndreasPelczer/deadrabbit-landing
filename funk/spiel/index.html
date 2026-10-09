@@ -61,7 +61,7 @@
   <div style="font-size:64px">🚛</div>
   <h1>Funk-Übungshof</h1>
   <p>Fahr den rosa Absetzkipper wie ein Profi: Mulden holen, genau absetzen, rückwärts einparken.</p>
-  <div class="tasten">⬆️⬇️⬅️➡️ oder W A S D – fahren<br>Leertaste – Mulde aufnehmen / absetzen<br>K – Kamera von oben · M – Ton an/aus<br>📱 Das Tour-Handy zeigt dir den Weg – und macht bei jedem Auftrag das Beweisfoto für die Chefin.</div>
+  <div class="tasten">⬆️⬇️⬅️➡️ oder W A S D – fahren<br>Leertaste – Mulde aufnehmen / absetzen<br>K – Kamera von oben · M – Ton an/aus<br>📱 Das Tour-Handy zeigt dir den Weg – und macht bei jedem Auftrag das Beweisfoto für Romina.</div>
   <button id="los">Los geht's!</button>
 </div></div>
 <div id="auftrag" class="hud"><small>Auftrag</small><b id="auftragText">…</b></div>
@@ -77,7 +77,7 @@
   <div class="gruppe"><button data-t="links">◀</button><button data-t="rechts">▶</button></div>
   <div class="gruppe"><button data-t="zurueck">▼</button><button class="gross" data-t="aktion">Mulde</button><button data-t="vor">▲</button></div>
 </div>
-<div id="ende"><div><div style="font-size:70px">🏆</div><h1 style="font-size:48px;margin:0">Alle Aufträge geschafft!</h1><p id="endeText" style="font-size:22px"></p><div id="berichtKopf" style="font-size:18px;font-weight:800;display:none">📋 Dein Tagesbericht – so hat die Chefin deinen Tag gesehen:</div><div id="bericht"></div><div id="protokoll" style="display:none"></div><button id="nochmal">Noch eine Runde</button></div></div>
+<div id="ende"><div><div style="font-size:70px">🏆</div><h1 style="font-size:48px;margin:0">Alle Aufträge geschafft!</h1><p id="endeText" style="font-size:22px"></p><div id="berichtKopf" style="font-size:18px;font-weight:800;display:none">📋 Dein Tagesbericht – so hat Romina deinen Tag gesehen:</div><div id="bericht"></div><div id="protokoll" style="display:none"></div><button id="nochmal">Noch eine Runde</button></div></div>
 
 <script>/**
  * @license
@@ -4081,7 +4081,7 @@ function karteMalen() {
   g.beginPath(); g.moveTo(0, -k * 1.4); g.lineTo(k, k); g.lineTo(0, k * 0.4); g.lineTo(-k, k); g.closePath(); g.fill(); g.stroke(); g.restore();
   var zt = document.getElementById('handyZiel'), a = auftrag(), txt = !gestartet ? 'Tour wird geladen …' : !a ? '✅ Tour fertig' : L.arbeit ? '⏳ Mulde in Arbeit …' : ZIEL_JETZT ? '➡ ' + ZIEL_JETZT.name + (ROUTE_LAENGE > 6 ? ' · noch ' + Math.round(ROUTE_LAENGE / 5) * 5 + ' m' : ' · da!') : '';
   if (zt.textContent !== txt) zt.textContent = txt; }
-// Beweisfoto: ein zweiter Kamerablick von der Seite, mit Stempel – geht sofort an die Chefin im Büro
+// Beweisfoto: ein zweiter Kamerablick von der Seite, mit Stempel – geht sofort an Romina ins Büro
 var fotoKam = new THREE.PerspectiveCamera(46, 1, 0.1, 300), FOTO_WUNSCH = null, BEWEISE = [];
 var FOTO_TITEL = { gestellt: '✓ GESTELLT', abgeholt: '✓ ABGEHOLT', abgeliefert: '✓ ABGELIEFERT', fremdstoff: '⚠ FREMDSTOFF: METALL' };
 var CHEFIN_SAETZE = ['„Passt, danke!“ 👍', '„Sauber gestellt!“ 💪', '„Kunde ist informiert.“ ✔', '„So schaut das aus!“ 💗'];
@@ -4104,17 +4104,17 @@ function beweisZeigen(b) {
   var k = document.getElementById('beweis'), st = document.getElementById('beweisStatus'), bl = document.getElementById('blitz');
   bl.style.transition = 'none'; bl.style.opacity = 0.85; requestAnimationFrame(function () { bl.style.transition = ''; bl.style.opacity = 0; });
   klick(2400, 0.06, 0.12); setTimeout(function () { klick(1600, 0.08, 0.1); }, 70);                     // Auslöser
-  document.getElementById('beweisBild').src = b.bild; st.innerHTML = '📤 Geht an die Chefin im Büro …'; k.className = 'zeigen';
+  document.getElementById('beweisBild').src = b.bild; st.innerHTML = '📤 Geht an Romina ins Büro …'; k.className = 'zeigen';
   document.getElementById('handyFotos').textContent = '📸 ' + BEWEISE.length;
   clearTimeout(beweisZeigen.t1); clearTimeout(beweisZeigen.t2);
-  beweisZeigen.t1 = setTimeout(function () { st.innerHTML = '✅ Chefin hat es gesehen<br><span style="color:#ffb3d9">' + (b.art === 'fremdstoff' ? '„Gut aufgepasst! Ich ruf Familie Haus an.“' : CHEFIN_SAETZE[(BEWEISE.length - 1) % CHEFIN_SAETZE.length]) + '</span>'; klick(880, 0.18, 0.08); setTimeout(function () { klick(1320, 0.25, 0.08); }, 120); }, 1400);
+  beweisZeigen.t1 = setTimeout(function () { st.innerHTML = '✅ Romina hat es gesehen<br><span style="color:#ffb3d9">' + (b.art === 'fremdstoff' ? '„Gut aufgepasst! Ich ruf Familie Haus an.“' : CHEFIN_SAETZE[(BEWEISE.length - 1) % CHEFIN_SAETZE.length]) + '</span>'; klick(880, 0.18, 0.08); setTimeout(function () { klick(1320, 0.25, 0.08); }, 120); }, 1400);
   beweisZeigen.t2 = setTimeout(function () { k.className = ''; }, 5200); }
 function berichtZeigen() { var pr = document.getElementById('protokoll'); protokoll('Feierabend · Lkw in der Halle');
   pr.innerHTML = '<div style="font-weight:900;font-size:17px;margin-bottom:4px">🕒 Arbeitszeit 07:00 – ' + spielUhr() + ' · nachgewiesen</div>' + PROTOKOLL.map(function (p) { return '<b>' + p.zeit + '</b> · ' + p.text; }).join('<br>'); pr.style.display = 'block';
   if (!BEWEISE.length) return; document.getElementById('berichtKopf').style.display = 'block';
   document.getElementById('bericht').innerHTML = BEWEISE.map(function (b) { return '<figure><img src="' + b.bild + '" alt=""><figcaption>' + FOTO_TITEL[b.art] + ' · ' + b.groesse + ' m³<br><span style="font-weight:500">' + b.ort + '</span></figcaption></figure>'; }).join(''); }
 
-// ---------- Fälle: der Nachweis schützt jeden (Fahrer, Chefin, Kunde) ----------
+// ---------- Fälle: der Nachweis schützt jeden (Fahrer, Romina, Kunde) ----------
 // Spieluhr: Arbeitsbeginn 7:00, eine echte Sekunde = eine Minute. Alles landet mit Uhrzeit im Tour-Protokoll.
 var SPIELMIN = 7 * 60, PAUSE = false, PROTOKOLL = [{ zeit: '07:00', text: 'Arbeitsbeginn · Tour gestartet' }], RUMMS_ORTE = [], FALL = {}, HAUS_MULDE = null, anrufTasten = [];
 function spielUhr() { var m = Math.floor(SPIELMIN); return ('0' + Math.floor(m / 60) % 24).slice(-2) + ':' + ('0' + m % 60).slice(-2); }
@@ -4141,19 +4141,19 @@ function faelleWeiter() {
   if (nr === 1 && L.ladung && !FALL.nachbar && Math.abs(L.v) > 2) { FALL.nachbar = 1; var fb = fotoVon(ZIELE.baustelle.name);
     anruf('📞 Anruf · Herr Krause, Nachbar der Baustelle', '„Euer Lkw hat die ganze Straße vor der Baustelle verdreckt! Das macht ihr sofort sauber!“', [
       { t: '📸 Beweisfoto von der Baustelle zeigen', f: function () { anruf('📱 Funk Tour · Beweisfoto ' + (fb ? fb.zeit : ''), 'Auf dem Foto: Mulde steht im Rahmen, die Straße ist sauber.<span class="klein">Herr Krause schaut nochmal hin: „Ach – der Dreck kommt vom Bagger der Baufirma. Der kam erst nach euch. Entschuldigung!“</span>', [{ t: 'Passt, weiterfahren 🚛', f: function () { protokoll('Beschwerde Nachbar (Straße) · mit Beweisfoto geklärt'); bonus(1, 'Beschwerde geklärt! +1 ⭐'); } }], fb && fb.bild); } },
-      { t: '🙈 „Tut mir leid, ich komm putzen“', f: function () { protokoll('Beschwerde Nachbar (Straße) · ohne Nachweis eingeräumt'); anruf('📱 Chefin', 'Du hast eine Stunde lang die Straße gefegt.<span class="klein">Später stellt sich raus: Der Dreck war vom Bagger der Baufirma. Mit dem Beweisfoto hättest du das in zehn Sekunden zeigen können.</span>', [{ t: 'Okay, beim nächsten Mal 📸', f: function () { SPIELMIN += 60; } }]); } }
+      { t: '🙈 „Tut mir leid, ich komm putzen“', f: function () { protokoll('Beschwerde Nachbar (Straße) · ohne Nachweis eingeräumt'); anruf('📱 Romina · Büro', 'Du hast eine Stunde lang die Straße gefegt.<span class="klein">Später stellt sich raus: Der Dreck war vom Bagger der Baufirma. Mit dem Beweisfoto hättest du das in zehn Sekunden zeigen können.</span>', [{ t: 'Okay, beim nächsten Mal 📸', f: function () { SPIELMIN += 60; } }]); } }
     ]); return; }
   // 2) Metall im Grünschnitt bei Familie Haus
   if (nr === 2 && !L.ladung && !FALL.metall && HAUS_MULDE && Math.hypot(L.x - HAUS_MULDE.g.position.x, L.z - HAUS_MULDE.g.position.z) < 13) { FALL.metall = 'offen';
     anruf('🐶 Der Mops ruft', '„Moment! Da ist ja <b>Metall</b> drin – ein Rohr, Blech, eine alte Felge. Abgesprochen war nur Grünschnitt!“', [
-      { t: '📸 Foto machen und Chefin fragen', f: function () { FALL.metall = 'mitFoto'; beweisfoto('fremdstoff', HAUS_MULDE, ZIELE.haus.name, function () { setTimeout(function () { anruf('📱 Chefin', '„Hab Familie Haus angerufen und ihnen dein Foto geschickt. Sie sagen: Stimmt, das war der Nachbar. Sortieren zahlen sie – ist abgesprochen. Nimm die Mulde mit!“', [{ t: 'Alles klar, Chefin 👍', f: function () { protokoll('Fremdstoff Metall · Foto, mit Kunde abgesprochen'); bonus(1, 'Fremdstoff nachgewiesen! +1 ⭐'); } }]); }, 2600); }); } },
+      { t: '📸 Foto machen und Romina fragen', f: function () { FALL.metall = 'mitFoto'; beweisfoto('fremdstoff', HAUS_MULDE, ZIELE.haus.name, function () { setTimeout(function () { anruf('📱 Romina · Büro', '„Hab Familie Haus angerufen und ihnen dein Foto geschickt. Sie sagen: Stimmt, das war der Nachbar. Sortieren zahlen sie – ist abgesprochen. Nimm die Mulde mit!“', [{ t: 'Alles klar, Romina 👍', f: function () { protokoll('Fremdstoff Metall · Foto, mit Kunde abgesprochen'); bonus(1, 'Fremdstoff nachgewiesen! +1 ⭐'); } }]); }, 2600); }); } },
       { t: '🤷 Egal, einfach mitnehmen', f: function () { FALL.metall = 'ohneFoto'; protokoll('Fremdstoff Metall · ohne Foto mitgenommen'); } }
     ]); return; }
   // 3) Familie Grün meldet einen angefahrenen Zaun – das Protokoll sagt ehrlich, was war
   if (nr === 3 && !FALL.zaun && Math.abs(L.v) > 2) { FALL.zaun = 1; var fg = fotoVon(ZIELE.garten.name), schuld = RUMMS_ORTE.filter(function (r) { return Math.hypot(r.x - ZIELE.garten.x, r.z - ZIELE.garten.z) < 16; })[0];
     anruf('📞 Anruf · Familie Grün', '„Unser Gartenzaun ist eingedrückt! Das war bestimmt euer Lkw heute Morgen!“', [
       { t: '📱 Tour-Protokoll und Foto ansehen', f: function () {
-        if (schuld) anruf('📱 Funk Tour · Protokoll', 'Das Protokoll zeigt: Um <b>' + schuld.zeit + '</b> hat es bei Familie Grün gerummst.<span class="klein">Der Nachweis lügt nicht – auch nicht für uns. Ehrlich sagen ist richtig: Die Versicherung regelt das, und Familie Grün vertraut uns weiter.</span>', [{ t: '„Ja, das war ich. Tut mir leid.“', f: function () { protokoll('Zaun Familie Grün · ehrlich zugegeben, Versicherung informiert'); anruf('📱 Chefin', '„Danke, dass du ehrlich bist. Das klären wir. Passiert jedem mal.“', [{ t: 'Danke, Chefin 💗' }]); } }], fg && fg.bild);
+        if (schuld) anruf('📱 Funk Tour · Protokoll', 'Das Protokoll zeigt: Um <b>' + schuld.zeit + '</b> hat es bei Familie Grün gerummst.<span class="klein">Der Nachweis lügt nicht – auch nicht für uns. Ehrlich sagen ist richtig: Die Versicherung regelt das, und Familie Grün vertraut uns weiter.</span>', [{ t: '„Ja, das war ich. Tut mir leid.“', f: function () { protokoll('Zaun Familie Grün · ehrlich zugegeben, Versicherung informiert'); anruf('📱 Romina · Büro', '„Danke, dass du ehrlich bist. Das klären wir. Passiert jedem mal.“', [{ t: 'Danke, Romina 💗' }]); } }], fg && fg.bild);
         else anruf('📱 Funk Tour · Beweisfoto ' + (fg ? fg.zeit : ''), 'Kein einziger Rumms bei Familie Grün. Auf dem Foto: Zaun heil, Mulde steht im Rahmen.<span class="klein">Familie Grün: „Oh … dann war es wohl der Lieferwagen vom Getränkehandel. Entschuldigung!“</span>', [{ t: 'Kein Problem 👋', f: function () { protokoll('Zaun Familie Grün · Lkw entlastet (Foto + Protokoll)'); bonus(1, 'Fahrer entlastet! +1 ⭐'); } }], fg && fg.bild); } }
     ]); return; }
 }
