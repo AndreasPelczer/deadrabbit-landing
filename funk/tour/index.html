@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>Funk Tour</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Funk Tour">
+<meta name="theme-color" content="#22201C">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
 <style>
   :root{--pink:#E5007E;--pink-hell:#FCE6F1;--tinte:#22201C;--grau:#6B665E;--linie:#E4DED3;--papier:#FAF7F1;--gruen:#1f8a4c}
   *{box-sizing:border-box} [hidden]{display:none!important}
@@ -1067,7 +1074,7 @@ var SPEICHER = 'funkTour_v3', WARTE_SP = 'funkTour_warte', LKW_SP = 'funkTour_lk
 var HASH = new URLSearchParams(location.hash.slice(1)), DEMO = /[?&]demo=1/.test(location.search);
 var SCHLUESSEL = DEMO ? '' : HASH.get('k') || '';
 try { if (SCHLUESSEL) localStorage.setItem('funkTourSchluessel', SCHLUESSEL); else if (!DEMO) SCHLUESSEL = localStorage.getItem('funkTourSchluessel') || ''; } catch (e) {}
-if (HASH.get('k') && history.replaceState) { HASH.delete('k'); history.replaceState(null, '', location.pathname + location.search + (HASH.toString() ? '#' + HASH.toString().replace(/=$/, '').replace(/=&/g, '&') : '')); }   // Schlüssel nicht in der Adresszeile stehen lassen
+// Der Schlüssel bleibt absichtlich in der Adresse: „Zum Home-Bildschirm“ nimmt die Adresse mit, und die Home-Bildschirm-App hat am iPhone ihren eigenen Speicher.
 var LIVE = !!SCHLUESSEL && API.indexOf('http') === 0;
 var EINTRAEGE = [], WARTE = [], Z = null, LKW = null, NETZ = true;
 function lies(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } }
