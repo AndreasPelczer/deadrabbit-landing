@@ -90,6 +90,11 @@
   <h2>Vier Entwürfe</h2>
   <p class="hilfe">Tippe auf ein Bild, um den Entwurf groß zu sehen. Dann ein Klick: gefällt mir, geht so, eher nicht – und wenn du magst, ein paar Worte dazu.</p>
   <div id="entwurfListe"></div>
+  <div style="margin-top:34px">
+    <h2>Die Seite über deinen Vater</h2>
+    <p class="hilfe">Nur wenn du magst – und erst, wenn du so weit bist. Drei Vorschläge, nur für dich sichtbar. Du entscheidest, ob, wann und wie viel davon auf die Webseite kommt.</p>
+    <div id="vaterListe"></div>
+  </div>
 </section>
 
 <!-- TEXTE -->
@@ -182,8 +187,13 @@ var ENTWUERFE = [
   { id: 'a', titel: 'Richtung A – Handfest', bild: 'entwuerfe/a.png', link: 'entwuerfe/richtungen.html#a', text: 'Dunkel und kräftig: die große pinke „1986“ und euer pinker Lkw.' },
   { id: 'b', titel: 'Richtung B – Familienbetrieb', bild: 'entwuerfe/b.png', link: 'entwuerfe/richtungen.html#b', text: 'Hell und warm: die Familie im Vordergrund, dazu der weiße Lkw mit „Ihre Nr. 1 seit 1986“.' },
   { id: 'c', titel: 'Richtung C – Klar und schnell', bild: 'entwuerfe/c.png', link: 'entwuerfe/richtungen.html#c', text: 'Gleich zur Sache: Welcher Container passt? Öffnungszeiten und Wertstoffhof auf einen Blick.' },
-  { id: 'vorschlag', titel: 'Unser Vorschlag', bild: 'entwuerfe/vorschlag.png', link: 'entwuerfe/vorschlag.html', liebling: true, extra: { text: 'Dazu gehört die Seite über deinen Vater ↗', link: 'entwuerfe/gruender.html' },
+  { id: 'vorschlag', titel: 'Unser Vorschlag', bild: 'entwuerfe/vorschlag.png', link: 'entwuerfe/vorschlag.html', liebling: true,
     text: 'Hell und ruhig, eure Lkw vorn, die Familie und dein Vater im Mittelpunkt.', gruende: ["Wir haben 18 Containerdienst-Seiten aus ganz Deutschland verglichen – vom Familienbetrieb bis zum großen Portal. Das machen die guten anders:", "Ein Anruf-Knopf ganz oben, auf jedem Bildschirm. Auf dem Handy zeigen das nur 6 von 18 Seiten.", "Der erste Blick sagt: Familienbetrieb seit 1986, aus Marktheidenfeld. So machen es die überzeugendsten Familienbetriebe im Vergleich.", "Euer eigener Lkw statt eines Fotos aus dem Katalog. Der stärkste erste Eindruck im ganzen Vergleich war genau so ein Bild.", "„Ab 5 m³“ – der nächste Mitbewerber in eurer Gegend fängt erst bei 7 m³ an.", "Der Wertstoffhof bekommt einen eigenen Platz – für viele der Grund, die Seite überhaupt zu öffnen.", "Kein Shop, kein Preisrechner, kein Chat: Die guten kleinen Seiten gewinnen über Klarheit und das Telefon, nicht über Technik – und brauchen kaum Pflege."] }
+];
+var VATER = [
+  { id: 'vater-hansi', seite: 'hansi', titel: 'Ehrfürchtig frech', text: 'Würdigend, ehrlich und mit einem Augenzwinkern – so, wie wir ihn uns nach allem vorstellen, was wir gehört haben.', empfohlen: true },
+  { id: 'vater-ruhig', seite: 'gruender', titel: 'Ruhig und schlicht', text: 'Leise und würdig: der Gründer, der für Kunden und Familie derselbe war.' },
+  { id: 'vater-geschichte', seite: 'geschichte', titel: 'Als Zeitachse', text: 'Von 1986 bis heute – mit Lücken, die nur du füllen kannst.' }
 ];
 var TEXTE = [
   { id: 'ueberschrift', titel: 'Große Überschrift oben', jetzt: 'Ihre Nummer 1 für Container – seit 1986.' },
@@ -248,6 +258,33 @@ function entwuerfeZeigen() {
           el('div', { class: 'reihe' }, [el('a', { class: 'knopf leer klein', href: w.link, target: '_blank', rel: 'noopener', text: 'Ansehen ↗' }), w.extra ? el('a', { class: 'knopf leer klein', href: w.extra.link, target: '_blank', rel: 'noopener', text: w.extra.text }) : null]),
           wahl, feld, el('div', { class: 'reihe' }, [knopf, meldung]),
           vorher ? el('p', { class: 'bisher', text: 'Zuletzt von dir: ' + vorher.inhalt }) : null ]) ]) ]));
+  });
+}
+
+// ---- geschützte Seiten (über den Vater): nur mit Schlüssel vom Worker, als neuer Tab ----
+function seiteOeffnen(name) {
+  var fenster = window.open('', '_blank');
+  fetch(API + '/seite?name=' + encodeURIComponent(name), { headers: { 'x-schluessel': SCHLUESSEL } })
+    .then(function (r) { if (!r.ok) throw new Error('Fehler ' + r.status); return r.text(); })
+    .then(function (html) { var u = URL.createObjectURL(new Blob([html], { type: 'text/html' })); if (fenster) fenster.location = u; else location.href = u; })
+    .catch(function (e) { if (fenster) fenster.close(); alert('Die Seite lässt sich gerade nicht öffnen (' + e.message + ').'); });
+}
+function vaterZeigen() {
+  var liste = document.getElementById('vaterListe'); liste.innerHTML = '';
+  VATER.forEach(function (w) {
+    var vorher = letzter('entwurf', w.id), urteil = null, meldung = el('span'), feld = el('textarea', { placeholder: 'Was soll anders sein? Was fehlt? (freiwillig)' });
+    var wahl = el('div', { class: 'reihe wahl' });
+    [['so nehmen', '❤️ So nehmen'], ['mit Änderungen', '✏️ Mit Änderungen'], ['noch nicht', '⏳ Noch nicht']].forEach(function (o) {
+      var b = el('button', { type: 'button', 'aria-pressed': 'false', text: o[1], onclick: function () { urteil = o[0]; wahl.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); } }); wahl.appendChild(b); });
+    var knopf = el('button', { class: 'knopf voll klein', type: 'button', text: 'Senden', onclick: function () {
+      if (!urteil && !feld.value.trim()) return melde(meldung, false, 'Bitte erst etwas auswählen oder schreiben');
+      senden({ bereich: 'entwurf', schluessel: w.id, inhalt: (urteil ? '[' + urteil + '] ' : '') + feld.value.trim() }, meldung, knopf).then(function () { feld.value = ''; }); } });
+    liste.appendChild(el('div', { class: 'karte' + (w.empfohlen ? ' liebling' : '') }, [
+      w.empfohlen ? el('span', { class: 'band', text: 'Unser Vorschlag' }) : null,
+      el('h3', { text: w.titel }), el('p', { text: w.text }),
+      el('div', { class: 'reihe' }, [el('button', { class: 'knopf leer klein', type: 'button', text: 'Ansehen ↗', onclick: function () { seiteOeffnen(w.seite); } })]),
+      wahl, feld, el('div', { class: 'reihe' }, [knopf, meldung]),
+      vorher ? el('p', { class: 'bisher', text: 'Zuletzt von dir: ' + vorher.inhalt }) : null ]));
   });
 }
 
@@ -333,7 +370,7 @@ function start() {
   if (!SCHLUESSEL) { document.getElementById('ohneZugang').hidden = false; return; }
   api('/wer').then(function (j) { ROLLE = j.rolle; document.getElementById('app').hidden = false;
     if (ROLLE === 'admin') { document.getElementById('gruss').textContent = 'Eingang – was Romina geschickt hat'; document.getElementById('verlaufTitel').textContent = 'Eingang'; document.getElementById('verlaufHilfe').textContent = 'Neu = noch nicht eingebaut. Nach dem Einbau abhaken.'; document.getElementById('einleitung').textContent = 'Du siehst alles wie Romina – plus den Eingang. Was eingebaut ist, abhaken: dann sieht sie „übernommen“.'; }
-    return laden(); }).then(function () { entwuerfeZeigen(); texteZeigen(); entscheidungenZeigen(); appVorbelegen();
+    return laden(); }).then(function () { entwuerfeZeigen(); vaterZeigen(); texteZeigen(); entscheidungenZeigen(); appVorbelegen();
     if (ROLLE === 'admin') document.querySelector('nav button[data-reiter="verlauf"]').click(); })
     .catch(function (e) { document.getElementById('app').hidden = true; document.getElementById('ohneZugang').hidden = false; document.querySelector('#ohneZugang p').textContent = e.message === 'kein Zugang' ? 'Der Link ist nicht (mehr) gültig. Bitte bei Andreas melden.' : 'Gerade nicht erreichbar (' + e.message + '). Bitte später noch einmal.'; });
 }
