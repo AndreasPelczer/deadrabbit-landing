@@ -3918,7 +3918,7 @@ function auftragZeigen() {
 }
 var ZIEL_JETZT = null;
 function melde(t, dauer) { var m = document.getElementById('meldung'); m.textContent = t; m.style.opacity = 1; clearTimeout(melde.t); melde.t = setTimeout(function () { m.style.opacity = 0; }, dauer || 1800); }
-var MOPS_SAETZE = ['Super gemacht, Juniorchef!', 'Genau wie der Opa!', 'Das sitzt!', 'Wuff! Perfekt!', 'Profi am Steuer!'];
+var MOPS_SAETZE = ['Super gemacht, Juniorchef!', 'Das sitzt!', 'Wuff! Perfekt!', 'Profi am Steuer!'];
 function mopsJubel(t) { mopsSprung = 2.2; var b = document.getElementById('blase'); b.textContent = t || MOPS_SAETZE[Math.floor(Math.random() * MOPS_SAETZE.length)]; b.style.display = 'block'; clearTimeout(mopsJubel.t); mopsJubel.t = setTimeout(function () { b.style.display = 'none'; }, 2600); }
 function sterneVergeben(abstand, winkel) { var s = abstand < 0.7 && winkel < 0.18 ? 3 : abstand < 1.4 && winkel < 0.35 ? 2 : 1; sterne += s; document.getElementById('sterne').textContent = '⭐ ' + sterne; melde('⭐'.repeat(s) + (s === 3 ? '  Perfekt!' : s === 2 ? '  Gut!' : '  Geschafft!'), 2200); mopsJubel(); try { localStorage.setItem('funkHofSterne', String(Math.max(sterne, +(localStorage.getItem('funkHofSterne') || 0)))); } catch (e) {} }
 function naechster() { nr++; if (nr >= AUFTRAEGE.length) { ZIEL_JETZT = null; for (var k in ZIELE) ZIELE[k].rahmen.visible = false; setTimeout(fertig, 1600); return; } if (auftrag().start) auftrag().start(); auftragZeigen(); }
