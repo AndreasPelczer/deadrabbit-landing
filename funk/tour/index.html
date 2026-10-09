@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Funk Tour</title>
+<style>
+  :root{--pink:#E5007E;--pink-hell:#FCE6F1;--tinte:#22201C;--grau:#6B665E;--linie:#E4DED3;--papier:#FAF7F1;--gruen:#1f8a4c;--gelb:#FFE45C}
+  *{box-sizing:border-box} [hidden]{display:none!important}
+  body{margin:0;background:#2b2926;font:16px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--tinte);-webkit-font-smoothing:antialiased}
+  .handy{max-width:440px;min-height:100vh;margin:0 auto;background:var(--papier);display:flex;flex-direction:column}
+  header{background:var(--tinte);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;position:sticky;top:0;z-index:5}
+  header .zeile{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  header b{font-size:18px} header small{color:#ffb3d9;font-weight:700}
+  .wahl{display:flex;gap:6px;margin-top:10px}
+  .wahl button{flex:1;font:inherit;font-weight:800;border:0;border-radius:12px;padding:9px;background:#3a3835;color:#ddd;cursor:pointer}
+  .wahl button[aria-pressed=true]{background:var(--pink);color:#fff}
+  main{flex:1;padding:14px 14px 96px}
+  .karte{background:#fff;border:1px solid var(--linie);border-radius:18px;padding:14px;margin-bottom:12px}
+  .jetzt{border:2px solid var(--pink);box-shadow:0 6px 20px rgba(229,0,126,.12)}
+  .marke{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--pink)}
+  h2{font-size:22px;margin:4px 0 6px;line-height:1.2} h3{font-size:17px;margin:0 0 4px}
+  .klein{font-size:14px;color:var(--grau)}
+  .knopf{display:block;width:100%;font:inherit;font-size:18px;font-weight:900;border:0;border-radius:16px;padding:16px;margin-top:10px;cursor:pointer;text-align:center;text-decoration:none}
+  .voll{background:var(--pink);color:#fff} .leer{background:var(--pink-hell);color:var(--pink)} .still{background:#efebe4;color:var(--tinte);font-size:15px;padding:12px}
+  .liste{list-style:none;margin:0;padding:0}
+  .liste li{display:flex;gap:10px;align-items:flex-start;padding:10px 4px;border-top:1px solid var(--linie)}
+  .liste li:first-child{border-top:0}
+  .liste .uhr{font-weight:800;font-variant-numeric:tabular-nums;min-width:46px}
+  .liste .fertig{color:var(--gruen)} .liste .offen{color:var(--grau)}
+  .foto{width:100%;border-radius:12px;display:block;margin-top:8px}
+  .warn{background:#FFF8D6;border:1px solid #F0DC7A}
+  nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:440px;display:flex;background:#fff;border-top:1px solid var(--linie);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+  nav button{flex:1;font:inherit;font-size:13px;font-weight:800;border:0;background:none;padding:10px 4px 12px;color:var(--grau);cursor:pointer}
+  nav button span{display:block;font-size:22px}
+  nav button[aria-pressed=true]{color:var(--pink)}
+  .zaehler{display:inline-block;background:var(--pink);color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:2px}
+  pre{white-space:pre-wrap;word-break:break-all;font-size:11.5px;background:#f1ede6;border-radius:12px;padding:10px;max-height:340px;overflow:auto}
+  input[type=number],select{font:inherit;width:100%;padding:10px;border-radius:12px;border:1px solid var(--linie);margin-top:6px;background:#fff}
+  .toast{position:fixed;left:50%;bottom:90px;transform:translate(-50%,20px);opacity:0;transition:.3s;background:var(--tinte);color:#fff;border-radius:14px;padding:12px 16px;font-weight:700;z-index:9;max-width:90vw;text-align:center}
+  .toast.zeigen{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div class="handy">
+  <header>
+    <div class="zeile"><b>📱 Funk Tour</b><small id="kopfTag"></small></div>
+    <div class="wahl" id="lkwWahl"></div>
+  </header>
+  <main id="inhalt"></main>
+</div>
+<nav>
+  <button data-ansicht="tour" aria-pressed="true"><span>🚛</span>Tour</button>
+  <button data-ansicht="buero" aria-pressed="false"><span>🏢</span>Büro <span class="zaehler" id="bueroZahl" hidden>0</span></button>
+  <button data-ansicht="protokoll" aria-pressed="false"><span>📋</span>Protokoll</button>
+</nav>
+<input type="file" id="kamera" accept="image/*" capture="environment" hidden>
+<div class="toast" id="toast"></div>
+
+<script>
+// Funk Tour – erstes anfassbares Stück der App (09.10.2026).
+// Der Tagesplan kommt aus funk-core (`funk plan`), jeder Handgriff erzeugt ein Ereignis im funk-core-Format.
+// Simulation: echte Orte, erfundene Kunden. Fotos bleiben auf diesem Gerät (nichts wird verschickt).
+var SZENARIO = {
+  "auftraege": [
+    {
+      "nummer": "A-101",
+      "kunde": {
+        "nummer": "K-101",
+        "name": "Familie Wagner"
+      },
+      "art": "Stellen",
+      "standort": {
+        "adresse": "Familie Wagner, Karbach (Kunde erfunden)",
+        "koordinate": {
+          "breite": 49.8665,
+          "laenge": 9.638
+        }
+      },
+      "wunschtermin": {
+        "von": "2026-10-13T08:00:00",
+        "bis": "2026-10-13T12:00:00"
+      },
+      "abfallart": "Bauschutt",
+      "groesse_m3": 7,
+      "typ": "Absetz",
+      "deckel": false,
+      "container": null
+    },
+    {
+      "nummer": "A-102",
+      "kunde": {
+        "nummer": "K-102",
+        "name": "Neubau Baustelle"
+      },
+      "art": "Abholen",
+      "standort": {
+        "adresse": "Neubau Baustelle, Erlenbach (Kunde erfunden)",
+        "koordinate": {
+          "breite": 49.804,
+          "laenge": 9.639
+        }
+      },
+      "wunschtermin": {
+        "von": "2026-10-13T08:00:00",
+        "bis": "2026-10-13T16:00:00"
+      },
+      "abfallart": "Bauschutt",
+      "groesse_m3": 10,
+      "typ": "Absetz",
+      "deckel": false,
+      "container": "M10-1"
+    },
+    {
+      "nummer": "A-103",
+      "kunde": {
+        "nummer": "K-103",
+        "name": "Familie Grün"
+      },
+      "art": "Stellen",
+      "standort": {
+        "adresse": "Familie Grün, Hafenlohr (Kunde erfunden)",
+        "koordinate": {
+          "breite": 49.8705,
+          "laenge": 9.601
+        }
+      },
+      "wunschtermin": {
+        "von": "2026-10-13T08:00:00",
+        "bis": "2026-10-13T16:00:00"
+      },
+      "abfallart": "Gruenschnitt",
+      "groesse_m3": 5,
+      "typ": "Absetz",
+      "deckel": false,
+      "container": null
+    },
+    {
+      "nummer": "A-104",
+      "kunde": {
+        "nummer": "K-104",
+        "name": "Familie Haus"
+      },
+      "art": "Abholen",
+      "standort": {
+        "adresse": "Familie Haus, Lengfurt (Kunde erfunden)",
+        "koordinate": {
+          "breite": 49.817,
+          "laenge": 9.584
+        }
+      },
+      "wunschtermin": {
+        "von": "2026-10-13T08:00:00",
+        "bis": "2026-10-13T16:00:00"
+      },
+      "abfallart": "Gruenschnitt",
+      "groesse_m3": 7,
+      "typ": "Absetz",
+      "deckel": false,
+      "container": "M7-3"
+    },
+    {
+      "nummer": "A-105",
+      "kunde": {
+        "nummer": "K-105",
+        "name": "Hausräumung Familie Roth"
+      },
+      "art": "Stellen",
+      "standort": {
+        "adresse": "Hausräumung Familie Roth, Esselbach (Kunde erfunden)",
+        "koordinate": {
+          "breite": 49.856,
+          "laenge": 9.524
+        }
+      },
+      "wunschtermin": {
+        "von": "2026-10-13T08:00:00",
+        "bis": "2026-10-13T16:00:00"
+      },
+      "abfallart": "Sperrmuell",
+      "groesse_m3": 10,
+      "typ": "Absetz",
+      "deckel": false,
+      "container": null
+    },
+    {
+      "nummer": "A-106",
+      "kunde": {
+        "nummer": "K-106",
+        "name": "Familie Kern"
+      },
+      "art": "Abholen",
+      "standort": {
+        "adresse": "Familie Kern, Urspringen (Kunde erfunden)",
+        "koordinate": {
+          "breite": 49.896,
+          "laenge": 9.674
+        }
+      },
+      "wunschtermin": {
+        "von": "2026-10-13T08:00:00",
+        "bis": "2026-10-13T16:00:00"
+      },
+      "abfallart": "Sperrmuell",
+      "groesse_m3": 5,
+      "typ": "Absetz",
+      "deckel": false,
+      "container": "M5-3"
+    },
+    {
+      "nummer": "A-107",
+      "kunde": {
+        "nummer": "K-107",
+        "name": "Firma Mustermann Bau"
+      },
+      "art": "Wechseln",
+      "standort": {
+        "adresse": "Firma Mustermann Bau, Wertheim (Kunde erfunden)",
+        "koordinate": {
+          "breite": 49.759,
+          "laenge": 9.517
+        }
+      },
+      "wunschtermin": {
+        "von": "2026-10-13T08:00:00",
+        "bis": "2026-10-13T16:00:00"
+      },
+      "abfallart": "Bauschutt",
+      "groesse_m3": 7,
+      "typ": "Absetz",
+      "deckel": false,
+      "container": "M7-4"
+    }
+  ],
+  "fahrzeuge": [
+    {
+      "nummer": "Iveco",
+      "typ": "Absetz",
+      "kapazitaet": 1,
+      "fuehrerscheinklasse": "C"
+    },
+    {
+      "nummer": "MAN",
+      "typ": "Absetz",
+      "kapazitaet": 1,
+      "fuehrerscheinklasse": "C"
+    }
+  ],
+  "fahrer": [
+    {
+      "nummer": "F-1",
+      "name": "Fahrer 1",
+      "fuehrerscheinklassen": [
+        "C"
+      ],
+      "arbeitszeit": {
+        "von": "2026-10-13T07:00:00",
+        "bis": "2026-10-13T17:00:00"
+      }
+    },
+    {
+      "nummer": "F-2",
+      "name": "Fahrer 2",
+      "fuehrerscheinklassen": [
+        "C"
+      ],
+      "arbeitszeit": {
+        "von": "2026-10-13T07:00:00",
+        "bis": "2026-10-13T17:00:00"
+      }
+    }
+  ],
+  "container": [
+    {
+      "nummer": "M5-1",
+      "groesse_m3": 5,
+      "typ": "Absetz",
+      "deckel": false,
+      "zustand": "Einsatzbereit"
+    },
+    {
+      "nummer": "M5-2",
+      "groesse_m3": 5,
+      "typ": "Absetz",
+      "deckel": false,
+      "zustand": "Einsatzbereit"
+    },
+    {
+      "nummer": "M5-3",
+      "groesse_m3": 5,
+      "typ": "Absetz",
+      "deckel": false,
+      "zustand": "Einsatzbereit"
+    },
+    {
+      "nummer": "M7-1",
+      "groesse_m3": 7,
+      "typ": "Absetz",
+      "deckel": false,
+      "zustand": "Einsatzbereit"
+    },
+    {
+      "nummer": "M7-2",
+      "groesse_m3": 7,
+      "typ": "Absetz",
+      "deckel": false,
+      "zustand": "Einsatzbereit"
+    },
+    {
+      "nummer": "M7-3",
+      "groesse_m3": 7,
+      "typ": "Absetz",
+      "deckel": false,
+      "zustand": "Einsatzbereit"
+    },
+    {
+      "nummer": "M7-4",
+      "groesse_m3": 7,
+      "typ": "Absetz",
+      "deckel": false,
+      "zustand": "Einsatzbereit"
+    },
+    {
+      "nummer": "M10-1",
+      "groesse_m3": 10,
+      "typ": "Absetz",
+      "deckel": false,
+      "zustand": "Einsatzbereit"
+    },
+    {
+      "nummer": "M10-2",
+      "groesse_m3": 10,
+      "typ": "Absetz",
+      "deckel": false,
+      "zustand": "Einsatzbereit"
+    },
+    {
+      "nummer": "M10-3",
+      "groesse_m3": 10,
+      "typ": "Absetz",
+      "deckel": false,
+      "zustand": "Einsatzbereit"
+    }
+  ],
+  "ereignisse": [
+    {
+      "zeitpunkt": "2026-09-01T07:00:00",
+      "container": "M5-1",
+      "ort": {
+        "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+        "koordinate": {
+          "breite": 49.8432,
+          "laenge": 9.5995
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": "Abgekippt"
+    },
+    {
+      "zeitpunkt": "2026-09-01T07:00:00",
+      "container": "M5-2",
+      "ort": {
+        "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+        "koordinate": {
+          "breite": 49.8432,
+          "laenge": 9.5995
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": "Abgekippt"
+    },
+    {
+      "zeitpunkt": "2026-09-01T07:00:00",
+      "container": "M5-3",
+      "ort": {
+        "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+        "koordinate": {
+          "breite": 49.8432,
+          "laenge": 9.5995
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": "Abgekippt"
+    },
+    {
+      "zeitpunkt": "2026-09-01T07:00:00",
+      "container": "M7-1",
+      "ort": {
+        "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+        "koordinate": {
+          "breite": 49.8432,
+          "laenge": 9.5995
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": "Abgekippt"
+    },
+    {
+      "zeitpunkt": "2026-09-01T07:00:00",
+      "container": "M7-2",
+      "ort": {
+        "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+        "koordinate": {
+          "breite": 49.8432,
+          "laenge": 9.5995
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": "Abgekippt"
+    },
+    {
+      "zeitpunkt": "2026-09-01T07:00:00",
+      "container": "M7-3",
+      "ort": {
+        "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+        "koordinate": {
+          "breite": 49.8432,
+          "laenge": 9.5995
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": "Abgekippt"
+    },
+    {
+      "zeitpunkt": "2026-09-01T07:00:00",
+      "container": "M7-4",
+      "ort": {
+        "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+        "koordinate": {
+          "breite": 49.8432,
+          "laenge": 9.5995
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": "Abgekippt"
+    },
+    {
+      "zeitpunkt": "2026-09-01T07:00:00",
+      "container": "M10-1",
+      "ort": {
+        "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+        "koordinate": {
+          "breite": 49.8432,
+          "laenge": 9.5995
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": "Abgekippt"
+    },
+    {
+      "zeitpunkt": "2026-09-01T07:00:00",
+      "container": "M10-2",
+      "ort": {
+        "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+        "koordinate": {
+          "breite": 49.8432,
+          "laenge": 9.5995
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": "Abgekippt"
+    },
+    {
+      "zeitpunkt": "2026-09-01T07:00:00",
+      "container": "M10-3",
+      "ort": {
+        "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+        "koordinate": {
+          "breite": 49.8432,
+          "laenge": 9.5995
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": "Abgekippt"
+    },
+    {
+      "zeitpunkt": "2026-09-28T09:00:00",
+      "container": "M10-1",
+      "ort": {
+        "adresse": "Neubau Baustelle, Erlenbach (Kunde erfunden)",
+        "koordinate": {
+          "breite": 49.804,
+          "laenge": 9.639
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": {
+        "Gestellt": {
+          "abfallart": "Bauschutt"
+        }
+      }
+    },
+    {
+      "zeitpunkt": "2026-10-02T10:00:00",
+      "container": "M5-3",
+      "ort": {
+        "adresse": "Familie Kern, Urspringen (Kunde erfunden)",
+        "koordinate": {
+          "breite": 49.896,
+          "laenge": 9.674
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": {
+        "Gestellt": {
+          "abfallart": "Sperrmuell"
+        }
+      }
+    },
+    {
+      "zeitpunkt": "2026-10-05T08:30:00",
+      "container": "M7-3",
+      "ort": {
+        "adresse": "Familie Haus, Lengfurt (Kunde erfunden)",
+        "koordinate": {
+          "breite": 49.817,
+          "laenge": 9.584
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": {
+        "Gestellt": {
+          "abfallart": "Gruenschnitt"
+        }
+      }
+    },
+    {
+      "zeitpunkt": "2026-10-06T11:00:00",
+      "container": "M7-4",
+      "ort": {
+        "adresse": "Firma Mustermann Bau, Wertheim (Kunde erfunden)",
+        "koordinate": {
+          "breite": 49.759,
+          "laenge": 9.517
+        }
+      },
+      "fahrer": "F-1",
+      "foto": null,
+      "wiegeschein_kg": null,
+      "art": {
+        "Gestellt": {
+          "abfallart": "Bauschutt"
+        }
+      }
+    }
+  ],
+  "hof": {
+    "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+    "koordinate": {
+      "breite": 49.8432,
+      "laenge": 9.5995
+    }
+  },
+  "entsorgungsziele": [
+    {
+      "nummer": "Z-KOMP",
+      "art": "Kompostplatz",
+      "standort": {
+        "adresse": "Kompostplatz – Ort offen (ANNAHME)",
+        "koordinate": {
+          "breite": 49.885,
+          "laenge": 9.66
+        }
+      },
+      "oeffnungszeiten": [
+        {
+          "wochentag": "Mon",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        },
+        {
+          "wochentag": "Tue",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        },
+        {
+          "wochentag": "Wed",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        },
+        {
+          "wochentag": "Thu",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        },
+        {
+          "wochentag": "Fri",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        }
+      ],
+      "sonderoeffnungen": [],
+      "abfallarten": [
+        "Gruenschnitt"
+      ]
+    },
+    {
+      "nummer": "Z-DEP",
+      "art": "Deponie",
+      "standort": {
+        "adresse": "Bauschutt-Deponie – Ort offen (ANNAHME)",
+        "koordinate": {
+          "breite": 49.8,
+          "laenge": 9.7
+        }
+      },
+      "oeffnungszeiten": [
+        {
+          "wochentag": "Mon",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        },
+        {
+          "wochentag": "Tue",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        },
+        {
+          "wochentag": "Wed",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        },
+        {
+          "wochentag": "Thu",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        },
+        {
+          "wochentag": "Fri",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        }
+      ],
+      "sonderoeffnungen": [],
+      "abfallarten": [
+        "Bauschutt"
+      ]
+    },
+    {
+      "nummer": "Z-WERT",
+      "art": "Wertstoffhof",
+      "standort": {
+        "adresse": "Sperrmüll-Annahme – Ort offen (ANNAHME)",
+        "koordinate": {
+          "breite": 49.83,
+          "laenge": 9.56
+        }
+      },
+      "oeffnungszeiten": [
+        {
+          "wochentag": "Mon",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        },
+        {
+          "wochentag": "Tue",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        },
+        {
+          "wochentag": "Wed",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        },
+        {
+          "wochentag": "Thu",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        },
+        {
+          "wochentag": "Fri",
+          "von": "07:00:00",
+          "bis": "16:00:00"
+        }
+      ],
+      "sonderoeffnungen": [],
+      "abfallarten": [
+        "Sperrmuell"
+      ]
+    }
+  ],
+  "katalog": {
+    "standfrist_tage": {
+      "Bauschutt": 14,
+      "Gruenschnitt": 7,
+      "Sperrmuell": 14
+    },
+    "umwegfaktor": 1.35,
+    "erdradius_km": 6371.0088,
+    "geschwindigkeit_kmh": 40,
+    "ladezeit_minuten": 15,
+    "entladezeit_minuten": 10,
+    "pausen": [
+      {
+        "von": "2026-10-13T12:00:00",
+        "bis": "2026-10-13T12:30:00"
+      }
+    ]
+  }
+}, PLAN = {
+  "tag": "2026-10-13",
+  "touren": [
+    {
+      "fahrzeug": "Iveco",
+      "fahrer": "F-1",
+      "stopps": [
+        {
+          "art": "Hof",
+          "ort": {
+            "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+            "koordinate": {
+              "breite": 49.8432,
+              "laenge": 9.5995
+            }
+          },
+          "ankunft": "2026-10-13T07:00:00",
+          "abfahrt": "2026-10-13T07:15:00",
+          "auftrag": "A-103",
+          "container": [
+            "M5-1"
+          ]
+        },
+        {
+          "art": "Kunde",
+          "ort": {
+            "adresse": "Familie Grün, Hafenlohr (Kunde erfunden)",
+            "koordinate": {
+              "breite": 49.8705,
+              "laenge": 9.601
+            }
+          },
+          "ankunft": "2026-10-13T08:00:00",
+          "abfahrt": "2026-10-13T08:15:00",
+          "auftrag": "A-103",
+          "container": [
+            "M5-1"
+          ]
+        },
+        {
+          "art": "Hof",
+          "ort": {
+            "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+            "koordinate": {
+              "breite": 49.8432,
+              "laenge": 9.5995
+            }
+          },
+          "ankunft": "2026-10-13T08:21:10",
+          "abfahrt": "2026-10-13T08:21:10",
+          "auftrag": "A-103",
+          "container": []
+        },
+        {
+          "art": "Hof",
+          "ort": {
+            "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+            "koordinate": {
+              "breite": 49.8432,
+              "laenge": 9.5995
+            }
+          },
+          "ankunft": "2026-10-13T08:21:10",
+          "abfahrt": "2026-10-13T08:36:10",
+          "auftrag": "A-105",
+          "container": [
+            "M10-2"
+          ]
+        },
+        {
+          "art": "Kunde",
+          "ort": {
+            "adresse": "Hausräumung Familie Roth, Esselbach (Kunde erfunden)",
+            "koordinate": {
+              "breite": 49.856,
+              "laenge": 9.524
+            }
+          },
+          "ankunft": "2026-10-13T08:47:31",
+          "abfahrt": "2026-10-13T09:02:31",
+          "auftrag": "A-105",
+          "container": [
+            "M10-2"
+          ]
+        },
+        {
+          "art": "Hof",
+          "ort": {
+            "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+            "koordinate": {
+              "breite": 49.8432,
+              "laenge": 9.5995
+            }
+          },
+          "ankunft": "2026-10-13T09:13:52",
+          "abfahrt": "2026-10-13T09:13:52",
+          "auftrag": "A-105",
+          "container": []
+        },
+        {
+          "art": "Hof",
+          "ort": {
+            "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+            "koordinate": {
+              "breite": 49.8432,
+              "laenge": 9.5995
+            }
+          },
+          "ankunft": "2026-10-13T09:13:52",
+          "abfahrt": "2026-10-13T09:13:52",
+          "auftrag": "A-104",
+          "container": []
+        },
+        {
+          "art": "Kunde",
+          "ort": {
+            "adresse": "Familie Haus, Lengfurt (Kunde erfunden)",
+            "koordinate": {
+              "breite": 49.817,
+              "laenge": 9.584
+            }
+          },
+          "ankunft": "2026-10-13T09:20:11",
+          "abfahrt": "2026-10-13T09:35:11",
+          "auftrag": "A-104",
+          "container": [
+            "M7-3"
+          ]
+        },
+        {
+          "art": "Entsorgung",
+          "ort": {
+            "adresse": "Kompostplatz – Ort offen (ANNAHME)",
+            "koordinate": {
+              "breite": 49.885,
+              "laenge": 9.66
+            }
+          },
+          "ankunft": "2026-10-13T09:54:04",
+          "abfahrt": "2026-10-13T10:04:04",
+          "auftrag": "A-104",
+          "container": [
+            "M7-3"
+          ]
+        },
+        {
+          "art": "Hof",
+          "ort": {
+            "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+            "koordinate": {
+              "breite": 49.8432,
+              "laenge": 9.5995
+            }
+          },
+          "ankunft": "2026-10-13T10:16:57",
+          "abfahrt": "2026-10-13T10:26:57",
+          "auftrag": "A-104",
+          "container": [
+            "M7-3"
+          ]
+        }
+      ]
+    },
+    {
+      "fahrzeug": "MAN",
+      "fahrer": "F-2",
+      "stopps": [
+        {
+          "art": "Hof",
+          "ort": {
+            "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+            "koordinate": {
+              "breite": 49.8432,
+              "laenge": 9.5995
+            }
+          },
+          "ankunft": "2026-10-13T07:00:00",
+          "abfahrt": "2026-10-13T07:15:00",
+          "auftrag": "A-101",
+          "container": [
+            "M7-1"
+          ]
+        },
+        {
+          "art": "Kunde",
+          "ort": {
+            "adresse": "Familie Wagner, Karbach (Kunde erfunden)",
+            "koordinate": {
+              "breite": 49.8665,
+              "laenge": 9.638
+            }
+          },
+          "ankunft": "2026-10-13T08:00:00",
+          "abfahrt": "2026-10-13T08:15:00",
+          "auftrag": "A-101",
+          "container": [
+            "M7-1"
+          ]
+        },
+        {
+          "art": "Hof",
+          "ort": {
+            "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+            "koordinate": {
+              "breite": 49.8432,
+              "laenge": 9.5995
+            }
+          },
+          "ankunft": "2026-10-13T08:22:40",
+          "abfahrt": "2026-10-13T08:22:40",
+          "auftrag": "A-101",
+          "container": []
+        },
+        {
+          "art": "Hof",
+          "ort": {
+            "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+            "koordinate": {
+              "breite": 49.8432,
+              "laenge": 9.5995
+            }
+          },
+          "ankunft": "2026-10-13T08:22:40",
+          "abfahrt": "2026-10-13T08:22:40",
+          "auftrag": "A-102",
+          "container": []
+        },
+        {
+          "art": "Kunde",
+          "ort": {
+            "adresse": "Neubau Baustelle, Erlenbach (Kunde erfunden)",
+            "koordinate": {
+              "breite": 49.804,
+              "laenge": 9.639
+            }
+          },
+          "ankunft": "2026-10-13T08:33:12",
+          "abfahrt": "2026-10-13T08:48:12",
+          "auftrag": "A-102",
+          "container": [
+            "M10-1"
+          ]
+        },
+        {
+          "art": "Entsorgung",
+          "ort": {
+            "adresse": "Bauschutt-Deponie – Ort offen (ANNAHME)",
+            "koordinate": {
+              "breite": 49.8,
+              "laenge": 9.7
+            }
+          },
+          "ankunft": "2026-10-13T08:57:07",
+          "abfahrt": "2026-10-13T09:07:07",
+          "auftrag": "A-102",
+          "container": [
+            "M10-1"
+          ]
+        },
+        {
+          "art": "Hof",
+          "ort": {
+            "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+            "koordinate": {
+              "breite": 49.8432,
+              "laenge": 9.5995
+            }
+          },
+          "ankunft": "2026-10-13T09:24:40",
+          "abfahrt": "2026-10-13T09:34:40",
+          "auftrag": "A-102",
+          "container": [
+            "M10-1"
+          ]
+        },
+        {
+          "art": "Hof",
+          "ort": {
+            "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+            "koordinate": {
+              "breite": 49.8432,
+              "laenge": 9.5995
+            }
+          },
+          "ankunft": "2026-10-13T09:34:40",
+          "abfahrt": "2026-10-13T09:34:40",
+          "auftrag": "A-106",
+          "container": []
+        },
+        {
+          "art": "Kunde",
+          "ort": {
+            "adresse": "Familie Kern, Urspringen (Kunde erfunden)",
+            "koordinate": {
+              "breite": 49.896,
+              "laenge": 9.674
+            }
+          },
+          "ankunft": "2026-10-13T09:50:45",
+          "abfahrt": "2026-10-13T10:05:45",
+          "auftrag": "A-106",
+          "container": [
+            "M5-3"
+          ]
+        },
+        {
+          "art": "Entsorgung",
+          "ort": {
+            "adresse": "Sperrmüll-Annahme – Ort offen (ANNAHME)",
+            "koordinate": {
+              "breite": 49.83,
+              "laenge": 9.56
+            }
+          },
+          "ankunft": "2026-10-13T10:28:00",
+          "abfahrt": "2026-10-13T10:38:00",
+          "auftrag": "A-106",
+          "container": [
+            "M5-3"
+          ]
+        },
+        {
+          "art": "Hof",
+          "ort": {
+            "adresse": "Hof Funk, Bahnhofstraße 11, Marktheidenfeld (Lage ungefähr)",
+            "koordinate": {
+              "breite": 49.8432,
+              "laenge": 9.5995
+            }
+          },
+          "ankunft": "2026-10-13T10:44:28",
+          "abfahrt": "2026-10-13T10:54:28",
+          "auftrag": "A-106",
+          "container": [
+            "M5-3"
+          ]
+        }
+      ]
+    }
+  ],
+  "nicht_eingeplant": [
+    {
+      "auftrag": "A-107",
+      "gruende": [
+        "Fahrzeugkapazität reicht für diesen Vorgang nicht"
+      ]
+    }
+  ],
+  "befunde": []
+}
+;
+var SPEICHER = 'funkTour_v1';
+var Z = laden() || { lkw: PLAN.touren[0].fahrzeug, ansicht: 'tour', erledigt: {}, ereignisse: [], fotos: {} };
+
+function laden() { try { return JSON.parse(localStorage.getItem(SPEICHER)); } catch (e) { return null; } }
+function sichern() { try { localStorage.setItem(SPEICHER, JSON.stringify(Z)); } catch (e) { toast('Speicher voll – Fotos werden nicht behalten'); } }
+function $(id) { return document.getElementById(id); }
+function el(t, a, k) { var e = document.createElement(t); if (a) for (var x in a) { if (x === 'text') e.textContent = a[x]; else if (x === 'html') e.innerHTML = a[x]; else if (x.slice(0, 2) === 'on') e.addEventListener(x.slice(2), a[x]); else e.setAttribute(x, a[x]); } (k || []).forEach(function (c) { if (c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); }); return e; }
+function toast(t) { var e = $('toast'); e.textContent = t; e.className = 'toast zeigen'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.className = 'toast'; }, 2600); }
+function uhr(iso) { return iso.slice(11, 16); }
+var AUFTRAG = {}; SZENARIO.auftraege.forEach(function (a) { AUFTRAG[a.nummer] = a; });
+var CONTAINER = {}; SZENARIO.container.forEach(function (c) { CONTAINER[c.nummer] = c; });
+var ABFALL = { Gruenschnitt: 'Grünschnitt', Sperrmuell: 'Sperrmüll', Bauschutt: 'Bauschutt' };
+function kurzOrt(s) { return s.adresse.replace(' (Kunde erfunden)', '').replace(' (Lage ungefähr)', ''); }
+
+// Aus den Stopps von funk-core werden Handgriffe: was tut der Fahrer hier, und welches Ereignis entsteht?
+function schritte(tour) {
+  var aus = [], vorher = null;
+  tour.stopps.forEach(function (s, i) {
+    var a = s.auftrag && AUFTRAG[s.auftrag], c = s.container[0], cs = c && CONTAINER[c];
+    var st = { id: tour.fahrzeug + '-' + i, stopp: s, auftrag: a, container: c, groesse: cs ? cs.groesse_m3 : (a && a.groesse_m3) };
+    if (s.art === 'Hof') {
+      if (vorher && vorher.stopp.art === 'Entsorgung' && c) { st.was = c + ' leer auf den Hof stellen'; st.ereignis = 'Abgekippt'; st.titel = 'Zurück auf dem Hof'; st.foto = false; }
+      else if (c && a && a.art === 'Stellen') { st.was = 'Mulde ' + c + ' (' + st.groesse + ' m³) aufladen'; st.titel = 'Hof · aufladen'; st.ereignis = null; }
+      else return;                                   // reine Durchfahrt über den Hof: kein Handgriff
+    } else if (s.art === 'Kunde') {
+      st.titel = a.kunde.name;
+      if (a.art === 'Stellen') { st.was = c + ' (' + st.groesse + ' m³) für ' + ABFALL[a.abfallart] + ' abstellen'; st.ereignis = 'Gestellt'; }
+      else if (a.art === 'Abholen') { st.was = 'Volle ' + c + ' (' + st.groesse + ' m³, ' + ABFALL[a.abfallart] + ') aufnehmen'; st.ereignis = 'Abgeholt'; }
+      st.foto = true;
+    } else if (s.art === 'Entsorgung') { st.titel = kurzOrt(s.ort); st.was = c + ' abkippen (' + ABFALL[a.abfallart] + ')'; st.ereignis = 'Abgekippt'; st.foto = true; st.waage = true; }
+    else if (s.art === 'Pause') { st.titel = 'Pause'; st.was = '30 Minuten Pause'; st.ereignis = null; }
+    aus.push(st); vorher = st;
+  });
+  return aus;
+}
+function tourVon(lkw) { return PLAN.touren.filter(function (t) { return t.fahrzeug === lkw; })[0]; }
+function fahrerVon(lkw) { var t = tourVon(lkw); var f = SZENARIO.fahrer.filter(function (x) { return x.nummer === t.fahrer; })[0]; return f ? f.name : t.fahrer; }
+
+// ---- Ereignis + Beweisfoto ----
+var wartet = null;   // Schritt, für den gerade ein Foto gemacht wird
+function zeitpunkt(st) {   // Simulation: Planzeit des Stopps + ein paar Minuten, damit das Protokoll wie der echte Tag aussieht
+  var d = new Date(st.stopp.ankunft + 'Z'); d.setUTCMinutes(d.getUTCMinutes() + (st.stopp.art === 'Hof' ? 2 : 8)); return d.toISOString().slice(0, 19); }
+function erledigen(st, fotoDaten, extra) {
+  var name = null;
+  if (st.ereignis) {
+    var zeit = zeitpunkt(st), art = st.ereignis;
+    if (art === 'Gestellt') art = { Gestellt: { abfallart: st.auftrag.abfallart } };
+    if (extra && extra.schaden) art = { SchadenGemeldet: { beschreibung: extra.schaden } };
+    if (fotoDaten) { name = 'BF-' + st.container + '-' + zeit.replace(/[-:T]/g, '').slice(0, 12) + '.jpg'; Z.fotos[name] = fotoDaten; }
+    Z.ereignisse.push({ zeitpunkt: zeit, container: st.container, ort: st.stopp.ort, fahrer: tourVon(Z.lkw).fahrer, foto: name, wiegeschein_kg: extra && extra.kg ? +extra.kg : null, art: art, _lkw: Z.lkw, _titel: st.titel });
+  }
+  if (!(extra && extra.schaden)) Z.erledigt[st.id] = true;
+  sichern(); zeigen();
+  if (name) toast('📤 Beweisfoto ist bei Romina im Büro'); else toast('✓ Erledigt');
+}
+function stempeln(bildQuelle, st, fertig) {     // Foto verkleinern und Stempel draufmalen (Was · Mulde · Ort · Zeit)
+  var img = new Image(); img.onload = function () {
+    var b = 900, h = Math.round(b * img.height / img.width), c = el('canvas'); c.width = b; c.height = h; var g = c.getContext('2d');
+    g.drawImage(img, 0, 0, b, h);
+    var titel = { Gestellt: '✓ GESTELLT', Abgeholt: '✓ ABGEHOLT', Abgekippt: '✓ ABGEKIPPT' }[st.ereignis] || '⚠ GEMELDET';
+    var zeit = zeitpunkt(st); g.fillStyle = 'rgba(20,18,16,.8)'; g.fillRect(0, h - 120, b, 120); g.fillStyle = '#E5007E'; g.fillRect(0, h - 120, 14, 120);
+    g.fillStyle = '#fff'; g.font = '800 40px system-ui,-apple-system,sans-serif'; g.fillText(titel + ' · ' + st.container + ' · ' + st.groesse + ' m³', 34, h - 68);
+    g.fillStyle = '#e8e2d6'; g.font = '600 26px system-ui,-apple-system,sans-serif'; g.fillText('📍 ' + kurzOrt(st.stopp.ort) + '   🕒 ' + zeit.slice(8, 10) + '.' + zeit.slice(5, 7) + '. ' + zeit.slice(11, 16), 34, h - 26);
+    fertig(c.toDataURL('image/jpeg', 0.72)); };
+  img.src = bildQuelle; }
+function beispielFoto(st) {                     // für den Computer ohne Kamera: ein gemaltes Bild der Mulde
+  var c = el('canvas'); c.width = 900; c.height = 675; var g = c.getContext('2d');
+  var himmel = g.createLinearGradient(0, 0, 0, 400); himmel.addColorStop(0, '#9cc8ec'); himmel.addColorStop(1, '#dbeaf5'); g.fillStyle = himmel; g.fillRect(0, 0, 900, 420);
+  g.fillStyle = st.stopp.art === 'Entsorgung' ? '#b8a07a' : '#8fbf63'; g.fillRect(0, 420, 900, 255); g.fillStyle = '#9d9a93'; g.fillRect(0, 470, 900, 90);
+  g.fillStyle = '#E5007E'; g.beginPath(); g.moveTo(250, 300); g.lineTo(650, 300); g.lineTo(590, 470); g.lineTo(310, 470); g.closePath(); g.fill();
+  g.fillStyle = '#fff'; g.font = '900 54px system-ui,sans-serif'; g.fillText('Funk', 390, 400);
+  if (st.ereignis === 'Abgeholt' || st.stopp.art === 'Entsorgung') { g.fillStyle = '#6b5a3a'; g.beginPath(); g.ellipse(450, 300, 190, 40, 0, Math.PI, 0); g.fill(); }
+  return c.toDataURL('image/jpeg', 0.8); }
+$('kamera').addEventListener('change', function () {
+  var f = this.files && this.files[0], st = wartet; this.value = ''; if (!f || !st) return;
+  var r = new FileReader(); r.onload = function () { stempeln(r.result, st, function (d) { erledigen(st, d, st._extra); }); }; r.readAsDataURL(f); });
+function fotoMachen(st, extra) { wartet = st; st._extra = extra; $('kamera').click(); }
+
+// ---- Ansichten ----
+function zeigen() {
+  $('kopfTag').textContent = 'Di 13.10. · ' + fahrerVon(Z.lkw);
+  var w = $('lkwWahl'); w.innerHTML = '';
+  PLAN.touren.forEach(function (t) { w.appendChild(el('button', { 'aria-pressed': String(t.fahrzeug === Z.lkw), text: '🚛 ' + t.fahrzeug, onclick: function () { Z.lkw = t.fahrzeug; sichern(); zeigen(); } })); });
+  document.querySelectorAll('nav button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.ansicht === Z.ansicht)); });
+  var neu = Z.ereignisse.filter(function (e) { return e.foto; }).length; $('bueroZahl').hidden = !neu; $('bueroZahl').textContent = neu;
+  var m = $('inhalt'); m.innerHTML = '';
+  ({ tour: tourZeigen, buero: bueroZeigen, protokoll: protokollZeigen })[Z.ansicht](m);
+}
+function tourZeigen(m) {
+  var st = schritte(tourVon(Z.lkw)), jetzt = st.filter(function (s) { return !Z.erledigt[s.id]; })[0];
+  if (jetzt) {
+    var s = jetzt, ort = s.stopp.ort, k = ort.koordinate, waage = el('input', { type: 'number', placeholder: 'Wiegeschein in kg (wenn da)', inputmode: 'numeric' });
+    var karte = el('div', { class: 'karte jetzt' }, [
+      el('span', { class: 'marke', text: 'Jetzt · geplant ' + uhr(s.stopp.ankunft) }), el('h2', { text: s.titel }), el('p', { text: s.was, style: 'margin:0 0 4px;font-weight:700' }),
+      el('p', { class: 'klein', text: '📍 ' + kurzOrt(ort) }),
+      el('a', { class: 'knopf still', href: 'https://www.google.com/maps/dir/?api=1&destination=' + k.breite + ',' + k.laenge, target: '_blank', rel: 'noopener', text: '🧭 Navigation starten' }),
+      s.waage ? waage : null,
+      s.foto ? el('button', { class: 'knopf voll', text: '📸 Beweisfoto – erledigt', onclick: function () { fotoMachen(s, { kg: waage.value }); } }) : el('button', { class: 'knopf voll', text: '✓ Erledigt', onclick: function () { erledigen(s, null); } }),
+      s.foto ? el('button', { class: 'knopf leer', text: '🖼 Ohne Kamera: Beispielfoto', onclick: function () { stempeln(beispielFoto(s), s, function (d) { erledigen(s, d, { kg: waage.value }); }); } }) : null,
+      s.foto && s.container ? schadenTeil(s) : null ]);
+    m.appendChild(karte);
+  } else m.appendChild(el('div', { class: 'karte jetzt' }, [el('span', { class: 'marke', text: 'Feierabend' }), el('h2', { text: 'Tour fertig 🎉' }), el('p', { text: 'Alles erledigt und nachgewiesen. Romina hat jedes Foto im Büro.' })]));
+  var liste = el('ul', { class: 'liste' });
+  st.forEach(function (s) { var f = Z.erledigt[s.id]; liste.appendChild(el('li', {}, [el('span', { class: 'uhr ' + (f ? 'fertig' : 'offen'), text: f ? '✓' : uhr(s.stopp.ankunft) }), el('div', {}, [el('b', { text: s.titel }), el('div', { class: 'klein', text: s.was })])])); });
+  m.appendChild(el('div', { class: 'karte' }, [el('h3', { text: 'Heute · ' + st.length + ' Schritte' }), liste]));
+}
+function schadenTeil(s) {                    // Schaden melden: Auswahl statt Tippen, mit Foto (oder Beispielfoto)
+  var wahl = el('select', {}, ['Was ist kaputt?', 'Beule oder Riss', 'Öse oder Kette defekt', 'Tür klemmt', 'Boden durchgerostet'].map(function (t) { return el('option', { text: t }); }));
+  var teil = el('div', { hidden: '' }, [wahl, el('button', { class: 'knopf still', text: '📸 Schaden mit Foto melden', onclick: function () { if (wahl.selectedIndex < 1) return toast('Bitte erst auswählen, was kaputt ist'); fotoMachen(s, { schaden: wahl.value }); } }),
+    el('button', { class: 'knopf still', text: '🖼 Schaden mit Beispielfoto melden', onclick: function () { if (wahl.selectedIndex < 1) return toast('Bitte erst auswählen, was kaputt ist'); stempeln(beispielFoto(s), s, function (d) { erledigen(s, d, { schaden: wahl.value }); }); } })]);
+  var knopf = el('button', { class: 'knopf still', text: '⚠ Schaden an der Mulde melden', onclick: function () { teil.hidden = !teil.hidden; } });
+  return el('div', {}, [knopf, teil]); }
+function bueroZeigen(m) {
+  var alle = Z.ereignisse.slice().reverse(), fotos = alle.filter(function (e) { return e.foto; });
+  var gesamt = 0, fertig = 0; PLAN.touren.forEach(function (t) { schritte(t).forEach(function (s) { gesamt++; if (Z.erledigt[s.id]) fertig++; }); });
+  m.appendChild(el('div', { class: 'karte' }, [el('span', { class: 'marke', text: 'Romina · Büro' }), el('h2', { text: fertig + ' von ' + gesamt + ' Schritten erledigt' }),
+    el('p', { class: 'klein', text: PLAN.touren.map(function (t) { var s = schritte(t), f = s.filter(function (x) { return Z.erledigt[x.id]; }).length; return '🚛 ' + t.fahrzeug + ': ' + f + '/' + s.length; }).join('   ') })]));
+  (PLAN.nicht_eingeplant || []).forEach(function (n) { var a = AUFTRAG[n.auftrag];
+    m.appendChild(el('div', { class: 'karte warn' }, [el('span', { class: 'marke', text: '⚠ Heute nicht eingeplant', style: 'color:#8a6d00' }), el('h3', { text: a.kunde.name + ' · ' + a.art + ' ' + a.groesse_m3 + ' m³' }), el('p', { class: 'klein', text: 'Grund: ' + n.gruende.join(', ') + '. – Das ist eine zu strenge Annahme im Planer (Wechsel braucht dort 2 Plätze auf dem Lkw). Siehe ANNAHMEN.md: Wechsel.' })])); });
+  if (!fotos.length) m.appendChild(el('div', { class: 'karte' }, [el('p', { text: 'Noch keine Beweisfotos. Sobald ein Fahrer etwas stellt, abholt oder abkippt, erscheint es hier – mit Zeit und Ort.' })]));
+  fotos.forEach(function (e) { var art = typeof e.art === 'string' ? e.art : Object.keys(e.art)[0];
+    m.appendChild(el('div', { class: 'karte' }, [el('b', { text: { Gestellt: '✓ Gestellt', Abgeholt: '✓ Abgeholt', Abgekippt: '✓ Abgekippt', SchadenGemeldet: '⚠ Schaden gemeldet' }[art] + ' · ' + e.container }),
+      el('div', { class: 'klein', text: '🚛 ' + e._lkw + ' · ' + e._titel + ' · ' + uhr(e.zeitpunkt) + ' Uhr' + (e.wiegeschein_kg ? ' · ' + e.wiegeschein_kg + ' kg' : '') + (e.art.SchadenGemeldet ? ' · „' + e.art.SchadenGemeldet.beschreibung + '“' : '') }),
+      Z.fotos[e.foto] ? el('img', { class: 'foto', src: Z.fotos[e.foto], alt: 'Beweisfoto ' + e.container }) : null])); });
+}
+function protokollZeigen(m) {
+  var sauber = SZENARIO.ereignisse.concat(Z.ereignisse.map(function (e) { var k = {}; for (var x in e) if (x[0] !== '_') k[x] = e[x]; return k; }))
+    .sort(function (a, b) { return a.zeitpunkt < b.zeitpunkt ? -1 : a.zeitpunkt > b.zeitpunkt ? 1 : 0; });
+  var text = JSON.stringify(sauber, null, 2);
+  m.appendChild(el('div', { class: 'karte' }, [el('span', { class: 'marke', text: 'Ereignisprotokoll' }), el('h2', { text: Z.ereignisse.length + ' neue Ereignisse heute' }),
+    el('p', { class: 'klein', text: 'Genau dieses Format liest der App-Motor (funk-core): Daraus rechnet er, wo welche Mulde steht und welche zu lange steht. Nur anhängen, nie ändern.' }),
+    el('button', { class: 'knopf voll', text: '📋 Kopieren', onclick: function () { (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { toast('Kopiert'); }, function () { toast('Kopieren ging nicht – bitte markieren'); }); } }),
+    el('pre', { text: text }),
+    el('button', { class: 'knopf still', text: '↺ Tag von vorn (alles löschen)', onclick: function () { var b = this; if (b.dataset.sicher) { Z = { lkw: PLAN.touren[0].fahrzeug, ansicht: 'tour', erledigt: {}, ereignisse: [], fotos: {} }; sichern(); zeigen(); } else { b.dataset.sicher = 1; b.textContent = 'Wirklich? Nochmal tippen'; } } })]));
+}
+document.querySelectorAll('nav button').forEach(function (b) { b.addEventListener('click', function () { Z.ansicht = b.dataset.ansicht; sichern(); zeigen(); window.scrollTo(0, 0); }); });
+zeigen();
+</script>
+</body>
+</html>
