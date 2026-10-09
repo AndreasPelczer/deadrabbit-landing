@@ -37,6 +37,18 @@
   #beweis img{width:100%;border-radius:14px;display:block}
   #beweis .titel{font-weight:900;color:#ffb3d9;font-size:15px;margin:0 4px 8px}
   #beweisStatus{font-size:15px;font-weight:700;margin:10px 4px 2px;line-height:1.35}
+  #anruf{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.6);opacity:0;transition:transform .35s cubic-bezier(.2,1.3,.4,1),opacity .25s;width:min(440px,92vw);max-height:92vh;overflow:auto;background:#1b1a18;border:2px solid #3a3835;border-radius:26px;padding:16px;z-index:13;color:#fff;box-shadow:0 18px 50px rgba(0,0,0,.5);pointer-events:none}
+  #anruf.zeigen{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+  #anrufWer{font-weight:900;color:#ffb3d9;font-size:15px;margin:0 2px 8px}
+  #anrufText{font-size:18px;font-weight:700;line-height:1.4;margin:0 2px 12px}
+  #anrufText .klein{display:block;font-size:14.5px;font-weight:500;color:#d8d2c8;margin-top:6px}
+  #anrufBild{width:100%;border-radius:14px;display:block;margin:0 0 12px}
+  #anrufKnoepfe{display:flex;flex-direction:column;gap:8px}
+  #anrufKnoepfe button{font:inherit;font-size:16.5px;font-weight:800;border:0;border-radius:14px;padding:13px 14px;cursor:pointer;text-align:left;background:#fff;color:#22201C}
+  #anrufKnoepfe button:first-child{background:#E5007E;color:#fff}
+  #anrufKnoepfe kbd{float:right;opacity:.55;font:inherit;font-size:13px}
+  #protokoll{max-width:520px;margin:0 auto 20px;text-align:left;background:rgba(0,0,0,.22);border-radius:14px;padding:12px 16px;font-size:15px;line-height:1.6}
+  #protokoll b{font-variant-numeric:tabular-nums}
   #blitz{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:11;transition:opacity .6s}
   #bericht{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;max-width:760px;margin:16px auto 22px;text-align:left}
   #bericht figure{margin:0;background:rgba(0,0,0,.25);border-radius:14px;padding:6px}
@@ -57,14 +69,15 @@
 <div id="tempo" class="hud">0 km/h</div>
 <div id="meldung" class="hud"></div>
 <div id="blase" class="hud"></div>
-<div id="handy" class="hud"><div class="kopf"><span>📱 Funk Tour</span><span id="handyFotos">📸 0</span></div><canvas id="karte"></canvas><div id="handyZiel">…</div></div>
+<div id="handy" class="hud"><div class="kopf"><span>📱 <span id="handyUhr">07:00</span></span><span id="handyFotos">📸 0</span></div><canvas id="karte"></canvas><div id="handyZiel">…</div></div>
 <div id="beweis"><div class="titel">📸 Beweisfoto</div><img id="beweisBild" alt="Beweisfoto"><div id="beweisStatus"></div></div>
 <div id="blitz"></div>
+<div id="anruf"><div id="anrufWer"></div><div id="anrufText"></div><img id="anrufBild" alt="" hidden><div id="anrufKnoepfe"></div></div>
 <div id="knoepfe">
   <div class="gruppe"><button data-t="links">◀</button><button data-t="rechts">▶</button></div>
   <div class="gruppe"><button data-t="zurueck">▼</button><button class="gross" data-t="aktion">Mulde</button><button data-t="vor">▲</button></div>
 </div>
-<div id="ende"><div><div style="font-size:70px">🏆</div><h1 style="font-size:48px;margin:0">Alle Aufträge geschafft!</h1><p id="endeText" style="font-size:22px"></p><div id="berichtKopf" style="font-size:18px;font-weight:800;display:none">📋 Dein Tagesbericht – so hat die Chefin deinen Tag gesehen:</div><div id="bericht"></div><button id="nochmal">Noch eine Runde</button></div></div>
+<div id="ende"><div><div style="font-size:70px">🏆</div><h1 style="font-size:48px;margin:0">Alle Aufträge geschafft!</h1><p id="endeText" style="font-size:22px"></p><div id="berichtKopf" style="font-size:18px;font-weight:800;display:none">📋 Dein Tagesbericht – so hat die Chefin deinen Tag gesehen:</div><div id="bericht"></div><div id="protokoll" style="display:none"></div><button id="nochmal">Noch eine Runde</button></div></div>
 
 <script>/**
  * @license
@@ -3890,7 +3903,7 @@ function baumoepseWeiter(dt) { BAUMOEPSE.forEach(function (b) {
 var AUFTRAEGE = [
   { text: 'Die Baustelle braucht eine große Mulde: Hol die 10er von der Muldenreihe und stell sie auf der Baustelle ab.', holen: '10', ziel: 'baustelle' },
   { text: 'Familie Grün macht Gartenarbeit: Bring ihr die kleine 5er für den Grünschnitt.', holen: '5', ziel: 'garten' },
-  { text: 'Die Mulde bei Familie Haus ist voll! Hol sie ab und bring sie zum Wertstoffhof.', holen: 'haus', ziel: 'wertstoffhof', start: function () { muldeStellen(true, ZIELE.haus.x + 0.6, ZIELE.haus.z, 0, '7'); } },
+  { text: 'Die Mulde bei Familie Haus ist voll! Hol sie ab und bring sie zum Wertstoffhof.', holen: 'haus', ziel: 'wertstoffhof', start: function () { HAUS_MULDE = muldeStellen(true, ZIELE.haus.x + 0.6, ZIELE.haus.z, 0, '7'); metallReinlegen(HAUS_MULDE); } },
   { text: 'Feierabend: Fahr den Lkw ohne Mulde rückwärts in die Halle.', parken: 'halle' }
 ];
 var nr = 0, sterne = 0, rumms = 0, ton = true;
@@ -3914,6 +3927,7 @@ function fertig() { document.getElementById('endeText').textContent = sterne + '
 // ---------- Mulde aufnehmen / absetzen ----------
 function winkelDiff(a, b) { var d = ((a - b) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI; return Math.abs(d); }
 function aktion() {
+  if (PAUSE) return;
   if (L.arbeit || Math.abs(L.v) > 0.6) { if (Math.abs(L.v) > 0.6) melde('Erst anhalten!', 1200); return; }
   var h = heckPunkt(), a = auftrag();
   if (!L.ladung) {
@@ -3940,7 +3954,7 @@ function arbeitWeiter(dt) {
 }
 function pruefeAbsetzen(m) {
   var a = auftrag(); if (!a || a.parken) return; var z = ZIELE[a.ziel], d = Math.hypot(m.g.position.x - z.x, m.g.position.z - z.z), wd = winkelDiff(m.g.rotation.y, z.dreh); wd = Math.min(wd, Math.PI - wd);
-  if (d < 3) { sterneVergeben(d, wd); beweisfoto(a.ziel === 'wertstoffhof' ? 'abgeliefert' : 'gestellt', m, z.name); naechster(); } else melde('Abgesetzt – aber nicht im gelben Rahmen.', 1800);
+  if (d < 3) { sterneVergeben(d, wd); beweisfoto(a.ziel === 'wertstoffhof' ? 'abgeliefert' : 'gestellt', m, z.name, a.ziel === 'wertstoffhof' && FALL.metall === 'ohneFoto' ? function () { setTimeout(metallFolge, 3000); } : null); naechster(); } else melde('Abgesetzt – aber nicht im gelben Rahmen.', 1800);
 }
 
 // ---------- Steuerung ----------
@@ -3977,7 +3991,7 @@ function fahren(dt, zeit) {
   L.v = Math.max(VRUECK, Math.min(VMAX, L.v)); if (Math.abs(L.v) < 0.03 && !vor_ && !zur) L.v = 0;
   var ziel = (li ? 1 : 0) - (re ? 1 : 0); L.lenk += (ziel * 0.55 - L.lenk) * Math.min(1, dt * 5);
   var nd = L.dreh + L.v / RADSTAND * Math.tan(L.lenk) * dt, f = [Math.sin(nd), Math.cos(nd)], nx = L.x + f[0] * L.v * dt, nz = L.z + f[1] * L.v * dt;
-  if (kollidiert(nx, nz, nd)) { if (Math.abs(L.v) > 1.5 && zeit > rummsBis) { rumms++; rummsBis = zeit + 1.2; melde('RUMMS! 💥', 900); } L.v = -L.v * 0.25; }
+  if (kollidiert(nx, nz, nd)) { if (Math.abs(L.v) > 1.5 && zeit > rummsBis) { rumms++; rummsBis = zeit + 1.2; RUMMS_ORTE.push({ x: L.x, z: L.z, zeit: spielUhr() }); melde('RUMMS! 💥', 900); } L.v = -L.v * 0.25; }
   else { L.x = nx; L.z = nz; L.dreh = nd; }
   lkw.position.set(L.x, 0, L.z); lkw.rotation.y = L.dreh;
   raeder.forEach(function (r, i) { r.rotation.x += L.v * dt / 0.55; });
@@ -3997,7 +4011,7 @@ function kameraWeiter(dt) { var f = vorn(), ziel;
 // ---------- Schleife ----------
 var letzt = 0, gestartet = false, uhr = 0;
 function schleife(ms) { var dt = Math.min(0.05, (ms - letzt) / 1000 || 0); letzt = ms; uhr += dt;
-  if (gestartet) { fahren(dt, uhr); arbeitWeiter(dt); tonWeiter(uhr); }
+  if (gestartet && !PAUSE) { fahren(dt, uhr); arbeitWeiter(dt); SPIELMIN += dt; faelleWeiter(); } if (gestartet) tonWeiter(uhr);
   if (ZIEL_JETZT) { ring.visible = true; ring.position.set(ZIEL_JETZT.x, 0.08, ZIEL_JETZT.z); var s = 1 + Math.sin(uhr * 4) * 0.08; ring.scale.set(s, s, s); } else ring.visible = false;
   if (mops) { mopsSprung = Math.max(0, mopsSprung - dt); mops.position.y = mopsGrund + Math.abs(Math.sin(mopsSprung * 6)) * (mopsSprung > 0 ? 0.9 : 0); mops.rotation.y = Math.atan2(L.x - mops.position.x, L.z - mops.position.z);
     var b = document.getElementById('blase'); if (b.style.display === 'block') { var p = mops.position.clone(); p.y += 2.1; p.project(kamera); b.style.left = ((p.x + 1) / 2 * innerWidth) + 'px'; b.style.top = ((1 - p.y) / 2 * innerHeight) + 'px'; } }
@@ -4005,7 +4019,7 @@ function schleife(ms) { var dt = Math.min(0.05, (ms - letzt) / 1000 || 0); letzt
   if (arbeiter && gestartet) arbeiterWeiter(dt); if (gestartet) baumoepseWeiter(dt); kettenWeiter(); blase2Weiter();
   routeWeiter(); kameraWeiter(dt); renderer.render(szene, kamera);
   if (FOTO_WUNSCH && uhr >= FOTO_WUNSCH.wann) { beweisZeigen(fotoMachen()); renderer.render(szene, kamera); }
-  if (uhr - karteZuletzt > 0.1) { karteZuletzt = uhr; karteMalen(); }
+  if (uhr - karteZuletzt > 0.1) { karteZuletzt = uhr; karteMalen(); var hu = document.getElementById('handyUhr'); if (hu.textContent !== spielUhr()) hu.textContent = spielUhr(); }
   requestAnimationFrame(schleife); }
 function arbeiterWeiter(dt) {                          // der Hofmops läuft seine Runde, bleibt stehen, wenn der Lkw nah ist
   var A = arbeiter, g = A.g, d = Math.hypot(L.x - g.position.x, L.z - g.position.z);
@@ -4069,9 +4083,9 @@ function karteMalen() {
   if (zt.textContent !== txt) zt.textContent = txt; }
 // Beweisfoto: ein zweiter Kamerablick von der Seite, mit Stempel – geht sofort an die Chefin im Büro
 var fotoKam = new THREE.PerspectiveCamera(46, 1, 0.1, 300), FOTO_WUNSCH = null, BEWEISE = [];
-var FOTO_TITEL = { gestellt: '✓ GESTELLT', abgeholt: '✓ ABGEHOLT', abgeliefert: '✓ ABGELIEFERT' };
+var FOTO_TITEL = { gestellt: '✓ GESTELLT', abgeholt: '✓ ABGEHOLT', abgeliefert: '✓ ABGELIEFERT', fremdstoff: '⚠ FREMDSTOFF: METALL' };
 var CHEFIN_SAETZE = ['„Passt, danke!“ 👍', '„Sauber gestellt!“ 💪', '„Kunde ist informiert.“ ✔', '„So schaut das aus!“ 💗'];
-function beweisfoto(art, mulde, ort) { FOTO_WUNSCH = { art: art, mulde: mulde, ort: ort, wann: uhr + (art === 'abgeholt' ? 0.2 : 0.9) }; }   // kurz warten, bis die Arme wieder oben sind
+function beweisfoto(art, mulde, ort, danach) { FOTO_WUNSCH = { art: art, mulde: mulde, ort: ort, danach: danach, wann: uhr + (art === 'gestellt' || art === 'abgeliefert' ? 0.9 : 0.2) }; }   // kurz warten, bis die Arme wieder oben sind
 function fotoMachen() {
   var w = FOTO_WUNSCH; FOTO_WUNSCH = null; var p = new THREE.Vector3(); w.mulde.g.getWorldPosition(p); var f = vorn(), q = [f[1], -f[0]];
   fotoKam.position.set(p.x + q[0] * 8.5 - f[0] * 3, 3.4, p.z + q[1] * 8.5 - f[1] * 3); fotoKam.aspect = renderer.domElement.width / renderer.domElement.height; fotoKam.updateProjectionMatrix(); fotoKam.lookAt(p.x + f[0] * 1.5, 1.1, p.z + f[1] * 1.5);
@@ -4079,12 +4093,12 @@ function fotoMachen() {
   renderer.render(szene, fotoKam); ring.visible = ringWar;
   var src = renderer.domElement, sw = src.width, sh = src.height, cw = Math.min(sw, sh * 4 / 3), ch = cw * 3 / 4, c = document.createElement('canvas'); c.width = 640; c.height = 480; var g = c.getContext('2d');
   g.drawImage(src, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, 640, 480);
-  var d = new Date(), wann = d.toLocaleDateString('de-DE') + ' · ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
+  var d = new Date(), wann = d.toLocaleDateString('de-DE') + ' · ' + spielUhr() + ' Uhr';
   g.fillStyle = 'rgba(20,18,16,.8)'; g.fillRect(0, 384, 640, 96); g.fillStyle = '#E5007E'; g.fillRect(0, 384, 12, 96);
   g.fillStyle = '#fff'; g.font = '800 32px system-ui,-apple-system,sans-serif'; g.fillText(FOTO_TITEL[w.art] + ' · ' + w.mulde.groesse + ' m³' + (w.mulde.voll ? ' (voll)' : ''), 28, 424);
   g.fillStyle = '#e8e2d6'; g.font = '600 21px system-ui,-apple-system,sans-serif'; g.fillText('📍 ' + w.ort + '   🕒 ' + wann, 28, 460);
   g.fillStyle = 'rgba(229,0,126,.9)'; g.fillRect(470, 16, 154, 36); g.fillStyle = '#fff'; g.font = '800 18px system-ui,-apple-system,sans-serif'; g.fillText('📱 Funk Tour', 484, 41);
-  var b = { bild: c.toDataURL('image/jpeg', 0.82), art: w.art, ort: w.ort, groesse: w.mulde.groesse, wann: wann }; BEWEISE.push(b); return b; }
+  var b = { bild: c.toDataURL('image/jpeg', 0.82), art: w.art, ort: w.ort, groesse: w.mulde.groesse, wann: wann, zeit: spielUhr() }; BEWEISE.push(b); protokoll({ gestellt: 'Gestellt', abgeholt: 'Abgeholt', abgeliefert: 'Abgeliefert', fremdstoff: 'Fremdstoff fotografiert' }[w.art] + ' · ' + w.mulde.groesse + ' m³ · ' + w.ort + ' · 📸'); if (w.danach) setTimeout(w.danach, 400); return b; }
 function klick(frei, dauer, lautst) { if (!T || !ton) return; var c = T.ctx, o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = frei; g.gain.setValueAtTime(lautst, c.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dauer); o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + dauer); }
 function beweisZeigen(b) {
   var k = document.getElementById('beweis'), st = document.getElementById('beweisStatus'), bl = document.getElementById('blitz');
@@ -4093,10 +4107,57 @@ function beweisZeigen(b) {
   document.getElementById('beweisBild').src = b.bild; st.innerHTML = '📤 Geht an die Chefin im Büro …'; k.className = 'zeigen';
   document.getElementById('handyFotos').textContent = '📸 ' + BEWEISE.length;
   clearTimeout(beweisZeigen.t1); clearTimeout(beweisZeigen.t2);
-  beweisZeigen.t1 = setTimeout(function () { st.innerHTML = '✅ Chefin hat es gesehen<br><span style="color:#ffb3d9">' + CHEFIN_SAETZE[(BEWEISE.length - 1) % CHEFIN_SAETZE.length] + '</span>'; klick(880, 0.18, 0.08); setTimeout(function () { klick(1320, 0.25, 0.08); }, 120); }, 1400);
+  beweisZeigen.t1 = setTimeout(function () { st.innerHTML = '✅ Chefin hat es gesehen<br><span style="color:#ffb3d9">' + (b.art === 'fremdstoff' ? '„Gut aufgepasst! Ich ruf Familie Haus an.“' : CHEFIN_SAETZE[(BEWEISE.length - 1) % CHEFIN_SAETZE.length]) + '</span>'; klick(880, 0.18, 0.08); setTimeout(function () { klick(1320, 0.25, 0.08); }, 120); }, 1400);
   beweisZeigen.t2 = setTimeout(function () { k.className = ''; }, 5200); }
-function berichtZeigen() { if (!BEWEISE.length) return; document.getElementById('berichtKopf').style.display = 'block';
+function berichtZeigen() { var pr = document.getElementById('protokoll'); protokoll('Feierabend · Lkw in der Halle');
+  pr.innerHTML = '<div style="font-weight:900;font-size:17px;margin-bottom:4px">🕒 Arbeitszeit 07:00 – ' + spielUhr() + ' · nachgewiesen</div>' + PROTOKOLL.map(function (p) { return '<b>' + p.zeit + '</b> · ' + p.text; }).join('<br>'); pr.style.display = 'block';
+  if (!BEWEISE.length) return; document.getElementById('berichtKopf').style.display = 'block';
   document.getElementById('bericht').innerHTML = BEWEISE.map(function (b) { return '<figure><img src="' + b.bild + '" alt=""><figcaption>' + FOTO_TITEL[b.art] + ' · ' + b.groesse + ' m³<br><span style="font-weight:500">' + b.ort + '</span></figcaption></figure>'; }).join(''); }
+
+// ---------- Fälle: der Nachweis schützt jeden (Fahrer, Chefin, Kunde) ----------
+// Spieluhr: Arbeitsbeginn 7:00, eine echte Sekunde = eine Minute. Alles landet mit Uhrzeit im Tour-Protokoll.
+var SPIELMIN = 7 * 60, PAUSE = false, PROTOKOLL = [{ zeit: '07:00', text: 'Arbeitsbeginn · Tour gestartet' }], RUMMS_ORTE = [], FALL = {}, HAUS_MULDE = null, anrufTasten = [];
+function spielUhr() { var m = Math.floor(SPIELMIN); return ('0' + Math.floor(m / 60) % 24).slice(-2) + ':' + ('0' + m % 60).slice(-2); }
+function protokoll(t) { PROTOKOLL.push({ zeit: spielUhr(), text: t }); }
+function bonus(n, t) { sterne += n; document.getElementById('sterne').textContent = '⭐ ' + sterne; melde('🛡 ' + t, 2200); mopsJubel('Beweisfoto sei Dank!'); }
+function metallReinlegen(o) {                         // Grünschnitt obenauf – und dazwischen Metall, das so nicht abgesprochen war
+  var H = CONTAINER_MASS['7'][2], gruen = mat(0x4f8a3a), metall = mat(0x9aa3ab, { emissive: 0x111418 });
+  [[-0.9, 0.3], [0.8, -0.3], [0.2, 0.4]].forEach(function (p) { var b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 0), gruen); b.position.set(p[0], H * 0.9 + 0.25, p[1]); o.g.add(b); });
+  var rohr = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.2, 8), metall); rohr.position.set(0.4, H * 0.9 + 0.6, 0.1); rohr.rotation.z = 1.1; o.g.add(rohr);
+  var blech = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.06, 0.7), metall); blech.position.set(-0.5, H * 0.9 + 0.55, -0.2); blech.rotation.set(0.5, 0.3, 0.35); o.g.add(blech);
+  var rad = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.06, 6, 16), metall); rad.position.set(1.1, H * 0.9 + 0.45, 0.25); rad.rotation.set(1.2, 0, 0.4); o.g.add(rad); }
+function anruf(wer, text, knoepfe, bild) {
+  PAUSE = true; L.v = 0; document.getElementById('tempo').textContent = '0 km/h'; var k = document.getElementById('anruf'), bi = document.getElementById('anrufBild'), kn = document.getElementById('anrufKnoepfe');
+  document.getElementById('anrufWer').textContent = wer; document.getElementById('anrufText').innerHTML = text;
+  if (bild) { bi.src = bild; bi.hidden = false; } else bi.hidden = true;
+  kn.innerHTML = ''; anrufTasten = knoepfe.map(function (b, i) { var e = document.createElement('button'); e.innerHTML = b.t + (knoepfe.length > 1 ? '<kbd>' + (i + 1) + '</kbd>' : ''); var f = function () { if (!PAUSE) return; anrufZu(); tonStart(); b.f && b.f(); }; e.addEventListener('click', f); kn.appendChild(e); return f; });
+  k.className = 'zeigen'; klick(660, 0.15, 0.08); setTimeout(function () { klick(880, 0.15, 0.08); }, 180); }
+function anrufZu() { PAUSE = false; anrufTasten = []; document.getElementById('anruf').className = ''; }
+addEventListener('keydown', function (e) { var i = '123'.indexOf(e.key); if (PAUSE && i >= 0 && anrufTasten[i]) anrufTasten[i](); else if (PAUSE && (e.key === 'Enter' || e.key === ' ') && anrufTasten.length === 1) anrufTasten[0](); });
+function fotoVon(ort) { for (var i = 0; i < BEWEISE.length; i++) if (BEWEISE[i].ort === ort) return BEWEISE[i]; return null; }
+function faelleWeiter() {
+  var a = auftrag(); if (!a || L.arbeit || FOTO_WUNSCH || document.getElementById('beweis').className) return;
+  // 1) Nachbar der Baustelle beschwert sich über die dreckige Straße
+  if (nr === 1 && L.ladung && !FALL.nachbar && Math.abs(L.v) > 2) { FALL.nachbar = 1; var fb = fotoVon(ZIELE.baustelle.name);
+    anruf('📞 Anruf · Herr Krause, Nachbar der Baustelle', '„Euer Lkw hat die ganze Straße vor der Baustelle verdreckt! Das macht ihr sofort sauber!“', [
+      { t: '📸 Beweisfoto von der Baustelle zeigen', f: function () { anruf('📱 Funk Tour · Beweisfoto ' + (fb ? fb.zeit : ''), 'Auf dem Foto: Mulde steht im Rahmen, die Straße ist sauber.<span class="klein">Herr Krause schaut nochmal hin: „Ach – der Dreck kommt vom Bagger der Baufirma. Der kam erst nach euch. Entschuldigung!“</span>', [{ t: 'Passt, weiterfahren 🚛', f: function () { protokoll('Beschwerde Nachbar (Straße) · mit Beweisfoto geklärt'); bonus(1, 'Beschwerde geklärt! +1 ⭐'); } }], fb && fb.bild); } },
+      { t: '🙈 „Tut mir leid, ich komm putzen“', f: function () { protokoll('Beschwerde Nachbar (Straße) · ohne Nachweis eingeräumt'); anruf('📱 Chefin', 'Du hast eine Stunde lang die Straße gefegt.<span class="klein">Später stellt sich raus: Der Dreck war vom Bagger der Baufirma. Mit dem Beweisfoto hättest du das in zehn Sekunden zeigen können.</span>', [{ t: 'Okay, beim nächsten Mal 📸', f: function () { SPIELMIN += 60; } }]); } }
+    ]); return; }
+  // 2) Metall im Grünschnitt bei Familie Haus
+  if (nr === 2 && !L.ladung && !FALL.metall && HAUS_MULDE && Math.hypot(L.x - HAUS_MULDE.g.position.x, L.z - HAUS_MULDE.g.position.z) < 13) { FALL.metall = 'offen';
+    anruf('🐶 Der Mops ruft', '„Moment! Da ist ja <b>Metall</b> drin – ein Rohr, Blech, eine alte Felge. Abgesprochen war nur Grünschnitt!“', [
+      { t: '📸 Foto machen und Chefin fragen', f: function () { FALL.metall = 'mitFoto'; beweisfoto('fremdstoff', HAUS_MULDE, ZIELE.haus.name, function () { setTimeout(function () { anruf('📱 Chefin', '„Hab Familie Haus angerufen und ihnen dein Foto geschickt. Sie sagen: Stimmt, das war der Nachbar. Sortieren zahlen sie – ist abgesprochen. Nimm die Mulde mit!“', [{ t: 'Alles klar, Chefin 👍', f: function () { protokoll('Fremdstoff Metall · Foto, mit Kunde abgesprochen'); bonus(1, 'Fremdstoff nachgewiesen! +1 ⭐'); } }]); }, 2600); }); } },
+      { t: '🤷 Egal, einfach mitnehmen', f: function () { FALL.metall = 'ohneFoto'; protokoll('Fremdstoff Metall · ohne Foto mitgenommen'); } }
+    ]); return; }
+  // 3) Familie Grün meldet einen angefahrenen Zaun – das Protokoll sagt ehrlich, was war
+  if (nr === 3 && !FALL.zaun && Math.abs(L.v) > 2) { FALL.zaun = 1; var fg = fotoVon(ZIELE.garten.name), schuld = RUMMS_ORTE.filter(function (r) { return Math.hypot(r.x - ZIELE.garten.x, r.z - ZIELE.garten.z) < 16; })[0];
+    anruf('📞 Anruf · Familie Grün', '„Unser Gartenzaun ist eingedrückt! Das war bestimmt euer Lkw heute Morgen!“', [
+      { t: '📱 Tour-Protokoll und Foto ansehen', f: function () {
+        if (schuld) anruf('📱 Funk Tour · Protokoll', 'Das Protokoll zeigt: Um <b>' + schuld.zeit + '</b> hat es bei Familie Grün gerummst.<span class="klein">Der Nachweis lügt nicht – auch nicht für uns. Ehrlich sagen ist richtig: Die Versicherung regelt das, und Familie Grün vertraut uns weiter.</span>', [{ t: '„Ja, das war ich. Tut mir leid.“', f: function () { protokoll('Zaun Familie Grün · ehrlich zugegeben, Versicherung informiert'); anruf('📱 Chefin', '„Danke, dass du ehrlich bist. Das klären wir. Passiert jedem mal.“', [{ t: 'Danke, Chefin 💗' }]); } }], fg && fg.bild);
+        else anruf('📱 Funk Tour · Beweisfoto ' + (fg ? fg.zeit : ''), 'Kein einziger Rumms bei Familie Grün. Auf dem Foto: Zaun heil, Mulde steht im Rahmen.<span class="klein">Familie Grün: „Oh … dann war es wohl der Lieferwagen vom Getränkehandel. Entschuldigung!“</span>', [{ t: 'Kein Problem 👋', f: function () { protokoll('Zaun Familie Grün · Lkw entlastet (Foto + Protokoll)'); bonus(1, 'Fahrer entlastet! +1 ⭐'); } }], fg && fg.bild); } }
+    ]); return; }
+}
+function metallFolge() { anruf('📞 Wertstoffhof', '„Da ist Metall im Grünschnitt! Das muss aussortiert werden – das kostet extra.“<span class="klein">Familie Haus sagt: „Das war bestimmt schon vorher so, als ihr kamt.“ Ohne Foto kann keiner beweisen, wann das Metall reinkam. Also zahlt Funk.</span>', [{ t: 'Verstanden – nächstes Mal 📸 Foto!', f: function () { protokoll('Sortierkosten Metall · zahlt Funk (kein Nachweis)'); } }]); }
 var blase2 = null;
 function blaseZeigen(g, t) { if (!blase2) { blase2 = document.createElement('div'); blase2.className = 'hud'; blase2.id = 'blase2'; blase2.style.cssText = 'background:#fff;color:#22201C;font-weight:800;font-size:16px;padding:6px 10px;border-radius:12px;text-shadow:none;transform:translate(-50%,-100%);white-space:nowrap'; document.body.appendChild(blase2); }
   blase2.textContent = t; blase2.style.display = 'block'; blase2.ziel = g; clearTimeout(blaseZeigen.t); blaseZeigen.t = setTimeout(function () { blase2.style.display = 'none'; }, 2200); }
