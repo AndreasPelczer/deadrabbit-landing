@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="de">
+<head><meta name="robots" content="noindex">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Das Stadtbuch · Wertheim um 1400</title>
+<!-- 11.10.2026 (Andreas: „Wertheim Dashboard … Geldfluss, Menschen, Warenfluss“).
+     Öffnet sich mit Taste N im Spiel. Rechnet nichts selbst: zeigt, was die Rechenmaschine der Stadt (stadtleben.js) gerade weiß – per postMessage vom Spiel. -->
+<style>/* 11.10.: Schrift liegt bei (schrift/, SIL OFL) – kein Abruf bei Google (Datenschutz) */
+@font-face { font-family: "IM Fell English"; src: url("schrift/fell-normal.woff2") format("woff2"); font-style: normal; font-display: swap; }
+@font-face { font-family: "IM Fell English"; src: url("schrift/fell-kursiv.woff2") format("woff2"); font-style: italic; font-display: swap; }
+@font-face { font-family: "IM Fell English SC"; src: url("schrift/fell-kapitaelchen.woff2") format("woff2"); font-display: swap; }</style>
+<style>
+:root { --perg: #efe2c0; --perg2: #e4d2a6; --tinte: #3b2414; --blass: #7a5a3a; --rot: #8e1f14; --gruen: #4d6b2e; --gold: #a07a1e; --linie: #b99a6a; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: #2a1d12; color: var(--tinte); font: 16px/1.4 "IM Fell English", Georgia, "Times New Roman", serif; }
+main { max-width: 1180px; margin: 0 auto; padding: 18px 16px 40px; background: linear-gradient(#d9c495, var(--perg) 60px); min-height: 100vh; border-left: 3px double var(--blass); border-right: 3px double var(--blass); }
+h1 { font: 34px/1.05 "IM Fell English SC", Georgia, serif; margin: 0; letter-spacing: .02em; }
+.unter { font-style: italic; color: var(--blass); margin: 2px 0 12px; }
+.kopf { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: baseline; border-top: 1px solid var(--linie); border-bottom: 1px solid var(--linie); padding: 8px 0; margin-bottom: 14px; }
+.kopf .gross { font: 26px "IM Fell English SC", Georgia, serif; }
+.kopf small { color: var(--blass); font-style: italic; }
+.raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+section { background: rgba(255, 248, 228, .55); border: 1px solid var(--linie); border-radius: 4px; padding: 10px 14px 12px; }
+h2 { font: 20px "IM Fell English SC", Georgia, serif; margin: 0 0 6px; border-bottom: 1px solid var(--linie); }
+.erkl { font-size: 13px; font-style: italic; color: var(--blass); margin: 0 0 6px; }
+.balken { display: grid; grid-template-columns: minmax(110px, 38%) 1fr 54px; gap: 4px 8px; align-items: center; font-size: 14px; }
+.balken .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.balken .spur { height: 12px; background: rgba(122, 90, 58, .12); border-radius: 2px; position: relative; }
+.balken .voll { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--blass); }
+.balken .zahl { text-align: right; font-variant-numeric: tabular-nums; }
+.satt { background: var(--gruen) !important; } .hungrig { background: var(--gold) !important; } .darbt { background: var(--rot) !important; } .du { background: #2c4a6e !important; }
+.balken .duname { font-weight: bold; color: #2c4a6e; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+td { padding: 3px 4px; border-bottom: 1px dotted var(--linie); }
+td.z { text-align: right; font-variant-numeric: tabular-nums; }
+canvas.spark { width: 110px; height: 22px; vertical-align: middle; }
+.chronik { max-height: 260px; overflow-y: auto; font-size: 14px; }
+.chronik div { padding: 3px 0; border-bottom: 1px dotted var(--linie); }
+.chronik b { font-weight: normal; color: var(--blass); font-variant-numeric: tabular-nums; margin-right: 6px; }
+ol.weg { margin: 0; padding-left: 0; list-style: none; }
+ol.weg li { padding: 4px 0 4px 28px; position: relative; border-bottom: 1px dotted var(--linie); }
+ol.weg li::before { content: "○"; position: absolute; left: 4px; color: var(--blass); }
+ol.weg li.fertig::before { content: "✓"; color: var(--gruen); }
+ol.weg li.jetzt { background: rgba(142, 31, 20, .08); }
+ol.weg li.jetzt::before { content: "➤"; color: var(--rot); }
+ol.weg small { color: var(--blass); font-style: italic; }
+.warte { text-align: center; padding: 60px 10px; font-style: italic; color: var(--blass); }
+.legende { display: flex; gap: 12px; font-size: 12px; color: var(--blass); margin-top: 6px; flex-wrap: wrap; }
+.legende i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Das Stadtbuch von Wertheim</h1>
+  <p class="unter">Was die Stadt weiß: wer wie viel hat, was es kostet, wo die Leute sind – und wie weit du gekommen bist.</p>
+  <div id="warte" class="warte">Warte auf das Spiel … (im Spiel Taste N drücken)</div>
+  <div id="inhalt" hidden>
+    <div class="kopf">
+      <span class="gross" id="datum">–</span>
+      <span>Geld in der Stadt: <b id="gesamt">–</b> Heller</span>
+      <span>Von außen hereingekommen: <b id="aussen">–</b> Heller</span>
+      <small id="tag"></small>
+    </div>
+    <div class="raster">
+      <section>
+        <h2>Dein Weg</h2>
+        <p class="erkl" id="dustand"></p>
+        <ol class="weg" id="weg"></ol>
+      </section>
+      <section>
+        <h2>Das Geld der Haushalte</h2>
+        <p class="erkl">Heller in der Kasse. Die Farbe sagt, ob dort gegessen wird.</p>
+        <div class="balken" id="geld"></div>
+        <div class="legende"><span><i class="satt"></i>satt</span><span><i class="hungrig"></i>hungrig</span><span><i class="darbt"></i>darbt</span><span><i class="du"></i>du</span></div>
+      </section>
+      <section>
+        <h2>Was es kostet</h2>
+        <p class="erkl">Preise in Hellern, die Linie zeigt, wie sie sich bewegt haben, seit das Buch offen ist.</p>
+        <table id="preise"></table>
+      </section>
+      <section>
+        <h2>Wo die Leute gerade sind</h2>
+        <p class="erkl">Alle Bewohner mit Tagesplan, nach ihrem Ort jetzt.</p>
+        <div class="balken" id="orte"></div>
+      </section>
+      <section>
+        <h2>Was in den Vorratskammern liegt</h2>
+        <p class="erkl">Zusammengezählt über alle Haushalte.</p>
+        <table id="vorrat"></table>
+      </section>
+      <section>
+        <h2>Chronik</h2>
+        <p class="erkl">Was die Stadt sich merkt.</p>
+        <div class="chronik" id="chronik"></div>
+      </section>
+    </div>
+  </div>
+</main>
+<script>
+(function () {
+  'use strict';
+  var ORTE = { bett: 'im Bett', heim: 'daheim', arbeit: 'bei der Arbeit', markt: 'auf dem Markt', stand: 'am Marktstand', wirtshaus: 'im Wirtshaus', essen: 'beim Essen', gasthaus: 'im Gasthaus',
+    kirche: 'in der Kirche', treff: 'beim Schwatz', brunnen: 'am Brunnen', spielen: 'spielen', helfen: 'helfen mit', garten: 'im Garten', bank: 'auf der Bank', tor: 'am Tor', runde: 'auf der Runde',
+    betteln: 'betteln', werkstatt: 'in einer Werkstatt', naschen: 'naschen', schauen: 'schauen nach den Eltern', weinberg: 'im Weinberg', burg: 'auf der Burg', wasser: 'Wasser holen', posten: 'auf Posten', muehle: 'in der Mühle', unterwegs: 'unterwegs', zehntscheune: 'an der Zehntscheune', feld: 'auf dem Feld' };
+  var GUT = { brot: 'Brot', bier: 'Bier', fleisch: 'Fleisch', getreide: 'Getreide', mehl: 'Mehl', wein: 'Wein', holz: 'Holz', tuch: 'Tuch', leder: 'Leder', salz: 'Salz', schwein: 'Schweine', trauben: 'Trauben' };
+  var verlauf = {}, letzteZeit = 0;
+  try { verlauf = JSON.parse(sessionStorage.getItem('wzf_stadtbuch_preise') || '{}'); } catch (e) {}
+  function el(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var KLEIN = { und: 1, der: 1, die: 1, das: 1, von: 1, vom: 1, zu: 1, zum: 1, zur: 1, am: 1, an: 1, im: 1, in: 1, sein: 1, seine: 1, auf: 1, aus: 1, mit: 1 };
+  function schoen(n) { return String(n || '').toLowerCase().split(' ').map(function (w, i) { return i && KLEIN[w] ? w : w.replace(/^([(„]?)([a-zäöü])/, function (m, a, b) { return a + b.toUpperCase(); }); }).join(' '); }
+  function balken(ziel, zeilen, max) {
+    ziel.innerHTML = zeilen.map(function (z) { var w = max > 0 ? Math.max(1.5, Math.round(z.wert / max * 100)) : 0;
+      return '<span class="name' + (z.du ? ' duname' : '') + '" title="' + esc(z.titel || z.name) + '">' + esc(z.name) + '</span><span class="spur"><span class="voll ' + (z.klasse || '') + '" style="width:' + w + '%"></span></span><span class="zahl">' + Math.round(z.wert) + '</span>'; }).join(''); }
+  function spark(werte) {
+    var c = document.createElement('canvas'); c.className = 'spark'; c.width = 220; c.height = 44; var g = c.getContext('2d'); if (werte.length < 2) return c;
+    var lo = Math.min.apply(null, werte), hi = Math.max.apply(null, werte), sp = hi - lo || 1; g.strokeStyle = '#8e1f14'; g.lineWidth = 3; g.beginPath();
+    werte.forEach(function (v, i) { var x = i / (werte.length - 1) * 216 + 2, y = 40 - (v - lo) / sp * 36; if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.stroke(); return c; }
+  function zeigen(d) {
+    el('warte').hidden = true; el('inhalt').hidden = false;
+    var dt = new Date(d.zeit); el('datum').textContent = dt.getDate() + '. ' + ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'][dt.getMonth()] + ' ' + dt.getFullYear() + ' · ' + ('0' + dt.getHours()).slice(-2) + ':' + ('0' + dt.getMinutes()).slice(-2);
+    var S = d.stadt; if (!S) { el('gesamt').textContent = '–'; return; }
+    var hh = S.haushalte || [], gesamt = hh.reduce(function (s, h) { return s + (h.heller || 0); }, 0);
+    el('gesamt').textContent = Math.round(gesamt); el('aussen').textContent = Math.round(S.geldVonAussen || 0); el('tag').textContent = 'Tag ' + S.tag + ' der Rechnung';
+    // Geld
+    var zeilen = hh.map(function (h) { return { name: schoen(h.name || h.beruf), titel: (h.personen ? h.personen + ' Personen · ' : '') + (h.schulden ? 'Schulden ' + Math.round(h.schulden) + ' · ' : '') + (h.zustand || ''), wert: h.heller || 0, klasse: h.zustand }; });
+    if (d.ich) zeilen.push({ name: 'Du', wert: d.ich.heller, klasse: 'du', du: true });
+    zeilen.sort(function (a, b) { return b.wert - a.wert; }); balken(el('geld'), zeilen.slice(0, 22), zeilen.length ? zeilen[0].wert : 1);
+    // Preise mit Verlauf
+    if (d.zeit !== letzteZeit) { letzteZeit = d.zeit; Object.keys(S.preise || {}).forEach(function (g) { var L = verlauf[g] = verlauf[g] || []; if (!L.length || L[L.length - 1] !== S.preise[g]) L.push(+S.preise[g].toFixed(2)); if (L.length > 120) L.shift(); });
+      try { sessionStorage.setItem('wzf_stadtbuch_preise', JSON.stringify(verlauf)); } catch (e) {} }
+    var tp = el('preise'); tp.innerHTML = '';
+    Object.keys(S.preise || {}).sort().forEach(function (g) { var tr = document.createElement('tr'), td1 = document.createElement('td'), td2 = document.createElement('td'), td3 = document.createElement('td');
+      td1.textContent = GUT[g] || schoen(g); td2.className = 'z'; td2.textContent = S.preise[g].toFixed(1); td3.appendChild(spark(verlauf[g] || [])); tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tp.appendChild(tr); });
+    // Orte
+    var o = d.orte || {}, oz = Object.keys(o).map(function (k) { return { name: ORTE[k] || k, wert: o[k] }; }).sort(function (a, b) { return b.wert - a.wert; });
+    balken(el('orte'), oz, oz.length ? oz[0].wert : 1);
+    // Vorräte
+    var sum = {}; hh.forEach(function (h) { var v = h.vorrat || {}; Object.keys(v).forEach(function (g) { sum[g] = (sum[g] || 0) + (+v[g] || 0); }); });
+    el('vorrat').innerHTML = Object.keys(sum).filter(function (g) { return sum[g] > 0.05; }).sort(function (a, b) { return sum[b] - sum[a]; }).map(function (g) { return '<tr><td>' + esc(GUT[g] || schoen(g)) + '</td><td class="z">' + (sum[g] >= 10 ? Math.round(sum[g]) : sum[g].toFixed(1)) + '</td></tr>'; }).join('') || '<tr><td><i>leer</i></td></tr>';
+    // Chronik
+    var ch = (S.chronik || []).slice().reverse(); el('chronik').innerHTML = ch.length ? ch.map(function (c) { return '<div><b>Tag ' + c.tag + '</b>' + esc(c.text) + '</div>'; }).join('') : '<div><i>Noch ist nichts Besonderes geschehen.</i></div>';
+    // Dein Weg
+    var I = d.ich || {}; el('dustand').textContent = (I.stand || '') + ' · ' + I.heller + ' Heller' + (I.hunger !== undefined ? ' · Hunger ' + Math.round(I.hunger) : '') + (I.ruf ? ' · Ruf ' + I.ruf : '');
+    var weg = [
+      ['Angekommen in Wertheim', true, ''],
+      ['Leinenkittel – Tagelöhner', I.kleid >= 1, 'beim Schneider'],
+      ['Eine eigene Kammer', !!I.kammer, '6 Heller die Woche'],
+      ['Wollrock – Knecht', I.kleid >= 2, 'beim Schneider'],
+      ['Lehrling bei Meister Matthes', I.lehre >= 1, I.lehre === 1 ? (I.paare || 0) + ' von 12 Paar' : ''],
+      ['Gesellenstück – Schustergeselle', I.lehre >= 2, '3 Heller je Paar'],
+      ['Bürgerrecht der Stadt', !!I.buerger, 'beim Burgvogt, 40 Heller'],
+      ['Meisterstück – Schustermeister', I.lehre >= 3, I.lehre === 3 ? 'eigener Laden: ' + (I.laden || 0) + ' Paar in der Auslage, ' + (I.verkauft || 0) + ' verkauft' : 'ab 24 Paar, 20 Heller Zunftgeld'],
+      ['Bürgerrock – Bürger', I.kleid >= 3, ''],
+      ['Gewand aus feinem Tuch – Ratsfamilie', I.kleid >= 4, 'beim Tuchhändler aus Würzburg']];
+    var jetzt = weg.findIndex(function (w) { return !w[1]; });
+    el('weg').innerHTML = weg.map(function (w, i) { return '<li class="' + (w[1] ? 'fertig' : i === jetzt ? 'jetzt' : '') + '">' + esc(w[0]) + (w[2] ? ' <small>' + esc(w[2]) + '</small>' : '') + '</li>'; }).join('');
+  }
+  addEventListener('message', function (e) { var d = e.data; if (d && d.wzf === 'stadtbuch') zeigen(d); });
+  if (window.opener) try { window.opener.postMessage({ wzf: 'stadtbuch-hallo' }, '*'); } catch (e) {}
+})();
+</script>
+</body>
+</html>

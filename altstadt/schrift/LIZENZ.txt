@@ -1,0 +1,4 @@
+IM Fell English / IM Fell English SC – Igino Marini (The Fell Types, iginomarini.com)
+Lizenz: SIL Open Font License 1.1 – frei nutzbar, auch eingebettet.
+Quelle: Google Fonts (fonts.google.com/specimen/IM+Fell+English), geladen 11.10.2026.
+Im Spiel eingebettet von werkzeug/bauen.py (/*SCHRIFTEN*/).

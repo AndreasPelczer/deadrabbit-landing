@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="de">
+<head><meta name="robots" content="noindex">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Die Streunerkarte · Wertheim um 1400</title>
+<!-- 11.10.2026 (Andreas: „wie bei Harry Potter die Karte, die zeigt, wo gerade jeder ist“).
+     Öffnet sich mit Taste O im Spiel. Rechnet nichts selbst: zeigt nur, was die Simulation gerade weiß (postMessage vom Spiel). -->
+<style>/* 11.10.: Schrift liegt bei (schrift/, SIL OFL) – kein Abruf bei Google (Datenschutz) */
+@font-face { font-family: "IM Fell English"; src: url("schrift/fell-normal.woff2") format("woff2"); font-style: normal; font-display: swap; }
+@font-face { font-family: "IM Fell English"; src: url("schrift/fell-kursiv.woff2") format("woff2"); font-style: italic; font-display: swap; }
+@font-face { font-family: "IM Fell English SC"; src: url("schrift/fell-kapitaelchen.woff2") format("woff2"); font-display: swap; }</style>
+<style>
+:root { --perg: #efe2c0; --perg2: #e4d2a6; --tinte: #3b2414; --blass: #7a5a3a; --rot: #8e1f14; --linie: #b99a6a; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; background: #2a1d12; color: var(--tinte); font: 16px/1.4 "IM Fell English", Georgia, "Times New Roman", serif; overflow: hidden; }
+#bühne { position: fixed; inset: 0; right: 320px; }
+canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+canvas.zieht { cursor: grabbing; }
+aside { position: fixed; top: 0; right: 0; bottom: 0; width: 320px; padding: 18px 18px 24px; overflow-y: auto;
+  background: linear-gradient(90deg, #d9c495, var(--perg) 12%); border-left: 3px double var(--blass); }
+h1 { font: 26px/1.05 "IM Fell English SC", Georgia, serif; margin: 0 0 4px; letter-spacing: .02em; }
+.unter { font-style: italic; color: var(--blass); margin: 0 0 14px; font-size: 14px; }
+.uhr { font: 22px "IM Fell English SC", Georgia, serif; border-top: 1px solid var(--linie); border-bottom: 1px solid var(--linie); padding: 6px 0; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: baseline; }
+.uhr small { font: italic 14px "IM Fell English", Georgia, serif; color: var(--blass); }
+h2 { font: 17px "IM Fell English SC", Georgia, serif; margin: 16px 0 6px; border-bottom: 1px solid var(--linie); }
+.zeile { display: flex; justify-content: space-between; gap: 8px; padding: 2px 4px; border-radius: 3px; cursor: pointer; font-size: 15px; }
+.zeile:hover, .zeile.an { background: rgba(142, 31, 20, .12); }
+.zeile b { font-weight: normal; font-variant-numeric: tabular-nums; }
+input[type=search] { width: 100%; font: inherit; padding: 6px 8px; background: #f7edd2; border: 1px solid var(--blass); border-radius: 3px; color: var(--tinte); }
+.knoepfe { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+button { font: 15px "IM Fell English SC", Georgia, serif; background: #f2e6c6; color: var(--tinte); border: 1px solid var(--blass); border-radius: 3px; padding: 4px 10px; cursor: pointer; }
+button:hover { background: #fff5dc; }
+label.schalter { display: flex; gap: 6px; align-items: center; font-size: 15px; margin-top: 6px; cursor: pointer; }
+#wer { background: #f7edd2; border: 1px solid var(--blass); padding: 10px 12px; border-radius: 3px; margin-top: 8px; }
+#wer .name { font: 19px "IM Fell English SC", Georgia, serif; }
+#wer .was { font-style: italic; }
+#treffer { max-height: 170px; overflow-y: auto; margin-top: 4px; }
+#warten { position: fixed; inset: 0; right: 320px; display: grid; place-items: center; text-align: center; pointer-events: none; }
+#warten div { font: italic 22px "IM Fell English", Georgia, serif; color: var(--perg); max-width: 26em; padding: 0 16px; }
+#warten b { display: block; font: 34px "IM Fell English SC", Georgia, serif; margin-bottom: 10px; }
+.fuss { margin-top: 18px; font-size: 12px; color: var(--blass); font-style: italic; }
+@media (max-width: 760px) { #bühne, #warten { right: 0; bottom: 46%; } aside { top: 54%; width: 100%; border-left: 0; border-top: 3px double var(--blass); } }
+</style>
+</head>
+<body>
+<div id="bühne"><canvas id="cv"></canvas></div>
+<div id="warten"><div><b>Ich schwöre, ich sehe nur zu.</b>Die Karte wartet auf das Spiel. Im Spiel <b style="display:inline;font-size:inherit">O</b> drücken – dann zeigt sie, wo gerade jeder ist.</div></div>
+<aside>
+  <h1>Die Streunerkarte</h1>
+  <p class="unter">Wertheim innerhalb der Mauern – wer ist wo, und was tut er gerade.</p>
+  <div class="uhr"><span id="uhr">–:–</span><small id="datum"></small></div>
+  <input type="search" id="suche" placeholder="Wen suchst du?" autocomplete="off">
+  <div id="treffer"></div>
+  <div id="wer" hidden></div>
+  <div class="knoepfe"><button id="zuMir">Zu mir</button><button id="stadt">Ganze Stadt</button></div>
+  <label class="schalter"><input type="checkbox" id="drinnen" checked> auch wer drinnen ist (blass)</label>
+  <label class="schalter"><input type="checkbox" id="namen"> alle Namen zeigen</label>
+  <label class="schalter"><input type="checkbox" id="orteZeigen" checked> Arbeit &amp; Läden zeigen</label>
+  <h2>Wo es Arbeit gibt</h2>
+  <div id="arbeit"></div>
+  <h2>Was die Stadt gerade tut</h2>
+  <div id="orte"></div>
+  <h2>Wer</h2>
+  <div id="rollen"></div>
+  <p class="fuss">Die Karte rechnet nichts selbst – sie zeigt, was die Simulation im Spiel gerade weiß. Ziehen = verschieben, Mausrad = näher.</p>
+</aside>
+<script>
+(function () {
+  'use strict';
+  var cv = document.getElementById('cv'), g = cv.getContext('2d');
+  var WELT = null, STAND = null, SPUR = [], AUSWAHL = -1, FOLGEN = false, FILTER = {}, ORTFILTER = null;
+  var sicht = { x: 0, y: 0, m: 2.2 };   // Weltmitte (Ost, Nord) und Pixel je Meter
+  var ROLLE = { buerger: 'Bürger', meister: 'Meister', baecker: 'Bäcker', wirt: 'Wirt', gasthaus: 'Wirt', haecker: 'Häcker', magd: 'Magd', tageloehner: 'Tagelöhner',
+    nachtwaechter: 'Nachtwächter', kind: 'Kind', bauer_korn: 'Bauer mit Korn', bauer_sau: 'Bauer mit Sau', muellerknecht: 'Müllerknecht', reisender: 'Reisende',
+    stadtfrau: 'Stadtfrau', trunkenbold: 'Trunkenbold', alte: 'Alte', zehntknecht: 'Zehntknecht', burgmann: 'Burgmann', burgmagd: 'Burgmagd', dorfbauer: 'Dorfbauer',
+    schmuggler: 'Schmuggler', haendler: 'Händler', wache: 'Stadtwache', schiffer: 'Schiffer', markt: 'Marktleute', metzger: 'Metzger', pfarrer: 'Pfarrer', schultheiss: 'Schultheiß' };
+  function rolle(a) { return ROLLE[a] || (a ? a.charAt(0).toUpperCase() + a.slice(1) : 'Unbekannt'); }
+
+  // ---------- Verbindung zum Spiel ----------
+  function hallo() { try { if (window.opener) window.opener.postMessage({ wzf: 'karte-hallo' }, '*'); } catch (e) {} }
+  hallo(); setTimeout(hallo, 1500);
+  addEventListener('message', function (e) {
+    var d = e.data; if (!d || !d.wzf) return;
+    if (d.wzf === 'welt') { WELT = d; SPUR = d.leute.map(function () { return null; }); vorbereiten(); if (!STAND) { sicht.x = d.start[0]; sicht.y = d.start[1]; } document.getElementById('warten').hidden = true; rollenListe(); orteListe(); }
+    if (d.wzf === 'stand' && WELT) { STAND = d; spuren(); seitenleiste(); if (FOLGEN && AUSWAHL >= 0) { var p = STAND.leute[AUSWAHL]; if (p) { sicht.x = p[0]; sicht.y = p[1]; } } }
+  });
+
+  // ---------- Stadt vorbereiten ----------
+  var BOX = null;
+  function vorbereiten() {
+    var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    WELT.mauern.forEach(function (m) { x0 = Math.min(x0, m[0], m[2]); x1 = Math.max(x1, m[0], m[2]); y0 = Math.min(y0, m[1], m[3]); y1 = Math.max(y1, m[1], m[3]); });
+    if (x0 > x1) { x0 = WELT.start[0] - 250; x1 = WELT.start[0] + 250; y0 = WELT.start[1] - 250; y1 = WELT.start[1] + 250; }
+    BOX = [x0, y0, x1, y1];
+    WELT.haeuser.forEach(function (h) { var cx = 0, cy = 0; h.p.forEach(function (q) { cx += q[0]; cy += q[1]; }); h.cx = cx / h.p.length; h.cy = cy / h.p.length; });
+  }
+  function ganzeStadt() { if (!BOX) return; var r = cv.getBoundingClientRect(); sicht.x = (BOX[0] + BOX[2]) / 2; sicht.y = (BOX[1] + BOX[3]) / 2; sicht.m = Math.min(r.width / (BOX[2] - BOX[0] + 40), r.height / (BOX[3] - BOX[1] + 40)); FOLGEN = false; }
+
+  // ---------- Fußspuren: aus zwei Ständen die Richtung, abwechselnd links/rechts ----------
+  function spuren() {
+    STAND.leute.forEach(function (p, i) {
+      var s = SPUR[i];
+      if (!s) { SPUR[i] = { x: p[0], y: p[1], r: 0, geht: false, abdrucke: [], seite: 0 }; return; }
+      var dx = p[0] - s.x, dy = p[1] - s.y, d = Math.hypot(dx, dy);
+      if (d > 25) { s.abdrucke = []; s.x = p[0]; s.y = p[1]; return; }      // Schlaf, Fähre, Reise: kein Spurenstrich quer über die Stadt
+      s.geht = d > 0.15;
+      if (s.geht) { s.r = Math.atan2(dx, dy); s.seite = 1 - s.seite; s.abdrucke.push({ x: p[0], y: p[1], r: s.r, seite: s.seite, t: Date.now() }); if (s.abdrucke.length > 6) s.abdrucke.shift(); }
+      s.x = p[0]; s.y = p[1];
+    });
+  }
+
+  // ---------- Zeichnen ----------
+  function zuBild(x, y, r) { return [r.width / 2 + (x - sicht.x) * sicht.m, r.height / 2 - (y - sicht.y) * sicht.m]; }
+  function zuWelt(px, py, r) { return [sicht.x + (px - r.width / 2) / sicht.m, sicht.y - (py - r.height / 2) / sicht.m]; }
+  var PERGAMENT = null;
+  function pergament(w, h) {
+    var c = document.createElement('canvas'); c.width = w; c.height = h; var q = c.getContext('2d');
+    var gr = q.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.2, w / 2, h / 2, Math.max(w, h) * 0.75); gr.addColorStop(0, '#f1e4c3'); gr.addColorStop(1, '#cdb27c');
+    q.fillStyle = gr; q.fillRect(0, 0, w, h);
+    for (var i = 0; i < 2600; i++) { q.fillStyle = 'rgba(110,70,30,' + (Math.random() * 0.05) + ')'; var s = Math.random() * 3 + 0.5; q.fillRect(Math.random() * w, Math.random() * h, s, s); }
+    for (var k = 0; k < 9; k++) { q.fillStyle = 'rgba(120,80,40,0.05)'; q.beginPath(); q.arc(Math.random() * w, Math.random() * h, Math.random() * 120 + 40, 0, 7); q.fill(); }
+    return c;
+  }
+  function fuss(x, y, r, seite, alpha, gross) {
+    var s = Math.max(2.8, Math.min(6, sicht.m * 0.55)) * (gross || 1);
+    g.save(); g.translate(x, y); g.rotate(r); g.translate((seite ? 1 : -1) * s * 0.75, 0); g.globalAlpha = alpha;
+    g.beginPath(); g.ellipse(0, -s * 0.35, s * 0.55, s * 0.95, 0, 0, 7); g.fill();       // Ballen
+    g.beginPath(); g.ellipse(0, s * 1.15, s * 0.42, s * 0.5, 0, 0, 7); g.fill();          // Ferse
+    g.restore();
+  }
+  function bändchen(x, y, text, rot) {
+    g.font = 'italic ' + (rot ? 14 : 12) + 'px "IM Fell English", Georgia, serif'; var w = g.measureText(text).width + 12, h = rot ? 18 : 16, by = y - h - 9;
+    g.globalAlpha = 0.92; g.fillStyle = '#f7edd2'; g.strokeStyle = rot ? '#8e1f14' : '#3b2414'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(x - w / 2, by); g.lineTo(x + w / 2, by); g.lineTo(x + w / 2 - 4, by + h / 2); g.lineTo(x + w / 2, by + h); g.lineTo(x - w / 2, by + h); g.lineTo(x - w / 2 + 4, by + h / 2); g.closePath(); g.fill(); g.stroke();
+    g.globalAlpha = 1; g.fillStyle = rot ? '#8e1f14' : '#3b2414'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, x, by + h / 2 + 1);
+  }
+  function sichtbar(i) {
+    var p = STAND.leute[i], l = WELT.leute[i]; if (!p || !l) return false;
+    if ((p[3] || p[4]) && !document.getElementById('drinnen').checked && i !== AUSWAHL) return false;
+    if (Object.keys(FILTER).length && !FILTER[l.a]) return false;
+    if (ORTFILTER !== null && (p[2] || '') !== ORTFILTER) return false;
+    return true;
+  }
+  function malen() {
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(r.width * dpr) || cv.height !== Math.round(r.height * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); PERGAMENT = null; }
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (!PERGAMENT) PERGAMENT = pergament(Math.max(1, r.width | 0), Math.max(1, r.height | 0));
+    g.drawImage(PERGAMENT, 0, 0, r.width, r.height);
+    if (!WELT) { requestAnimationFrame(malen); return; }
+    // Häuser: Tintenumriss, begehbare mit Namen
+    g.lineJoin = 'round';
+    WELT.haeuser.forEach(function (h) {
+      var c = zuBild(h.cx, h.cy, r); if (c[0] < -80 || c[1] < -80 || c[0] > r.width + 80 || c[1] > r.height + 80) return;
+      g.beginPath(); h.p.forEach(function (q, k) { var b = zuBild(q[0], q[1], r); k ? g.lineTo(b[0], b[1]) : g.moveTo(b[0], b[1]); }); g.closePath();
+      g.fillStyle = h.z ? 'rgba(142,31,20,0.10)' : 'rgba(90,60,30,0.10)'; g.fill();
+      g.strokeStyle = 'rgba(59,36,20,' + (h.a === 'haus' ? 0.75 : 0.5) + ')'; g.lineWidth = h.a === 'haus' ? 1 : 1.4; g.stroke();
+    });
+    // Mauer doppelt gezogen, Tore als Lücke mit Strich
+    g.strokeStyle = 'rgba(59,36,20,0.85)'; g.lineCap = 'round';
+    [[Math.max(3, sicht.m * 2.2), 'rgba(59,36,20,0.85)'], [Math.max(1, sicht.m * 1.2), '#e6d4a8']].forEach(function (st) {
+      g.lineWidth = st[0]; g.strokeStyle = st[1]; g.beginPath(); WELT.mauern.forEach(function (m) { var a = zuBild(m[0], m[1], r), b = zuBild(m[2], m[3], r); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); }); g.stroke(); });
+    // Namen der Häuser mit Zweck
+    if (sicht.m > 1.4) { g.fillStyle = 'rgba(59,36,20,0.85)'; g.font = Math.round(Math.min(15, 8 + sicht.m * 1.4)) + 'px "IM Fell English SC", Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      WELT.haeuser.forEach(function (h) { if (!h.s) return; var c = zuBild(h.cx, h.cy, r); if (c[0] < 0 || c[1] < 0 || c[0] > r.width || c[1] > r.height) return; g.fillText(kurzname(h.s), c[0], c[1]); }); }
+    // 11.10.: Arbeitsplätze und Läden – rote Raute mit Beschriftung, damit man den Grind findet
+    if (WELT.orte && document.getElementById('orteZeigen').checked) { g.textAlign = 'left'; g.textBaseline = 'middle';
+      WELT.orte.forEach(function (o) { var c = zuBild(o.x, o.y, r); if (c[0] < -40 || c[1] < -40 || c[0] > r.width + 40 || c[1] > r.height + 40) return;
+        g.save(); g.translate(c[0], c[1]); g.rotate(Math.PI / 4); g.fillStyle = '#8e1f14'; g.globalAlpha = 0.85; g.fillRect(-4, -4, 8, 8); g.globalAlpha = 1; g.strokeStyle = '#f7edd2'; g.lineWidth = 1; g.strokeRect(-4, -4, 8, 8); g.restore();
+        if (sicht.m > (o.neben ? 2.6 : 0.9)) { g.font = '13px "IM Fell English SC", Georgia, serif'; g.fillStyle = 'rgba(247,237,210,.85)'; var w = g.measureText(o.n).width; g.fillRect(c[0] + 7, c[1] - 8, w + 6, 16); g.fillStyle = '#8e1f14'; g.fillText(o.n, c[0] + 10, c[1] + 1); } }); }
+    if (!STAND) { requestAnimationFrame(malen); return; }
+    // Leute: Fußspuren, blass wer drinnen ist
+    var jetzt = Date.now(), alleNamen = document.getElementById('namen').checked || sicht.m > 6, namen = [];
+    STAND.leute.forEach(function (p, i) {
+      if (!sichtbar(i)) return; var s = SPUR[i]; if (!s) return; var drin = p[3] || p[4], c = zuBild(p[0], p[1], r);
+      if (c[0] < -30 || c[1] < -30 || c[0] > r.width + 30 || c[1] > r.height + 30) return;
+      g.fillStyle = i === AUSWAHL ? '#8e1f14' : '#3b2414';
+      s.abdrucke.forEach(function (a) { var b = zuBild(a.x, a.y, r), alter = (jetzt - a.t) / 3200; if (alter < 1) fuss(b[0], b[1], a.r, a.seite, (drin ? 0.3 : 0.7) * (1 - alter)); });
+      if (s.geht) fuss(c[0], c[1], s.r, s.seite, drin ? 0.45 : 0.95); else { fuss(c[0], c[1], s.r, 0, drin ? 0.45 : 0.95); fuss(c[0], c[1], s.r, 1, drin ? 0.45 : 0.95); }
+      if (i === AUSWAHL || (alleNamen && !drin)) namen.push([c[0], c[1], WELT.leute[i].n, i === AUSWAHL]);
+    });
+    if (STAND.hund) { var hb = zuBild(STAND.hund[0], STAND.hund[1], r); g.fillStyle = '#5a3a1a'; for (var k = 0; k < 4; k++) { g.globalAlpha = 0.8; g.beginPath(); g.arc(hb[0] + (k % 2 ? 2.5 : -2.5), hb[1] + (k < 2 ? -2 : 2.5), 1.6, 0, 7); g.fill(); } g.globalAlpha = 1; }
+    // Du selbst, in roter Tinte
+    var ich = zuBild(STAND.ich[0], STAND.ich[1], r); g.fillStyle = '#8e1f14'; fuss(ich[0], ich[1], STAND.ich[2], 0, 1, 1.3); fuss(ich[0], ich[1], STAND.ich[2], 1, 1, 1.3);
+    namen.forEach(function (n) { bändchen(n[0], n[1], kurzname(n[2]), n[3]); });
+    bändchen(ich[0], ich[1], 'Du', true);
+    // Maßstab
+    var meter = [5, 10, 25, 50, 100, 200][[5, 10, 25, 50, 100, 200].findIndex(function (m) { return m * sicht.m > 70; })] || 200;
+    g.strokeStyle = '#3b2414'; g.fillStyle = '#3b2414'; g.lineWidth = 2; g.beginPath(); g.moveTo(20, r.height - 22); g.lineTo(20 + meter * sicht.m, r.height - 22); g.stroke();
+    g.font = 'italic 13px "IM Fell English", Georgia, serif'; g.textAlign = 'left'; g.fillStyle = 'rgba(239,226,192,.85)'; g.fillRect(14, r.height - 50, Math.max(120, meter * sicht.m) + 14, 36); g.fillStyle = '#3b2414'; g.fillText(meter + ' Schritt (Meter)', 20, r.height - 34); g.beginPath(); g.moveTo(20, r.height - 22); g.lineTo(20 + meter * sicht.m, r.height - 22); g.stroke();
+    requestAnimationFrame(malen);
+  }
+  var KLEIN = { der: 1, die: 1, das: 1, zu: 1, zum: 1, zur: 1, von: 1, vom: 1, am: 1, im: 1, aus: 1, und: 1, dem: 1, den: 1 };
+  function kurzname(n) { return (n || '').split(' · ')[0].toLowerCase().split(' ').map(function (w, i) { return i && KLEIN[w.replace(/,$/, '')] ? w : w.charAt(0).toUpperCase() + w.slice(1); }).join(' '); }   // „LIENHARD, DER BÖTTCHER · DEIN ONKEL“ → „Lienhard, der Böttcher“
+
+  // ---------- Seitenleiste ----------
+  function ortText(o) { if (!o) return 'unterwegs'; var t = (WELT.orte || {})[o]; return t ? t : o; }
+  var letzteLeiste = 0;
+  function seitenleiste() {
+    var d = new Date(STAND.zeit); document.getElementById('uhr').textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    document.getElementById('datum').textContent = d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) + (STAND.epoche === 1400 ? ' 1400' : ' · heute (Leute leben um 1400 – Z)');
+    if (Date.now() - letzteLeiste < 1500) { werZeigen(); return; } letzteLeiste = Date.now();
+    var zaehl = {}; STAND.leute.forEach(function (p) { var o = p[2] || ''; zaehl[o] = (zaehl[o] || 0) + 1; });
+    var el = document.getElementById('orte'); el.innerHTML = '';
+    Object.keys(zaehl).sort(function (a, b) { return zaehl[b] - zaehl[a]; }).forEach(function (o) {
+      var z = document.createElement('div'); z.className = 'zeile' + (ORTFILTER === o ? ' an' : ''); var t = document.createElement('span'); t.textContent = ortText(o).replace(/\s*\(.*\)/, ''); var b = document.createElement('b'); b.textContent = zaehl[o];
+      z.appendChild(t); z.appendChild(b); z.title = 'nur diese zeigen'; z.onclick = function () { ORTFILTER = ORTFILTER === o ? null : o; letzteLeiste = 0; seitenleiste(); }; el.appendChild(z); });
+    werZeigen();
+  }
+  function orteListe() {                          // die Liste in der Seitenleiste: antippen = hinsehen
+    var el = document.getElementById('arbeit'); el.innerHTML = ''; (WELT.orte || []).filter(function (o) { return o.t; }).forEach(function (o) {
+      var z = document.createElement('div'); z.className = 'zeile'; var t = document.createElement('span'); t.textContent = o.n; var b = document.createElement('b'); b.textContent = o.t; b.style.fontSize = '12px'; b.style.fontStyle = 'italic'; b.style.textAlign = 'right';
+      z.appendChild(t); z.appendChild(b); z.onclick = function () { sicht.x = o.x; sicht.y = o.y; sicht.m = Math.max(sicht.m, 3); FOLGEN = false; }; el.appendChild(z); }); }
+  function rollenListe() {
+    var zaehl = {}; WELT.leute.forEach(function (l) { zaehl[l.a] = (zaehl[l.a] || 0) + 1; });
+    var el = document.getElementById('rollen'); el.innerHTML = '';
+    Object.keys(zaehl).sort(function (a, b) { return zaehl[b] - zaehl[a]; }).forEach(function (a) {
+      var z = document.createElement('div'); z.className = 'zeile' + (FILTER[a] ? ' an' : ''); var t = document.createElement('span'); t.textContent = rolle(a); var b = document.createElement('b'); b.textContent = zaehl[a];
+      z.appendChild(t); z.appendChild(b); z.onclick = function () { if (FILTER[a]) delete FILTER[a]; else FILTER[a] = true; rollenListe(); }; el.appendChild(z); });
+  }
+  function werZeigen() {
+    var box = document.getElementById('wer'); if (AUSWAHL < 0 || !STAND || !WELT.leute[AUSWAHL]) { box.hidden = true; return; }
+    var l = WELT.leute[AUSWAHL], p = STAND.leute[AUSWAHL], h = WELT.haeuser[l.h], weit = Math.round(Math.hypot(p[0] - STAND.ich[0], p[1] - STAND.ich[1]));
+    box.hidden = false; box.innerHTML = '';
+    function zeile(cls, text) { var d = document.createElement('div'); if (cls) d.className = cls; d.textContent = text; box.appendChild(d); }
+    zeile('name', kurzname(l.n)); zeile('', rolle(l.a)); zeile('was', 'Gerade: ' + ortText(p[2]) + (p[3] || p[4] ? ' – nicht zu sehen' : ''));
+    if (h) zeile('', 'Zu Hause: ' + (h.s ? kurzname(h.s) : h.n || (h.b ? 'Haus eines ' + rolle(h.b) : 'ein Haus'))); zeile('', weit + ' Schritt von dir');
+    var k = document.createElement('div'); k.className = 'knoepfe'; var f = document.createElement('button'); f.textContent = FOLGEN ? 'Nicht mehr folgen' : 'Folgen'; f.onclick = function () { FOLGEN = !FOLGEN; werZeigen(); };
+    var w = document.createElement('button'); w.textContent = 'Loslassen'; w.onclick = function () { AUSWAHL = -1; FOLGEN = false; werZeigen(); }; k.appendChild(f); k.appendChild(w); box.appendChild(k);
+  }
+  document.getElementById('suche').addEventListener('input', function () {
+    var q = this.value.trim().toLowerCase(), el = document.getElementById('treffer'); el.innerHTML = ''; if (!q || !WELT) return;
+    WELT.leute.forEach(function (l, i) { if (el.childNodes.length >= 30 || (l.n || '').toLowerCase().indexOf(q) < 0) return;
+      var z = document.createElement('div'); z.className = 'zeile'; z.textContent = kurzname(l.n); z.onclick = function () { AUSWAHL = i; FOLGEN = true; var p = STAND && STAND.leute[i]; if (p) { sicht.x = p[0]; sicht.y = p[1]; sicht.m = Math.max(sicht.m, 4); } werZeigen(); }; el.appendChild(z); });
+  });
+  document.getElementById('zuMir').onclick = function () { if (STAND) { sicht.x = STAND.ich[0]; sicht.y = STAND.ich[1]; sicht.m = Math.max(sicht.m, 4); FOLGEN = false; } };
+  document.getElementById('stadt').onclick = ganzeStadt;
+
+  // ---------- Ziehen, Zoomen, Antippen ----------
+  var zug = null;
+  cv.addEventListener('pointerdown', function (e) { zug = { x: e.clientX, y: e.clientY, sx: sicht.x, sy: sicht.y, weit: 0 }; cv.setPointerCapture(e.pointerId); cv.classList.add('zieht'); });
+  cv.addEventListener('pointermove', function (e) { if (!zug) return; var dx = e.clientX - zug.x, dy = e.clientY - zug.y; zug.weit = Math.max(zug.weit, Math.hypot(dx, dy)); sicht.x = zug.sx - dx / sicht.m; sicht.y = zug.sy + dy / sicht.m; if (zug.weit > 4) FOLGEN = false; });
+  cv.addEventListener('pointerup', function (e) { cv.classList.remove('zieht'); var z = zug; zug = null; if (!z || z.weit > 4 || !STAND) return;
+    var r = cv.getBoundingClientRect(), best = -1, bd = 14; STAND.leute.forEach(function (p, i) { if (!sichtbar(i)) return; var c = zuBild(p[0], p[1], r), d = Math.hypot(c[0] - (e.clientX - r.left), c[1] - (e.clientY - r.top)); if (d < bd) { bd = d; best = i; } });
+    AUSWAHL = best; if (best < 0) FOLGEN = false; werZeigen(); });
+  cv.addEventListener('wheel', function (e) { e.preventDefault(); var r = cv.getBoundingClientRect(), vor = zuWelt(e.clientX - r.left, e.clientY - r.top, r);
+    sicht.m = Math.max(0.4, Math.min(30, sicht.m * Math.exp(-e.deltaY * 0.0015))); var nach = zuWelt(e.clientX - r.left, e.clientY - r.top, r); sicht.x += vor[0] - nach[0]; sicht.y += vor[1] - nach[1]; }, { passive: false });
+  requestAnimationFrame(malen);
+})();
+</script>
+</body>
+</html>
