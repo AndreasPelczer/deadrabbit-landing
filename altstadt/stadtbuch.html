@@ -46,6 +46,13 @@ ol.weg li.fertig::before { content: "✓"; color: var(--gruen); }
 ol.weg li.jetzt { background: rgba(142, 31, 20, .08); }
 ol.weg li.jetzt::before { content: "➤"; color: var(--rot); }
 ol.weg small { color: var(--blass); font-style: italic; }
+.stamm { font-size: 15px; text-align: center; }
+.stamm .reihe { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0; }
+.stamm .p { border: 1px solid var(--linie); border-radius: 4px; padding: 3px 8px; background: rgba(255, 248, 228, .8); }
+.stamm .p.ich { border-color: #2c4a6e; color: #2c4a6e; font-weight: bold; }
+.stamm .p.tot { color: var(--blass); font-style: italic; }
+.stamm .p.offen { color: var(--blass); border-style: dashed; }
+.stamm .strich { color: var(--blass); line-height: 1; }
 .warte { text-align: center; padding: 60px 10px; font-style: italic; color: var(--blass); }
 .legende { display: flex; gap: 12px; font-size: 12px; color: var(--blass); margin-top: 6px; flex-wrap: wrap; }
 .legende i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
@@ -68,6 +75,11 @@ ol.weg small { color: var(--blass); font-style: italic; }
         <h2>Dein Weg</h2>
         <p class="erkl" id="dustand"></p>
         <ol class="weg" id="weg"></ol>
+      </section>
+      <section>
+        <h2>Stammbaum</h2>
+        <p class="erkl">Woher du kommst und wer zu dir gehört. Er wächst mit dem Spiel.</p>
+        <div class="stamm" id="stamm"></div>
       </section>
       <section>
         <h2>Das Geld der Haushalte</h2>
@@ -158,7 +170,15 @@ ol.weg small { color: var(--blass); font-style: italic; }
     var jetzt = weg.findIndex(function (w) { return !w[1]; });
     el('weg').innerHTML = weg.map(function (w, i) { return '<li class="' + (w[1] ? 'fertig' : i === jetzt ? 'jetzt' : '') + '">' + esc(w[0]) + (w[2] ? ' <small>' + esc(w[2]) + '</small>' : '') + '</li>'; }).join('');
   }
-  addEventListener('message', function (e) { var d = e.data; if (d && d.wzf === 'stadtbuch') zeigen(d); });
+  function stammbaum(s) { var z = el('stamm'); if (!z || !s) return; function p(t, k) { return '<span class="p ' + (k || '') + '">' + esc(t) + '</span>'; } function nm(n) { return n ? n.charAt(0) + n.slice(1).toLowerCase() : ''; }
+    var h = '<div class="reihe">' + p('Deine Mutter, Jörgs Schwester †', 'tot') + p('Jörg, Steinmetzmeister · dein Onkel') + p('Axel, sein Bruder') + '</div><div class="strich">│</div>';
+    var du = 'Du' + (s.nachname ? ' ' + nm(s.nachname) : ' – noch ohne Nachnamen');
+    if (s.frau) h += '<div class="reihe">' + p(du, 'ich') + '<span>⚭</span>' + p(nm(s.frau) + (s.schwiegervater ? ', Tochter von ' + s.schwiegervater.split(',')[0].charAt(0) + s.schwiegervater.split(',')[0].slice(1).toLowerCase() : '')) + '</div>';
+    else h += '<div class="reihe">' + p(du, 'ich') + (s.geplant ? '<span>⚭</span>' + p(nm(s.geplant) + ' – Hochzeit am Sonntag', 'offen') : '') + '</div>';
+    if (s.kind) h += '<div class="strich">│</div><div class="reihe">' + p(nm(s.kind.name) + (s.kind.art === 'sohn' ? ', dein Sohn' : ', deine Tochter')) + '</div>';
+    else if (s.frau) h += '<div class="strich">│</div><div class="reihe">' + p('Kinder: noch keine', 'offen') + '</div>';
+    z.innerHTML = h; }
+  addEventListener('message', function (e) { var d = e.data; if (d && d.wzf === 'stadtbuch') { zeigen(d); stammbaum(d.stamm); } });
   if (window.opener) try { window.opener.postMessage({ wzf: 'stadtbuch-hallo' }, '*'); } catch (e) {}
 })();
 </script>
