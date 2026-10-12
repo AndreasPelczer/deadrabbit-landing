@@ -10404,7 +10404,7 @@ function krautWeiter() { var K = AUFTRAG.kraut; if (!K || !K.length) return; var
   AUFTRAG.kraut = K.filter(function (d) { return d > heute; }); AUFTRAG.krautfass = (AUFTRAG.krautfass || 0) + fertig; speichern(); melden('DEIN SAUERKRAUT IST DURCH · ' + AUFTRAG.krautfass + ' FASS · ANBRECHEN IM INVENTAR ODER DEM WIRT VERKAUFEN (18 HELLER)', 6); }
 function krautAnbrechen() { if (!(AUFTRAG.krautfass > 0)) return; AUFTRAG.krautfass--; AUFTRAG.sauerkraut = (AUFTRAG.sauerkraut || 0) + 10; speichern(); melden('FASS ANGEBROCHEN · 10 SCHÜSSELN SAUERKRAUT', 4); }
 var WIRT_ANKAUF = { krautfass: 18, salzfisch: 3 };
-function wirtAnkauf() { var h = handWahl(), preis = WIRT_ANKAUF[h]; if (!preis || !(AUFTRAG[h] > 0)) return false; var w = null, bd = 3; LEUTE.concat(TAGESLEUTE).forEach(function (l) { if ((l.art === 'gasthaus' || l.rolle === 'wirt') && !istVersteckt(l)) { var d = Math.hypot(P.x - l.x, P.y - l.y); if (d < bd) { bd = d; w = l; } } }); if (!w) return false;
+function wirtAnkauf() { var h = handWahl(), preis = WIRT_ANKAUF[h] * (h === 'salzfisch' && lageIst('hunger') ? 2 : 1); if (!preis || !(AUFTRAG[h] > 0)) return false; var w = null, bd = 3; LEUTE.concat(TAGESLEUTE).forEach(function (l) { if ((l.art === 'gasthaus' || l.rolle === 'wirt') && !istVersteckt(l)) { var d = Math.hypot(P.x - l.x, P.y - l.y); if (d < bd) { bd = d; w = l; } } }); if (!w) return false;
   AUFTRAG[h]--; AUFTRAG.heller += preis; tagNotiz('heller', preis); muenzTon(); speichern(); melden('DER WIRT KAUFT ' + (h === 'krautfass' ? 'DEIN SAUERKRAUTFASS' : 'EINEN SALZFISCH') + ' · +' + preis + ' HELLER', 4); return true; }
 function kohlKaufen() { if (AUFTRAG.heller < 1) { melden('EIN KOHLKOPF KOSTET 1 HELLER', 3); return; } AUFTRAG.heller -= 1; AUFTRAG.kohl = (AUFTRAG.kohl || 0) + 1; speichern(); melden('EIN KOHLKOPF · −1 HELLER · DU HAST ' + AUFTRAG.kohl + (AUFTRAG.kohl < 4 ? ' (4 FÜR EIN FASS)' : ' · GENUG FÜR EIN SAUERKRAUTFASS'), 3); }
 function schmiedHaken() { if (EPOCHE !== 1400 || AUFTRAG.angel || AUFTRAG.haken || !AUFTRAG.rute) return false; var b = BERUFSSZENEN.filter(function (q) { return q.art === 'schmied'; })[0]; if (!b || Math.hypot(P.x - b.x, P.y - b.y) > 3) return false;
@@ -10425,7 +10425,7 @@ function angelHandhaben() { if (EPOCHE !== 1400 || !AUFTRAG.angel || P.drinnen |
   if (ANGEL.aktiv) { if (ANGEL.phase === 'biss') { var f = fischZiehen(), F = FISCHE[f]; AUFTRAG.fisch = (AUFTRAG.fisch || 0) + F[2]; if (F[2]) { AUFTRAG.fischGesamt = (AUFTRAG.fischGesamt || 0) + 1; tatMerken('angeln', P.x, P.y); } if (SPIELER) AUFTRAG.hunger = Math.min(100, AUFTRAG.hunger + 0.3); speichern();
       angelEinholen(); if (ANGEL.codex) angelFangZeigen(f); if (F[2]) kling('fisch_zappeln', 0.4); else kling('platsch_klein', 0.3); melden(F[0] + ' ' + F[1] + (F[2] ? ' · FISCH IN DIE HAND (TASTE ' + (handTaste('fisch') || leisteDinge().length) + '), RECHTSKLICK ISST (' + AUFTRAG.fisch + ')' : ''), 7); return true; }
     angelEinholen('DU HOLST DIE SCHNUR EIN'); var se = kling('schnur_einholen', 0.15); if (se) setTimeout(se.stop, 900); return true; }
-  if (haendeVoll()) return false; var wp = wurfPunkt(); if (!wp) return false; if (!handIst('angel')) handSetzen('angel');   // 12.10. (Andreas: „ich verstehe das nicht“): am Wasser nimmt man die Angel von selbst
+  if (haendeVoll()) return false; var wp = wurfPunkt(); if (!wp) return false; if (lageIst('hochwasser')) { melden('DER MAIN IST REISSEND UND BRAUN · HEUTE BEISST NICHTS, UND DU WIRST WEGGESPÜLT', 3); return true; } if (!handIst('angel')) handSetzen('angel');   // 12.10. (Andreas: „ich verstehe das nicht“): am Wasser nimmt man die Angel von selbst
   if (sonnenstand(himmelsZeit()).hoehe < -6) { melden('ZU DUNKEL – DEN SCHWIMMER SIEHST DU NICHT MEHR', 3); return true; }
   if (!AUFTRAG.fischErlaubt) { AUFTRAG.rede = { wer: { x: P.x, y: P.y, name: 'DER FISCHER VON DER LÄNDE' }, name: 'DER FISCHER VON DER LÄNDE', i: 0, zeilen: ['He, Junge! Der Main gehört dem Grafen, und fischen darf eigentlich nur die Zunft.', 'Mit einer Rute vom Ufer, für den eigenen Topf … na gut, da drück ich ein Auge zu.', 'Aber keine Netze. Und nicht an meinem Steg! Petri Heil.'],
       danach: function () { AUFTRAG.fischErlaubt = 1; speichern(); } }; return true; }
@@ -10807,14 +10807,15 @@ function kaiBauen(L, pfad, stapel, puppe) {
   var pu = puppe('buerger'); pu.gruppe.visible = false; var sack = window.Laende && Laende.sack && PUPPE ? Laende.sack() : null; if (sack) { sack.visible = false; PUPPE.gruppe.add(sack); }
   KAI.platz = { steg: a, stapel: stapel, meister: mp, figur: pu, sack: sack };
 }
-function kaiOffen() { var h = stunde(); return EPOCHE === 1400 && h >= 6 && h < 19; }
+function kaiOffen() { var h = stunde(); return EPOCHE === 1400 && h >= 6 && h < 19 && !lageIst('hochwasser'); }
 function kaiNehmen() { var K = KAI.platz; if (!K || KAI.traegt || haendeVoll() || Math.hypot(P.x - K.steg[0], P.y - K.steg[1]) > 2.6) return false;
+  if (lageIst('hochwasser')) { melden('HOCHWASSER · DER STEG STEHT UNTER WASSER · ERST WENN DER MAIN ZURÜCKGEHT', 3); return true; }
   if (!kaiOffen()) { melden('AM STEG IST NIEMAND · DIE SCHIFFE WERDEN VON 6 BIS 19 UHR GELÖSCHT', 3); return true; }
   var heute = holzTagNr(); if (AUFTRAG.kaiTag !== heute) { AUFTRAG.kaiTag = heute; AUFTRAG.kaiHeute = 0; }
   if ((AUFTRAG.kaiHeute || 0) >= KAI_TAG) { melden('RUPRECHT, DER LADMEISTER: „DAS SCHIFF IST LEER. MORGEN KOMMT DAS NÄCHSTE.“', 4); return true; }
   KAI.traegt = 1; if (KL.an) klang('hammer_holz', P.x, P.y, 0.2, 3, { tonhoehe: 0.5 }); melden('DU SCHULTERST EINEN SACK KORN · ZU RUPRECHT AM STAPEL', 3); return true; }
 function kaiAbgeben() { var K = KAI.platz; if (!K || !KAI.traegt || Math.min(Math.hypot(P.x - K.stapel[0], P.y - K.stapel[1]), Math.hypot(P.x - K.meister[0], P.y - K.meister[1])) > 2.8) return false;
-  KAI.traegt = 0; AUFTRAG.kaiHeute = (AUFTRAG.kaiHeute || 0) + 1; AUFTRAG.kaiGesamt = (AUFTRAG.kaiGesamt || 0) + 1; AUFTRAG.heller += 1; tagNotiz('heller', 1); tatMerken('kai', K.stapel[0], K.stapel[1]);
+  KAI.traegt = 0; AUFTRAG.kaiHeute = (AUFTRAG.kaiHeute || 0) + 1; AUFTRAG.kaiGesamt = (AUFTRAG.kaiGesamt || 0) + 1; AUFTRAG.heller += 1; tagNotiz('heller', 1); tagNotiz('kai', 1); tatMerken('kai', K.stapel[0], K.stapel[1]);
   if (SPIELER) AUFTRAG.hunger = Math.min(100, AUFTRAG.hunger + 0.9); fx('splitter', K.stapel[0], K.stapel[1], bodenHoehe(K.stapel[0], K.stapel[1]) + 0.5);
   melden('SACK ABGELADEN · +1 HELLER · ' + AUFTRAG.kaiHeute + ' VON ' + KAI_TAG + ' HEUTE', 2.5); speichern(); return true; }
 function kaiWeiter(dt) { var K = KAI.platz; if (!K) return; var an = kaiOffen(), dm = Math.hypot(P.x - K.meister[0], P.y - K.meister[1]);
@@ -10858,19 +10859,95 @@ function leseAbgeben() {
   LESE.traegt = false; tatMerken('lese', P.x, P.y); AUFTRAG.leseHeute = (AUFTRAG.leseHeute || 0) + 1; AUFTRAG.heller += LESE_LOHN; tagNotiz('koerbe', 1); tagNotiz('heller', LESE_LOHN); if (SPIELER) AUFTRAG.hunger = Math.min(100, AUFTRAG.hunger + 1); if (PUPPE && PUPPE.oben === 'tragen') PUPPE.oben = null; speichern();
   melden('MARTIN SCHÜTTET DEINEN KORB IN DIE BÜTTE · +' + LESE_LOHN + ' HELLER (' + AUFTRAG.leseHeute + '/' + LESE_TAGESMAX + ' HEUTE)', 4); return true;
 }
+// ---- Tage überspringen (12.10., Andreas: „wenn ein Tag gut läuft, Tage, Wochen, Monate überspringen … bis etwas passiert, das meine Handlung erfordert … damit wir die Generationen einbauen können“) ----
+// Stufe 1: der gestrige Tag wird zum Tagwerk (was man wirklich verdient hat). Nur nach einem GUTEN Tag: verdient, satt genug, eigener Schlafplatz.
+// Stufe 2: morgens fragt das Spiel: 1 normal · 2 ein Tag · 3 eine Woche · 4 ein Monat. Jeder Tag: Lohn wie gestern, Essen zuerst aus dem Vorrat
+// (belegte Brote, Salzfisch, Sauerkraut … – Einmachen lohnt sich), sonst Brot kaufen; die Kammermiete wird fällig. Ein Ereignis hält den Sprung an.
+// Stufe 3 (Anfang): kleine Ereignisse. Große (Hochwasser, Hungersnot, Brand) kommen mit Codex' Bildern dazu. Zahlen ERFUNDEN, Ereignisse ANNAHME (plausibler Alltag).
+var SPRUNG = { offen: false, bis: 0, tagwerk: null };
+var SPRUNG_TAGE = { '2': 1, '3': 7, '4': 30 }, SPRUNG_NAME = { 1: 'EIN TAG', 7: 'EINE WOCHE', 30: 'EIN MONAT', 365: 'EIN JAHR' };
+function tagwerkPruefen(t) { if (EPOCHE !== 1400 || !SPIELER || (AUFTRAG.einf || 0) < 9) return null; var essen = sprungEssenPreis();
+  var gut = (t.heller || 0) >= essen + 1 && AUFTRAG.hunger < SPIELER.hunger.hungrig_ab && (kammerGemietet() || !!ONKEL);
+  var was = []; if (t.scheite) was.push(t.scheite + ' Scheite'); if (t.steine) was.push(t.steine + ' Steine'); if (t.kai) was.push(t.kai + ' Säcke'); if (t.koerbe) was.push(t.koerbe + ' Körbe'); if (t.garn) was.push(t.garn + ' Spulen Garn'); if (t.paare) was.push(t.paare + ' Paar Schuhe');
+  return { gut: gut, heller: t.heller || 0, was: was.join(', ') || 'Tagelohn', essen: essen, grund: !(kammerGemietet() || ONKEL) ? 'kein Schlafplatz' : AUFTRAG.hunger >= SPIELER.hunger.hungrig_ab ? 'du gehst hungrig ins Bett' : (t.heller || 0) < essen + 1 ? 'zu wenig verdient (' + (t.heller || 0) + ' Heller)' : '' }; }
+function sprungEssenPreis() { return Math.ceil(((STADT ? Math.ceil(STADT.preis('brot') - 1e-9) + Math.ceil(STADT.preis('bier') - 1e-9) : 3) * (lageIst('hunger') ? 2 : 1) * (1 + (AUFTRAG.verheiratet ? 0.8 : 0) + (AUFTRAG.kind ? Math.min(0.8, 0.2 + kindAlter() * 0.05) : 0)))); }   // die Familie isst mit   // zwei Mahlzeiten am Tag, so viel wie der Mittagstisch
+var SPRUNG_VORRAT = ['belegt', 'salzfisch', 'sauerkraut', 'fisch', 'brot', 'fleisch', 'aepfel'];
+function sprungEssen(log) { var satt = 0; for (var i = 0; i < SPRUNG_VORRAT.length && satt < 110; i++) { var g = SPRUNG_VORRAT[i]; while (AUFTRAG[g] > 0 && satt < 110) { AUFTRAG[g]--; satt += SPIELER.essen[g].satt; log.vorrat = (log.vorrat || 0) + 1; } }
+  if (satt < 110) { var p = satt >= 55 ? Math.ceil(sprungEssenPreis() / 2) : sprungEssenPreis(); if (AUFTRAG.heller < p) return false; AUFTRAG.heller -= p; log.essen = (log.essen || 0) + p; } return true; }
+// kleine Ereignisse – p ist die Wahrscheinlichkeit je Tag, wenn() sagt ob es gerade passt, tun(log) liefert den Text
+var SPRUNG_EREIGNISSE = [
+  { id: 'dach', p: 0.03, wenn: function () { return kammerGemietet(); }, tun: function (L) { var k = 4 + Math.floor(Math.random() * 5); AUFTRAG.heller = Math.max(0, AUFTRAG.heller - k); L.extra = (L.extra || 0) + k; return ['Nachts tropft es auf deinen Strohsack. Das Dach der Kammer ist undicht.', 'Der Zimmermann flickt es – ' + k + ' Heller. Schlafen im Nassen ist schlimmer.']; } },
+  { id: 'fieber', p: 0.02, wenn: function () { return true; }, tun: function (L) { L.krank = 3; AUFTRAG.hunger = Math.min(SPIELER.hunger.hungrig_ab - 5, AUFTRAG.hunger + 25); return ['Fieber. Drei Tage liegst du und verdienst nichts.', 'Iss etwas Ordentliches, dann bist du bald wieder auf den Beinen.']; } },
+  { id: 'dieb', p: 0.015, wenn: function () { return AUFTRAG.heller >= 12; }, tun: function (L) { var k = Math.floor(AUFTRAG.heller / 4); AUFTRAG.heller -= k; L.extra = (L.extra || 0) + k; return ['Als du aufwachst, ist dein Beutel leichter: ' + k + ' Heller fehlen.', 'Ein Dieb in der Nacht. Eine Truhe mit Schloss wäre gut (beim Schlosser).']; } },
+  { id: 'kirchweih', p: 0.025, wenn: function () { return true; }, tun: function () { return ['Morgen ist Kirchweih! Die ganze Stadt ist auf den Beinen.', 'An so einem Tag gibt es Arbeit und Gelegenheiten – vielleicht willst du heute selbst los.']; } },
+  { id: 'mehl', p: 0.02, weiter: true, wenn: function () { return true; }, tun: function (L) { L.halb = 5; return ['Das Mehl ist knapp, die Bäcker backen weniger. Ein paar Tage gibt es weniger Arbeit.']; } },
+  { id: 'fund', p: 0.02, weiter: true, wenn: function () { return true; }, tun: function (L) { AUFTRAG.heller += 3; L.fund = (L.fund || 0) + 3; return ['Glück: im Rinnstein glänzt etwas. 3 Heller.']; } },
+  { id: 'imke', p: 0.03, wenn: function () { return AUFTRAG.tammo && !AUFTRAG.verheiratet && AUFTRAG.imke > 0; }, tun: function () { return ['Ein Junge von der Lände bringt dir eine Nachricht: Imke fragt, wo du so lange bleibst.']; } },
+  { id: 'hochwasser', p: 0.006, wenn: function () { var m = new Date(himmelsZeit()).getMonth(); return !AUFTRAG.lage && (m <= 3 || m === 11); }, tun: function () { lageStarten('hochwasser', 5); return ['Tagelang Regen im Spessart und im Odenwald – heute Nacht ist der Main über die Ufer getreten.', 'Die Lände steht unter Wasser, der Kai ruht, Angeln geht nicht. Wer anpackt, hilft beim Retten – sieh es dir an.']; } },
+  { id: 'hunger', p: 0.003, wenn: function () { var m = new Date(himmelsZeit()).getMonth(); return !AUFTRAG.lage && (m <= 5 || m >= 9); }, tun: function () { lageStarten('hunger', 40); return ['Hagel hat das Korn verdorben. Das Brot wird teuer, die Bäcker backen weniger.', 'Jetzt zählt, was du selbst fängst, sammelst und eingemacht hast. Der Wirt zahlt für Salzfisch das Doppelte.']; } },
+  { id: 'jakob', p: 0.02, wenn: function () { return AUFTRAG.schmuggelZahl > 0; }, tun: function () { return ['Jakob, der Einäugige, lässt ausrichten: es gibt wieder etwas zu tragen. Nachts, in der Kneipe.']; } }];
+function sprungMachen(tage) { var T = SPRUNG.tagwerk; SPRUNG.offen = false; if (!T) return; var L = { tage: 0, lohn: 0, essen: 0, vorrat: 0, miete: 0 }, h0 = AUFTRAG.heller, halt = null, notiz = [];
+  abblenden(true);
+  setTimeout(function () {
+    for (var d = 1; d <= tage; d++) { L.tage = d; var ka0 = kindAlter(); UHR.t += 864e5;
+      if (L.krank > 0) L.krank--; else { var lohn = kindHilft() + Math.floor(T.heller * (L.halb > 0 ? 0.5 : 1) * (lageIst('hochwasser') ? 0.5 : lageIst('hunger') ? 0.7 : 1)); if (L.halb > 0) L.halb--; AUFTRAG.heller += lohn; L.lohn += lohn; }
+      if (!sprungEssen(L)) { halt = ['Das Geld reicht nicht mehr fürs Brot.', 'Heute musst du selbst ran – arbeiten, angeln oder sammeln.']; break; }
+      var km = kammerMiete(); if (km && km.bis < UHR.t + 864e5) { if (AUFTRAG.heller >= 6) { AUFTRAG.heller -= 6; L.miete += 6; try { localStorage.setItem(SPEICHER + '_kammer', km.haus + '|' + (km.bis + 7 * 864e5)); } catch (e) {} } else { halt = ['Die Kammermiete ist fällig – 6 Heller, und du hast nur ' + AUFTRAG.heller + '.', 'Verdien heute das Geld, sonst ist die Kammer weg.']; break; } }
+      if (AUFTRAG.kind) { var ka1 = kindAlter(); KIND_STUFEN.forEach(function (st) { if (ka0 < st[0] && ka1 >= st[0]) { notiz.push(kindName() + st[1]); if (st[0] === 16) halt = [kindName() + ' ist erwachsen. Ein eigenes Leben beginnt – bald kannst du als ' + kindName() + ' weiterspielen.']; } }); if (halt) break; }
+      var evs = SPRUNG_EREIGNISSE.filter(function (e) { return e.wenn() && Math.random() < e.p; });
+      if (evs.length) { var ev = evs[0], txt = ev.tun(L); if (ev.weiter) notiz.push(txt[0]); else { halt = txt; break; } } }
+    var d0 = new Date(UHR.t); d0.setHours(6, 30, 0, 0); UHR.t = d0.getTime(); HUNGERUHR = UHR.t; AUSDAUER = 100; if (L.krank) UHR.t += L.krank * 864e5;
+    AUFTRAG.hunger = Math.min(AUFTRAG.hunger, 35); nachSprung(); speichern(); abblenden(false);
+    var bil = L.tage + (L.tage === 1 ? ' Tag' : ' Tage') + ': Lohn +' + L.lohn + (L.vorrat ? ' · ' + L.vorrat + '× aus dem Vorrat gegessen' : '') + (L.essen ? ' · Essen −' + L.essen : '') + (L.miete ? ' · Kammer −' + L.miete : '') + (L.extra ? ' · Pech −' + L.extra : '') + (L.fund ? ' · Fund +' + L.fund : '') + '.';
+    var z = [bil, 'Vorher ' + h0 + ' Heller, jetzt ' + AUFTRAG.heller + ' (' + (AUFTRAG.heller - h0 >= 0 ? '+' : '') + (AUFTRAG.heller - h0) + ').'].concat(notiz).concat(halt || [L.tage < tage ? '' : 'Alles ruhig. Es läuft.']).filter(Boolean);
+    AUFTRAG.rede = { wer: { x: P.x, y: P.y }, name: halt ? 'ES IST ETWAS PASSIERT' : SPRUNG_NAME[tage] + ' VERGANGEN', zeilen: z, i: 0 }; }, 1300); }
+function sprungAnbieten(t) { var T = tagwerkPruefen(t); SPRUNG.tagwerk = T && T.gut ? T : null; SPRUNG.offen = !!SPRUNG.tagwerk; SPRUNG.bis = P.t + 25; SPRUNG.grund = T && !T.gut ? T.grund : ''; }
+function sprungWeiter() { if (SPRUNG.offen && (P.t > SPRUNG.bis || P.tempo > 0.5)) SPRUNG.offen = false; }
+function sprungTaste(k) { if (!SPRUNG.offen || AUFTRAG.rede) return false; if (k === '5' && AUFTRAG.kind) { sprungMachen(365); return true; } if (k === '1' || k === 'e') { SPRUNG.offen = false; return true; } if (SPRUNG_TAGE[k]) { sprungMachen(SPRUNG_TAGE[k]); return true; } return false; }
+// ---- Große Lagen (12.10., Stufe 3): Hochwasser und Hungersnot verändern die Stadt für Tage oder Wochen ----
+// Hochwasser: der Main steigt (eine Wasserfläche über dem Spiegel – wo das Gelände tiefer liegt, steht Wasser: Kai, Lände, Ufer), Kai und Angeln ruhen.
+// Hungersnot: Hagel/Missernte im Stadtleben (das Korn verdirbt, die Preise steigen von selbst), weniger Arbeit, der Wirt zahlt für Salzfisch das Doppelte.
+// BELEGT: Main-Hochwasser in Wertheim (Hochwassermarken), Missernten und Teuerung. Häufigkeit und Dauer ERFUNDEN. Bilder dazu: Codex AUFTRAG32.
+var LAGE_FLUT = null;
+function lageIst(art) { var L = AUFTRAG.lage; return !!(L && L.art === art && holzTagNr() <= L.bis); }
+function lageStarten(art, tage) { AUFTRAG.lage = { art: art, von: holzTagNr(), bis: holzTagNr() + tage }; if (art === 'hunger' && STADT && STADT.unglueck) STADT.unglueck('missernte'); speichern(); }
+function lageWeiter() { var L = AUFTRAG.lage; if (L && holzTagNr() > L.bis) { var war = L.art; AUFTRAG.lage = null; speichern(); melden(war === 'hochwasser' ? 'DER MAIN IST ZURÜCKGEGANGEN · ÜBERALL SCHLAMM – ABER DER KAI ARBEITET WIEDER' : 'DIE TEUERUNG IST VORBEI · DAS BROT WIRD WIEDER BILLIGER', 6); }
+  var flut = lageIst('hochwasser') && EPOCHE === 1400, tg = flut ? Math.min(1, (holzTagNr() - L.von + 0.5) / 2, (L.bis - holzTagNr() + 0.5) / 2) : 0;
+  if (flut && !LAGE_FLUT) { var gb = (G.b - 1) * G.z, gh = (G.h - 1) * G.z, pg = new THREE.PlaneGeometry(gb, gh); pg.rotateX(-Math.PI / 2);
+    LAGE_FLUT = new THREE.Mesh(pg, new THREE.MeshPhongMaterial({ color: 0x7a6a4a, specular: 0x9a8a6a, shininess: 30, transparent: true, opacity: 0.8 })); LAGE_FLUT.receiveShadow = true; szene.add(LAGE_FLUT); }
+  if (LAGE_FLUT) { LAGE_FLUT.visible = flut; if (flut) { var c = V(G.x0 + (G.b - 1) * G.z / 2, G.y0 + (G.h - 1) * G.z / 2, SPIEGEL + 0.3 + 1.5 * tg); LAGE_FLUT.position.set(c[0], c[1], c[2]); } } }
+function lageHinweis() { return lageIst('hochwasser') ? 'HOCHWASSER · DER MAIN STEHT AN DER LÄNDE · KAI UND ANGELN RUHEN' : lageIst('hunger') ? 'TEUERUNG · DAS BROT IST KNAPP · ANGELN, SAMMELN, VORRÄTE HELFEN' : ''; }
+// ---- Generationen, Anfang (12.10., Stufe 4; Codex Auftrag 26: Gliederpuppe nach Alter, setzeAlter, Kinderkittel) ----
+// Das Kind wächst mit der Spielzeit: ab einem Jahr steht es statt des Säuglings im Haus (krabbelt, tapst, steht), täglich ein Stück größer.
+// Ab 10 hilft es mit (Kinderarbeit war verbreitet – BELEGT als Alltag), ab 14 mehr. Mit Familie gibt es beim Überspringen „5 ein Jahr“.
+// Mit 16 ist es erwachsen – dann (später) als Kind weiterspielen. Altersgrenzen und Lohn ERFUNDEN.
+function kindAlter() { var K = AUFTRAG.kind; if (!K) return 0; if (K.uhrTag === undefined) { K.uhrTag = holzTagNr() - (heute() - K.tag); speichern(); } return Math.max(0, (holzTagNr() - K.uhrTag) / 365); }   // heute() läuft im Kalender von 1400 im Kreis – das Alter zählt die durchgehende Spieluhr
+function kindName() { var n = AUFTRAG.kind ? AUFTRAG.kind.name : ''; return n.charAt(0) + n.slice(1).toLowerCase(); }
+function kindHilft() { var a = kindAlter(); return a >= 14 ? 3 : a >= 10 ? 1 : 0; }
+function kindWeiter(dt) { var H = HAUSSTAND; if (!H || !AUFTRAG.kind || !window.Gliederpuppe) return; var a = kindAlter();
+  if (a < 1) { if (H.kindP) H.kindP.gruppe.visible = false; return; }
+  if (H.wiege) H.wiege.visible = false; if (H.baby) H.baby.visible = false;
+  if (!H.kindP) { try { H.kindP = Gliederpuppe.bauen({ alter: Math.min(a, 25), schema: 'gewand', einfach: true }); if (window.Kleidung && Kleidung.kinderkittel) try { Kleidung.kinderkittel(H.kindP); } catch (e) {} H.kindP.gruppe.traverse(function (q) { if (q.isMesh) q.castShadow = true; }); H.g.add(H.kindP.gruppe); H.kindA = a; } catch (e) { console.warn('Kind', e); H.kindP = false; return; } }
+  if (!H.kindP) return; if (Math.abs(a - H.kindA) > 0.05 && H.kindP.setzeAlter) { try { H.kindP.setzeAlter(Math.min(a, 25)); if (window.Kleidung && Kleidung.aktualisieren) Kleidung.aktualisieren(H.kindP); } catch (e) {} H.kindA = a; }
+  var fg = H.frau.gruppe; H.kindP.gruppe.visible = fg.visible; if (!fg.visible) return; H.kt = (H.kt || 0) + dt;
+  var w = H.kt * 0.25, r = a < 3 ? 0.7 : 1.1; H.kindP.gruppe.position.set(fg.position.x + Math.cos(w) * r, fg.position.y, fg.position.z + Math.sin(w) * r); H.kindP.gruppe.rotation.y = -w + (a < 3 ? Math.PI : 0);
+  var art = a < 1.6 ? 'krabbeln' : a < 3 ? 'tapsen' : Math.floor(H.kt / 9) % 3 === 0 ? 'winken' : 'stehen'; if (!lehrePoseDa(art) && art !== 'stehen' && art !== 'winken') art = 'stehen';
+  try { H.kindP.bewegen(art, Math.min(0.05, dt), art === 'krabbeln' || art === 'tapsen' ? 0.3 : 0); } catch (e) {} }
+var KIND_STUFEN = [[1, ' tapst jetzt durchs Haus.'], [6, ' ist sechs und will überall mit.'], [10, ' ist zehn und hilft dir jetzt bei der Arbeit.'], [14, ' ist vierzehn und packt richtig mit an.'], [16, ' ist erwachsen.']];
 // ---- Dein Tag (11.10.): beim Aufwachen eine kleine Bilanz – was man geschafft hat, sieht man gern ----
 var TAGLOG = null;
 function taglog() { if (!TAGLOG) { try { TAGLOG = JSON.parse(localStorage.getItem(SPEICHER + '_tag') || 'null'); } catch (e) {} TAGLOG = TAGLOG || { heller: 0, scheite: 0, steine: 0, garn: 0, koerbe: 0, funde: 0 }; } return TAGLOG; }
 function tagNotiz(was, n) { var t = taglog(); t[was] = (t[was] || 0) + n; try { localStorage.setItem(SPEICHER + '_tag', JSON.stringify(t)); } catch (e) {} }
 function tagesbilanz() {
-  var t = taglog(), z = [];
+  var t = taglog(), z = []; try { sprungAnbieten(t); } catch (e) { console.warn('Sprung', e); }
   if (t.scheite) z.push(t.scheite + (t.scheite === 1 ? ' Scheit' : ' Scheite') + ' gespalten');
   if (t.steine) z.push(t.steine + (t.steine === 1 ? ' Stein' : ' Steine') + ' in die Mauer getragen');
   if (t.garn) z.push(t.garn + (t.garn === 1 ? ' Spule' : ' Spulen') + ' Garn gesponnen');
   if (t.koerbe) z.push(t.koerbe + (t.koerbe === 1 ? ' Korb' : ' Körbe') + ' Trauben gelesen');
+  if (t.kai) z.push(t.kai + (t.kai === 1 ? ' Sack' : ' Säcke') + ' am Kai getragen');
   if (t.funde) z.push(t.funde + (t.funde === 1 ? ' Glücksfund' : ' Glücksfunde') + ' im Holz');
   TAGLOG = { heller: 0, scheite: 0, steine: 0, garn: 0, koerbe: 0, funde: 0 }; try { localStorage.setItem(SPEICHER + '_tag', JSON.stringify(TAGLOG)); } catch (e) {}
-  if (!z.length) return;
+  if (!z.length && !SPRUNG.offen) return; if (!z.length) z.push('Ein ruhiger Tag');
   AUFTRAG.rede = { wer: { x: P.x, y: P.y }, name: 'DEIN GESTRIGER TAG', zeilen: [z.join(' · ') + '.', (t.heller ? 'Verdient: ' + t.heller + ' Heller. ' : '') + 'Du hast jetzt ' + AUFTRAG.heller + ' Heller.' + (naechstesZiel() ? ' Nächstes Ziel: ' + naechstesZiel()[0] + (naechstesZiel()[1] ? ' (' + naechstesZiel()[1] + ' Heller).' : '.') : '')], i: 0 };
 }
 function berufeWeiter(dt) {                       // nur nahe Werkstätten arbeiten (Codex: „ferne Arbeiter seltener aktualisieren“); Feierabend ab 19 Uhr
@@ -12809,7 +12886,7 @@ var STARTSCHIRM = !/[?&](intro=0|probe=1)/.test(Q) && !(function () { try { retu
     try { sessionStorage.setItem('wzf_gestartet', '1'); } catch (e) {} location.search = '?jahr=1400&auftrag=neu' + (/[?&]probe=1/.test(Q) ? '&probe=1' : ''); });
   addEventListener('keydown', function (e) { if (STARTSCHIRM && e.key === 'Enter') los(1400); }); })();
 addEventListener('keydown', function (e) { var k = e.key.toLowerCase(); if (STARTSCHIRM) return; if (e.metaKey || e.ctrlKey) return; taste[k] = true; if (e.key.indexOf('Arrow') === 0 || e.key === ' ') e.preventDefault(); if (k === 'm') KARTE = KARTE === 1 || KARTE === true ? 2 : KARTE ? 0 : 1; if (k === 'o') rumtreiberOeffnen(); if (k === 'n') stadtbuchOeffnen(); if (k === 'y') { WEGWEISER.an = !WEGWEISER.an; try { localStorage.setItem('wzf_wegweiser', WEGWEISER.an ? 'an' : 'aus'); } catch (e2) {} melden(WEGWEISER.an ? 'WEGWEISER AN (Y)' : 'WEGWEISER AUS (Y)', 2); } if (k === 't' || k === ',' || k === '.' || k === ';' || k === ':') uhrTaste(k);   // 11.10.: vorher lief uhrGesprungen() bei JEDEM Tastendruck (fehlende Klammern)
-  if (k === 'i') { inventarAuf(!INVENTAR); QUESTBUCH = false; } if (k === 'tab') { e.preventDefault(); if (EPOCHE === 1400) { questbuchAuf(!QUESTBUCH); if (QUESTBUCH && INVENTAR) inventarAuf(false); } } if (k === 'escape' && QUESTBUCH) questbuchAuf(false); if (SPIELER && EPOCHE === 1400 && /^[1-9]$/.test(k) && !INVENTAR) { var ld = leisteDinge(); if (ld[+k - 1]) handSetzen(ld[+k - 1]); }   // 12.10.: 1–9 wählt, was in die Hand kommt (wie Minecraft); Rechtsklick isst
+  if (k === 'i') { inventarAuf(!INVENTAR); QUESTBUCH = false; } if (k === 'tab') { e.preventDefault(); if (EPOCHE === 1400) { questbuchAuf(!QUESTBUCH); if (QUESTBUCH && INVENTAR) inventarAuf(false); } } if (k === 'escape' && QUESTBUCH) questbuchAuf(false); if (sprungTaste(k)) { e.preventDefault(); return; } if (SPIELER && EPOCHE === 1400 && /^[1-9]$/.test(k) && !INVENTAR) { var ld = leisteDinge(); if (ld[+k - 1]) handSetzen(ld[+k - 1]); }   // 12.10.: 1–9 wählt, was in die Hand kommt (wie Minecraft); Rechtsklick isst
   if (k === 'g' && AUFTRAG.karrenWahl) karrenWahlTreffen('schlafen'); else if (k === 'g' && AUFTRAG.wahl) wahlTreffen('nachlass'); else if (k === 'g' && AUFTRAG.zehnt > 0 && SPIELERKARREN && EPOCHE === 1400 && !AUFTRAG.rede && !AUFTRAG.hundWahl && !P.drinnen && !REITEN.auf && !KARRENSCHLAF) { P.aufKarren = true; karrenWahlTreffen('schlafen'); }   // 12.10. (Andreas: „ich wurde nicht gefragt“): G geht die ganze Fahrt über
   if (k === 'escape' && PAUSE) pauseWeiter(); else if (k === 'escape' && !document.pointerLockElement && !INVENTAR && performance.now() > PAUSE_RUHE) pauseZeigen(true); if (AUFTRAG.hundWahl && !AUFTRAG.rede) { if (k === 'g') hundWahlTreffen('vergeben'); if (k === 'r') hundWahlTreffen('rache'); } if (k === 'h') himmelEcht(!HIMMEL_ECHT); if (k === 'l') tonAnAus(); if (k === 'k') { STERNBILDER_AN = !STERNBILDER_AN; melden(STERNBILDER_AN ? 'STERNBILDER AN' : 'STERNBILDER AUS', 2); }
   if (k === 'f') { FACKEL.an = !FACKEL.an; melden(FACKEL.an ? 'DU ZÜNDEST DEINE FACKEL AN' : 'FACKEL AUS', 2); }
@@ -14278,7 +14355,7 @@ function spielleuteWeiter(dt) { if (EPOCHE !== 1400 || !STAND || !window.Feste |
 function hausstandName() { var f = AUFTRAG.frau || ''; return f.charAt(0) + f.slice(1).toLowerCase(); }
 function hausstandWeiter(dt) { var k = kammerWelt(), da = EPOCHE === 1400 && AUFTRAG.verheiratet && AUFTRAG.frau && k && kammerGemietet();
   if (da && !AUFTRAG.hochzeitTag) AUFTRAG.hochzeitTag = heute();   // ältere Spielstände
-  if (da && !AUFTRAG.kind && heute() - AUFTRAG.hochzeitTag >= 4) { var sohn = hash(AUFTRAG.hochzeitTag * 1.7) < 0.5; tatMerken('kind', P.x, P.y); AUFTRAG.kind = { name: sohn ? 'JÖRG' : 'ANNA', art: sohn ? 'sohn' : 'tochter', tag: heute() }; speichern(); }
+  if (da && !AUFTRAG.kind && heute() - AUFTRAG.hochzeitTag >= 4) { var sohn = hash(AUFTRAG.hochzeitTag * 1.7) < 0.5; tatMerken('kind', P.x, P.y); AUFTRAG.kind = { name: sohn ? 'JÖRG' : 'ANNA', art: sohn ? 'sohn' : 'tochter', tag: heute(), uhrTag: holzTagNr() }; speichern(); }
   if (!da) { if (HAUSSTAND) HAUSSTAND.g.visible = false; return; }
   if (!HAUSSTAND || HAUSSTAND.haus !== k) { if (HAUSSTAND) szene.remove(HAUSSTAND.g); HAUSSTAND = null;
     var g = new THREE.Group(), frau = Gliederpuppe.bauen({ groesse: 1.62, schema: 'gewand', einfach: true }); if (window.Kleidung) try { Kleidung.anziehen(frau, Kleidung.satz('magd').concat(Kleidung.satz('magd').indexOf('schleier') < 0 ? [] : [])); } catch (e) {}
@@ -15406,7 +15483,7 @@ function wegNameWeiter() {                       // betritt man einen benannten 
   if (auf && auf !== WEGNAME.auf && P.t - WEGNAME.zuletzt > 240) { WEGNAME.zuletzt = P.t; melden(auf.name.toUpperCase() + ' · DER ALTE WEG NACH ' + auf.nach.toUpperCase() + ' – DIE TAUBER HINAUF, DANN AM DELLENGRABEN DURCH DEN WALD', 6); }
   WEGNAME.auf = auf; }
 function leuteBewegen(dt) {
-  tagesablaufWeiter(dt); abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); steinWeiter(dt); kaiWeiter(dt); gsWeiter(); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
+  tagesablaufWeiter(dt); abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); kindWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); steinWeiter(dt); kaiWeiter(dt); gsWeiter(); sprungWeiter(); lageWeiter(); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
   kamera.updateMatrixWorld(); SICHT.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse); SICHT.kegel.setFromProjectionMatrix(SICHT.m);
   SICHT.takt += dt; var neuPruefen = SICHT.takt > 0.05; if (neuPruefen) SICHT.takt = 0; var tick = Math.floor(P.t * 20);
   SICHT.stat.voll = 0; SICHT.stat.einfach = 0;
@@ -15905,6 +15982,8 @@ function hudMalen() {
     if (!AUFTRAG.rede && !P.versteckt && versteckNah() && (JAGD || AUFTRAG.schmuggel === 1)) text('RECHTSKLICK: IM HEU VERSTECKEN', W / 2, H - 44, 8, '#e8d27a');
     if (P.versteckt) { hud.fillStyle = 'rgba(150,120,40,.35)'; for (var hy = 0; hy < H; hy += 6) hud.fillRect(0, hy, W, 2); text('DU LIEGST IM HEU · E ODER LAUFEN = RAUS', W / 2, H - 44, 8, '#f2e2a0'); }
     if (AUFTRAG.hundWahl && !AUFTRAG.rede) text('DEIN HUND IST TOT · E: VOR SCHULTHEISS UND SCHÖFFEN KLAGEN   ·   G: VERGEBEN   ·   R: RACHE', W / 2, H - 56, 9, '#ffd75e');
+    if (lageHinweis() && EPOCHE === 1400) text(lageHinweis(), W / 2, 66, 8, '#ffb070');
+    if (SPRUNG.offen && !AUFTRAG.rede && SPRUNG.tagwerk) { var T_ = SPRUNG.tagwerk; hud.fillStyle = 'rgba(20,14,10,.78)'; hud.fillRect(W / 2 - 170, H - 104, 340, 50); text('EIN GUTER TAG: +' + T_.heller + ' HELLER (' + T_.was.toUpperCase() + ') · ESSEN ' + T_.essen, W / 2, H - 90, 8, '#efe2c4'); text('WIE GEHT ES WEITER?', W / 2, H - 76, 9, '#ffd75e'); text('1 HEUTE SELBST   ·   2 EIN TAG   ·   3 EINE WOCHE   ·   4 EIN MONAT' + (AUFTRAG.kind ? '   ·   5 EIN JAHR' : ''), W / 2, H - 62, 9, '#ffd75e'); }
     if (AUFTRAG.karrenWahl && !AUFTRAG.rede) text('E: SELBST FAHREN   ·   G: EINSCHLAFEN – DER OCHSE KENNT DEN WEG', W / 2, H - 56, 9, '#ffd75e');
     else if (AUFTRAG.zehnt > 0 && SPIELERKARREN && !AUFTRAG.rede && !KARRENSCHLAF && EPOCHE === 1400) text('G: DIE FAHRT VERSCHLAFEN – DER OCHSE KENNT DEN WEG', W / 2, H - 74, 7, '#efe2c4');
     if (AUFTRAG.wahl && !AUFTRAG.rede) { text('E: ALLES EINTREIBEN (' + AUFTRAG.wahl.voll + ' MALTER)   ·   G: NACHLASSEN (' + AUFTRAG.wahl.halb + ' MALTER)', W / 2, H - 56, 9, '#ffd75e'); }
@@ -16236,7 +16315,7 @@ function pauseZeigen(an) { var d = document.getElementById('pausemenue');
     document.getElementById('pStart').onclick = function () { speichern(); try { weltSpeichern(); sessionStorage.removeItem('wzf_gestartet'); } catch (e) {} location.reload(); };
     document.getElementById('pNeu').onclick = function () { if (!d.scharf) { d.scharf = true; this.textContent = 'Wirklich? Alles fängt von vorn an – nochmal klicken'; return; }
       try { sessionStorage.setItem('wzf_gestartet', '1'); } catch (e) {} location.search = '?jahr=1400&auftrag=neu' + (/[?&]probe=1/.test(Q) ? '&probe=1' : ''); }; }
-  d.hidden = !an; PAUSE = an; if (an) { speichern(); try { weltSpeichern(); } catch (e) {} tastenLoslassen(); var sb = document.getElementById('pSchlaf'); sb.hidden = !(AUFTRAG.zehnt > 0 && SPIELERKARREN && EPOCHE === 1400); var nb = document.getElementById('pNeu'); nb.textContent = 'Neues Leben anfangen'; d.scharf = false; } }
+  d.hidden = !an; d.style.display = an ? 'flex' : 'none'; PAUSE = an; if (an) { speichern(); try { weltSpeichern(); } catch (e) {} tastenLoslassen(); var sb = document.getElementById('pSchlaf'); sb.hidden = !(AUFTRAG.zehnt > 0 && SPIELERKARREN && EPOCHE === 1400); sb.style.display = sb.hidden ? 'none' : 'block'; var nb = document.getElementById('pNeu'); nb.textContent = 'Neues Leben anfangen'; d.scharf = false; } }   // 12.10.: das feste display:flex überstimmte hidden – der Kasten blieb stehen
 document.addEventListener('pointerlockchange', function () { if (document.pointerLockElement) { if (PAUSE) pauseZeigen(false); return; }
   setTimeout(function () { if (!document.pointerLockElement && !STARTSCHIRM && !INVENTAR && !PAUSE && !AUFTRAG.rede && performance.now() > PAUSE_RUHE) pauseZeigen(true); }, 150); });
 document.addEventListener('pointerlockerror', function () { if (!PAUSE) melden('KLICK INS BILD – DANN GEHT ES WEITER', 4); });   // Safari verweigert den Mausfang gleich nach einem Esc
