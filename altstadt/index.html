@@ -3890,6 +3890,7 @@ function tier(t){var g=t.gruppe||t,pakete=g._tierPakete;if(!pakete){pakete=[];g.
 return {kleidung:kleidung,figur:figur,figurAktualisieren:figurAktualisieren,schreiben:schreiben,paket:paket,tier:tier};}());
 if(typeof module!=='undefined'&&module.exports)module.exports=Verschmelzen;
 
+var GESTEN={wegdrehen:{dauer:1,schleife:false},zuwinken_freudig:{dauer:1.5,schleife:false},tuscheln:{dauer:1.8,schleife:true},zeigen:{dauer:1,schleife:true},arme_verschraenkt:{dauer:1.8,schleife:true},kopf_schuetteln:{dauer:1,schleife:false},hut_ziehen:{dauer:1.2,schleife:false},nicken:{dauer:0.8,schleife:false},};
 var KLEINKINDARTEN=['krabbeln','tapsen','sitzen_boden','am_rock'];
 var REITTAKTE={aufsitzen:1.6,reiten:1,absitzen:1.3,fuehren:1,hufbeschlag:.7};
 // Takte sind Spielannahmen; die bestehende Animationszeit wird verwendet.
@@ -3902,6 +3903,14 @@ var LADENTAKTE={schauen:2,anprobieren:1.4,verkaufen:1.6,zaehlen:.8};
 var LEHRETAKTE={zuschneiden:0.8,pechen:1.0,naehen:0.9,besohlen:0.45};
 // Benannte Winkelsätze in Radiant. Partialposen ergänzen die Grundpose.
 var POSEN = {
+  wegdrehen:{brust:[0,-.6,0],kopf:[0,-.5,0],schulterR:[0,0,-.18]},
+  zuwinken_freudig:{schulterL:[-2.5,0,.2],schulterR:[-2.5,0,-.2]},
+  tuscheln:{brust:[.12,0,0],kopf:[.12,.1,0]},
+  zeigen:{schulterR:[-1.3,0,-.6]},
+  arme_verschraenkt:{schulterL:[-.9,0,-.4],schulterR:[-.9,0,.4],ellbogenL:[-1.6,0,0],ellbogenR:[-1.6,0,0]},
+  kopf_schuetteln:{kopf:[0,.2,0]},
+  hut_ziehen:{schulterR:[-1.7,0,-.2],ellbogenR:[-1,0,0]},
+  nicken:{kopf:[.12,0,0]},
   reiten:{bauch:[.35,0,0],huefteL:[-.8,0,.4],huefteR:[-.8,0,-.4],knieL:[1.5,0,0],knieR:[1.5,0,0]},
   absitzen:{bauch:[.35,0,0],huefteL:[-.8,0,.4],huefteR:[-.8,0,-.4],knieL:[1.5,0,0],knieR:[1.5,0,0]},
   fuehren:{bauch:[.08,0,0]},
@@ -4298,6 +4307,18 @@ var Gliederpuppe = (function () {
     p.eigenart = eigen; p.schrittfaktor = eigen === null ? 1 : 0.95 + eigen * 0.1;
     p.ausschlagfaktor = eigen === null ? 1 : 1 + 0.035 * Math.sin(eigen * Math.PI * 3.1);
     if (eigen !== null) { var versatz = eigen * Math.PI * 2 * 0.61803398875; p.phase = versatz; p.zeit = versatz * 0.25; kletterPhase = versatz; }
+    var gesteAlt=null,gesteZeit=0,gesteHut=[];p.geste=null;p.gesteWunsch=null;p.gestenBefund=null;
+    function gesteAnwenden(dt){gesteHut.forEach(function(v){v.g.position.y=v.y;});gesteHut=[];var n=p.gesteWunsch;if(!n){gesteAlt=null;p.geste=null;return;}if(gesteAlt!==n){gesteZeit=0;gesteAlt=n;}var d=GESTEN[n];gesteZeit=d.schleife?gesteZeit+dt:Math.min(d.dauer,gesteZeit+dt);p.geste=n;p.fertig=!d.schleife&&gesteZeit>=d.dauer;p.uebergang=d.schleife?0:gesteZeit/d.dauer;p.gestenBefund=null;gestenPose(n,p.uebergang,gesteZeit);}
+    function gestenPose(n,q,t){var c=grindZiele||{werkzeugWinkel:[0,0,0]},beide=['korb','stein','karren','tragen'].indexOf(p.oben)>=0,rechts=beide||p.oben==='sack'||['sack_tragen','eimer_tragen','fuehren'].indexOf(p.art)>=0||p.art==='kind_an_hand'&&p.kindRolle!=='kind',links=beide||p.art==='kind_an_hand'&&p.kindRolle==='kind',ein=sanft(Math.min(1,t/.25));function hand(seite,ziel,w){if(seite==='R'?rechts:links){p.gestenBefund='Hand belegt; Tragekontakt hat Vorrang';return;}puppe.updateWorldMatrix(true,true);var h=puppe.worldToLocal(gelenke['hand'+seite].getWorldPosition(new THREE.Vector3()));h.lerp(ziel,w);grindHand(seite,h.toArray());if(p.nachlauf)gelenke['hand'+seite].rotation.z+=.025*Math.sin(t*8)*w;}if(n==='nicken'){gelenke.kopf.rotation.x+=.18*Math.pow(Math.sin(q*Math.PI*2),2);}
+if(n==='hut_ziehen'){gelenke.kopf.rotation.x+=.07*Math.sin(q*Math.PI);puppe.updateWorldMatrix(true,true);var hub=.04*H*Math.pow(Math.sin(q*Math.PI),2),h=null;gelenke.kopf.children.forEach(function(g){if(g.userData.kleidung&&['filzhut','strohhut','eisenhut','pelzmuetze','haube','gebende'].indexOf(g.userData.teil)>=0)h=g;});if(!rechts){if(h){gesteHut.push({g:h,y:h.position.y});h.position.y+=hub;}var z=puppe.worldToLocal(gelenke.kopf.localToWorld(new THREE.Vector3(-A.kopf*.42,A.kopf*.86+hub,A.kopf*.08)));c.hutOrt=z.toArray();hand('R',z,Math.pow(Math.sin(q*Math.PI),2));}else p.gestenBefund='Rechte Hand belegt; Gruß nur mit dem Kopf';}
+if(n==='kopf_schuetteln'){gelenke.kopf.rotation.y+=.28*Math.sin(q*Math.PI*6)*Math.pow(Math.sin(q*Math.PI),2);}
+if(n==='arme_verschraenkt'){if(!links&&!rechts)gelenke.brust.rotation.z+=.07+.02*Math.sin(t*2);hand('L',new THREE.Vector3(-.07*H,.72*H,.17*H),ein);hand('R',new THREE.Vector3(.07*H,.68*H,.20*H),ein);}
+if(n==='zeigen'){var ziel=new THREE.Vector3().fromArray(p.zeigeZiel||[-H,.8*H,H]),seite=rechts&&!links?'L':'R';puppe.updateWorldMatrix(true,true);var sch=puppe.worldToLocal(gelenke['schulter'+seite].getWorldPosition(new THREE.Vector3())),v=ziel.clone().sub(sch);if(v.lengthSq()<1e-12){v.set(0,0,1);p.gestenBefund='Ziel liegt an der Schulter; Richtung vorne';}v.normalize();c.ziel=ziel.toArray();c.richtung=v.toArray();p.gesteSeite=seite;hand(seite,sch.clone().add(v.multiplyScalar(A.oberarm+A.unterarm)),ein);Object.keys(gelenke).forEach(function(k){if(k.indexOf('finger'+seite)===0)gelenke[k].rotation.z=(seite==='R'?1:-1)*(k.charAt(7)==='0'?0:1.1);});}
+if(n==='tuscheln'){if(!links&&!rechts)gelenke.brust.rotation.x+=.18*ein;gelenke.kopf.rotation.x+=.08;gelenke.kopf.rotation.y+=.06*Math.sin(t*3);var m=new THREE.Vector3().fromArray(p.kopfKontakte().mund);c.mund=m.toArray();hand(rechts&&!links?'L':'R',m.clone().add(new THREE.Vector3(-.02*H,.01*H,.015*H)),ein);}
+if(n==='zuwinken_freudig'){var w=Math.pow(Math.sin(q*Math.PI),2);hand('R',new THREE.Vector3(-(.20+.06*Math.sin(q*Math.PI*8))*H,1.03*H,.08*H),w);hand('L',new THREE.Vector3((.20+.04*Math.sin(q*Math.PI*8))*H,.97*H,.08*H),w);gelenke.kopf.rotation.z+=.08*Math.sin(q*Math.PI*4)*w;}
+if(n==='wegdrehen'){var w=sanft(q);if(!links&&!rechts){gelenke.brust.rotation.y-=.65*w;gelenke.schulterR.rotation.z-=.18*w;}else p.gestenBefund='Last bleibt sicher; nur Kopf abgewendet';gelenke.kopf.rotation.y-=.5*w;}
+/* GESTENPOSEN */
+puppe.updateWorldMatrix(true,true);['L','R'].forEach(function(s){c['hand'+s]=puppe.worldToLocal(gelenke['hand'+s].getWorldPosition(new THREE.Vector3())).toArray();});grindZiele=c;}
     var kindGrund=p.kleinkind?merken():null,kindArt=null,kindWeg=0;
     var gangZiel='normal',gangZeit=GANGWECHSEL,gangStart={normal:1},gangGewichte={normal:1},gangProfil=GANGARTEN.normal,gangWeg=0,gangFuesse=null,gangSohlen={},gangLetzte=[],gangGrundHoehe=null;
     p.gangart='normal';p.gangUebergang=1;
@@ -4311,7 +4332,7 @@ var Gliederpuppe = (function () {
       Object.keys(pose).forEach(function (n) { if (!gelenke[n]) throw new Error('Unbekanntes Gelenk: ' + n); });
       Object.keys(pose).forEach(function (n) { gelenke[n].rotation.set(pose[n][0], pose[n][1], pose[n][2]); });
       wurzelZurueck(); ablauf = null; p.fertig = false; p.uebergang = 0; grundZuletzt = null; nachlaufZuletzt = null;hebenZeit=null;
-      if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();grindZiele=null; landeGrund = null; p.landung = 0; p.landungsZeit = 0; obenStart = null; obenZuletzt = null; obenModus = null; obenZeit = 0.22; lodRest = 0;
+      gesteAlt=null;gesteHut.forEach(function(v){v.g.position.y=v.y;});gesteHut=[];p.gesteWunsch=null;p.geste=null;if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();grindZiele=null; landeGrund = null; p.landung = 0; p.landungsZeit = 0; obenStart = null; obenZuletzt = null; obenModus = null; obenZeit = 0.22; lodRest = 0;
     };
     function hauptglied(n) { return /^(becken|huefte[LR]|knie[LR]|knoechel[LR]|zehen[LR]|schulter[LR]|ellbogen[LR]|hand[LR])$/.test(n); }
     function begrenze(x, grenze) { return Math.max(-grenze, Math.min(grenze, x)); }
@@ -4333,6 +4354,7 @@ var Gliederpuppe = (function () {
       nachlaufZuletzt = pose;
     }
     function obenAnwenden(art, dt) {
+      if(Object.prototype.hasOwnProperty.call(GESTEN,p.oben))return;
       if (neueArten.indexOf(art) >= 0 || p.luft !== null && p.luft !== undefined || p.sprung >= 0) return;
       if (obenModus !== p.oben) {
         obenStart = obenZuletzt || {};
@@ -4416,12 +4438,13 @@ var Gliederpuppe = (function () {
     function bewegen(art, dt, tempo, parameter) {
       if (typeof dt !== 'number' || !isFinite(dt) || dt < 0) throw new Error('dt muss endlich und nicht negativ sein');
       if (tempo !== undefined && (typeof tempo !== 'number' || !isFinite(tempo) || tempo < 0)) throw new Error('tempo muss endlich und nicht negativ sein');
+      var direkteGeste=Object.prototype.hasOwnProperty.call(GESTEN,art)?art:null,g=parameter&&parameter.geste!==undefined?parameter.geste:direkteGeste|| (Object.prototype.hasOwnProperty.call(GESTEN,p.oben)?p.oben:null);if(g!==null&&(typeof g!=='string'||!Object.prototype.hasOwnProperty.call(GESTEN,g)))throw new Error('Unbekannte Geste');if(parameter&&parameter.ziel!==undefined&&(!Array.isArray(parameter.ziel)||parameter.ziel.length!==3||parameter.ziel.some(function(v){return typeof v!=='number'||!isFinite(v);})))throw new Error('ziel muss [x,y,z] sein');if(parameter&&parameter.ziel)p.zeigeZiel=parameter.ziel.slice();if(direkteGeste)art=parameter&&parameter.grundart||'stehen';if(!g&&gesteAlt){p.fertig=false;p.uebergang=0;}p.gesteWunsch=g;
       if(parameter&&parameter.lastSeite!==undefined&&['links','rechts','mitte'].indexOf(parameter.lastSeite)<0)throw new Error('lastSeite muss links, rechts oder mitte sein');p.gangLastSeite=parameter&&parameter.lastSeite!==undefined?parameter.lastSeite:null;
       var gang=parameter&&parameter.gangart!==undefined?parameter.gangart:'normal';if(typeof gang!=='string'||!Object.prototype.hasOwnProperty.call(GANGARTEN,gang))throw new Error('Unbekannte Gangart');if((p.kleinkind||H<1.5)&&['normal','muede','eilig'].indexOf(gang)<0)throw new Error('Kinder erlauben nur normal, muede und eilig');if(gang!==gangZiel){gangStart={};Object.keys(gangGewichte).forEach(function(n){gangStart[n]=gangGewichte[n];});gangZeit=0;gangZiel=gang;p.gangart=gang;}
       if(KLEINKINDARTEN.indexOf(art)>=0&&!p.kleinkind)throw new Error('Diese Bewegung benötigt eine Kleinkindfigur');
       if(parameter&&parameter.rockHand!==undefined){if(!Array.isArray(parameter.rockHand)||parameter.rockHand.length!==3||parameter.rockHand.some(function(v){return typeof v!=='number'||!isFinite(v);}))throw new Error('rockHand muss [x,y,z] sein');p.rockHand=parameter.rockHand.slice();}
       if ([0,1,2].indexOf(p.lod) < 0) throw new Error('lod muss 0, 1 oder 2 sein');
-      if ([null,'winken','packen','hacken','tragen','korb','karren','stein','sack'].indexOf(p.oben) < 0) throw new Error('Unbekannter Oberkörper-Zuschlag');
+      if (Object.keys(GESTEN).concat([null,'winken','packen','hacken','tragen','korb','karren','stein','sack']).indexOf(p.oben) < 0) throw new Error('Unbekannter Oberkörper-Zuschlag');
       if(parameter&&parameter.gang!==undefined){if(['schritt','trab','galopp'].indexOf(parameter.gang)<0)throw new Error('Unbekannter Reitgang');p.reitGang=parameter.gang;}if(parameter&&parameter.reitPhase!==undefined){if(parameter.reitPhase!==null&&(typeof parameter.reitPhase!=='number'||!isFinite(parameter.reitPhase)||parameter.reitPhase<0||parameter.reitPhase>1))throw new Error('reitPhase muss null oder 0–1 sein');p.reitPhase=parameter.reitPhase;}
       if(parameter&&parameter.kindRolle!==undefined){if(['kind','erwachsener'].indexOf(parameter.kindRolle)<0)throw new Error('kindRolle ungültig');p.kindRolle=parameter.kindRolle;}if(parameter&&parameter.kindGroesse!==undefined){if(typeof parameter.kindGroesse!=='number'||!isFinite(parameter.kindGroesse)||parameter.kindGroesse<=0)throw new Error('kindGroesse muss positiv sein');p.kindGroesse=parameter.kindGroesse;}if(parameter&&parameter.kindHand!==undefined){if(!Array.isArray(parameter.kindHand)||parameter.kindHand.length!==3||parameter.kindHand.some(function(v){return typeof v!=='number'||!isFinite(v);}))throw new Error('kindHand muss [x,y,z] sein');p.kindHand=parameter.kindHand.slice();}
       if (parameter && parameter.kantenhoehe !== undefined) {
@@ -4447,8 +4470,9 @@ var Gliederpuppe = (function () {
     }
     function gangBeineErhalten(){if(!gangFuesse)return;if(p.art==='alt_gehen')gelenke.kopf.rotation.x+=GANGARTEN.muede.kopf*(gangGewichte.muede||0);['L','R'].forEach(function(s){reitFuss(s,gangFuesse[s].ort);var k=gelenke['knoechel'+s];puppe.updateWorldMatrix(true,true);k.quaternion.copy(k.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(puppe.getWorldQuaternion(new THREE.Quaternion())).multiply(gangSohlen[s]));});}
     function aktualisieren(art, dt, tempo) {
+      if(p.gesteWunsch){p.fertig=false;p.uebergang=0;}
       gangAktualisieren(dt);
-      if(p.kleinkind&&KLEINKINDARTEN.indexOf(art)>=0){kleinkindBewegen(art,dt,tempo);return;}
+      if(p.kleinkind&&KLEINKINDARTEN.indexOf(art)>=0){kleinkindBewegen(art,dt,tempo);gesteAnwenden(dt);if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();return;}
       if(kindArt!==null){anwenden(kindGrund);kindArt=null;kindWeg=0;grundZuletzt=null;nachlaufZuletzt=null;grindZiele=null;}
       var vorher = p.lod === 1 ? merken() : null;
       if (grundZuletzt) Object.keys(grundZuletzt).forEach(function(n){gelenke[n].rotation.copy(grundZuletzt[n].rotation);gelenke[n].position.copy(grundZuletzt[n].position);});
@@ -4457,7 +4481,7 @@ var Gliederpuppe = (function () {
       gangGrundHoehe=gangGewichte.normal<1?p.hoehe:null;
       grundZuletzt = {};
       for (var name in gelenke) {
-        if (/^(becken|brust|kopf|hand[LR]|knoechel[LR])$/.test(name) || gangZiel!=='normal'&&/^(bauch|huefte|knie|schulter|ellbogen|zehen)/.test(name) || gangGewichte.normal<1&&/^(bauch|huefte|knie|schulter|ellbogen|zehen)/.test(name) || eigen !== null && /^(huefte|schulter)/.test(name) || (p.oben || obenModus !== p.oben || obenZeit < 0.22) && /^(schulter|ellbogen|hand|finger|daumen)/.test(name)) grundZuletzt[name] = {rotation:gelenke[name].rotation.clone(),position:gelenke[name].position.clone()};
+        if (/^(becken|brust|kopf|hand[LR]|knoechel[LR])$/.test(name) || p.gesteWunsch&&/^(bauch|brust|kopf|schulter|ellbogen|hand|finger|daumen)/.test(name) || gangZiel!=='normal'&&/^(bauch|huefte|knie|schulter|ellbogen|zehen)/.test(name) || gangGewichte.normal<1&&/^(bauch|huefte|knie|schulter|ellbogen|zehen)/.test(name) || eigen !== null && /^(huefte|schulter)/.test(name) || (p.oben || obenModus !== p.oben || obenZeit < 0.22) && /^(schulter|ellbogen|hand|finger|daumen)/.test(name)) grundZuletzt[name] = {rotation:gelenke[name].rotation.clone(),position:gelenke[name].position.clone()};
       }
       obenAnwenden(art, dt);
       if (eigen !== null && (art === 'gehen' || art === 'rennen' || art === 'klettern')) {
@@ -4481,6 +4505,7 @@ var Gliederpuppe = (function () {
       gangAnwenden(art,dt,tempo);
       grindAnwenden(art);
       gangBeineErhalten();
+      gesteAnwenden(dt);
       if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();
       p.aktualisierungen++;
     }
@@ -4624,7 +4649,7 @@ var Gliederpuppe = (function () {
     }
   }
 
-  return { bauen: bauen, GANGARTEN:GANGARTEN, GANGWECHSEL:GANGWECHSEL, KOPF_ANTEIL:.150, KIND_KOPF_ANTEIL:.180, KLEINKINDARTEN:KLEINKINDARTEN, KLEINKINDANTEIL:KLEINKINDANTEIL, REITTAKTE:REITTAKTE, LEHRETAKTE:LEHRETAKTE, LADENTAKTE:LADENTAKTE, LAENDETAKTE:LAENDETAKTE, PELZERTAKTE:PELZERTAKTE, GASSENTAKTE:GASSENTAKTE, FESTTAKTE:FESTTAKTE, ANTEIL: ANTEIL, MIXAMO: MIXAMO, SCHEMA: SCHEMA, POSEN: POSEN, POSENFOLGEN: POSENFOLGEN, winkelGrenzen: winkelGrenzen,
+  return { bauen: bauen, GESTEN:GESTEN, GANGARTEN:GANGARTEN, GANGWECHSEL:GANGWECHSEL, KOPF_ANTEIL:.150, KIND_KOPF_ANTEIL:.180, KLEINKINDARTEN:KLEINKINDARTEN, KLEINKINDANTEIL:KLEINKINDANTEIL, REITTAKTE:REITTAKTE, LEHRETAKTE:LEHRETAKTE, LADENTAKTE:LADENTAKTE, LAENDETAKTE:LAENDETAKTE, PELZERTAKTE:PELZERTAKTE, GASSENTAKTE:GASSENTAKTE, FESTTAKTE:FESTTAKTE, ANTEIL: ANTEIL, MIXAMO: MIXAMO, SCHEMA: SCHEMA, POSEN: POSEN, POSENFOLGEN: POSENFOLGEN, winkelGrenzen: winkelGrenzen,
     poseSpeichern: function (name, pose) { if (typeof name !== 'string' || !/^[a-z][a-z0-9_]*$/.test(name) || name === '__proto__' || name === 'constructor' || name === 'prototype') throw new Error('Gültiger deutscher Posenname benötigt'); pruefeWinkelsatz(pose); var kopie = {}; Object.keys(pose).forEach(function (n) { kopie[n] = pose[n].slice(); }); POSEN[name] = kopie; return kopie; }
   };
 })();
@@ -8689,180 +8714,185 @@ var BRUNNEN = [
  }
 ];                                 // spiel/brunnen.json (werkzeug/brunnen.py): Engels- und Marktbrunnen aus OSM
 var SPIELER = {
-  "_hinweis": "Der Spieler: Inventar, Hunger, Kleidung, Tagelohn. Wir fangen ganz unten an und wollen nach oben (Andreas 08.10.). Alle Zahlen sind Spielwerte (ERFUNDEN). BELEGT als Prinzip: Kleidung zeigte den Stand (städtische Kleiderordnungen regelten, wer was tragen durfte); Brot war das tägliche Essen; Tagelöhner wurden für Bau und Feld angeworben.",
-  "essen": {
-    "brot": {
-      "name": "Laib Brot",
-      "satt": 75,
-      "taste": "1"
-    },
-    "aepfel": {
-      "name": "Apfel",
-      "satt": 25,
-      "taste": "2"
-    },
-    "fleisch": {
-      "name": "Pfund Fleisch",
-      "satt": 55,
-      "taste": "3"
-    },
-    "wein": {
-      "name": "Maß Wein",
-      "satt": 8,
-      "taste": "4"
-    }
+ "_hinweis": "Der Spieler: Inventar, Hunger, Kleidung, Tagelohn. Wir fangen ganz unten an und wollen nach oben (Andreas 08.10.). Alle Zahlen sind Spielwerte (ERFUNDEN). BELEGT als Prinzip: Kleidung zeigte den Stand (städtische Kleiderordnungen regelten, wer was tragen durfte); Brot war das tägliche Essen; Tagelöhner wurden für Bau und Feld angeworben.",
+ "essen": {
+  "brot": {
+   "name": "Laib Brot",
+   "satt": 75,
+   "taste": "1"
   },
-  "hunger": {
-    "pro_stunde": 3.0,
-    "hungrig_ab": 60,
-    "schwach_ab": 90,
-    "schwach_tempo": 0.6,
-    "mittagstisch": 60
+  "aepfel": {
+   "name": "Apfel",
+   "satt": 25,
+   "taste": "2"
   },
-  "kleidung": [
-    {
-      "id": "lumpen",
-      "name": "Lumpen",
-      "stand": "BETTLER",
-      "preis": 0,
-      "farbe": {
-        "rumpf": "#6e6252",
-        "arm": "#5e5446",
-        "bein": "#4e463a",
-        "fuss": "#3a3028"
-      }
-    },
-    {
-      "id": "kittel",
-      "name": "Leinenkittel mit Gürtel",
-      "stand": "TAGELÖHNER",
-      "preis": 8,
-      "farbe": {
-        "rumpf": "#b8a67e",
-        "arm": "#a8966e",
-        "bein": "#6a5a44",
-        "fuss": "#4a3c2c"
-      }
-    },
-    {
-      "id": "wollrock",
-      "name": "Wollrock und Beinlinge",
-      "stand": "KNECHT",
-      "preis": 25,
-      "farbe": {
-        "rumpf": "#6a7a4a",
-        "arm": "#5a6a3e",
-        "bein": "#7a3a2a",
-        "fuss": "#3a2a1c"
-      }
-    },
-    {
-      "id": "buergerrock",
-      "name": "Bürgerrock mit Kragen",
-      "stand": "BÜRGER",
-      "preis": 70,
-      "farbe": {
-        "rumpf": "#3d5a7a",
-        "arm": "#34506e",
-        "bein": "#2a2a30",
-        "fuss": "#20181a"
-      }
-    },
-    {
-      "id": "tuchgewand",
-      "name": "Gewand aus feinem Tuch",
-      "stand": "RATSFAMILIE",
-      "preis": 180,
-      "farbe": {
-        "rumpf": "#7a2a3a",
-        "arm": "#c9962e",
-        "bein": "#2a2224",
-        "fuss": "#1a1214"
-      }
-    }
-  ],
-  "waren": {
-    "messer": {
-      "name": "Messer",
-      "preis": 5,
-      "haendler": "MESSERSCHMIED",
-      "satz": "Ein gutes Messer braucht jeder – fürs Brot, fürs Seil, für alles."
-    }
+  "fleisch": {
+   "name": "Pfund Fleisch",
+   "satt": 55,
+   "taste": "3"
   },
-  "tagelohn": [
-    {
-      "wer": "tageloehner",
-      "ort": "arbeit",
-      "arbeit": "Steine an die Mauer schleppen",
-      "stunden": 4,
-      "heller": 3,
-      "hunger": 18
-    },
-    {
-      "wer": "haecker",
-      "ort": "arbeit",
-      "arbeit": "im Weinberg Reben binden",
-      "stunden": 4,
-      "heller": 3,
-      "hunger": 15
-    },
-    {
-      "wer": "muellerknecht",
-      "ort": "muehle",
-      "arbeit": "Mehlsäcke tragen",
-      "stunden": 2,
-      "heller": 2,
-      "hunger": 10
-    }
-  ],
-  "schaetze": [
-    {
-      "id": "hufeisen",
-      "name": "Ein Hufeisen",
-      "text": "Rostig, aber ganz. Bringt Glück, sagen die Leute."
-    },
-    {
-      "id": "muschel",
-      "name": "Eine Flussmuschel",
-      "text": "Vom Mainufer, innen schimmert sie wie Perlmutt."
-    },
-    {
-      "id": "schluessel",
-      "name": "Ein alter Schlüssel",
-      "text": "Mit einem Wappen am Griff. Zu welcher Tür gehört er?"
-    },
-    {
-      "id": "wuerfel",
-      "name": "Ein Würfel aus Knochen",
-      "text": "Die Sechs ist abgewetzt. Hat da einer geschummelt?"
-    },
-    {
-      "id": "heller",
-      "name": "Ein verlorener Heller",
-      "text": "Lag im Rinnstein. Jetzt gehört er dir.",
-      "heller": 1
-    }
-  ],
-  "geheimnisse": [
-    {
-      "id": "zoellner",
-      "wer": "trunkenbold",
-      "name": "Was der Säufer flüsterte",
-      "text": "„Der Zöllner am Tor schaut nicht so genau hin, wenn man ihm was in die Hand drückt.“"
-    },
-    {
-      "id": "frueher",
-      "wer": "alte",
-      "name": "Was die Alte erzählte",
-      "text": "„Früher, als ich jung war, gab es einen Winter, da ist der Main zugefroren. Bis nach Kreuzwertheim sind wir übers Eis.“"
-    },
-    {
-      "id": "jakob",
-      "wer": "trunkenbold",
-      "name": "Was der Säufer noch wusste",
-      "text": "„In der Kneipe am Maintor sitzt der einäugige Jakob. Der hat Arbeit – aber keine ehrliche. Hehe.“"
-    }
-  ]
+  "wein": {
+   "name": "Maß Wein",
+   "satt": 8,
+   "taste": "4"
+  },
+  "fisch": {
+   "name": "gebratener Fisch",
+   "satt": 45,
+   "taste": "5"
+  }
+ },
+ "hunger": {
+  "pro_stunde": 3.0,
+  "hungrig_ab": 60,
+  "schwach_ab": 90,
+  "schwach_tempo": 0.6,
+  "mittagstisch": 60
+ },
+ "kleidung": [
+  {
+   "id": "lumpen",
+   "name": "Lumpen",
+   "stand": "BETTLER",
+   "preis": 0,
+   "farbe": {
+    "rumpf": "#6e6252",
+    "arm": "#5e5446",
+    "bein": "#4e463a",
+    "fuss": "#3a3028"
+   }
+  },
+  {
+   "id": "kittel",
+   "name": "Leinenkittel mit Gürtel",
+   "stand": "TAGELÖHNER",
+   "preis": 8,
+   "farbe": {
+    "rumpf": "#b8a67e",
+    "arm": "#a8966e",
+    "bein": "#6a5a44",
+    "fuss": "#4a3c2c"
+   }
+  },
+  {
+   "id": "wollrock",
+   "name": "Wollrock und Beinlinge",
+   "stand": "KNECHT",
+   "preis": 25,
+   "farbe": {
+    "rumpf": "#6a7a4a",
+    "arm": "#5a6a3e",
+    "bein": "#7a3a2a",
+    "fuss": "#3a2a1c"
+   }
+  },
+  {
+   "id": "buergerrock",
+   "name": "Bürgerrock mit Kragen",
+   "stand": "BÜRGER",
+   "preis": 70,
+   "farbe": {
+    "rumpf": "#3d5a7a",
+    "arm": "#34506e",
+    "bein": "#2a2a30",
+    "fuss": "#20181a"
+   }
+  },
+  {
+   "id": "tuchgewand",
+   "name": "Gewand aus feinem Tuch",
+   "stand": "RATSFAMILIE",
+   "preis": 180,
+   "farbe": {
+    "rumpf": "#7a2a3a",
+    "arm": "#c9962e",
+    "bein": "#2a2224",
+    "fuss": "#1a1214"
+   }
+  }
+ ],
+ "waren": {
+  "messer": {
+   "name": "Messer",
+   "preis": 5,
+   "haendler": "MESSERSCHMIED",
+   "satz": "Ein gutes Messer braucht jeder – fürs Brot, fürs Seil, für alles."
+  }
+ },
+ "tagelohn": [
+  {
+   "wer": "tageloehner",
+   "ort": "arbeit",
+   "arbeit": "Steine an die Mauer schleppen",
+   "stunden": 4,
+   "heller": 3,
+   "hunger": 18
+  },
+  {
+   "wer": "haecker",
+   "ort": "arbeit",
+   "arbeit": "im Weinberg Reben binden",
+   "stunden": 4,
+   "heller": 3,
+   "hunger": 15
+  },
+  {
+   "wer": "muellerknecht",
+   "ort": "muehle",
+   "arbeit": "Mehlsäcke tragen",
+   "stunden": 2,
+   "heller": 2,
+   "hunger": 10
+  }
+ ],
+ "schaetze": [
+  {
+   "id": "hufeisen",
+   "name": "Ein Hufeisen",
+   "text": "Rostig, aber ganz. Bringt Glück, sagen die Leute."
+  },
+  {
+   "id": "muschel",
+   "name": "Eine Flussmuschel",
+   "text": "Vom Mainufer, innen schimmert sie wie Perlmutt."
+  },
+  {
+   "id": "schluessel",
+   "name": "Ein alter Schlüssel",
+   "text": "Mit einem Wappen am Griff. Zu welcher Tür gehört er?"
+  },
+  {
+   "id": "wuerfel",
+   "name": "Ein Würfel aus Knochen",
+   "text": "Die Sechs ist abgewetzt. Hat da einer geschummelt?"
+  },
+  {
+   "id": "heller",
+   "name": "Ein verlorener Heller",
+   "text": "Lag im Rinnstein. Jetzt gehört er dir.",
+   "heller": 1
+  }
+ ],
+ "geheimnisse": [
+  {
+   "id": "zoellner",
+   "wer": "trunkenbold",
+   "name": "Was der Säufer flüsterte",
+   "text": "„Der Zöllner am Tor schaut nicht so genau hin, wenn man ihm was in die Hand drückt.“"
+  },
+  {
+   "id": "frueher",
+   "wer": "alte",
+   "name": "Was die Alte erzählte",
+   "text": "„Früher, als ich jung war, gab es einen Winter, da ist der Main zugefroren. Bis nach Kreuzwertheim sind wir übers Eis.“"
+  },
+  {
+   "id": "jakob",
+   "wer": "trunkenbold",
+   "name": "Was der Säufer noch wusste",
+   "text": "„In der Kneipe am Maintor sitzt der einäugige Jakob. Der hat Arbeit – aber keine ehrliche. Hehe.“"
+  }
+ ]
 };                                 // spiel/spieler.json – Inventar, Hunger, Kleidung, Tagelohn
 var STADTKATALOG = {
  "_lies_mich": [
@@ -10149,9 +10179,60 @@ function holzSchlag() {
     melden(r === 0 ? 'EIN BÜNDEL FERTIG (' + b + ') · BRING ES KONRAD, DEM BÄCKER' : 'SCHEIT ' + r + ' VON ' + HOLZ_BUENDEL + (b ? ' · ' + b + ' BÜNDEL FERTIG' : ''), 2.2); }
   holzStapelZeigen(); speichern();
 }
-function haendeVoll() { if (STEIN.traegt) return AUFTRAG.karren ? 'DEN STEINKARREN' : 'EINEN STEIN'; if (LESE.traegt) return 'DEN TRAUBENKORB'; return null; }   // 12.10.: was man gerade schleppt, sperrt die Arbeit
+// ---- Angeln (12.10., Andreas: „das Tagwerk vollbracht, 16:30 – kann ich angeln gehen? … die Angel selbst bauen: Messer und Haselstrauch … und ich bekomme kostenlos Essen“) ----
+// Anfangsquest: Messer (Messerschmied) → Haselrute (Strauch an der Lände, Rechtsklick mit Messer) → Garn (Spinnen) + Haken (Schmied, 1 Heller) → die Angel bindet man selbst.
+// Angeln wie in Minecraft: am Ufer Rechtsklick wirft aus, der Schwimmer tanzt; taucht er weg, sofort Rechtsklick. Fang = gebratener Fisch (Taste 5).
+// BELEGT als Prinzip: Fischrecht im Main lag bei Herrschaft/Fischerzunft. ANNAHME: Mit der Rute vom Ufer für den eigenen Topf wurde ein Junge geduldet. Fischarten des Mains: Rotauge, Brachse, Barbe, Hecht, Aal.
+var ANGEL = { aktiv: false, x: 0, y: 0, phase: '', biss: 0, bissBis: 0, ort: null, rute: null, schwimmer: null, schnur: null, hasel: [] };
+var FISCHE = { rotauge: ['EIN ROTAUGE!', 'Rote Augen – der häufigste Fisch im Main.', 1], brachse: ['EINE BRACHSE!', 'Hoch und platt wie ein Teller.', 1], barbe: ['EINE BARBE!', 'Vier Bartfäden am Maul – sie sucht ihr Futter am Grund.', 1],
+  hecht: ['EIN HECHT!!', 'Der Räuber mit den spitzen Zähnen. Der reicht für zwei Mahlzeiten!', 2], aal: ['EIN AAL!', 'Er kommt in der Dämmerung – und wandert zum Laichen bis ins Meer.', 1], schuh: ['EIN ALTER SCHUH …', 'Den hat einer im Main verloren. Essen kann man ihn nicht.', 0] };
+function amWasser(x, y) { if (!wasser(x, y) || aufBruecke(x, y) !== null || aufFaehre(x, y) || gel(x, y) > SPIEGEL - 0.1) return false;   // sichtbar ist Wasser nur, wo das Gelände unter dem Spiegel liegt
+  for (var k = 0; k < 8; k++) if (!wasser(x + Math.cos(k * 0.785) * 2.5, y + Math.sin(k * 0.785) * 2.5)) return false; return true; }   // die Wassermaske kommt aus den Farben des Bodenbilds – bläuliches Pflaster gilt fleckweise als Wasser; zum Angeln muss rundum 2,5 m Wasser sein
+function wurfPunkt() { var fx = Math.sin(P.blick), fy = Math.cos(P.blick); for (var s2 = 1.5; s2 <= 8; s2 += 0.5) { var x = P.x + fx * s2, y = P.y + fy * s2; if (amWasser(x, y)) { var w = Math.min(s2 + 1.5, 9); return amWasser(P.x + fx * w, P.y + fy * w) ? [P.x + fx * w, P.y + fy * w] : [x, y]; } } return null; }
+function haselAufstellen() { if (!window.Sammeln || !Sammeln.haselstrauch || !FAEHRE || ANGEL.hasel.length || ANGEL.haselVersucht) return; ANGEL.haselVersucht = true; var a = FAEHRE.a, n = 0;
+  for (var r = 8; r <= 34 && n < 3; r += 2.5) for (var w = 0; w < 12 && n < 3; w++) { var x = a[0] + Math.cos(w * 0.52 + r) * r, y = a[1] + Math.sin(w * 0.52 + r) * r; NAVMODUS = true; var ok = frei(x, y) && !hausInnen(x, y) && !wasser(x, y) && erlaubt(x, y); NAVMODUS = false;
+    if (!ok || ANGEL.hasel.some(function (h) { return Math.hypot(h.x - x, h.y - y) < 6; })) continue; var nahW = false; for (var k = 0; k < 8 && !nahW; k++) nahW = wasser(x + Math.cos(k * 0.785) * 7, y + Math.sin(k * 0.785) * 7); if (!nahW) continue;
+    var g = Sammeln.haselstrauch(); g.scale.setScalar(2.2); var v = V(x, y, bodenHoehe(x, y)); g.position.set(v[0], v[1], v[2]); g.rotation.y = w; g.traverse(function (o) { if (o.isMesh) o.castShadow = true; }); szene.add(g); ANGEL.hasel.push({ x: x, y: y, g: g }); n++;
+    var ko = { art: 'szene', x: x, y: y, r: 0.6, d: 0, nr: KRAM.length }; KRAM.push(ko); var key = Math.floor(x / 10) + ',' + Math.floor(y / 10); (KRAMRASTER[key] = KRAMRASTER[key] || []).push(ko); } }
+function haselNah() { for (var i = 0; i < ANGEL.hasel.length; i++) if (Math.hypot(P.x - ANGEL.hasel[i].x, P.y - ANGEL.hasel[i].y) < 2.2) return ANGEL.hasel[i]; return null; }
+function haselSchneiden() { if (EPOCHE !== 1400 || !haselNah()) return false;
+  if (AUFTRAG.angel || AUFTRAG.rute) { melden('DU HAST SCHON EINE RUTE', 2); return true; }
+  if (!AUFTRAG.messer) { melden('EIN HASELSTRAUCH · OHNE MESSER KRIEGST DU KEINE RUTE AB – DER MESSERSCHMIED HAT WELCHE (5 HELLER)', 4); return true; }
+  AUFTRAG.rute = 1; speichern(); melden('DU SCHNEIDEST EINE LANGE, GERADE HASELRUTE · JETZT FEHLEN ' + angelFehlt(), 5); angelBinden(); return true; }
+function angelFehlt() { var f = []; if (!AUFTRAG.rute) f.push('EINE HASELRUTE'); if (!(AUFTRAG.garn > 0)) f.push('GARN FÜR DIE SCHNUR'); if (!AUFTRAG.haken) f.push('EIN HAKEN (SCHMIED)'); return f.join(' UND ') || 'NICHTS'; }
+function angelBinden() { if (AUFTRAG.angel || !AUFTRAG.rute || !AUFTRAG.haken || !(AUFTRAG.garn > 0)) return false; AUFTRAG.garn--; AUFTRAG.rute = 0; AUFTRAG.haken = 0; AUFTRAG.angel = 1; speichern();
+  melden('DU BINDEST DIR EINE ANGEL: RUTE, SCHNUR, HAKEN · AM WASSER: RECHTSKLICK WIRFT AUS', 7); return true; }
+function schmiedHaken() { if (EPOCHE !== 1400 || AUFTRAG.angel || AUFTRAG.haken || !AUFTRAG.rute) return false; var b = BERUFSSZENEN.filter(function (q) { return q.art === 'schmied'; })[0]; if (!b || Math.hypot(P.x - b.x, P.y - b.y) > 3) return false;
+  if (AUFTRAG.heller < 1) { melden('DER GESELLE: „EIN ANGELHAKEN? EIN HELLER.“ · DU HAST KEINEN', 3); return true; }
+  AUFTRAG.heller -= 1; AUFTRAG.haken = 1; speichern(); melden('DER GESELLE BIEGT DIR EINEN HAKEN AUS EINEM NAGEL · −1 HELLER · JETZT FEHLEN ' + angelFehlt(), 5); angelBinden(); return true; }
+function angelTeile() { if (ANGEL.rute || !PUPPE || !PUPPE.gelenke.handR) return; var holz = new THREE.MeshLambertMaterial({ color: 0x8a6a3a }), r = new THREE.Group(), st = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.016, 2.4, 6), holz); st.position.y = 1.2; r.add(st); r.visible = false; szene.add(r); ANGEL.rute = r;   // jedes Bild von der Hand aus schräg zum Schwimmer ausgerichtet
+  var sw = new THREE.Group(), o = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshLambertMaterial({ color: 0xc8302a })), u = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), new THREE.MeshLambertMaterial({ color: 0xf0ead8 })); o.position.y = 0.02; u.position.y = -0.02; sw.add(o); sw.add(u); sw.visible = false; szene.add(sw); ANGEL.schwimmer = sw;
+  var lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0], 3)); ANGEL.schnur = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0xe8e0d0, transparent: true, opacity: 0.7 })); ANGEL.schnur.visible = false; szene.add(ANGEL.schnur); }
+function angelEinholen(text) { ANGEL.aktiv = false; ANGEL.phase = ''; if (ANGEL.rute) ANGEL.rute.visible = false; if (ANGEL.schwimmer) ANGEL.schwimmer.visible = false; if (ANGEL.schnur) ANGEL.schnur.visible = false; if (text) melden(text, 3); }
+function fischZiehen() { var sh = sonnenstand(himmelsZeit()).hoehe, daemmer = sh < 6 && sh > -7, w = { rotauge: 40, brachse: 22, barbe: 18, hecht: 5, aal: daemmer ? 30 : 3, schuh: 4 }, sum = 0, k; for (k in w) sum += w[k]; var z = Math.random() * sum; for (k in w) { z -= w[k]; if (z <= 0) return k; } return 'rotauge'; }
+function angelHandhaben() { if (EPOCHE !== 1400 || !AUFTRAG.angel || P.drinnen || REITEN.auf || P.aufKarren) return false;
+  if (ANGEL.aktiv) { if (ANGEL.phase === 'biss') { var f = fischZiehen(), F = FISCHE[f]; AUFTRAG.fisch = (AUFTRAG.fisch || 0) + F[2]; if (F[2]) { AUFTRAG.fischGesamt = (AUFTRAG.fischGesamt || 0) + 1; tatMerken('angeln', P.x, P.y); } if (SPIELER) AUFTRAG.hunger = Math.min(100, AUFTRAG.hunger + 0.3); speichern();
+      angelEinholen(); melden(F[0] + ' ' + F[1] + (F[2] ? ' · TASTE 5: ESSEN (' + AUFTRAG.fisch + ')' : ''), 7); return true; }
+    angelEinholen('DU HOLST DIE SCHNUR EIN'); return true; }
+  if (haendeVoll()) return false; var wp = wurfPunkt(); if (!wp) return false;
+  if (sonnenstand(himmelsZeit()).hoehe < -6) { melden('ZU DUNKEL – DEN SCHWIMMER SIEHST DU NICHT MEHR', 3); return true; }
+  if (!AUFTRAG.fischErlaubt) { AUFTRAG.rede = { wer: { x: P.x, y: P.y, name: 'DER FISCHER VON DER LÄNDE' }, name: 'DER FISCHER VON DER LÄNDE', i: 0, zeilen: ['He, Junge! Der Main gehört dem Grafen, und fischen darf eigentlich nur die Zunft.', 'Mit einer Rute vom Ufer, für den eigenen Topf … na gut, da drück ich ein Auge zu.', 'Aber keine Netze. Und nicht an meinem Steg! Petri Heil.'],
+      danach: function () { AUFTRAG.fischErlaubt = 1; speichern(); } }; return true; }
+  angelTeile(); ANGEL.aktiv = true; ANGEL.phase = 'warten'; ANGEL.x = wp[0]; ANGEL.y = wp[1]; ANGEL.ort = [P.x, P.y]; ANGEL.biss = P.t + 4 + Math.random() * 14; P.blick = Math.atan2(wp[0] - P.x, wp[1] - P.y);
+  melden('AUSGEWORFEN · WARTEN … TAUCHT DER SCHWIMMER WEG: SOFORT RECHTSKLICK', 4); return true; }
+function angelnWeiter(dt) { if (EPOCHE !== 1400) return; if (!ANGEL.haselVersucht && FAEHRE && window.Sammeln) haselAufstellen(); if (!AUFTRAG.angel && !ANGEL.aktiv) return;
+  if (!ANGEL.aktiv) { if (P.t > (AUFTRAG.meldungBis || 0) && !AUFTRAG.rede && !P.drinnen && Math.floor(P.t * 4) % 4 === 0 && wurfPunkt()) melden('RECHTSKLICK: ANGEL AUSWERFEN', 0.5); return; }
+  if (Math.hypot(P.x - ANGEL.ort[0], P.y - ANGEL.ort[1]) > 1.2 || AUFTRAG.rede || P.drinnen) { angelEinholen('DU HOLST DIE SCHNUR EIN'); return; }
+  var tief = 0; if (ANGEL.phase === 'warten' && P.t > ANGEL.biss) { ANGEL.phase = 'biss'; ANGEL.bissBis = P.t + 1.2; melden('ES BEISST! JETZT RECHTSKLICK!', 1.2); }
+  if (ANGEL.phase === 'biss') { tief = 0.12 + Math.sin(P.t * 30) * 0.04; if (P.t > ANGEL.bissBis) { ANGEL.phase = 'warten'; ANGEL.biss = P.t + 3 + Math.random() * 10; melden('ZU SPÄT – DER FISCH IST WEG. WARTEN …', 2.5); } }
+  else tief = P.t > ANGEL.biss - 1.5 ? Math.abs(Math.sin(P.t * 9)) * 0.03 : 0;   // kurz vorher zuppelt es schon
+  var hw = new THREE.Vector3(); PUPPE.gelenke.handR.getWorldPosition(hw); var zw = V(ANGEL.x, ANGEL.y, SPIEGEL), dir = new THREE.Vector3(zw[0] - hw.x, 0, zw[2] - hw.z).normalize(); dir.y = 0.75; dir.normalize();
+  ANGEL.rute.position.copy(hw); ANGEL.rute.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir); ANGEL.rute.updateMatrixWorld(true);
+  ANGEL.rute.visible = true; var sv = V(ANGEL.x, ANGEL.y, SPIEGEL + 0.01 - tief + Math.sin(P.t * 1.7) * 0.012); ANGEL.schwimmer.position.set(sv[0], sv[1], sv[2]); ANGEL.schwimmer.visible = true;
+  var spitze = ANGEL.rute.localToWorld(new THREE.Vector3(0, 2.4, 0)), pa = ANGEL.schnur.geometry.attributes.position; pa.setXYZ(0, spitze.x, spitze.y, spitze.z); pa.setXYZ(1, sv[0], sv[1] + 0.03, sv[2]); pa.needsUpdate = true; ANGEL.schnur.geometry.computeBoundingSphere(); ANGEL.schnur.visible = true; }
+function haendeVoll() { if (ANGEL.aktiv) return 'DIE ANGEL'; if (STEIN.traegt) return AUFTRAG.karren ? 'DEN STEINKARREN' : 'EINEN STEIN'; if (LESE.traegt) return 'DEN TRAUBENKORB'; return null; }   // 12.10.: was man gerade schleppt, sperrt die Arbeit
 // 12.10. (Andreas: „wir müssten sehen können, was wir in der Hand haben“): Zeile über dem Stand unten links
-function handText() { if (STEIN.traegt) return AUFTRAG.karren ? STEIN.traegt + (STEIN.traegt > 1 ? ' STEINE' : ' STEIN') + ' AUF DEM KARREN' : 'EIN STEIN'; if (LESE.traegt) return 'DER TRAUBENKORB'; if (REITEN.auf) return 'DIE ZÜGEL';
+function handText() { if (STEIN.traegt) return AUFTRAG.karren ? STEIN.traegt + (STEIN.traegt > 1 ? ' STEINE' : ' STEIN') + ' AUF DEM KARREN' : 'EIN STEIN'; if (LESE.traegt) return 'DER TRAUBENKORB'; if (REITEN.auf) return 'DIE ZÜGEL'; if (ANGEL.aktiv) return 'DIE ANGEL';
   if ((AUFTRAG.beutel || []).some(function (b) { return b.id === 'ww_eimer' || /^kram_/.test(b.id || ''); })) return ((AUFTRAG.beutel || []).filter(function (b) { return b.id === 'ww_eimer' || /^kram_/.test(b.id || ''); })[0].name || 'KRAM').toUpperCase();
   return null; }
 function steinAblegen() { if (!STEIN.traegt || AUFTRAG.rede) return false; var n = STEIN.traegt; STEIN.traegt = 0; melden(n > 1 ? 'DU KIPPST DIE STEINE AB · SIE ROLLEN IN DIE GOSSE' : 'DU LEGST DEN STEIN AB', 2.5); return true; }   // überall: Rechtsklick, wenn sonst nichts zu tun ist
@@ -10975,7 +11056,7 @@ function spielstandFluechtig(k) { return k === 'rede' || k === 'wahl' || k === '
   else if (roh) { JSON.parse(roh); localStorage.setItem(SPEICHER + '_sicherung', roh); } } catch (e) {} })();   // nur ein lesbarer Stand wird zur Sicherung
 try { var gesp = spielstandMigrieren(JSON.parse(localStorage.getItem(SPEICHER) || 'null')); if (gesp) { AUFTRAG.stufe = gesp.stufe || 0; AUFTRAG.heller = gesp.heller || 0; AUFTRAG.aepfel = gesp.aepfel || 0; ['einf', 'kramWeg', 'dieb', 'pelzkragen', 'pelzmuetze', 'hochzeitTag', 'hochzeitPlan', 'kind', 'kindGemeldet', 'joergRunde', 'onkelLehrTipp', 'imke', 'imkeTag', 'tammo', 'verheiratet', 'nachname', 'frau', 'werben', 'buergerrecht', 'ladenVorrat', 'ladenLetzt', 'ladenVerkauft', 'lehre', 'lehrePaare', 'lehreGang', 'lehreSchlaege', 'lehreTag', 'lehreHeute', 'lehreStueck', 'scheite', 'beil', 'holzHeute', 'holzTag', 'holzErklaert', 'wolle', 'garn', 'garnHeute', 'garnTag', 'steineGesamt', 'steineHeute', 'steineTag', 'steinRest', 'karren', 'leseHeute', 'leseTag', 'brot', 'fleisch', 'wein', 'messer', 'kleid', 'hunger', 'zehnt', 'zehntFahrten', 'amt', 'ruf', 'schmuggel', 'schmuggelTag', 'schmuggelZahl', 'brief', 'briefTag', 'briefZahl'].forEach(function (k) { var w = gesp[k]; if (typeof w === 'number' || (typeof w === 'string' && w) || (w && typeof w === 'object')) AUFTRAG[k] = w; }); if (gesp.tour) AUFTRAG.tour = gesp.tour; if (gesp.beutel) AUFTRAG.beutel = gesp.beutel; AUFTRAG.garderobe = gesp.garderobe || Array.apply(null, { length: (AUFTRAG.kleid || 0) + 1 }).map(function (_, i) { return i; }); } } catch (e) {}
 try { if (gesp) Object.keys(gesp).forEach(function (k) { if (k !== 'v' && AUFTRAG[k] === undefined && !spielstandFluechtig(k)) AUFTRAG[k] = gesp[k]; }); } catch (e) {}   // was keine Liste kennt, kommt trotzdem zurück
-if (/[?&]auftrag=neu/.test(Q)) { AUFTRAG.taten = []; AUFTRAG.kennt = {}; AUFTRAG.hundWahl = null; AUFTRAG.stufe = 0; AUFTRAG.heller = 0; AUFTRAG.aepfel = 0; AUFTRAG.brot = 0; AUFTRAG.fleisch = 0; AUFTRAG.wein = 0; AUFTRAG.messer = 0; AUFTRAG.kleid = 0; AUFTRAG.hunger = 20; AUFTRAG.beutel = []; AUFTRAG.garderobe = [0]; AUFTRAG.zehnt = 0; AUFTRAG.zehntFahrten = 0; AUFTRAG.amt = 0; AUFTRAG.tour = {}; AUFTRAG.ruf = 0; AUFTRAG.schmuggel = 0; AUFTRAG.schmuggelTag = 0; AUFTRAG.schmuggelZahl = 0; AUFTRAG.brief = 0; AUFTRAG.briefTag = 0; AUFTRAG.briefZahl = 0;
+if (/[?&]auftrag=neu/.test(Q)) { AUFTRAG.taten = []; AUFTRAG.kennt = {}; AUFTRAG.angel = 0; AUFTRAG.rute = 0; AUFTRAG.haken = 0; AUFTRAG.fisch = 0; AUFTRAG.fischGesamt = 0; AUFTRAG.fischErlaubt = 0; AUFTRAG.hundWahl = null; AUFTRAG.stufe = 0; AUFTRAG.heller = 0; AUFTRAG.aepfel = 0; AUFTRAG.brot = 0; AUFTRAG.fleisch = 0; AUFTRAG.wein = 0; AUFTRAG.messer = 0; AUFTRAG.kleid = 0; AUFTRAG.hunger = 20; AUFTRAG.beutel = []; AUFTRAG.garderobe = [0]; AUFTRAG.zehnt = 0; AUFTRAG.zehntFahrten = 0; AUFTRAG.amt = 0; AUFTRAG.tour = {}; AUFTRAG.ruf = 0; AUFTRAG.schmuggel = 0; AUFTRAG.schmuggelTag = 0; AUFTRAG.schmuggelZahl = 0; AUFTRAG.brief = 0; AUFTRAG.briefTag = 0; AUFTRAG.briefZahl = 0;
   // 11.10.: ein neues Leben ist ein NEUES Leben – vorher blieb man nach „von vorn“ Meister, Bürger und verheiratet (gefunden beim Durchspielen der Ankunft)
   ['kramWeg', 'dieb', 'pelzkragen', 'pelzmuetze', 'hochzeitTag', 'hochzeitPlan', 'kind', 'kindGemeldet', 'joergRunde', 'onkelLehrTipp', 'onkelGezeigt', 'imke', 'imkeTag', 'tammo', 'verheiratet', 'nachname', 'frau', 'werben', 'buergerrecht', 'ladenVorrat', 'ladenLetzt', 'ladenVerkauft', 'lehre', 'lehrePaare', 'lehreGang', 'lehreSchlaege', 'lehreTag', 'lehreHeute', 'lehreStueck', 'scheite', 'beil', 'holzHeute', 'holzTag', 'holzErklaert', 'wolle', 'garn', 'garnHeute', 'garnTag', 'steineGesamt', 'steineHeute', 'steineTag', 'steinRest', 'karren', 'leseHeute', 'leseTag', 'almosen', 'wacheGroll', 'wacheFreund', 'pforteOffen', 'passBis', 'touren', 'meisterTest'].forEach(function (k) { delete AUFTRAG[k]; }); }
 // Die Ankunft (11.10., Andreas: „vom Dorf am Stadttor abgesetzt, den Onkel finden, erschöpft einschlafen, am Morgen unsanft geweckt,
@@ -14656,6 +14737,14 @@ function gangartFuer(l) { var r = l.rolle, h = new Date(himmelsZeit()).getHours(
   if (r === 'trunkenbold') return 'muede';
   if ((r === 'magd' && h < 11) || (kind && hash(l.nr * 2.7) < 0.5)) return 'eilig';
   return 'normal'; }
+// Gesten (12.10., Codex Auftrag 24): l.geste = { name, bis, zumSpieler } – gesetzt von gruessen (Klatsch) und beim Tuscheln; Codex' Geste läuft über der Grundbewegung.
+// Im Gehen nur nicken/kopf_schuetteln (Codex: die anderen am stehenden Untergrund); zeigen bekommt den Spieler als Ziel in Figurenkoordinaten.
+function bewegOpt(l, geht, altGeht, stehtFrei) { var o = geht && !altGeht ? { gangart: l.gangart || 'normal' } : null, g = l.geste;
+  if (g && P.t >= g.bis) { l.geste = g = null; }
+  if (g && (stehtFrei || (geht && (g.name === 'nicken' || g.name === 'kopf_schuetteln')))) { o = o || {}; o.geste = g.name;
+    if (g.name === 'zeigen') { var v = V(P.x, P.y, bodenHoehe(P.x, P.y) + 1.3); l.puppe.gruppe.updateMatrixWorld(true); o.ziel = l.puppe.gruppe.worldToLocal(new THREE.Vector3(v[0], v[1], v[2])).toArray(); } }
+  return o || undefined; }
+function gesteSetzen(l, name, dauer, zumSpieler) { if (!(window.Gliederpuppe && Gliederpuppe.GESTEN && Gliederpuppe.GESTEN[name]) && !lehrePoseDa(name)) return false; l.geste = { name: name, bis: P.t + dauer, zumSpieler: !!zumSpieler }; l.winkBis = 0; return true; }
 function drehWeich(l, ziel, dt, k) { var r = l.puppe.gruppe.rotation, d = Math.atan2(Math.sin(ziel - r.y), Math.cos(ziel - r.y)); var st = d * Math.min(1, dt * k), mx = dt * 7; r.y += dt > 0.5 ? d : Math.max(-mx, Math.min(mx, st)); }   // Wende in ~0,3 s statt in einem Bild (große Sprünge nach Zeitsprung sofort)
 function vorausSchauen(l) { var w = l.weg, q = w[l.wi]; if (!q) return 1; var L = Math.hypot(q[0] - l.x, q[1] - l.y), f = 1;
   if (l.wi < w.length - 1) { var n = w[l.wi + 1];
@@ -14823,9 +14912,10 @@ var TAT_ZEILE = {
   lehre: ['Du lernst bei Matthes? Dann flickst du mir bald die Stiefel.', 'Schusterlehrling, hab ich gehört. Ein ehrliches Handwerk.'],
   hochzeit: ['Glückwunsch zur Hochzeit! Die halbe Stadt hat davon geredet.', 'Frisch verheiratet, hab ich gehört. Gott segne euch.'],
   kind: ['Ein Kind, hab ich gehört! Wie geht es dem Kleinen?', 'Glückwunsch zum Nachwuchs. Jetzt wird es eng in der Kammer, was?'],
+  angeln: ['Petri Heil! Beißen sie heute?', 'Du angelst an der Lände, hab ich gehört. Bring mir mal einen Aal mit.'],
   dieb: ['Man sagt, dir kleben Sachen an den Fingern. Ich hab dich im Auge.', 'Bist du nicht der, der in der Gasse was mitgehen lässt? Pass bloß auf.', 'Hm. Von dir hört man nichts Gutes.']
 };
-var TAT_GRUSS = { holz: 'Na, Holzhacker!', stein: 'Fleißig an der Mauer, hab ich gehört!', lese: 'Na, Traubenleser?', zehnt: 'Ah, der Zehntfahrer!', lehre: 'Morgen, Schusterlehrling!', hochzeit: 'Glückwunsch, ihr zwei!', kind: 'Grüß mir den Kleinen!' };
+var TAT_GRUSS = { holz: 'Na, Holzhacker!', stein: 'Fleißig an der Mauer, hab ich gehört!', lese: 'Na, Traubenleser?', zehnt: 'Ah, der Zehntfahrer!', lehre: 'Morgen, Schusterlehrling!', hochzeit: 'Glückwunsch, ihr zwei!', kind: 'Grüß mir den Kleinen!', angeln: 'Petri Heil!' };
 function tatMerken(art, x, y) { var T = AUFTRAG.taten = AUFTRAG.taten || [], tg = heute(), letzte = T[T.length - 1];
   if (letzte && letzte.a === art && letzte.t === tg) { letzte.n++; return; }
   T.push({ a: art, t: tg, x: Math.round(x), y: Math.round(y), n: 1 }); if (T.length > 30) T.shift(); }
@@ -14850,6 +14940,11 @@ function gruessen(l) {                           // was man im Vorbeigehen hört
   else if (WETTER.nebel > 0.5 && hash(l.nr * 3.3) < 0.5) t = ['Man sieht die Hand vor Augen nicht.', 'Nebel im Tal – das wird ein schöner Tag.', 'Pass auf, wo du hintrittst.'][l.nr % 3];
   else if (kd >= 3) t = ['Gott zum Gruße, Herr.', 'Euer Diener, Herr.', 'Einen schönen Tag, Herr.'][l.nr % 3];
   else t = h < 10 ? ['Morgen!', 'Grüß Gott!', 'Gelobt sei Jesus Christus.'][l.nr % 3] : h < 18 ? ['Grüß Gott!', 'Na, auch unterwegs?', 'Servus.'][l.nr % 3] : ['Guten Abend!', 'Gute Nacht!', 'Gott behüte dich.'][l.nr % 3];
+  var KN_ = (AUFTRAG.kennt || {})[l.nr], dieb_ = bekannteTat(l, function (q) { return q.a === 'dieb'; }) && l.rolle !== 'kind';
+  if (dieb_) gesteSetzen(l, ['kopf_schuetteln', 'arme_verschraenkt', 'wegdrehen'][l.nr % 3], l.nr % 3 === 1 ? 4 : 2.4, true);   // 12.10.: Klatsch sichtbar
+  else if (kd >= 3 && l.rolle !== 'kind') gesteSetzen(l, 'hut_ziehen', 1.6, true);
+  else if (KN_ && KN_.n >= 3 && hash(l.nr * 2.9 + heute()) < 0.5) gesteSetzen(l, 'zuwinken_freudig', 1.8, true);
+  else if (TAT_GRUSS && bekannteTat(l, function (q) { return TAT_GRUSS[q.a]; }) || hash(l.nr * 1.1 + P.t) < 0.5) gesteSetzen(l, 'nicken', 1.2, true);
   GRUSS = { wer: l.name.split(',')[0], text: t, bis: P.t + 3 };
 }
 function istVersteckt(l) { if (l.hl) return !l.hlF || !l.hlF.anwesend || /^liegen/.test(l.hlF.art); return !!(l.rolle && l.ankunft && ((VERSTECKT[l.ort] && !(l.ort === 'kirche' && l.kirchPlatz && l.kirchTag === heute())) || (l.ort === 'heim' && l.heimDrin))); }   // 11.10.: wer einen Platz im Kirchenschiff hat, bleibt sichtbar
@@ -14979,7 +15074,7 @@ function wegNameWeiter() {                       // betritt man einen benannten 
   if (auf && auf !== WEGNAME.auf && P.t - WEGNAME.zuletzt > 240) { WEGNAME.zuletzt = P.t; melden(auf.name.toUpperCase() + ' · DER ALTE WEG NACH ' + auf.nach.toUpperCase() + ' – DIE TAUBER HINAUF, DANN AM DELLENGRABEN DURCH DEN WALD', 6); }
   WEGNAME.auf = auf; }
 function leuteBewegen(dt) {
-  tagesablaufWeiter(dt); abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); steinWeiter(dt); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
+  tagesablaufWeiter(dt); abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); steinWeiter(dt); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
   kamera.updateMatrixWorld(); SICHT.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse); SICHT.kegel.setFromProjectionMatrix(SICHT.m);
   SICHT.takt += dt; var neuPruefen = SICHT.takt > 0.05; if (neuPruefen) SICHT.takt = 0; var tick = Math.floor(P.t * 20);
   SICHT.stat.voll = 0; SICHT.stat.einfach = 0;
@@ -15012,6 +15107,7 @@ function leuteBewegen(dt) {
     var schwatzt = !geht && l.ankunft && (l.ort === 'treff' || l.ort === 'brunnen' || l.ort === 'wirtshaus' || l.ort === 'essen' || pauseArbeit) && !(AUFTRAG.rede && AUFTRAG.rede.wer === l);
     if (schwatzt) {                              // wer sich trifft, dreht sich zum Nächsten und redet mit den Händen
       if (!l.gegenueber || (tick + l.nr) % 40 === 0) { var bg = null, bd = 3.2; TAGESLEUTE.forEach(function (o) { if (o !== l && o.ankunft && !istVersteckt(o)) { var od = Math.hypot(o.x - l.x, o.y - l.y); if (od < bd) { bd = od; bg = o; } } }); l.gegenueber = bg; }
+      if (l.gegenueber && d < 14 && !(l.geste && l.geste.zumSpieler) && (AUFTRAG.taten || []).length && bekannteTat(l, function (q) { return q.a === 'dieb'; })) gesteSetzen(l, l.nr % 2 && hash(l.nr * 3.7 + Math.floor(P.t / 4)) < 0.5 ? 'zeigen' : 'tuscheln', 0.5, false);   // 12.10.: die zwei tuscheln über dich, einer zeigt
       if (l.gegenueber) { l.richtung = Math.PI - Math.atan2(l.gegenueber.x - l.x, l.gegenueber.y - l.y); if (hash(l.nr * 1.7 + Math.floor(P.t / 2.5)) < 0.3) winkt = true; }
     } else l.gegenueber = null;
     if (!geht && l.ankunft && (l.ort === 'naschen' || l.ort === 'werkstatt')) { var zz = l.ort === 'naschen' ? (l.naschStand && l.naschStand.haendler) || l.naschStand : l.kaufBei; if (zz) { l.richtung = Math.PI - Math.atan2(zz.x - l.x, zz.y - l.y); l.marktBlick = true; if (hash(l.nr * 1.3 + Math.floor(P.t / 1.8)) < (l.ort === 'naschen' ? 0.45 : 0.2)) winkt = true; } }
@@ -15040,14 +15136,14 @@ function leuteBewegen(dt) {
     if (anHand) anHand.kindAnHand = l;
     if (anHand || fuehrt) l.puppe.bewegen('kind_an_hand', dt, Math.min(l.tempo || 0.75, 0.9), anHand ? { kindRolle: 'kind' } : { kindGroesse: l.kindAnHand.puppe.groesse });
     else
-    l.puppe.bewegen(l.jagd ? 'rennen' : altGeht ? 'alt_gehen' : fuehrt2 ? 'fuehren' : geht ? 'gehen' : spielt ? l.spielAnim : sitzt ? (l.ort === 'betteln' ? 'bodensitzen' : l.rolle === 'alte' && hash(l.nr * 4.1) < 0.6 ? 'spinnen' : 'sitzen') : winkt ? 'winken' : 'stehen', dt, geht ? (altGeht ? Math.min(l.tempo || 1, 0.75) : l.tempo) : spielt ? l.spielTempo : 0, geht && !altGeht ? { gangart: l.gangart || 'normal' } : undefined);
+    l.puppe.bewegen(l.jagd ? 'rennen' : altGeht ? 'alt_gehen' : fuehrt2 ? 'fuehren' : geht ? 'gehen' : spielt ? l.spielAnim : sitzt ? (l.ort === 'betteln' ? 'bodensitzen' : l.rolle === 'alte' && hash(l.nr * 4.1) < 0.6 ? 'spinnen' : 'sitzen') : winkt ? 'winken' : 'stehen', dt, geht ? (altGeht ? Math.min(l.tempo || 1, 0.75) : l.tempo) : spielt ? l.spielTempo : 0, bewegOpt(l, geht, altGeht, !sitzt && !spielt && !winkt));
     if (altGeht && l.puppe.grindKontakte) { var ks = l.puppe.grindKontakte(); if (ks && ks.stock) { var sg = l.stock.getObjectByName('griff'); l.stock.position.fromArray(ks.stock); if (sg) l.stock.position.sub(sg.position); if (ks.stockWinkel) l.stock.rotation.fromArray(ks.stockWinkel); } else if (ks && ks.handR) { var sg2 = l.stock.getObjectByName('griff'); l.stock.position.fromArray(ks.handR); if (sg2) l.stock.position.sub(sg2.position); } }
     var ox = 0, oy = 0, torkelt = geht && (TAGESABLAUF.rollen[l.rolle] || {}).torkelt;   // 12.10.: der Seitenversatz von 09.10. war nur fürs Auge (ungeprüft, auch in Wände) – jetzt echte Laufspuren (wegSpur)
     if (torkelt) { var sw = Math.sin(P.t * 2.1 + l.nr) * 0.38; ox += Math.cos(l.richtung) * sw; oy += Math.sin(l.richtung) * sw; }   // er torkelt
     var v = V(l.x + ox, l.y + oy, (l.zFest !== undefined ? l.zFest : bodenHoehe(l.x, l.y))); l.puppe.gruppe.position.set(v[0], v[1], v[2]);
     if (anHand && anHand.puppe.grindKontakte && l.puppe.grindKontakte) { var ka = anHand.puppe.grindKontakte(), kb = l.puppe.grindKontakte(); if (ka && kb && ka.hand && kb.hand) { var eg = anHand.puppe.gruppe; eg.updateMatrixWorld(true); var wH = eg.localToWorld(new THREE.Vector3().fromArray(ka.hand));
       l.puppe.gruppe.quaternion.copy(eg.quaternion); var off = new THREE.Vector3().fromArray(kb.hand).multiply(l.puppe.gruppe.scale).applyQuaternion(eg.quaternion); var np = wH.sub(off); l.x = np.x; l.y = -np.z; l.richtung = anHand.richtung; l.puppe.gruppe.position.set(np.x, bodenHoehe(l.x, l.y), np.z); } }
-    if (geht && anHand) l.puppe.gruppe.rotation.y = l.richtung; else if (geht) drehWeich(l, l.richtung + (torkelt ? Math.sin(P.t * 2.1 + l.nr + 1) * 0.35 : 0), dt, 9); else if (sitzt) l.puppe.gruppe.rotation.y = l.ort === 'betteln' ? Math.PI - Math.atan2(l.x - KIRCHE[0], l.y - KIRCHE[1]) : l.bankDreh; else if (spielt) drehWeich(l, l.richtung, dt, 5); else if (l.marktBlick || (l.gegenueber && d >= 4)) { var dr = Math.atan2(Math.sin(l.richtung - l.puppe.gruppe.rotation.y), Math.cos(l.richtung - l.puppe.gruppe.rotation.y)); l.puppe.gruppe.rotation.y += dr * Math.min(1, dt * 3); }
+    if (geht && anHand) l.puppe.gruppe.rotation.y = l.richtung; else if (geht) drehWeich(l, l.richtung + (torkelt ? Math.sin(P.t * 2.1 + l.nr + 1) * 0.35 : 0), dt, 9); else if (sitzt) l.puppe.gruppe.rotation.y = l.ort === 'betteln' ? Math.PI - Math.atan2(l.x - KIRCHE[0], l.y - KIRCHE[1]) : l.bankDreh; else if (spielt) drehWeich(l, l.richtung, dt, 5); else if (l.geste && l.geste.zumSpieler && P.t < l.geste.bis) drehWeich(l, Math.PI - Math.atan2(P.x - l.x, P.y - l.y), dt, 6); else if (l.marktBlick || (l.gegenueber && d >= 4)) { var dr = Math.atan2(Math.sin(l.richtung - l.puppe.gruppe.rotation.y), Math.cos(l.richtung - l.puppe.gruppe.rotation.y)); l.puppe.gruppe.rotation.y += dr * Math.min(1, dt * 3); }
     if (l.last) l.last.visible = !!l.traegt;
     if (l.sau) { l.sau.visible = !!l.traegt && !istVersteckt(l); if (l.sau.visible) { var sr = l.richtung || 0, bx2 = l.x - Math.sin(sr) * 1.2, by2 = l.y + Math.cos(sr) * 1.2;   // hinter ihm her
         var sv = V(bx2, by2, bodenHoehe(bx2, by2)); l.sau.position.set(sv[0], sv[1] + (l.sau.tier ? 0 : geht ? Math.abs(Math.sin(P.t * 9)) * 0.04 : 0), sv[2]); l.sau.rotation.y = sr; if (l.sau.tier) l.sau.tier.bewegen(geht ? 'gehen' : 'stehen', dt); } }
@@ -15206,7 +15302,7 @@ function handhaben() {
   if (essenKaufen()) return true;
   var sc = schatzNah(); if (sc) { sc.weg = true; sc.m.visible = false; inBeutel(sc.d); return true; }
   var vs = versteckNah(); if (vs && (JAGD || AUFTRAG.schmuggel === 1 || !naechsteePerson())) { versteckRein(vs); return true; }
-  return reitenHandhaben() || karrenHandhaben() || lehreSchlafen() || leseAbgeben() || steinAbgeben() || steinNehmen() || kramZurueck() || kramNehmen() || moebelKaufen() || strohsack() || kammerSchlafen() || aufheben() || hinstellenStart() || grabHohl() || schmiedBeil() || weberHandel() || kircheSitzen() || hundAnfassen() || sammeln() || steinAblegen();   // 12.10.: der Karren steht oben (Andreas: „sitzen konnte ich nicht“ – Aufheben/Sammeln kamen ihm zuvor)
+  return reitenHandhaben() || karrenHandhaben() || angelHandhaben() || haselSchneiden() || schmiedHaken() || lehreSchlafen() || leseAbgeben() || steinAbgeben() || steinNehmen() || kramZurueck() || kramNehmen() || moebelKaufen() || strohsack() || kammerSchlafen() || aufheben() || hinstellenStart() || grabHohl() || schmiedBeil() || weberHandel() || kircheSitzen() || hundAnfassen() || sammeln() || steinAblegen();   // 12.10.: der Karren steht oben (Andreas: „sitzen konnte ich nicht“ – Aufheben/Sammeln kamen ihm zuvor)
 }
 weltCv.addEventListener('mousedown', function (e) { if (document.pointerLockElement !== weltCv) return; if (e.button === 0) { if (PLATZ) { hinstellenJetzt(); return; } if ((holzNah() || spinnradNah() || (leseStock() >= 0 && leseZeit())) && !AUFTRAG.rede) { maus.links = true; return; } if (!reden() && !handhaben() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } else if (e.button === 2) { if (PLATZ) { hinstellenAbbrechen(); melden('ZURÜCK IN DEN BEUTEL', 1.5); return; } if (!handhaben()) { maus.rechts = true; if (!P.klettert) springenJetzt(); } } });
 addEventListener('mouseup', function (e) { if (e.button === 2) maus.rechts = false; if (e.button === 0) maus.links = false; });
@@ -15465,6 +15561,8 @@ function questListe() {
   if (A.brief === 1) neben.push(['Der versiegelte Brief', 'Über die Dächer ins Dachfenster mit der Kerze']); else if (A.briefZahl) neben.push(['Briefe über die Dächer', '✓ ' + A.briefZahl + ' zugestellt']);
   if (A.schmuggel === 1) neben.push(['Pfeffer für die Burg', 'Ungesehen zur Burgmagd Kunigunde – nicht erwischen lassen']); else if (A.schmuggelZahl) neben.push(['Pfeffer für die Burg', '✓ ' + A.schmuggelZahl + '-mal geschmuggelt']);
   if (A.zehnt === 1) neben.push(['Der Zehnt', 'Mit dem Ochsenkarren nach Sachsenhausen zur Zehntscheune']); else if (A.zehnt === 2) neben.push(['Der Zehnt', 'Beladen – zurück in den Burghof']); else if (A.zehntFahrten) neben.push(['Der Zehnt', '✓ ' + A.zehntFahrten + ' Fahrten' + (A.amt ? ' · du bist Eintreiber des Grafen' : A.zehntFahrten >= 3 ? ' · frag den Burgvogt nach mehr' : '')]);
+  if (A.einf >= 9 && !A.angel) neben.push(['Eine eigene Angel', (A.messer ? '✓' : '·') + ' Messer (Messerschmied, 5 Heller) · ' + (A.rute ? '✓' : '·') + ' Haselrute (Strauch an der Lände, mit dem Messer) · ' + (A.garn > 0 ? '✓' : '·') + ' Garn · ' + (A.haken ? '✓' : '·') + ' Haken (Schmied, 1 Heller)']);
+  else if (A.angel) neben.push(['Angeln', 'Am Ufer Rechtsklick wirft aus, taucht der Schwimmer weg: sofort Rechtsklick · ' + (A.fischGesamt || 0) + ' Fische gefangen']);
   if (A.hundWahl) neben.push(['Der Hund', 'Er ist tot. Klagen, vergeben oder Rache – du musst dich entscheiden']); else if (/^zahm/.test(hs)) neben.push(['Der Hund', 'Er folgt dir']); else if (/^tot/.test(hs)) neben.push(['Der Hund', 'Erschlagen. Die Wachen wissen, was du danach getan hast']);
   if (A.tammo && !A.verheiratet) { var wi = (A.werben || {}).imke || A.imke || 0; neben.push(['Imke, die Tochter des Wildwerkers', A.lehre >= 2 ? 'Tammo hält dich für würdig – besuch Imke weiter' : 'Tammo will einen mit Handwerk und Namen (erst Geselle)']); }
   var kw = A.kramWeg || {}; Object.keys(kw).forEach(function (nr) { var o = KRAM.filter(function (q) { return q.nr === +nr; })[0]; if (o && kw[nr].zeuge) neben.push(['Gestohlen: ' + KRAM_TRAGBAR[o.art], 'Man hat dich gesehen. Stell ihn zurück vor die Tür']); });
@@ -15501,6 +15599,7 @@ var IKON = {
   moebel: { p: { k: '#2a1a10', b: '#a0703a', h: '#c89a5a' }, m: ['............', '............', '..kkkkkkkk..', '..khhhhhhk..', '..kkkkkkkk..', '...kb..bk...', '...kb..bk...', '...kb..bk...', '..kkb..bkk..', '............', '............', '............'] },
   brot: { p: { k: '#3a2410', h: '#f0c070', b: '#c8893a', d: '#8a5a24' }, m: ['............', '............', '....kkkk....', '..kkhhhhkk..', '.khhbbbbhhk.', 'kbbhbbbbhbbk', 'kbbbbhhbbbbk', 'kbbbbbbbbbbk', 'kdbbbbbbbbdk', '.kddddddddk.', '..kkkkkkkk..', '............'] },
   aepfel: { p: { r: '#d02a20', h: '#ff8a70', d: '#8a1410', s: '#5a3a1a', g: '#4a9a2a' }, m: ['......g.....', '.....sgg....', '.....s......', '..rrrsrrr...', '.rhrrrrrrr..', '.rhrrrrrrrr.', '.rrrrrrrrrr.', '.rrrrrrrrrr.', '.drrrrrrrrd.', '..drrrrrrd..', '...dd..dd...', '............'] },
+  fisch: { p: { k: '#2a3a44', s: '#8aa4b0', h: '#cfe0e6', r: '#c8504a' }, m: ['............', '............', '.....kkk....', '...kkssskk.k', '..ksshsssskk', '.kshrsssssk.', '.ksssssssskk', '..kssssskk.k', '...kkkkk....', '............', '............', '............'] },
   fleisch: { p: { k: '#4a1a10', p: '#c8504a', h: '#f08a80', w: '#f0ead8' }, m: ['............', '......kkk...', '.....kpppk..', '....kpphppk.', '...kpppppppk', '...kppppppk.', '..kwkppppk..', '.kwwkkkkk...', 'kwwk........', 'kwk.........', '.k..........', '............'] },
   wein: { p: { k: '#2a1a10', m: '#8a5a3a', h: '#c08a5a', d: '#5a3a24', w: '#6a1a2a' }, m: ['............', '...kkkk.....', '...kwwk.....', '..kkkkkk....', '.kmmmmmmk.k.', '.kmhmmmmkkk.', '.kmhmmmmk.k.', '.kmmmmmmkk..', '.kmmmmmmk...', '.kddddddk...', '..kkkkkk....', '............'] },
   messer: { p: { s: '#8a9096', w: '#e0e6ea', k: '#3a3a3a', b: '#7a4a24' }, m: ['............', '..........s.', '.........ss.', '........sws.', '.......sws..', '......sws...', '.....sws....', '....kss.....', '...bbk......', '..bbb.......', '.bbb........', '.bb.........'] },
