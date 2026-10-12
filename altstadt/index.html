@@ -12809,7 +12809,7 @@ var STARTSCHIRM = !/[?&](intro=0|probe=1)/.test(Q) && !(function () { try { retu
     try { sessionStorage.setItem('wzf_gestartet', '1'); } catch (e) {} location.search = '?jahr=1400&auftrag=neu' + (/[?&]probe=1/.test(Q) ? '&probe=1' : ''); });
   addEventListener('keydown', function (e) { if (STARTSCHIRM && e.key === 'Enter') los(1400); }); })();
 addEventListener('keydown', function (e) { var k = e.key.toLowerCase(); if (STARTSCHIRM) return; if (e.metaKey || e.ctrlKey) return; taste[k] = true; if (e.key.indexOf('Arrow') === 0 || e.key === ' ') e.preventDefault(); if (k === 'm') KARTE = KARTE === 1 || KARTE === true ? 2 : KARTE ? 0 : 1; if (k === 'o') rumtreiberOeffnen(); if (k === 'n') stadtbuchOeffnen(); if (k === 'y') { WEGWEISER.an = !WEGWEISER.an; try { localStorage.setItem('wzf_wegweiser', WEGWEISER.an ? 'an' : 'aus'); } catch (e2) {} melden(WEGWEISER.an ? 'WEGWEISER AN (Y)' : 'WEGWEISER AUS (Y)', 2); } if (k === 't' || k === ',' || k === '.' || k === ';' || k === ':') uhrTaste(k);   // 11.10.: vorher lief uhrGesprungen() bei JEDEM Tastendruck (fehlende Klammern)
-  if (k === 'i') { inventarAuf(!INVENTAR); QUESTBUCH = false; } if (k === 'tab') { e.preventDefault(); if (EPOCHE === 1400) { QUESTBUCH = !QUESTBUCH; if (QUESTBUCH && INVENTAR) inventarAuf(false); } } if (k === 'escape') QUESTBUCH = false; if (SPIELER && EPOCHE === 1400 && /^[1-9]$/.test(k) && !INVENTAR) { var ld = leisteDinge(); if (ld[+k - 1]) handSetzen(ld[+k - 1]); }   // 12.10.: 1–9 wählt, was in die Hand kommt (wie Minecraft); Rechtsklick isst
+  if (k === 'i') { inventarAuf(!INVENTAR); QUESTBUCH = false; } if (k === 'tab') { e.preventDefault(); if (EPOCHE === 1400) { questbuchAuf(!QUESTBUCH); if (QUESTBUCH && INVENTAR) inventarAuf(false); } } if (k === 'escape' && QUESTBUCH) questbuchAuf(false); if (SPIELER && EPOCHE === 1400 && /^[1-9]$/.test(k) && !INVENTAR) { var ld = leisteDinge(); if (ld[+k - 1]) handSetzen(ld[+k - 1]); }   // 12.10.: 1–9 wählt, was in die Hand kommt (wie Minecraft); Rechtsklick isst
   if (k === 'g' && AUFTRAG.karrenWahl) karrenWahlTreffen('schlafen'); else if (k === 'g' && AUFTRAG.wahl) wahlTreffen('nachlass'); else if (k === 'g' && AUFTRAG.zehnt > 0 && SPIELERKARREN && EPOCHE === 1400 && !AUFTRAG.rede && !AUFTRAG.hundWahl && !P.drinnen && !REITEN.auf && !KARRENSCHLAF) { P.aufKarren = true; karrenWahlTreffen('schlafen'); }   // 12.10. (Andreas: „ich wurde nicht gefragt“): G geht die ganze Fahrt über
   if (k === 'escape' && PAUSE) pauseWeiter(); else if (k === 'escape' && !document.pointerLockElement && !INVENTAR && performance.now() > PAUSE_RUHE) pauseZeigen(true); if (AUFTRAG.hundWahl && !AUFTRAG.rede) { if (k === 'g') hundWahlTreffen('vergeben'); if (k === 'r') hundWahlTreffen('rache'); } if (k === 'h') himmelEcht(!HIMMEL_ECHT); if (k === 'l') tonAnAus(); if (k === 'k') { STERNBILDER_AN = !STERNBILDER_AN; melden(STERNBILDER_AN ? 'STERNBILDER AN' : 'STERNBILDER AUS', 2); }
   if (k === 'f') { FACKEL.an = !FACKEL.an; melden(FACKEL.an ? 'DU ZÜNDEST DEINE FACKEL AN' : 'FACKEL AUS', 2); }
@@ -12904,7 +12904,7 @@ function reden() {                             // E: Gespräch beginnen oder wei
       zeilen = [LIEFER.bestechlich ? 'Psst. Seit Wochen kein voller Sold vom Rat … man muss ja von was leben.' : 'Wer hat dir das erzählt? … Na gut.', 'Für ' + preis + ' Heller hab ich bis morgen früh nichts gesehen.'];
       if (AUFTRAG.heller >= preis) danach = angebotAus(function () { AUFTRAG.heller -= preis; AUFTRAG.passBis = UHR.t + 14 * 3600e3; speichern(); melden('DIE WACHE SCHAUT WEG · −' + preis + ' HELLER · BIS MORGEN FRÜH DARFST DU HINAUS', 5); }, 'DER WACHE ' + preis + ' HELLER ZUSTECKEN', preis);
       else zeilen.push('Hast du nicht? Dann eben nicht. Weitergehen!'); } }
-  if (l.art === 'schiffer' && st === 0) danach = function () { auftragStufe(1); melden('DU TRÄGST JETZT DEN BRIEF.'); };
+  if (l.art === 'schiffer' && st === 0) danach = gsAngebot('schiffer', function () { auftragStufe(1); melden('DU TRÄGST JETZT DEN BRIEF.'); }, 'DEN BRIEF ANNEHMEN');
   if (l.art === 'pfarrer' && st === 1) danach = function () { AUFTRAG.heller += 1; auftragStufe(2); melden('+1 HELLER'); };
   if (l.art === 'pfarrer' && st === 3) danach = function () { AUFTRAG.heller += 2; auftragStufe(4); melden('+2 HELLER · AUFTRAG ERLEDIGT ✓', 4); };
   if (l.art === 'markt' && (st === 2 || st >= 4)) {
@@ -12932,8 +12932,8 @@ function reden() {                             // E: Gespräch beginnen oder wei
     else if (AUFTRAG.zehnt === 2) zeilen = ['Voll beladen? Gut. Ab in den Burghof, der Vogt zählt nach.'];
     else if (!zehntAmPlatz(l)) zeilen = [new Date(himmelsZeit()).getDay() === 0 ? 'Am Sonntag? Der Ochse hat frei, und ich auch.' : 'Nicht hier, Junge.', 'Komm werktags am Vormittag in den Burghof, da steht mein Karren. Dann reden wir.'];   // 12.10. Andreas: „in der Kirche wohl kaum und in der Kneipe auch nicht“
     else if (!AUFTRAG.amt && (AUFTRAG.kleid || 0) < 1) zeilen = ['In Lumpen? So lässt dich der Schultheiß nicht an die Säcke, der denkt, du klaust.', 'Besorg dir einen Leinenkittel beim Schneider. Dann fährst du für mich.'];   // erst Leinen, dann der Zehnt
-    else if ((AUFTRAG.zehntFahrten || 0) >= 3) { zeilen = AUFTRAG.amt ? ['Na, Herr Eintreiber? Ich fahr wieder selber, so gut es geht. Aber wenn du willst: sechs Heller, wie immer.'] : ['Du schon wieder. Du bist zuverlässig, das muss man dir lassen.', 'Ich hab dem Burgvogt von dir erzählt. Geh zu ihm in die Burg – er sucht einen Eintreiber für die Dörfer.', 'Oder fahr heute noch einmal für mich: Sachsenhausen, Zehntscheune, Burghof. Sechs Heller.']; danach = zehntAnnehmen; }
-    else { zeilen = ['Du suchst Arbeit? Mein Rücken ist kaputt, und der Graf will seinen Zehnten aus Sachsenhausen.', 'Nimm den Ochsen. Fahr zur Zehntscheune, lad auf, was der Schultheiß dir gibt, und bring es in den Burghof.', 'Sechs Heller, wenn alles ankommt. Und wehe, ein Sack fehlt!']; danach = zehntAnnehmen; }
+    else if ((AUFTRAG.zehntFahrten || 0) >= 3) { zeilen = AUFTRAG.amt ? ['Na, Herr Eintreiber? Ich fahr wieder selber, so gut es geht. Aber wenn du willst: sechs Heller, wie immer.'] : ['Du schon wieder. Du bist zuverlässig, das muss man dir lassen.', 'Ich hab dem Burgvogt von dir erzählt. Geh zu ihm in die Burg – er sucht einen Eintreiber für die Dörfer.', 'Oder fahr heute noch einmal für mich: Sachsenhausen, Zehntscheune, Burghof. Sechs Heller.']; danach = gsAngebot('zehnt', zehntAnnehmen, 'DEN ZEHNT FAHREN'); }
+    else { zeilen = ['Du suchst Arbeit? Mein Rücken ist kaputt, und der Graf will seinen Zehnten aus Sachsenhausen.', 'Nimm den Ochsen. Fahr zur Zehntscheune, lad auf, was der Schultheiß dir gibt, und bring es in den Burghof.', 'Sechs Heller, wenn alles ankommt. Und wehe, ein Sack fehlt!']; danach = gsAngebot('zehnt', zehntAnnehmen, 'DEN ZEHNT FAHREN'); }
   }
   if (l.art === 'garkoch') {
     if (!GARKUECHE.brennt) zeilen = ['Das Feuer ist aus. Morgen früh, wenn die Glocke läutet, gibt es wieder Suppe.'];
@@ -12955,6 +12955,7 @@ function reden() {                             // E: Gespräch beginnen oder wei
   if (STADT && ['baecker', 'metzger', 'mueller', 'gerber', 'wirt', 'winzer'].indexOf(l.art) >= 0) {
     zeilen = stadtSaetze(l.art);
   }
+  if (danach && danach.angebot && danach.gsId) { var gz = gsVon(danach.gsId); if (gz && !gz.begonnen()) gsSetzen(danach.gsId, 'spaeter'); }
   if (danach && danach.angebot) { var ang = danach; danach = AUFTRAG.__geheimnisNach || null; AUFTRAG.__geheimnisNach = null; zeilen = zeilen.concat(['(Rechtsklick, wenn du willst – sonst geh einfach weiter.)']);   // 11.10.: nichts mehr erzwingen
     AUFTRAG.angebotEssen = { l: l, label: ang.angebot.label, preisFn: function () { return ang.angebot.preis; }, bis: P.t + 60, kauf: function () {
       if (ang.angebot.preis && AUFTRAG.heller < ang.angebot.preis) { melden(ang.angebot.label + ': ' + ang.angebot.preis + ' HELLER – DU HAST ' + AUFTRAG.heller, 3); return; }
@@ -12966,12 +12967,47 @@ function reden() {                             // E: Gespräch beginnen oder wei
   if (AUFTRAG.einf && AUFTRAG.einf < 3 && ONKEL && !l.onkel && !l.bruder && !danach) zeilen = nachJoergFragen(l);   // 11.10. (Andreas: „wenn ich einfach nach Jörg fragen könnte, den kennt doch jeder“)
   var famZ = AUFTRAG.einf && AUFTRAG.einf < 3 ? null : familieVaterZeilen(l, zeilen); if (famZ) { zeilen = famZ.zeilen; if (famZ.danach) danach = famZ.danach; }   // Familien: Vorstellung, später die Frage um die Tochter
   Object.keys(fremd).forEach(function (k) { if ((l.name || '').indexOf(k) === 0 && !l.vorgestellt) { l.vorgestellt = true; zeilen = fremd[k].concat(zeilen || []); } });   // 11.10. Andreas' Freunde aus Spanien, Italien, der Türkei – und Michael: beim ersten Gespräch erst die Vorstellung, dann der Handel
-  zeilen = erinnerungZeilen(l, zeilen);
+  zeilen = erinnerungZeilen(l, zeilen); zeilen = gsGerede(l, zeilen);
   AUFTRAG.rede = { wer: l, name: l.name, zeilen: zeilen, i: 0, danach: danach };
   return true;
 }
 // 11.10. (Andreas: „bei den Wirten musste ich essen, um aus dem Gespräch rauszukommen“): Was Geld kostet oder einen bindet (kaufen, Arbeit annehmen,
 // bestechen, Almosen), wird am Gesprächsende nicht mehr ausgeführt, sondern angeboten – RECHTSKLICK nimmt an, weggehen lehnt ab.
+// ---- Geschichten: gehört → aktiv → später (12.10., Andreas: „offene Quests sollte man sehen können … begonnen oder abgelehnt und für später aufgehoben … wenn ich den Hund nochmal sehe, kann ich selbst entscheiden“) ----
+// Gehört: jemand hat davon erzählt (Klatsch im Gespräch) oder man ist dem Geber nahe gekommen → graues ? auf der Karte, im Questbuch unter GEHÖRT.
+// Aktiv: begonnen und verfolgt → gelbe Nummer. Später: abgelehnt (Angebot nicht angenommen) oder im Questbuch zurückgestellt → bleibt im Buch, nicht auf der Karte;
+// beim Wiedersehen fragt der Geber wieder, ein Klick im Questbuch holt sie zurück.
+function gsHund() { var hs = ''; try { hs = localStorage.getItem(SPEICHER + '_hund') || ''; } catch (e) {} return hs; }
+function gsGruft() { try { return localStorage.getItem(SPEICHER + '_gruft') === '1'; } catch (e) { return false; } }
+function gsPerson(f) { return LEUTE.concat(TAGESLEUTE).filter(f)[0] || null; }
+var GESCHICHTEN = [
+  { id: 'schiffer', titel: 'Der Brief des Schiffers', wo: 'an der Lände, beim Schiffer', gerede: 'Unten an der Lände wartet ein Schiffer. Der sucht einen, der für ihn einen Brief trägt – zahlt sogar.',
+    geber: function () { var s = gsPerson(function (l) { return l.art === 'schiffer'; }); return s && [s.x, s.y]; }, kann: function () { return true; }, begonnen: function () { return AUFTRAG.stufe >= 1; }, fertig: function () { return AUFTRAG.stufe >= 4; } },
+  { id: 'hund', titel: 'Der streunende Hund', wo: 'in den Gassen am Markt', gerede: 'Da streunt ein Hund durch die Gassen, mager wie ein Brett. Keiner traut sich ran. Mit einem Stück Brot vielleicht …',
+    geber: function () { return HUND && !HUND.tot ? [HUND.x, HUND.y] : null; }, kann: function () { return !!HUND; }, begonnen: function () { return !!gsHund(); }, fertig: function () { return /^tot\|/.test(gsHund()); } },
+  { id: 'pfeffer', titel: 'Pfeffer für die Burg', wo: 'in der Kneipe, beim Einäugigen in der Ecke', gerede: 'In der Kneipe sitzt so ein Einäugiger in der Ecke. Sucht Leute für Botengänge, über die man nicht redet.',
+    geber: function () { var j = gsPerson(function (l) { return l.rolle === 'schmuggler'; }); return j && [j.x, j.y]; }, kann: function () { return AUFTRAG.einf >= 9; }, begonnen: function () { return AUFTRAG.schmuggel === 1 || AUFTRAG.schmuggelZahl > 0; }, fertig: function () { return false; } },
+  { id: 'brief', titel: 'Briefe über die Dächer', wo: 'nachts beim Einäugigen', gerede: 'Der Einäugige hat nachts noch feinere Sachen. Briefe, die keiner lesen darf.',
+    geber: function () { var j = gsPerson(function (l) { return l.rolle === 'schmuggler'; }); return j && [j.x, j.y]; }, kann: function () { return AUFTRAG.schmuggelZahl >= 1; }, begonnen: function () { return AUFTRAG.brief === 1 || AUFTRAG.briefZahl > 0; }, fertig: function () { return false; } },
+  { id: 'zehnt', titel: 'Der Zehnt', wo: 'werktags im Burghof bei Götz', gerede: 'Götz im Burghof sucht einen, der für ihn den Zehntkarren nach Sachsenhausen fährt. Aber in Lumpen nimmt er keinen.',
+    geber: function () { var g = gsPerson(function (l) { return l.rolle === 'zehntknecht'; }); return g && [g.x, g.y]; }, kann: function () { return AUFTRAG.einf >= 9; }, begonnen: function () { return AUFTRAG.zehnt > 0 || AUFTRAG.zehntFahrten > 0; }, fertig: function () { return false; } },
+  { id: 'imke', titel: 'Imke, die Tochter des Wildwerkers', wo: 'an der Lände, bei Tammo dem Wildwerker', gerede: 'Der Wildwerker an der Lände hat eine Tochter, die Imke. Flickt Netze und lacht über jeden, der sich nicht traut.',
+    geber: function () { var L = LAENDE_LEBEN; return L && L.tammo && L.tammo.ort ? [L.tammo.ort[0], L.tammo.ort[1]] : null; }, kann: function () { return AUFTRAG.einf >= 9 && !AUFTRAG.verheiratet; }, begonnen: function () { return !!AUFTRAG.tammo; }, fertig: function () { return !!AUFTRAG.verheiratet; } },
+  { id: 'gruft', titel: 'Das Geheimnis der Stiftskirche', wo: 'in der Stiftskirche, am Grab des Grafen', gerede: 'Man sagt, unter dem Grafengrab in der Stiftskirche ist ein Raum. Klopf mal auf die rote Platte am Fußende.',
+    geber: function () { return typeof STIFT !== 'undefined' && STIFT && STIFT.grab ? [STIFT.grab.x, STIFT.grab.y] : null; }, kann: function () { return AUFTRAG.einf >= 9; }, begonnen: function () { return gsGruft(); }, fertig: function () { return false; } },
+  { id: 'angel', titel: 'Eine eigene Angel', wo: '', gerede: '', geber: function () { return null; }, kann: function () { return false; }, begonnen: function () { return AUFTRAG.einf >= 9; }, fertig: function () { return !!AUFTRAG.angel; } }];
+function gsZustand(g) { var s = (AUFTRAG.gs = AUFTRAG.gs || {})[g.id]; if (g.fertig()) return 'fertig'; if (g.begonnen()) return s === 'aus' ? 'spaeter' : 'aktiv'; if (s === 'spaeter') return 'spaeter'; if (s === 'gehoert') return 'gehoert'; return 'neu'; }
+function gsSetzen(id, z) { (AUFTRAG.gs = AUFTRAG.gs || {})[id] = z; speichern(); }
+function gsVon(id) { for (var i = 0; i < GESCHICHTEN.length; i++) if (GESCHICHTEN[i].id === id) return GESCHICHTEN[i]; return null; }
+function gsGehoert(id, still) { var g = gsVon(id); if (!g || gsZustand(g) !== 'neu') return false; gsSetzen(id, 'gehoert'); if (!still) melden('NEUE GESCHICHTE GEHÖRT: ' + g.titel.toUpperCase() + ' · TAB: QUESTBUCH · ? AUF DER KARTE', 5); return true; }
+function gsKlick(id) { var g = gsVon(id), z = gsZustand(g); if (z === 'aktiv') { gsSetzen(id, 'aus'); melden(g.titel.toUpperCase() + ' · ZURÜCKGESTELLT – BLEIBT IM BUCH', 3); } else if (z === 'spaeter') { gsSetzen(id, g.begonnen() ? 'an' : 'gehoert'); melden(g.titel.toUpperCase() + (g.begonnen() ? ' · WIEDER AUF DER KARTE' : ' · ? WIEDER AUF DER KARTE – ' + g.wo.toUpperCase()), 4); } KZ.t = -9; }
+// Ein Angebot statt Zwang: Rechtsklick nimmt an, weggehen = für später aufgehoben
+function gsAngebot(id, fn, label) { var g = function () { var r = fn.apply(this, arguments); var s = AUFTRAG.gs || {}; if (s[id] === 'spaeter' || s[id] === 'aus') gsSetzen(id, 'an'); return r; }; var a = angebotAus(g, label); a.gsId = id; return a; }
+// Klatsch: wer redet, erzählt einmal von einer Geschichte, die man noch nicht kennt (nicht der Geber selbst)
+function gsGerede(l, zeilen) { if (EPOCHE !== 1400 || !l || l.rolle === 'schmuggler' || l.rolle === 'zehntknecht' || l.art === 'schiffer' || AUFTRAG.rede || (AUFTRAG.einf || 0) < 9) return zeilen;
+  for (var i = 0; i < GESCHICHTEN.length; i++) { var g = GESCHICHTEN[i]; if (g.gerede && gsZustand(g) === 'neu' && g.kann()) { gsGehoert(g.id, true); setTimeout(function () { melden('NEUE GESCHICHTE GEHÖRT: ' + g.titel.toUpperCase() + ' · TAB: QUESTBUCH · ? AUF DER KARTE', 5); }, 0); return zeilen.concat([g.gerede]); } } return zeilen; }
+// Wer dem Geber nahe kommt, hat davon gehört (der Hund läuft einem über den Weg)
+var GS_T = 0; function gsWeiter() { if (EPOCHE !== 1400 || P.t < GS_T) return; GS_T = P.t + 1; GESCHICHTEN.forEach(function (g) { if (gsZustand(g) !== 'neu' || !g.kann() || !g.gerede) return; var p = g.geber(); if (p && Math.hypot(P.x - p[0], P.y - p[1]) < 8) gsGehoert(g.id); }); }
 function angebotAus(fn, label, preis, mehrmals) { fn.angebot = { label: label, preis: preis || 0, mehrmals: !!mehrmals }; return fn; }
 var STAND = null;                               // der Marktstand (Mittelpunkt, Ausrichtung) – auch für die Kollision
 function brunnenBauen() {                       // um 1400: Ziehbrunnen (ANNAHME) · heute: die echten Brunnen (vereinfacht)
@@ -13295,7 +13331,7 @@ function briefLicht(an) { var b = briefZielWaehlen(); if (!b) return; b.g.visibl
 function briefGespraech(setz) {
   setz(['Du bist der mit dem Pfeffer. Gut gemacht. … Heute Nacht hab ich was Feineres.', 'Ein Brief. Er muss zu dem hohen Haus beim Markt – oben ins Dachfenster, wo die Kerze brennt. Wer ihn liest, geht dich nichts an.',
     'Nicht über die Gasse: der Nachtwächter liest alles, was er findet. Über die Dächer. Zehn Heller.'],
-    function () { AUFTRAG.brief = 1; inBeutel({ id: 'brief', name: 'Ein versiegelter Brief', text: 'Das Siegel kennst du nicht. Ins Dachfenster mit der Kerze, über die Dächer.' }); speichern(); briefLicht(true); melden('QUEST: DER BRIEF MUSS ÜBER DIE DÄCHER INS DACHFENSTER MIT DER KERZE', 6); });
+    gsAngebot('brief', function () { AUFTRAG.brief = 1; inBeutel({ id: 'brief', name: 'Ein versiegelter Brief', text: 'Das Siegel kennst du nicht. Ins Dachfenster mit der Kerze, über die Dächer.' }); speichern(); briefLicht(true); melden('QUEST: DER BRIEF MUSS ÜBER DIE DÄCHER INS DACHFENSTER MIT DER KERZE', 6); }, 'DEN BRIEF NEHMEN'));
 }
 function briefWeiter() {
   if (EPOCHE !== 1400 || AUFTRAG.brief !== 1) return; var b = briefZielWaehlen(); if (!b) return; if (!b.g.visible) briefLicht(true);
@@ -13313,7 +13349,7 @@ function schmuggelGespraech(l, setz) {
   var erstes = !AUFTRAG.schmuggelZahl;
   setz([erstes ? 'Setz dich. … Nein, nicht da. Hier, wo uns keiner hört.' : 'Da bist du ja wieder.', erstes ? 'Ein Schiff aus Frankfurt hat was mitgebracht, das nicht über den Zoll gegangen ist. Pfeffer. Die Kunigunde oben in der Burg kauft ihn für die Küche des Grafen – billiger als beim Krämer.' : 'Wieder ein Päckchen für die Kunigunde.',
     'Bring es ihr. Aber wenn dich ein Burgmann damit sieht, lauf – und lauf schnell. Die klettern nicht, das sind faule Säcke.', 'Acht Heller gibt sie dir. Und vergiss: du hast mich nie gesehen.'],
-    function () { AUFTRAG.schmuggel = 1; inBeutel({ id: 'pfeffer', name: 'Ein verschnürtes Päckchen', text: 'Riecht nach Pfeffer. Nicht aufmachen. Nicht erwischen lassen.' }); speichern(); melden('QUEST: BRING DEN PFEFFER UNGESEHEN ZUR BURGMAGD KUNIGUNDE', 6); });
+    gsAngebot('pfeffer', function () { AUFTRAG.schmuggel = 1; inBeutel({ id: 'pfeffer', name: 'Ein verschnürtes Päckchen', text: 'Riecht nach Pfeffer. Nicht aufmachen. Nicht erwischen lassen.' }); speichern(); melden('QUEST: BRING DEN PFEFFER UNGESEHEN ZUR BURGMAGD KUNIGUNDE', 6); }, 'DAS PÄCKCHEN NEHMEN'));
 }
 function pfefferWeg() { AUFTRAG.beutel = AUFTRAG.beutel.filter(function (b) { return b.id !== 'pfeffer'; }); }
 function schmuggelZiel() { if (AUFTRAG.schmuggel !== 1 || EPOCHE !== 1400) return null; var k = TAGESLEUTE.filter(function (q) { return /KÜCHENMAGD/.test(q.name); })[0]; return k ? { x: k.x, y: k.y, text: 'QUEST: BRING DEN PFEFFER UNGESEHEN ZUR BURGMAGD KUNIGUNDE' } : null; }
@@ -15370,7 +15406,7 @@ function wegNameWeiter() {                       // betritt man einen benannten 
   if (auf && auf !== WEGNAME.auf && P.t - WEGNAME.zuletzt > 240) { WEGNAME.zuletzt = P.t; melden(auf.name.toUpperCase() + ' · DER ALTE WEG NACH ' + auf.nach.toUpperCase() + ' – DIE TAUBER HINAUF, DANN AM DELLENGRABEN DURCH DEN WALD', 6); }
   WEGNAME.auf = auf; }
 function leuteBewegen(dt) {
-  tagesablaufWeiter(dt); abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); steinWeiter(dt); kaiWeiter(dt); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
+  tagesablaufWeiter(dt); abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); steinWeiter(dt); kaiWeiter(dt); gsWeiter(); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
   kamera.updateMatrixWorld(); SICHT.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse); SICHT.kegel.setFromProjectionMatrix(SICHT.m);
   SICHT.takt += dt; var neuPruefen = SICHT.takt > 0.05; if (neuPruefen) SICHT.takt = 0; var tick = Math.floor(P.t * 20);
   SICHT.stat.voll = 0; SICHT.stat.einfach = 0;
@@ -15935,10 +15971,17 @@ function questbuchMalen(W, H) { var Q = questListe(), x0 = 40, y0 = 14, bw = 400
   function t(s, x, y, f, b) { hud.font = (b ? 'bold ' : '') + '8px monospace'; hud.textAlign = 'left'; hud.textBaseline = 'alphabetic'; hud.fillStyle = f || '#3a2a1a'; hud.fillText(s, x, y); }
   var nm = (AUFTRAG.nachname ? 'DAS BUCH DES ' + AUFTRAG.nachname : 'DAS BUCH DES FREMDEN'); t(nm, x0 + 10, y0 + 15, '#7a1c14', true); t('TAB: ZU', x0 + bw - 46, y0 + 15, '#8a6a4a');
   var y = y0 + 30; t('JETZT', x0 + 10, y, '#7a1c14', true); y += 10; (Q.jetzt.length ? Q.jetzt : ['Nichts Dringendes. Schau dich um.']).forEach(function (z) { umbrechen(z, 30).slice(0, 3).forEach(function (zz) { t(zz, x0 + 12, y); y += 9; }); y += 2; });
-  y += 4; t('DEIN WEG', x0 + 10, y, '#7a1c14', true); y += 10; Q.weg.forEach(function (w) { t(w[0] ? '✓' : '·', x0 + 12, y, w[0] ? '#2a6a2a' : '#8a7a6a', true); umbrechen(w[1], 28).slice(0, 2).forEach(function (zz, i) { t(zz, x0 + 22, y + i * 9, w[0] ? '#3a2a1a' : '#8a7a6a'); y += i ? 9 : 0; }); y += 10; });
+  y += 4; t('DEIN WEG', x0 + 10, y, '#7a1c14', true); y += 10; var wl = -1; Q.weg.forEach(function (w, i) { if (w[0]) wl = i; }); Q.weg = Q.weg.filter(function (w, i) { return i >= wl && i <= wl + 2; }); Q.weg.forEach(function (w) { t(w[0] ? '✓' : '·', x0 + 12, y, w[0] ? '#2a6a2a' : '#8a7a6a', true); umbrechen(w[1], 28).slice(0, 2).forEach(function (zz, i) { t(zz, x0 + 22, y + i * 9, w[0] ? '#3a2a1a' : '#8a7a6a'); y += i ? 9 : 0; }); y += 10; });
   var y2 = y0 + 30, x2 = x0 + bw / 2 + 10; t('GESCHICHTEN', x2, y2, '#7a1c14', true); y2 += 11;
   if (!Q.neben.length) { umbrechen('Noch keine. Rede mit den Leuten – in den Kneipen hört man am meisten.', 28).forEach(function (zz) { t(zz, x2 + 2, y2, '#8a7a6a'); y2 += 9; }); }
-  Q.neben.forEach(function (n) { if (y2 > y0 + bh - 20) return; var qn = questNr(n[0]); t((qn ? qn + ' · ' : '') + n[0], x2 + 2, y2, qn ? '#8a5a00' : '#3a2a1a', true); y2 += 9; umbrechen(n[1], 30).slice(0, 3).forEach(function (zz) { t(zz, x2 + 6, y2, n[1].charAt(0) === '✓' ? '#2a6a2a' : '#5a4a3a'); y2 += 9; }); y2 += 4; }); }
+  QREG = []; var NEBEN_ID = { 'Der Brief des Schiffers': 'schiffer', 'Der versiegelte Brief': 'brief', 'Briefe über die Dächer': 'brief', 'Pfeffer für die Burg': 'pfeffer', 'Der Zehnt': 'zehnt', 'Eine eigene Angel': 'angel', 'Der Hund': 'hund', 'Imke, die Tochter des Wildwerkers': 'imke' };
+  function knopf(txt, x, y, id) { var w = txt.length * 5 + 6, ueber = IMAUS.x >= x && IMAUS.x < x + w && IMAUS.y >= y - 8 && IMAUS.y < y + 2; hud.fillStyle = ueber ? '#c8a870' : '#d8c498'; hud.fillRect(x, y - 8, w, 10); t(txt, x + 3, y, '#5a3a20'); QREG.push({ x: x, y: y - 8, w: w, h: 10, tun: function () { gsKlick(id); } }); }
+  Q.neben = Q.neben.filter(function (n) { var id = NEBEN_ID[n[0]], g = id && gsVon(id); return !(g && gsZustand(g) === 'spaeter'); });
+  Q.neben.forEach(function (n) { if (y2 > y0 + bh - 20) return; var qn = questNr(n[0]), nid = NEBEN_ID[n[0]], ng = nid && gsVon(nid); if (ng && gsZustand(ng) === 'aktiv' && nid !== 'angel') knopf('später', x0 + bw - 46, y2, nid); t((qn ? qn + ' · ' : '') + n[0], x2 + 2, y2, qn ? '#8a5a00' : '#3a2a1a', true); y2 += 9; umbrechen(n[1], 30).slice(0, 3).forEach(function (zz) { t(zz, x2 + 6, y2, n[1].charAt(0) === '✓' ? '#2a6a2a' : '#5a4a3a'); y2 += 9; }); y2 += 4; });   var geh = GESCHICHTEN.filter(function (g) { return gsZustand(g) === 'gehoert'; }), spae = GESCHICHTEN.filter(function (g) { return gsZustand(g) === 'spaeter'; });
+  var xl = x0 + 10, xk = x0 + bw / 2 - 44; y += 6;
+  if (geh.length && y < y0 + bh - 24) { t('GEHÖRT  (? AUF DER KARTE)', xl, y, '#7a1c14', true); y += 10; geh.forEach(function (g) { if (y > y0 + bh - 14) return; t('? ' + g.titel, xl + 2, y, '#6a5a4a', true); y += 9; umbrechen(g.wo, 34).slice(0, 1).forEach(function (zz) { t(zz, xl + 10, y, '#8a7a6a'); y += 9; }); y += 2; }); y += 4; }
+  if (spae.length && y < y0 + bh - 20) { t('FÜR SPÄTER', xl, y, '#7a1c14', true); y += 11; spae.forEach(function (g) { if (y > y0 + bh - 10) return; t('· ' + g.titel, xl + 2, y, '#8a7a6a'); knopf('weiter', xk, y, g.id); y += 12; }); }
+}
 function kleidSchema() { if (!SPIELER) return 'gewand'; var k = SPIELER.kleidung[AUFTRAG.kleid] || SPIELER.kleidung[0], n = 'spieler_' + k.id;
   if (!Gliederpuppe.SCHEMA[n]) { var sch = Object.assign({}, Gliederpuppe.SCHEMA.gewand); for (var t in k.farbe) sch[t] = parseInt(k.farbe[t].slice(1), 16); Gliederpuppe.SCHEMA[n] = sch; } return n; }
 function essen(g) { var e = SPIELER.essen[g]; if (!AUFTRAG[g]) { melden('DU HAST KEIN ' + e.name.toUpperCase()); return; } AUFTRAG[g]--; AUFTRAG.hunger = Math.max(0, AUFTRAG.hunger - e.satt); speichern(); melden(e.name.toUpperCase() + ' GEGESSEN' + (AUFTRAG.hunger < 20 ? ' · SATT' : '')); }
@@ -16071,9 +16114,12 @@ function schnellleiste(W, H) {                   // 12.10.: wie Minecraft – bi
   keulen(x0, y0 - 14, 10);
   if (HAND.zeigBis > P.t) { hud.globalAlpha = Math.min(1, (HAND.zeigBis - P.t) * 2); mcText(handName(wahl), W / 2, y0 - 20, '#fff', 9, 'center'); hud.globalAlpha = 1; }
 }
+var QREG = [];
+function questbuchAuf(an) { QUESTBUCH = an; if (an && document.exitPointerLock && document.pointerLockElement) document.exitPointerLock(); hudCv.style.pointerEvents = an || INVENTAR ? 'auto' : 'none'; IMAUS.x = IMAUS.y = -1; }
 function inventarAuf(an) { INVENTAR = an; if (an && document.exitPointerLock && document.pointerLockElement) document.exitPointerLock(); hudCv.style.pointerEvents = an ? 'auto' : 'none'; IMAUS.x = IMAUS.y = -1; }
 function hudMaus(e) { var r = hudCv.getBoundingClientRect(); IMAUS.x = (e.clientX - r.left) / r.width * PIXEL.b; IMAUS.y = (e.clientY - r.top) / r.height * PIXEL.h; }
-hudCv.addEventListener('mousemove', function (e) { if (INVENTAR) hudMaus(e); });
+hudCv.addEventListener('mousemove', function (e) { if (INVENTAR || QUESTBUCH) hudMaus(e); });
+hudCv.addEventListener('click', function (e) { if (!QUESTBUCH || INVENTAR) return; hudMaus(e); QREG.forEach(function (r) { if (IMAUS.x >= r.x && IMAUS.x < r.x + r.w && IMAUS.y >= r.y && IMAUS.y < r.y + r.h) r.tun(); }); });
 hudCv.addEventListener('click', function (e) { if (!INVENTAR) return; hudMaus(e); IREG.forEach(function (r) { if (r.tun && IMAUS.x >= r.x && IMAUS.x < r.x + r.w && IMAUS.y >= r.y && IMAUS.y < r.y + r.h) r.tun(); }); });
 // Schätze in den Gassen: an festen Stellen (aus dem Wegeraster), glitzern, E zum Aufheben
 var SCHAETZE = [];
@@ -16121,7 +16167,7 @@ var KZ = { t: -9, liste: [] };
 // jedes Zeichen ist ein Bildchen im farbigen Ring – grün = Arbeit, blau = kaufen/essen; offene Aufgaben als gelbe Nummern (dieselben Nummern im Questbuch).
 // Arbeit und Aufgaben bleiben am Kartenrand stehen, wenn sie außerhalb liegen (vorher sah es aus, als wären die Jobs verschwunden).
 function questOrte() {                              // [{titel, x, y}] in fester Reihenfolge; die Nummer ist der Platz in dieser Liste
-  var o = [], A = AUFTRAG, q = function (t, p) { if (p && isFinite(p[0]) && isFinite(p[1])) o.push({ titel: t, x: p[0], y: p[1] }); }; if (EPOCHE !== 1400) return o;
+  var o = [], A = AUFTRAG, GSID = { 'Der Brief des Schiffers': 'schiffer', 'Eine eigene Angel': 'angel', 'Der Zehnt': 'zehnt', 'Pfeffer für die Burg': 'pfeffer', 'Der versiegelte Brief': 'brief' }, q = function (t, p) { var gi = GSID[t] && gsVon(GSID[t]); if (gi && gsZustand(gi) === 'spaeter') return; if (p && isFinite(p[0]) && isFinite(p[1])) o.push({ titel: t, x: p[0], y: p[1] }); }; if (EPOCHE !== 1400) return o;
   var az = auftragZiel(); if (az) q(A.einf && A.einf < 9 ? 'Jörg' : 'Der Brief des Schiffers', [az.x, az.y]);
   var nz = naechstesZiel(); if (nz && typeof nz[2] === 'function') q('Lebensweg', nz[2]());
   if (A.einf >= 9 && !A.angel) { var f = null, sz = function (art) { return BERUFSSZENEN.filter(function (b) { return b.art === art; })[0]; };
@@ -16151,6 +16197,7 @@ function kartenZeichen() {
   TAGESLEUTE.forEach(function (l) { if (!l.werkbank) return; for (var i = 0; i < KARTE_LADEN.length; i++) if (KARTE_LADEN[i][0].test(l.name || '')) { z(l.werkbank.x, l.werkbank.y, 'kauf', KARTE_LADEN[i][1]); return; } });
   var kh = kammerHaus(); if (kh) z(kh.cx, kh.cy, 'heim', 'schluessel'); if (ONKEL && !kammerGemietet()) z(ONKEL.haus.cx, ONKEL.haus.cy, 'heim', 'haus');
   questOrte().forEach(function (q, i) { o.push({ x: q.x, y: q.y, art: 'quest', nr: i + 1 }); });
+  GESCHICHTEN.forEach(function (g) { if (gsZustand(g) !== 'gehoert') return; var p = g.geber(); if (p) o.push({ x: p[0], y: p[1], art: 'geruecht' }); });
   return o;
 }
 function karteMalen(W, H) {
@@ -16159,13 +16206,13 @@ function karteMalen(W, H) {
   hud.drawImage(bodenBildHud, bu(P.x - m / 2), bv(P.y + m / 2), m * B.px, m * B.px, gx, gy, gr, gr);
   hud.fillStyle = 'rgba(70,52,40,.85)';
   HAEUSER.forEach(function (h) { if (Math.abs(h.cx - P.x) > m * 0.6 || Math.abs(h.cy - P.y) > m * 0.6) return; hud.beginPath(); h.pts.forEach(function (q, i) { var x = gx + gr / 2 + (q[0] - P.x) * sk, y = gy + gr / 2 - (q[1] - P.y) * sk; i ? hud.lineTo(x, y) : hud.moveTo(x, y); }); hud.fill(); });
-  var RING = { arbeit: '#3fbf3a', kauf: '#4a9ae8', heim: '#c89a5a', quest: '#ffd75e' }, sc = gross ? 1 : 0.75, liste = kartenZeichen().slice().sort(function (a, b) { return (a.art === 'quest') - (b.art === 'quest'); });
+  var RING = { arbeit: '#3fbf3a', kauf: '#4a9ae8', heim: '#c89a5a', quest: '#ffd75e', geruecht: '#9a9a9a' }, sc = gross ? 1 : 0.75, liste = kartenZeichen().slice().sort(function (a, b) { return (a.art === 'quest') - (b.art === 'quest'); });
   liste.forEach(function (q) { var x = gx + gr / 2 + (q.x - P.x) * sk, y = gy + gr / 2 - (q.y - P.y) * sk, rd = gross ? 8 : 6, aussen = x < gx + rd || x > gx + gr - rd || y < gy + rd || y > gy + gr - rd;
-    if (aussen && q.art !== 'quest' && q.art !== 'arbeit') return; x = Math.max(gx + rd, Math.min(gx + gr - rd, x)); y = Math.max(gy + rd, Math.min(gy + gr - rd, y)); hud.globalAlpha = aussen && q.art === 'arbeit' ? 0.6 : 1;
+    if (aussen && q.art !== 'quest' && q.art !== 'arbeit' && q.art !== 'geruecht') return; x = Math.max(gx + rd, Math.min(gx + gr - rd, x)); y = Math.max(gy + rd, Math.min(gy + gr - rd, y)); hud.globalAlpha = aussen && q.art === 'arbeit' ? 0.6 : 1;
     hud.fillStyle = '#1a1410'; hud.beginPath(); hud.arc(x, y, rd + 1.5, 0, 6.3); hud.fill(); hud.fillStyle = RING[q.art] || '#fff'; hud.beginPath(); hud.arc(x, y, rd + 0.5, 0, 6.3); hud.fill();
-    if (q.art === 'quest') { hud.fillStyle = '#3a2a10'; hud.font = 'bold ' + (gross ? 11 : 9) + 'px monospace'; hud.textAlign = 'center'; hud.textBaseline = 'middle'; hud.fillText(String(q.nr), x, y + 0.5); hud.textBaseline = 'alphabetic'; }
+    if (q.art === 'quest' || q.art === 'geruecht') { hud.fillStyle = q.art === 'quest' ? '#3a2a10' : '#f4f4f4'; hud.font = 'bold ' + (gross ? 11 : 9) + 'px monospace'; hud.textAlign = 'center'; hud.textBaseline = 'middle'; hud.fillText(q.art === 'quest' ? String(q.nr) : '?', x, y + 0.5); hud.textBaseline = 'alphabetic'; }
     else { hud.fillStyle = '#f4ecd8'; hud.beginPath(); hud.arc(x, y, rd - 1, 0, 6.3); hud.fill(); var ik = IKON[q.ik]; if (ik) pixelbild(ik.m, ik.p, x - 6 * sc, y - 6 * sc, sc); } hud.globalAlpha = 1; });
-  if (gross) { var ly = gy + gr - 12; hud.fillStyle = 'rgba(20,14,10,.75)'; hud.fillRect(gx, ly - 4, gr, 16); [['#3fbf3a', 'ARBEIT'], ['#4a9ae8', 'KAUFEN'], ['#c89a5a', 'ZUHAUSE'], ['#ffd75e', 'AUFGABE']].forEach(function (e, i) { var lx = gx + 8 + i * gr / 4; hud.fillStyle = e[0]; hud.beginPath(); hud.arc(lx, ly + 4, 4, 0, 6.3); hud.fill(); mcText(e[1], lx + 7, ly + 7, '#fff', 7); }); }
+  if (gross) { var ly = gy + gr - 12; hud.fillStyle = 'rgba(20,14,10,.75)'; hud.fillRect(gx, ly - 4, gr, 16); [['#3fbf3a', 'ARBEIT'], ['#4a9ae8', 'KAUFEN'], ['#c89a5a', 'ZUHAUSE'], ['#ffd75e', 'AUFGABE'], ['#9a9a9a', 'GEHÖRT']].forEach(function (e, i) { var lx = gx + 6 + i * gr / 5; hud.fillStyle = e[0]; hud.beginPath(); hud.arc(lx, ly + 4, 4, 0, 6.3); hud.fill(); mcText(e[1], lx + 7, ly + 7, '#fff', 7); }); }
   var cx = gx + gr / 2, cy = gy + gr / 2, fx = Math.sin(P.blick), fy = -Math.cos(P.blick);
   hud.fillStyle = '#ff3b3b'; hud.beginPath(); hud.moveTo(cx + fx * 6, cy + fy * 6); hud.lineTo(cx - fy * 4 - fx * 4, cy + fx * 4 - fy * 4); hud.lineTo(cx + fy * 4 - fx * 4, cy - fx * 4 - fy * 4); hud.fill();
   hud.restore();
