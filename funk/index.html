@@ -191,6 +191,10 @@
   <p class="hilfe">Ein Klick pro Zeile reicht – er ist sofort gespeichert. Du kannst es jederzeit ändern.</p>
   <div id="wunschListe"></div>
 
+  <h3 style="margin:26px 0 4px">Wohin kippt ihr?</h3>
+  <p class="hilfe">Damit der Tagesplan die richtige Anlage ansteuert. Ein Klick pro Zeile – wenn es woanders hingeht, schreib den Namen kurz dazu.</p>
+  <div id="zielListe"></div>
+
   <details class="karte" style="margin-top:22px">
     <summary style="cursor:pointer;font-weight:700">Ein paar Zahlen, wenn du magst <span class="bisher">(grob reicht, Lücken sind kein Problem)</span></summary>
     <form id="appForm" style="margin-top:12px">
@@ -415,7 +419,33 @@ function wuenscheZeigen() {
     l.appendChild(el('div', { class: 'karte wunsch' }, [el('div', { class: 'text' }, [el('b', { text: w.titel }), el('span', { text: w.text })]), el('div', {}, [wahl, meldung])]));
   });
 }
-function appVorbelegen() { wuenscheZeigen(); var v = letzter('app', 'fragebogen'); if (!v) return; try { var d = JSON.parse(v.inhalt), f = document.getElementById('appForm');
+// Wohin kippt ihr? Ein Klick je Abfallart; Vorschläge aus recherche/2026-10-12-entsorgungsanlagen-main-spessart.md
+var ZIELE = [
+  { id: 'bauschutt', titel: 'Bauschutt und Erdaushub', wahl: ['Karlstadt (Landkreis)', 'Plattenschlag (Stadt Marktheidenfeld)', 'Recycling Väth'] },
+  { id: 'gruen', titel: 'Grünschnitt', wahl: ['Gräder, Oberwittbach', 'RETERRA, Wernfeld', 'Kompost Karlstadt-Wiesenfeld'] },
+  { id: 'sperr', titel: 'Sperrmüll und Baumischabfall', wahl: ['Kirsch + Sohn, Gemünden', 'AES, Bergrheinfeld'] },
+  { id: 'holz', titel: 'Altholz', wahl: ['Kirsch + Sohn, Gemünden', 'AES, Bergrheinfeld'] },
+  { id: 'metall', titel: 'Metall und Schrott', wahl: ['Preuer, Würzburg', 'Kirsch + Sohn, Gemünden'] }
+];
+function zieleZeigen() {
+  var l = document.getElementById('zielListe'); l.innerHTML = '';
+  ZIELE.forEach(function (z) {
+    var vorher = letzter('app', 'ziel-' + z.id), meldung = el('span', { class: 'bisher' }), wahl = el('div', { class: 'reihe wahl', style: 'margin:0' });
+    var anders = el('input', { type: 'text', placeholder: 'woanders: Name der Anlage', style: 'margin-top:8px' });
+    var bekannt = vorher && z.wahl.indexOf(vorher.inhalt) >= 0;
+    if (vorher && !bekannt) anders.value = vorher.inhalt;
+    z.wahl.forEach(function (o) {
+      var b = el('button', { type: 'button', 'aria-pressed': String(!!bekannt && vorher.inhalt === o), text: o, onclick: function () {
+        wahl.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); anders.value = '';
+        senden({ bereich: 'app', schluessel: 'ziel-' + z.id, inhalt: o }, meldung, null); } });
+      wahl.appendChild(b); });
+    anders.addEventListener('change', function () { var t = anders.value.trim(); if (!t) return;
+      wahl.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+      senden({ bereich: 'app', schluessel: 'ziel-' + z.id, inhalt: t }, meldung, null); });
+    l.appendChild(el('div', { class: 'karte wunsch' }, [el('div', { class: 'text' }, [el('b', { text: z.titel })]), el('div', {}, [wahl, anders, meldung])]));
+  });
+}
+function appVorbelegen() { wuenscheZeigen(); zieleZeigen();var v = letzter('app', 'fragebogen'); if (!v) return; try { var d = JSON.parse(v.inhalt), f = document.getElementById('appForm');
   for (var k in d) { if (Array.isArray(d[k])) f.querySelectorAll('input[name=' + k + ']').forEach(function (x) { x.checked = d[k].indexOf(x.value) >= 0; }); else if (f.elements[k]) f.elements[k].value = d[k]; } } catch (e) {} }
 
 // ---- Verlauf (für Andreas: Eingang mit Abhaken) ----
