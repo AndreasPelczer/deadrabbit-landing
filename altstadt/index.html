@@ -12397,6 +12397,8 @@ function reden() {                             // E: Gespräch beginnen oder wei
   if (l.rolle === 'zehntknecht' && SPIELER) {   // Der Zehnt (08.10., Andreas' Endziel: „erst als Fahrer des Bullenkarrens, später als Eintreiber“)
     if (AUFTRAG.zehnt === 1) zeilen = ['Was stehst du noch hier? Der Ochse kennt den Weg nach Sachsenhausen besser als du. Über die Tauberbrücke, dann immer bergauf.'];
     else if (AUFTRAG.zehnt === 2) zeilen = ['Voll beladen? Gut. Ab in den Burghof, der Vogt zählt nach.'];
+    else if (!zehntAmPlatz(l)) zeilen = [new Date(himmelsZeit()).getDay() === 0 ? 'Am Sonntag? Der Ochse hat frei, und ich auch.' : 'Nicht hier, Junge.', 'Komm werktags am Vormittag in den Burghof, da steht mein Karren. Dann reden wir.'];   // 12.10. Andreas: „in der Kirche wohl kaum und in der Kneipe auch nicht“
+    else if (!AUFTRAG.amt && (AUFTRAG.kleid || 0) < 1) zeilen = ['In Lumpen? So lässt dich der Schultheiß nicht an die Säcke, der denkt, du klaust.', 'Besorg dir einen Leinenkittel beim Schneider. Dann fährst du für mich.'];   // erst Leinen, dann der Zehnt
     else if ((AUFTRAG.zehntFahrten || 0) >= 3) { zeilen = AUFTRAG.amt ? ['Na, Herr Eintreiber? Ich fahr wieder selber, so gut es geht. Aber wenn du willst: sechs Heller, wie immer.'] : ['Du schon wieder. Du bist zuverlässig, das muss man dir lassen.', 'Ich hab dem Burgvogt von dir erzählt. Geh zu ihm in die Burg – er sucht einen Eintreiber für die Dörfer.', 'Oder fahr heute noch einmal für mich: Sachsenhausen, Zehntscheune, Burghof. Sechs Heller.']; danach = zehntAnnehmen; }
     else { zeilen = ['Du suchst Arbeit? Mein Rücken ist kaputt, und der Graf will seinen Zehnten aus Sachsenhausen.', 'Nimm den Ochsen. Fahr zur Zehntscheune, lad auf, was der Schultheiß dir gibt, und bring es in den Burghof.', 'Sechs Heller, wenn alles ankommt. Und wehe, ein Sack fehlt!']; danach = zehntAnnehmen; }
   }
@@ -12616,6 +12618,7 @@ function garkuecheWeiter(dt) {                    // Feuer flackert, Rauch steig
 // Der Zehnt holen: der Spieler fährt den Ochsenkarren Stadt → Zehntscheune Sachsenhausen → Burghof. 🔴 Lohn, Ablauf ERFUNDEN;
 // BELEGT als Prinzip: der Zehnt wurde in Zehntscheunen gesammelt und zum Grundherrn gefahren.
 var SPIELERKARREN = null;
+function zehntAmPlatz(l) { var d = new Date(himmelsZeit()); if (d.getDay() === 0 || P.drinnen) return false; return l.ort === 'burg' || l.ort === 'weinberg' || (BURGHOF && Math.hypot(l.x - BURGHOF[0], l.y - BURGHOF[1]) < 25); }   // Arbeit gibt es, wo gearbeitet wird: werktags im Burghof bei seinem Karren (oder unterwegs dorthin)
 function zehntAnnehmen() { AUFTRAG.zehnt = 1; speichern(); melden('DU FÄHRST DEN ZEHNTKARREN · ZIEL: SACHSENHAUSEN', 6); }
 function zehntScheune() { for (var i = 0; i < DOERFER.length; i++) if (DOERFER[i].scheune) return DOERFER[i].scheune; return null; }
 function zehntZiel() { if (!AUFTRAG.zehnt || EPOCHE !== 1400) return null; if (AUFTRAG.zehnt === 1) { var s2 = zehntScheune(); return s2 ? { x: s2[0], y: s2[1], text: 'AUFTRAG: FAHR DEN OCHSENKARREN ZUR ZEHNTSCHEUNE IN SACHSENHAUSEN' } : null; } return BURGHOF ? { x: BURGHOF[0], y: BURGHOF[1], text: 'AUFTRAG: BRING DEN ZEHNT DES GRAFEN IN DEN BURGHOF' } : null; }
@@ -14341,7 +14344,7 @@ function tagesablaufWeiter(dt) {                // einmal je halbe Sekunde: wer 
       if (l.rolle === 'tageloehner' && ort === 'arbeit' && LIEFER.bettler) ort = 'betteln';
       if (ort === 'treff' && l.rolle === 'buerger' && hash(l.nr * 3.1 + heute() * 0.3) > 0.5) ort = l.kneipe && d.getHours() >= 18 ? 'wirtshaus' : 'heim';   // nicht alle Bürger zugleich auf dem Markt
       if (WETTER.regen > 0.5 && (ort === 'treff' || ort === 'garten' || ort === 'brunnen' || ort === 'bank' || ort === 'spielen' || ort === 'schauen')) ort = 'heim';   // bei Regen bleibt man daheim   // keiner zahlt Tagelohn
-      if (l.rolle === 'zehntknecht' && !LIEFER.zehnt && (ort === 'weinberg' || ort === 'burg')) ort = 'heim'; if (l.rolle === 'nachtwaechter') { if (ort !== 'runde') l.letzteStunde = undefined; else if (l.ort === 'runde') nachtwaechterRuf(l, d); }   // nur in den zwei Wochen nach Ernte oder Lese
+      if (l.rolle === 'zehntknecht' && !LIEFER.zehnt && ort === 'weinberg') ort = 'burg'; if (l.rolle === 'nachtwaechter') { if (ort !== 'runde') l.letzteStunde = undefined; else if (l.ort === 'runde') nachtwaechterRuf(l, d); }   // nur in den zwei Wochen nach Ernte oder Lese
       if (ort === 'spielen' && l.ort === 'spielen' && l.spielStunde !== d.getHours()) { l.spielStunde = d.getHours(); l.ziel = ortPunkt(l, ort); l.weg = null; l.ankunft = false; WEGSCHLANGE.push(l); }
       if (ort === 'markt' && l.ort !== 'markt' && l.einkaufTag !== heute() && (l.rolle === 'magd' || l.rolle === 'stadtfrau')) { var uhrMin = d.getHours() * 60 + d.getMinutes(), ab = (l.rolle === 'magd' ? 510 : 570) + Math.floor(hash(l.nr * 3.3 + heute()) * 60); if (uhrMin < ab) ort = l.ort === 'baecker' || l.ort === 'metzger' ? l.ort : 'heim'; }   // jede zu ihrer Zeit: Mägde 8:30–9:30, Stadtfrauen 9:30–10:30 – so ist der ganze Vormittag Betrieb
       if (ort === 'markt' && l.einkaufFertig && l.einkaufTag === heute() && P.t < (l.tratschBis || 0)) ort = 'treff';   // noch ein bisschen tratschen auf dem Platz
@@ -15089,7 +15092,7 @@ function hudMalen() {
   if (EPOCHE === 1400) {
     var zielL = auftragZiel(), zeile = ['AUFTRAG: GEH ZUM SCHIFFER AM MAINTOR', 'AUFTRAG: BRING DEN BRIEF ZUM PFARRER (STIFTSKIRCHE)', 'AUFTRAG: KAUF DIR AM MARKT WAS ZU ESSEN', 'AUFTRAG: BRING DEN BRIEF DES MARKTMANNS ZUM PFARRER', 'FREI · ÄPFEL GIBT ES AM MARKT'][Math.min(AUFTRAG.stufe, 4)];
     if (zielL) zeile += '  · ' + Math.round(Math.hypot(zielL.x - P.x, zielL.y - P.y)) + ' M';
-    if (AUFTRAG.stufe >= 4 && !AUFTRAG.zehnt && !AUFTRAG.amt && !(AUFTRAG.zehntFahrten > 0)) { var gz = TAGESLEUTE.filter(function (q) { return q.rolle === 'zehntknecht'; })[0]; if (gz) zeile = 'FREI · ARBEIT GIBT ES BEI GÖTZ, DEM ZEHNTKNECHT  · ' + Math.round(Math.hypot(gz.x - P.x, gz.y - P.y)) + ' M'; }   // der Weg zum Endziel
+    if (AUFTRAG.stufe >= 4 && !AUFTRAG.zehnt && !AUFTRAG.amt && !(AUFTRAG.zehntFahrten > 0)) { var gz = TAGESLEUTE.filter(function (q) { return q.rolle === 'zehntknecht'; })[0]; if (gz) zeile = ((AUFTRAG.kleid || 0) < 1 ? 'IM LEINENKITTEL GIBT ES ARBEIT BEI GÖTZ, DEM ZEHNTKNECHT' : 'ARBEIT BEI GÖTZ, DEM ZEHNTKNECHT · WERKTAGS VORMITTAGS IM BURGHOF') + '  · ' + Math.round(Math.hypot(gz.x - P.x, gz.y - P.y)) + ' M'; }   // der Weg zum Endziel
     var kz = kammerZiel(); if (kz) zeile = kz.text + '  · ' + Math.round(Math.hypot(kz.x - P.x, kz.y - P.y)) + ' M';   // Lebensweg: die Kammer
     var lz = lehreZiel(); if (lz) zeile = lz.text + '  · ' + Math.round(Math.hypot(lz.x - P.x, lz.y - P.y)) + ' M';   // Lebensweg: Lehre, Bürgerrecht, Werkstatt
     var zz = briefZiel() || schmuggelZiel() || zehntZiel() || eintreiberZiel(); if (zz) zeile = zz.text + '  · ' + Math.round(Math.hypot(zz.x - P.x, zz.y - P.y)) + ' M';
