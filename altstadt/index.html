@@ -3875,7 +3875,23 @@ var Fassaden = (function () {
   return { atlas: atlas, dna: dna, T: T, VARIANTEN: VARIANTEN };
 })();
 </script>
-<script>var REITTAKTE={aufsitzen:1.6,reiten:1,absitzen:1.3,fuehren:1,hufbeschlag:.7};
+<script>/* Gemeinsame Zeichnungsgeometrie. Quellen bleiben als steuerbare Teile erhalten.
+ * ES5, THREE r128. Vertexfarben ersetzen mehrere Farbmaterialien. */
+var Verschmelzen=(function(){'use strict';var material=null,materialseiten={};
+function sichtbar(m,ziel){if(!m.material.visible)return false;while(m&&m!==ziel){if(!m.visible)return false;m=m.parent;}return true;}
+function schreiben(geo,quellen,ziel){var etat=[],geaendert=!geo._fusionEtat||geo._fusionEtat.length!==quellen.length,matrix=new THREE.Matrix4();quellen.forEach(function(m,j){if(m.matrixAutoUpdate)m.updateMatrix();matrix.copy(m.matrix);var o=m.parent;while(o&&o!==ziel){if(o.matrixAutoUpdate)o.updateMatrix();matrix.premultiply(o.matrix);o=o.parent;}var c=m.material.color,e={mesh:m,geo:m.geometry,sicht:sichtbar(m,ziel),r:c.r,g:c.g,b:c.b,version:m.geometry.attributes.position.version,normalVersion:m.geometry.attributes.normal?m.geometry.attributes.normal.version:0,indexVersion:m.geometry.index?m.geometry.index.version:0,matrix:matrix.elements.slice()},vor=geo._fusionEtat&&geo._fusionEtat[j];if(!vor||vor.mesh!==m||vor.sicht!==e.sicht||e.sicht&&(vor.geo!==e.geo||vor.r!==e.r||vor.g!==e.g||vor.b!==e.b||vor.version!==e.version||vor.normalVersion!==e.normalVersion||vor.indexVersion!==e.indexVersion||e.matrix.some(function(v,i){return v!==vor.matrix[i];})))geaendert=true;etat.push(e);});if(!geaendert)return geo;geo._fusionEtat=etat;var position=[],normal=[],farbe=[],v=new THREE.Vector3(),n=new THREE.Vector3(),nm=new THREE.Matrix3();etat.forEach(function(e){if(!e.sicht)return;var m=e.mesh;matrix.fromArray(e.matrix);nm.getNormalMatrix(matrix);var p=m.geometry.attributes.position,no=m.geometry.attributes.normal,index=m.geometry.index,anz=index?index.count:p.count;for(var j=0;j<anz;j++){var i=index?index.getX(j):j;v.fromBufferAttribute(p,i).applyMatrix4(matrix);position.push(v.x,v.y,v.z);if(no)n.fromBufferAttribute(no,i).applyNormalMatrix(nm);else n.set(0,1,0);normal.push(n.x,n.y,n.z);farbe.push(e.r,e.g,e.b);}});[['position',position],['normal',normal],['color',farbe]].forEach(function(a){var vor=geo.attributes[a[0]];if(vor&&vor.array.length===a[1].length){vor.array.set(a[1]);vor.needsUpdate=true;}else geo.setAttribute(a[0],new THREE.Float32BufferAttribute(a[1],3));});geo.setDrawRange(0,position.length/3);geo.computeBoundingBox();if(position.length)geo.computeBoundingSphere();return geo;}
+
+function paket(ziel,seite){if(!material)material=new THREE.MeshLambertMaterial({color:0xffffff,vertexColors:true});var farbMaterial=material;if(seite!==undefined&&seite!==THREE.FrontSide){if(!materialseiten[seite])materialseiten[seite]=new THREE.MeshLambertMaterial({color:0xffffff,vertexColors:true,side:seite});farbMaterial=materialseiten[seite];}var geo=new THREE.BufferGeometry();/* Einzelquellen liefern enge Teilgrenzen und Raycasts; Paketkästen würden Lücken füllen. */geo.computeBoundingBox=function(){if(!this.boundingBox)this.boundingBox=new THREE.Box3();else this.boundingBox.makeEmpty();};var m=new THREE.Mesh(geo,farbMaterial);m.raycast=function(){};m.name='verschmolzen / '+ziel.name;m.castShadow=true;m.receiveShadow=false;m.userData.verschmolzen=true;ziel.add(m);return m;}
+function kleidung(p){if(p._koerperQuellen){figurAktualisieren(p,true);return p;}var pakete=p._kleidungsPakete||(p._kleidungsPakete={});p.gruppe.updateWorldMatrix(true,true);Object.keys(p.gelenke).forEach(function(n){var ziel=p.gelenke[n],quellen=[];ziel.children.forEach(function(g){if(!g.userData.kleidung||g.userData.abgenommen)return;g.traverse(function(m){if(m.userData.kleidungsMesh&&!m.userData.verschmolzen){m.isMesh=false;m.userData.zeichnungsQuelle=true;quellen.push(m);}});});var m=pakete[n];if(!quellen.length){if(m){ziel.remove(m);m.geometry.dispose();delete pakete[n];}return;}if(!m)m=pakete[n]=paket(ziel);schreiben(m.geometry,quellen,ziel);m.visible=m.geometry.attributes.position.count>0;});return p;}
+function anker(n){if(n==='kopf')return 'hals';if(/^(finger|daumen)/.test(n))return 'hand'+(/L/.test(n)?'L':'R');if(/^zehen/.test(n))return 'knoechel'+n.charAt(5);return n;}
+function figurAktualisieren(p,neu){var alle=p._zeichnungsQuellen,kleider=p._zeichnungsKleider;if(!alle||neu){alle={};kleider={};p._koerperQuellen.forEach(function(m){var n=anker(m.parent.name);if(!alle[n])alle[n]=[];alle[n].push(m);});Object.keys(p.gelenke).forEach(function(n){var key=anker(n);p.gelenke[n].children.forEach(function(g){if(!g.userData.kleidung||g.userData.abgenommen)return;g.traverse(function(m){if(m.userData.kleidungsMesh&&!m.userData.verschmolzen){m.isMesh=false;m.userData.zeichnungsQuelle=true;if(!alle[key])alle[key]=[];alle[key].push(m);kleider[key]=true;}});});});p._zeichnungsQuellen=alle;p._zeichnungsKleider=kleider;}var pakete=p._koerperPakete;p._kleidungsPakete={};Object.keys(alle).forEach(function(n){var ziel=p.gelenke[n],m=pakete[n];if(!m)m=pakete[n]=paket(ziel);schreiben(m.geometry,alle[n],ziel);m.visible=m.geometry.attributes.position.count>0;if(kleider[n])p._kleidungsPakete[n]=m;});return p;}
+function figur(p){if(p._koerperQuellen)return p;var q=[];p.gruppe.traverse(function(m){if(m.isMesh&&m.userData.art&&!m.userData.verschmolzen){q.push(m);m.isMesh=false;m.userData.zeichnungsQuelle=true;m.userData.koerperQuelle=true;}});p._koerperQuellen=q;p._koerperPakete={};p.zeichnungAktualisieren=function(){return figurAktualisieren(p);};figurAktualisieren(p);return p;}
+function tier(t){var g=t.gruppe||t,pakete=g._tierPakete;if(!pakete){pakete=[];g.traverse(function(m){if(!m.isMesh||m.userData.verschmolzen)return;var b=null;pakete.forEach(function(e){if(e.ziel===m.parent)b=e;});if(!b){b={ziel:m.parent,quellen:[]};pakete.push(b);}b.quellen.push(m);});pakete.forEach(function(b){b.quellen.forEach(function(m){m.isMesh=false;m.userData.zeichnungsQuelle=true;});b.mesh=paket(b.ziel,b.quellen[0].material.side);b.mesh.receiveShadow=b.quellen.some(function(m){return m.receiveShadow;});});g._tierPakete=pakete;}function aktualisieren(){pakete.forEach(function(b){schreiben(b.mesh.geometry,b.quellen,b.ziel);b.mesh.visible=b.mesh.geometry.attributes.position.count>0;});return t;}t.zeichnungAktualisieren=aktualisieren;g.zeichnungAktualisieren=aktualisieren;if(t._zeichnungsBewegen!==t.bewegen){var bewegen=t.bewegen;t.bewegen=function(){var r=bewegen.apply(t,arguments);aktualisieren();return r;};t._zeichnungsBewegen=t.bewegen;}aktualisieren();return t;}
+return {kleidung:kleidung,figur:figur,figurAktualisieren:figurAktualisieren,schreiben:schreiben,paket:paket,tier:tier};}());
+if(typeof module!=='undefined'&&module.exports)module.exports=Verschmelzen;
+
+var KLEINKINDARTEN=['krabbeln','tapsen','sitzen_boden','am_rock'];
+var REITTAKTE={aufsitzen:1.6,reiten:1,absitzen:1.3,fuehren:1,hufbeschlag:.7};
 // Takte sind Spielannahmen; die bestehende Animationszeit wird verwendet.
 var FESTTAKTE={tuer_spalt:1.2,anklopfen:1.2,murmeln:.6,reifen_treiben:.6,tanzen:1,fiedeln:.8,trommeln_gehen:.4,trommeln:.4,dudelsack_spielen:.5,schalmei_spielen:.5,};
 var festPunktCache={};function festPunkte(n){if(!festPunktCache[n]){var lib=typeof Feste!=='undefined'?Feste:typeof require==='function'?require('./feste.js'):null;if(!lib)throw new Error('Für Festbewegungen feste.js laden');var g=lib[n](),daten={};g.updateMatrixWorld(true);['griffL','griffR','mund','fell','griff'].forEach(function(p){var a=g.getObjectByName(p);if(a)daten[p]=a.getWorldPosition(new THREE.Vector3()).toArray();});festPunktCache[n]=daten;}return festPunktCache[n];}
@@ -3996,6 +4012,9 @@ var Gliederpuppe = (function () {
     oberschenkel: 0.245, unterschenkel: 0.246, knoechel: 0.039, fuss: 0.152
   };
 
+  // Proportionen des Spielentwurfs, keine Wachstumstabelle.
+  var KLEINKINDANTEIL={huefte:.39,bauch:.11,brust:.24,hals:.05,kopf:.21,schulterBreite:.27,hueftAbstand:.14,oberarm:.19,unterarm:.16,hand:.11,oberschenkel:.18,unterschenkel:.175,knoechel:.035,fuss:.14};
+
   var MIXAMO = {
     becken: 'Hips', bauch: 'Spine', brust: 'Spine2', hals: 'Neck', kopf: 'Head',
     schulterL: 'LeftArm', ellbogenL: 'LeftForeArm', handL: 'LeftHand',
@@ -4024,8 +4043,13 @@ var Gliederpuppe = (function () {
   function bauen(opt) {
     opt = opt || {};
     if (Object.prototype.hasOwnProperty.call(opt, 'eigenart') && (typeof opt.eigenart !== 'number' || !isFinite(opt.eigenart) || opt.eigenart < 0 || opt.eigenart > 1)) throw new Error('eigenart muss zwischen 0 und 1 liegen');
-    var H = opt.groesse || 1.75, A = {};
-    for (var k in ANTEIL) A[k] = ANTEIL[k] * H;
+    if(opt.kleinkind!==undefined&&typeof opt.kleinkind!=='boolean')throw new Error('kleinkind muss boolesch sein');
+    var H = opt.kleinkind?(opt.groesse===undefined?.85:opt.groesse):(opt.groesse||1.75), A = {},anteile=opt.kleinkind?KLEINKINDANTEIL:ANTEIL;
+    if(opt.kleinkind&&(typeof H!=='number'||!isFinite(H)||H<.75||H>.95))throw new Error('Kleinkindgröße muss 0,75–0,95 m sein');
+    for (var k in anteile) A[k] = anteile[k] * H;
+    var kopfAnteil=opt.kopfAnteil===undefined?(opt.kleinkind?KLEINKINDANTEIL.kopf:H<=1?Gliederpuppe.KIND_KOPF_ANTEIL:H>=1.5?Gliederpuppe.KOPF_ANTEIL:Gliederpuppe.KIND_KOPF_ANTEIL+(Gliederpuppe.KOPF_ANTEIL-Gliederpuppe.KIND_KOPF_ANTEIL)*sanft((H-1)/.5)):opt.kopfAnteil;
+    if(typeof kopfAnteil!=='number'||!isFinite(kopfAnteil)||kopfAnteil<.10||kopfAnteil>.24)throw new Error('kopfAnteil muss zwischen 0,10 und 0,24 liegen');
+    var kopfZuwachs=(kopfAnteil-anteile.kopf)*H;A.kopf=kopfAnteil*H;A.hals-=kopfZuwachs*.25;A.brust-=kopfZuwachs*.75;
 
     var MAT = {}, gelenke = {}, kugeln = [];
     ['haut', 'kopf', 'rumpf', 'arm', 'bein', 'fuss', 'gelenk', 'gesicht'].forEach(function (n) { MAT[n] = new THREE.MeshLambertMaterial({ color: 0xffffff }); });
@@ -4097,7 +4121,7 @@ var Gliederpuppe = (function () {
     });
 
     var p = {
-      gruppe: puppe, gelenke: gelenke, groesse: H, mixamo: MIXAMO,
+      gruppe: puppe, gelenke: gelenke, groesse: H, kopfAnteil:kopfAnteil, kopfFaktor:kopfAnteil/.13, masse:A, kleinkind:opt.kleinkind===true, mixamo: MIXAMO,
       art: 'stehen', phase: 0, zeit: 0, sprung: -1, hoehe: 0,
       farben: function (name) {
         var sch = SCHEMA[name] || SCHEMA.holz; p.schema = name;
@@ -4105,13 +4129,15 @@ var Gliederpuppe = (function () {
           var c = sch[n]; if (n === 'gelenk' && c === null) { MAT.gelenk.visible = false; continue; }
           MAT[n].visible = true; MAT[n].color.setHex(c);
         }
+        if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();
       },
-      gelenkeZeigen: function (an) { kugeln.forEach(function (k) { k.visible = an; }); },
+      gelenkeZeigen: function (an) { kugeln.forEach(function (k) { k.visible = an; });if(p.zeichnungAktualisieren)p.zeichnungAktualisieren(); },
       springen: function (flach) { if (p.sprung < 0) { p.sprung = 0; p.sprungFlach = !!flach; } },
       luft: null, landung: 0,                       // 09.10.: echter Flug – das Spiel setzt luft = Steiggeschwindigkeit (null am Boden)
       landen: function (staerke) { p.landung = Math.max(p.landung, staerke || 0.6); },   // flach: die Höhe macht das Spiel selbst (echter Sprung)
       bewegen: bewegen
     };
+    p.verschmelzen=opt.verschmelzen!==false;
     p.farben(opt.schema || 'holz');
     p.gruppe.userData.puppe = p;
 
@@ -4179,7 +4205,7 @@ var Gliederpuppe = (function () {
       if (puppe.parent) inverse.copy(puppe.parent.matrixWorld).invert();
       puppe.traverse(function (m) {
         // Nur Körper und Kleidung: Handgeräte/Säcke werden nicht angehoben.
-        if (!m.isMesh || (!m.userData.art && !m.userData.kleidungsMesh)) return;
+        if (!(m.isMesh||m.userData.zeichnungsQuelle) || m.userData.verschmolzen || (!m.userData.art && !m.userData.kleidungsMesh)) return;
         if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
         matrix.multiplyMatrices(inverse, m.matrixWorld);
         box.copy(m.geometry.boundingBox).applyMatrix4(matrix); unten = Math.min(unten, box.min.y);
@@ -4270,6 +4296,7 @@ var Gliederpuppe = (function () {
     p.eigenart = eigen; p.schrittfaktor = eigen === null ? 1 : 0.95 + eigen * 0.1;
     p.ausschlagfaktor = eigen === null ? 1 : 1 + 0.035 * Math.sin(eigen * Math.PI * 3.1);
     if (eigen !== null) { var versatz = eigen * Math.PI * 2 * 0.61803398875; p.phase = versatz; p.zeit = versatz * 0.25; kletterPhase = versatz; }
+    var kindGrund=p.kleinkind?merken():null,kindArt=null,kindWeg=0;
     p.oben = null; p.nachlauf = true; p.lod = 0; p.aktualisierungen = 0; p.kantenhoehe = 1.6;
     p.poseLesen = function () { var pose = {}; for (var n in gelenke) pose[n] = [gelenke[n].rotation.x, gelenke[n].rotation.y, gelenke[n].rotation.z]; return pose; };
     p.poseAnwenden = function (pose) {
@@ -4278,7 +4305,7 @@ var Gliederpuppe = (function () {
       Object.keys(pose).forEach(function (n) { if (!gelenke[n]) throw new Error('Unbekanntes Gelenk: ' + n); });
       Object.keys(pose).forEach(function (n) { gelenke[n].rotation.set(pose[n][0], pose[n][1], pose[n][2]); });
       wurzelZurueck(); ablauf = null; p.fertig = false; p.uebergang = 0; grundZuletzt = null; nachlaufZuletzt = null;hebenZeit=null;
-      grindZiele=null; landeGrund = null; p.landung = 0; p.landungsZeit = 0; obenStart = null; obenZuletzt = null; obenModus = null; obenZeit = 0.22; lodRest = 0;
+      if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();grindZiele=null; landeGrund = null; p.landung = 0; p.landungsZeit = 0; obenStart = null; obenZuletzt = null; obenModus = null; obenZeit = 0.22; lodRest = 0;
     };
     function hauptglied(n) { return /^(becken|huefte[LR]|knie[LR]|knoechel[LR]|zehen[LR]|schulter[LR]|ellbogen[LR]|hand[LR])$/.test(n); }
     function begrenze(x, grenze) { return Math.max(-grenze, Math.min(grenze, x)); }
@@ -4322,19 +4349,27 @@ var Gliederpuppe = (function () {
     // Kontaktkorrektur nach dem Nachlauf: Werkzeuggriffe bleiben in beiden Händen.
     // Alle Ziele sind Spielannahmen, relativ zur Figurenwurzel bei H=1,75 m.
     var grindZiele=null,hebenZeit=null;p.kindRolle='erwachsener';p.kindGroesse=H*1.1/1.75;p.kindHand=null;
+    p.kopfKontakte=function(){puppe.updateWorldMatrix(true,true);function ort(x,y,z){return puppe.worldToLocal(gelenke.kopf.localToWorld(new THREE.Vector3(x,y,z).multiplyScalar(H/1.75*p.kopfFaktor))).toArray();}return {mund:ort(0,.025,.095),stirn:ort(0,.16,.09)};};
     p.grindKontakte=function(){if(!grindZiele)return null;var r={};Object.keys(grindZiele).forEach(function(k){r[k]=grindZiele[k].slice();});return r;};
     function grindHand(seite,ziel){
       puppe.updateWorldMatrix(true,true);var sch=gelenke['schulter'+seite],ell=gelenke['ellbogen'+seite],h=gelenke['hand'+seite],welt=puppe.localToWorld(new THREE.Vector3(ziel[0],ziel[1],ziel[2])),v=sch.parent.worldToLocal(welt).sub(sch.position),l1=ell.position.length(),l2=h.position.length(),d=v.length(),c=Math.max(-1,Math.min(1,(d*d-l1*l1-l2*l2)/(2*l1*l2))),b=Math.min(2.6,Math.acos(c)),ausgleich=Math.atan2(l2*Math.sin(b),l1+l2*Math.cos(b)),x=-Math.atan2(Math.sqrt(v.x*v.x+v.z*v.z),-v.y)+ausgleich,y=Math.atan2(v.x,v.z);
       sch.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),y).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),x)));ell.rotation.set(-b,0,0);
     }
+    function kindHandWaagerecht(seite){puppe.updateWorldMatrix(true,true);var h=gelenke['hand'+seite],q=h.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(puppe.getWorldQuaternion(new THREE.Quaternion())).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-Math.PI/2));h.quaternion.copy(q);}
+    function kindKrabbelBein(seite,ziel){var hue=gelenke['huefte'+seite],kn=gelenke['knie'+seite],fuss=gelenke['knoechel'+seite],hip=new THREE.Vector3(hue.position.x,gelenke.becken.position.y,gelenke.becken.position.z),oben=new THREE.Vector3().fromArray(ziel).sub(hip).normalize(),r=A.oberschenkel*.16*1.12,dy=A.knoechel-r,dz=-Math.sqrt(A.unterschenkel*A.unterschenkel-dy*dy),unten=new THREE.Vector3(0,dy,dz).normalize(),cos=Math.max(-1,Math.min(1,oben.dot(unten))),b=Math.acos(cos),y=oben.clone().negate(),z=oben.clone().multiplyScalar(cos).sub(unten).normalize(),x=y.clone().cross(z).normalize();hue.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,z));kn.rotation.set(b,0,0);puppe.updateWorldMatrix(true,true);fuss.quaternion.copy(fuss.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(puppe.getWorldQuaternion(new THREE.Quaternion())));}
+    function kleinkindBewegen(art,dt,tempo){if(kindArt!==art){kindWeg=0;kindArt=art;}anwenden(kindGrund);p.art=art;p.zeit+=dt;p.fertig=false;p.uebergang=0;grindZiele={werkzeugWinkel:[0,0,0]};if(tempo===undefined)tempo=art==='krabbeln'?.4:art==='tapsen'||art==='am_rock'?.6:0;kindWeg+=tempo*dt;var lauf=art!=='sitzen_boden'&&tempo>0,strecke=H*(art==='krabbeln'?.16:.25),phase=(kindWeg/strecke)%1;grindZiele.phase=[phase];p.phase=phase*Math.PI*2;var b=gelenke.becken,krabbeln=art==='krabbeln',knieR=A.oberschenkel*.16*1.12;
+      function fuss(q,stand,hub,basis){q=((q%1)+1)%1;if(!lauf)return {z:basis,y:0,stand:true};if(q<stand)return {z:basis+strecke*stand/2-strecke*q,y:0,stand:true};var u=(q-stand)/(1-stand);return {z:basis-strecke*stand/2+strecke*stand*sanft(u),y:hub*Math.sin(u*Math.PI),stand:false};}
+      if(krabbeln){b.position.z=-.06*H;var qL=phase,qR=(phase+.5)%1,qStand=qL<.4?qL:qR<.4?qR:null,delta=!lauf?0:qStand===null?strecke*.2:strecke*.2-strecke*qStand;b.position.y=knieR+Math.sqrt(A.oberschenkel*A.oberschenkel-delta*delta);gelenke.bauch.rotation.x=1.45;gelenke.kopf.rotation.x=-1.20;
+        ['L','R'].forEach(function(seite,i){var q=(phase+i*.5)%1,k=fuss(q,.4,0,-.06*H),x=(i===0?1:-1)*A.hueftAbstand/2,stand=k.stand,dy;if(!stand){var u=(q-.4)/.6,seitlich=(i===0?1:-1)*.08*H*Math.sin(u*Math.PI);x+=seitlich;dy=Math.sqrt(Math.max(0,A.oberschenkel*A.oberschenkel-seitlich*seitlich-Math.pow(k.z-b.position.z,2)));k.y=b.position.y-dy-knieR;}var ziel=[x,knieR+k.y,k.z];kindKrabbelBein(seite,ziel);grindZiele['knie'+seite]=[x,k.y,k.z];grindZiele['standKnie'+seite]=[stand?1:0];var h=fuss((q+.5)%1,.60,.035*H,.38*H),hand=[(i===0?1:-1)*.14*H,.026*H+h.y,h.z];grindHand(seite,hand);kindHandWaagerecht(seite);grindZiele['hand'+seite]=hand;grindZiele['handBoden'+seite]=[hand[0],hand[1]-A.hand*.46/2,hand[2]+A.hand*.52/2];grindZiele['standHand'+seite]=[h.stand?1:0];});
+      }else{b.position.y=art==='sitzen_boden'?.039*H:(A.oberschenkel+A.unterschenkel)*.94+A.knoechel;gelenke.brust.rotation.z=art==='sitzen_boden'?0:.025*Math.sin(p.zeit*5);['L','R'].forEach(function(seite,i){var f=fuss(phase+i*.5,.64,.04*H,0),ziel=[(i===0?1:-1)*A.hueftAbstand/2,A.knoechel+(art==='sitzen_boden'?0:f.y),art==='sitzen_boden'?.30*H:f.z];reitFuss(seite,ziel);grindZiele['fuss'+seite]=ziel;grindZiele['standFuss'+seite]=[art==='sitzen_boden'||f.stand?1:0];var h=art==='sitzen_boden'?[(i===0?1:-1)*.13*H,(.18+.012*Math.sin(p.zeit*4+i))*H,.22*H]:[(i===0?1:-1)*.35*H,.58*H,.08*H];if(art==='am_rock'&&seite==='L')h=p.rockHand?p.rockHand.slice():[.30*H,.67*H,.12*H];grindHand(seite,h);grindZiele['hand'+seite]=h;if(art==='am_rock'&&seite==='L')grindZiele.hand=h.slice();});}p.hoehe=b.position.y-A.huefte;if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();p.aktualisierungen++;}
     function lehreKontakt(art,t){var q=(t%LEHRETAKTE[art])/LEHRETAKTE[art],w=Math.sin(q*Math.PI*2);if(art==='besohlen'){var folge=[[0,.82,.48,.7],[.40,.95,.40,0],[.65,.721,.55,1],[.78,.79,.53,.86],[1,.82,.48,.7]],a=folge[0],b=folge[1];for(var i=1;i<folge.length;i++){b=folge[i];if(q<=b[0])break;a=b;}var blend=sanft((q-a[0])/(b[0]-a[0]));return {handL:[.10,.62,.50],handR:[0,a[1]+(b[1]-a[1])*blend,a[2]+(b[2]-a[2])*blend],werkzeugWinkel:[Math.PI*(a[3]+(b[3]-a[3])*blend),0,0],phase:[q]};}if(art==='naehen'){var pull=q<.4?0:q<.75?sanft((q-.4)/.35):1-sanft((q-.75)/.25),stich=q<.25?sanft(q/.25):q<.4?1-sanft((q-.25)/.15):0;return {handL:[.08+.22*pull,.66+.06*pull,.32],handR:[-.04-.26*pull,.80-.10*stich-.08*pull,.32],werkzeugWinkel:[Math.PI,0,0],phase:[q]};}if(art==='pechen'){var breite=.17+.14*(.5-.5*Math.cos(q*Math.PI*2));return {handL:[breite,.756+.025*w,.43+.035*w],handR:[-breite,.756-.025*w,.43-.035*w],werkzeugWinkel:[0,0,0],phase:[q]};}return {handL:[.11,.708,.43],handR:[-.13+.055*Math.cos(q*Math.PI*2),.712,.30+.065*w],werkzeugWinkel:[0,-.2*w,0],phase:[q]};}
     function laendeKontakt(art,t){if(art==='netz_flicken'){var q=(t%LAENDETAKTE.netz_flicken)/LAENDETAKTE.netz_flicken,pull=q<.45?0:q<.8?sanft((q-.45)/.35):1-sanft((q-.8)/.2);return {handL:[.08,.60,.32],handR:[-.035-.20*pull,.61+.09*pull,.32],werkzeugWinkel:[0,Math.PI/2,0],phase:[q]};}if(art==='fass_rollen')return {handL:[.17,.495,.619],handR:[-.17,.495,.619],lastOrt:[0,0,.82],lastWinkel:[0,0,0],rollWinkel:[p.phase*.72/Math.PI/.294],werkzeugWinkel:[0,0,0],phase:[(t%1)/1]};var q=art==='sack_schultern'?p.uebergang:1,w=sanft(Math.max(0,Math.min(1,(q-.15)/.7))),x=-.23*w,y=1.28*w,z=.5-.55*w+.20*Math.sin(w*Math.PI),a=-.12*w,co=Math.cos(a),si=Math.sin(a);return {handL:[x+.06*co-.30*si,y+.06*si+.30*co,z+.14],handR:[x-.06*co-.30*si,y-.06*si+.30*co,z+.14],lastOrt:[x,y,z],lastWinkel:[0,0,a],werkzeugWinkel:[0,0,a],phase:[q]};}
     function pelzerKontakt(art,t){var q=(t%PELZERTAKTE[art])/PELZERTAKTE[art];if(art==='fell_schaben'){var w=q<.75?sanft(q/.75):1-sanft((q-.75)/.25),y=.99-.11*w,z=.30+.24*w;return {handL:[.235,y,z],handR:[-.235,y,z],werkzeugWinkel:[0,0,0],phase:[q]};}if(art==='fell_spannen'){var links=q<.5,w=Math.sin((q% .5)*Math.PI*2),l=[.23,1.12,.48],r=[-.23,1.12,.48];var a=links?l:r;a[1]-=.08*w;a[2]-=.15*w;return {handL:l,handR:r,werkzeugWinkel:[0,0,0],phase:[q],seite:[links?1:0]};}if(art==='falle_stellen'){q=p.uebergang;var w=sanft(Math.min(1,q/.6));return {handL:[.12,.32+.30*w,.52],handR:[-.12,.33+.30*w-.37*sanft(Math.max(0,(q-.6)/.4)),.52+.05*sanft(Math.max(0,(q-.6)/.4))],werkzeugWinkel:[0,0,0],phase:[q],offen:[w]};}if(art==='hand_reichen'){return {handL:[.18,1.05,.16],handR:[-.14,1.05,.46],werkzeugWinkel:[0,0,0],phase:[q],hand:[-.14,1.05,.46]};}/* PELZERKONTAKT */}
     function gassenKontakt(art,t){var q=(t%GASSENTAKTE[art])/GASSENTAKTE[art];if(art==='eimer_tragen')return {handL:[.18,1.05,.12],handR:[-.34,.78,.02],werkzeugWinkel:[0,0,0],phase:[q]};if(art==='nachrufen')return {handL:[.06,1.65,.13],handR:[-.12,1.24,.55],werkzeugWinkel:[0,0,0],phase:[p.uebergang]};if(art==='drohen'){var w=Math.sin(q*Math.PI*2);return {handL:[.18,1.05,.12],handR:[-.16,1.38+.06*w,.40+.06*w],werkzeugWinkel:[0,0,0],phase:[q]};}if(art==='kind_an_hand'){var kind=p.kindRolle==='kind',l=kind?[.22,1.5590909091,.12]:[.18,1.05,.12],r=[-.38,.98*(p.kindGroesse/(H*1.1/1.75)),.12];if(kind&&p.kindHand)l=p.kindHand.map(function(v){return v/(H/1.75);});return {handL:l,handR:r,hand:kind?l:r,werkzeugWinkel:[0,0,0],phase:[q]};}if(art==='alt_gehen')return {handL:[.18,1.05,.12],handR:[-.22,.85,.36],stock:[-.22,.85,.36],werkzeugWinkel:[0,0,0],phase:[q]};if(art==='wiegen'){var w=Math.sin(q*Math.PI*2),a=.06*w;return {handL:[.16+.025*w,1.12+.025*w,.30],handR:[-.16+.025*w,1.12+.025*w,.30],arm:[.025*w,1.12+.025*w,.30],werkzeugWinkel:[0,Math.PI/2,a],phase:[q]};}/* GASSENKONTAKT */}
-    function festKontakt(art,t,mund){var q=(t%FESTTAKTE[art])/FESTTAKTE[art];function drehen(a,w){return new THREE.Vector3().fromArray(a).applyEuler(new THREE.Euler(w[0],w[1],w[2]));}function instrument(n,w,anker,ziel){var d=festPunkte(n),ort=new THREE.Vector3().fromArray(ziel).sub(drehen(d[anker],w)),l=drehen(d.griffL,w).add(ort).toArray(),r=drehen(d.griffR,w).add(ort).toArray();return {handL:l,handR:r,instrumentOrt:ort.toArray(),instrumentWinkel:w.slice(),werkzeugWinkel:[0,0,0],phase:[q]};}if(art==='schalmei_spielen'||art==='dudelsack_spielen'){var r=instrument(art==='schalmei_spielen'?'schalmei':'dudelsack',art==='schalmei_spielen'?[-.7,0,0]:[0,0,0],'mund',mund);return r;}if(art==='trommeln'||art==='trommeln_gehen'){var r=instrument('trommel',[0,0,0],'fell',[0,1.03,.37]),w=.5-.5*Math.cos(q*Math.PI*2);r.handR=[0,1.445-.2*w,.37];r.werkzeugWinkel=[Math.PI,0,0];return r;}if(art==='fiedeln'){var r=instrument('fiedel',[Math.PI/2,0,0],'griffL',[.20,1.33,.40]);r.handR=[-.17+.15*Math.sin(q*Math.PI*2),1.33,.20];r.werkzeugWinkel=[0,0,0];return r;}if(art==='tanzen')return {handL:[.46,1.36,.46],handR:[-.46,1.36,.46],werkzeugWinkel:[0,0,0],phase:[q]};if(art==='reifen_treiben'){var w=.5-.5*Math.cos(q*Math.PI*2);return {handL:[.20,1,.12],handR:[-.15,.95-.10*w,.44+.08*w],werkzeugWinkel:[2.15,0,0],phase:[q]};}if(art==='murmeln'){var w=Math.sin(q*Math.PI*2);return {handL:[.17,.32,.30],handR:[-.12,.15,.35+.035*w],werkzeugWinkel:[0,0,0],phase:[q]};}if(art==='anklopfen'){q=p.uebergang;var w=q>=1?0:Math.pow(Math.max(0,Math.sin(q*Math.PI*6)),4),r=[-.12,1.32,.38+.12*w];return {handL:[.18,1.03,.12],handR:r,faust:r.slice(),werkzeugWinkel:[0,0,0],phase:[q]};}if(art==='tuer_spalt')return {handL:[.32,1.12,.25],handR:[-.16,1,.10],hand:[.32,1.12,.25],werkzeugWinkel:[0,0,0],phase:[q]};/* FESTKONTAKT */}
+    function festKontakt(art,t,mund){var q=(t%FESTTAKTE[art])/FESTTAKTE[art];function drehen(a,w){return new THREE.Vector3().fromArray(a).applyEuler(new THREE.Euler(w[0],w[1],w[2]));}function instrument(n,w,anker,ziel){var d=festPunkte(n),ort=new THREE.Vector3().fromArray(ziel).sub(drehen(d[anker],w)),l=drehen(d.griffL,w).add(ort).toArray(),r=drehen(d.griffR,w).add(ort).toArray();return {handL:l,handR:r,instrumentOrt:ort.toArray(),instrumentWinkel:w.slice(),werkzeugWinkel:[0,0,0],phase:[q]};}if(art==='schalmei_spielen'||art==='dudelsack_spielen'){var r=instrument(art==='schalmei_spielen'?'schalmei':'dudelsack',art==='schalmei_spielen'?[-.7,0,0]:[0,0,0],'mund',mund);return r;}if(art==='trommeln'||art==='trommeln_gehen'){var r=instrument('trommel',[0,0,0],'fell',[0,1.03,.37]),w=.5-.5*Math.cos(q*Math.PI*2);r.handR=[0,1.445-.2*w,.37];r.werkzeugWinkel=[Math.PI,0,0];return r;}if(art==='fiedeln'){var r=instrument('fiedel',[Math.PI/2,0,0],'griffL',[.20,1.33-kopfZuwachs*.75/(H/1.75),.40]);r.handR=[-.17+.15*Math.sin(q*Math.PI*2),1.33-kopfZuwachs*.75/(H/1.75),.20];r.werkzeugWinkel=[0,0,0];return r;}if(art==='tanzen')return {handL:[.46,1.36,.46],handR:[-.46,1.36,.46],werkzeugWinkel:[0,0,0],phase:[q]};if(art==='reifen_treiben'){var w=.5-.5*Math.cos(q*Math.PI*2);return {handL:[.20,1,.12],handR:[-.15,.95-.10*w,.44+.08*w],werkzeugWinkel:[2.15,0,0],phase:[q]};}if(art==='murmeln'){var w=Math.sin(q*Math.PI*2);return {handL:[.17,.32,.30],handR:[-.12,.15,.35+.035*w],werkzeugWinkel:[0,0,0],phase:[q]};}if(art==='anklopfen'){q=p.uebergang;var w=q>=1?0:Math.pow(Math.max(0,Math.sin(q*Math.PI*6)),4),r=[-.12,1.32,.38+.12*w];return {handL:[.18,1.03,.12],handR:r,faust:r.slice(),werkzeugWinkel:[0,0,0],phase:[q]};}if(art==='tuer_spalt')return {handL:[.32,1.12,.25],handR:[-.16,1,.10],hand:[.32,1.12,.25],werkzeugWinkel:[0,0,0],phase:[q]};/* FESTKONTAKT */}
     p.reitGang='schritt';p.reitPhase=null;p.reitPunkte=null;
     function reitFuss(seite,ziel){puppe.updateWorldMatrix(true,true);var hue=gelenke['huefte'+seite],kn=gelenke['knie'+seite],fuss=gelenke['knoechel'+seite],welt=puppe.localToWorld(new THREE.Vector3().fromArray(ziel)),v=hue.parent.worldToLocal(welt).sub(hue.position),l1=kn.position.length(),l2=fuss.position.length(),b=Math.min(2.6,Math.acos(Math.max(-1,Math.min(1,(v.lengthSq()-l1*l1-l2*l2)/(2*l1*l2))))),a=Math.atan2(l2*Math.sin(b),l1+l2*Math.cos(b)),x=-Math.atan2(Math.sqrt(v.x*v.x+v.z*v.z),-v.y)-a,y=Math.atan2(v.x,v.z);hue.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),y).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),x)));kn.rotation.set(b,0,0);puppe.updateWorldMatrix(true,true);var q=fuss.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(puppe.getWorldQuaternion(new THREE.Quaternion()));fuss.quaternion.copy(q);}
-    function reiterAnwenden(art){if(art==='hufbeschlag'){var f=H/1.75;gelenke.becken.position.x=0;gelenke.becken.position.z=0;gelenke.huefteL.rotation.set(-.9,0,0);gelenke.huefteR.rotation.set(-.9,0,0);gelenke.knieL.rotation.set(1.8,0,0);gelenke.knieR.rotation.set(1.8,0,0);gelenke.bauch.rotation.x=1.1;gelenke.brust.rotation.x=.3;puppe.updateWorldMatrix(true,true);var inv=puppe.matrixWorld.clone().invert(),unten=Infinity;['knoechelL','knoechelR'].forEach(function(n){gelenke[n].traverse(function(m){if(m.isMesh){if(!m.geometry.boundingBox)m.geometry.computeBoundingBox();unten=Math.min(unten,m.geometry.boundingBox.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv,m.matrixWorld)).min.y);}});});gelenke.becken.position.y-=unten;var phase=(p.zeit%.7)/.7,w=.5-.5*Math.cos(phase*Math.PI*2),L=[.08*f,.50*f,.31*f],R=[0,(.5975+.14*w)*f,.31*f];grindHand('L',L);grindHand('R',R);grindZiele={handL:L,handR:R,huf:[0,.48*f,.31*f],werkzeugWinkel:[Math.PI,0,0],phase:[phase]};return;}if(art==='fuehren'){gelenke.becken.position.x=0;gelenke.becken.position.z=0;var f=H/1.75,R=[-.34*f,1.30*f,.26*f];grindHand('R',R);puppe.updateWorldMatrix(true,true);var L=puppe.worldToLocal(gelenke.handL.getWorldPosition(new THREE.Vector3())).toArray();grindZiele={handL:L,handR:R,hand:R.slice(),phase:[p.phase],werkzeugWinkel:[0,0,0]};return;}var f=H/1.75,q=art==='reiten'?1:art==='absitzen'?Math.max(0,1-p.uebergang/.8):p.uebergang,w=sanft(q),hub=Math.sin(Math.PI*q),b=gelenke.becken,L=[.12,1.66,.15],R=[-.12,1.66,.15],FL=[.35,.835+A.knoechel/f,-.065],FR=[.62*(1-w)-.35*w,.45*(1-w)+(.835+A.knoechel/f)*w+.93*hub,-.065+.60*hub],sitz=[.43*(1-w),1.18+(1.515+A.bauch*.3/f-1.18)*w+.33*hub,-.08];
+    function reiterAnwenden(art){if(art==='hufbeschlag'){var f=H/1.75;gelenke.becken.position.x=0;gelenke.becken.position.z=0;gelenke.huefteL.rotation.set(-.9,0,0);gelenke.huefteR.rotation.set(-.9,0,0);gelenke.knieL.rotation.set(1.8,0,0);gelenke.knieR.rotation.set(1.8,0,0);gelenke.bauch.rotation.x=1.1;gelenke.brust.rotation.x=.3;puppe.updateWorldMatrix(true,true);var inv=puppe.matrixWorld.clone().invert(),unten=Infinity;['knoechelL','knoechelR'].forEach(function(n){gelenke[n].traverse(function(m){if((m.isMesh||m.userData.zeichnungsQuelle)&&!m.userData.verschmolzen){if(!m.geometry.boundingBox)m.geometry.computeBoundingBox();unten=Math.min(unten,m.geometry.boundingBox.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv,m.matrixWorld)).min.y);}});});gelenke.becken.position.y-=unten;var phase=(p.zeit%.7)/.7,w=.5-.5*Math.cos(phase*Math.PI*2),L=[.08*f,.50*f,.31*f],R=[0,(.5975+.14*w)*f,.31*f];grindHand('L',L);grindHand('R',R);grindZiele={handL:L,handR:R,huf:[0,.48*f,.31*f],werkzeugWinkel:[Math.PI,0,0],phase:[phase]};return;}if(art==='fuehren'){gelenke.becken.position.x=0;gelenke.becken.position.z=0;var f=H/1.75,R=[-.34*f,1.30*f,.26*f];grindHand('R',R);puppe.updateWorldMatrix(true,true);var L=puppe.worldToLocal(gelenke.handL.getWorldPosition(new THREE.Vector3())).toArray();grindZiele={handL:L,handR:R,hand:R.slice(),phase:[p.phase],werkzeugWinkel:[0,0,0]};return;}var f=H/1.75,q=art==='reiten'?1:art==='absitzen'?Math.max(0,1-p.uebergang/.8):p.uebergang,w=sanft(q),hub=Math.sin(Math.PI*q),b=gelenke.becken,L=[.12,1.66,.15],R=[-.12,1.66,.15],FL=[.35,.835+A.knoechel/f,-.065],FR=[.62*(1-w)-.35*w,.45*(1-w)+(.835+A.knoechel/f)*w+.93*hub,-.065+.60*hub],sitz=[.43*(1-w),1.18+(1.515+A.bauch*.3/f-1.18)*w+.33*hub,-.08];
  if(art==='absitzen'&&p.uebergang>.8){var unten=sanft((p.uebergang-.8)/.2);function blend(a,b){return a.map(function(v,i){return v+(b[i]-v)*unten;});}sitz=blend(sitz,[.43,.919,-.08]);FL=blend(FL,[.52,A.knoechel/f,-.08]);FR=blend(FR,[.34,A.knoechel/f,-.08]);L=blend(L,[.64,1.0,.05]);R=blend(R,[.22,1.0,.05]);}
  if(art==='reiten'){var gang=p.reitGang,period={schritt:1.1/1.6,trab:1.9/3.5,galopp:3/7}[gang],phase=p.reitPhase===null?(p.zeit/period)%1:p.reitPhase;L=[.06,1.85,.32];R=[-.06,1.85,.32];gelenke.brust.rotation.x=.02+({schritt:.025,trab:.06,galopp:.10}[gang])*Math.sin(phase*Math.PI*(gang==='trab'?4:2));}
  b.position.set(sitz[0]*f,sitz[1]*f,sitz[2]*f);gelenke.bauch.rotation.x=.35+.55*hub;if(art!=='reiten')gelenke.brust.rotation.x=.02;gelenke.becken.rotation.set(0,0,0);
@@ -4353,17 +4388,17 @@ var Gliederpuppe = (function () {
       else if(modus==='karren'){gelenke.bauch.rotation.x=0.9;gelenke.brust.rotation.x=0.12;gelenke.knieL.rotation.x=1.5+0.06*Math.max(0,Math.cos(p.phase));gelenke.knieR.rotation.x=1.5+0.06*Math.max(0,-Math.cos(p.phase));gelenke.huefteL.rotation.x=-0.8-0.06*Math.sin(p.phase);gelenke.huefteR.rotation.x=-0.8+0.06*Math.sin(p.phase);L=[0.25,0.6,0.52];R=[-0.25,0.6,0.52];}
       else if(modus==='pfluecken'){L=[0.28,0.88,0.28];R=[-0.12,1.15,0.52+0.10*Math.sin(t*3)];}
       else if(modus==='spinnrad'){var c=Math.cos(t*6),sn=Math.sin(t*6);R=[-0.22+0.14*c-0.16*sn,0.84+0.14*sn+0.16*c,0.45];L=[0.25,0.80,0.38];}
-      else {var q=(t%0.55)/0.55,folge=[[0,1.45,0.36],[0.42,1.88,0.10],[0.68,1.03,0.38],[0.8,1.12,0.36],[1,1.45,0.36]],a=folge[0],b=folge[1];for(var i=1;i<folge.length;i++){b=folge[i];if(q<=b[0])break;a=b;}var w=sanft((q-a[0])/(b[0]-a[0])),hy=a[1]+(b[1]-a[1])*w,hz=a[2]+(b[2]-a[2])*w;beilWinkel=Math.PI/2-Math.PI*sanft(Math.max(0,Math.min(1,(hy-1.03)/0.85)));L=[0.025,hy+0.07*Math.sin(beilWinkel),hz-0.07*Math.cos(beilWinkel)];R=[-0.025,hy-0.07*Math.sin(beilWinkel),hz+0.07*Math.cos(beilWinkel)];}
+      else {var q=(t%0.55)/0.55,folge=[[0,1.45,0.36],[0.42,1.88,0.10],[0.68,1.03,0.38],[0.8,1.12,0.36],[1,1.45,0.36]],a=folge[0],b=folge[1];for(var i=1;i<folge.length;i++){b=folge[i];if(q<=b[0])break;a=b;}var w=sanft((q-a[0])/(b[0]-a[0])),hy=a[1]+(b[1]-a[1])*w,hz=a[2]+(b[2]-a[2])*w;beilWinkel=Math.PI/2-Math.PI*sanft(Math.max(0,Math.min(1,(hy-1.03)/0.85)));hy-=kopfZuwachs*.75/(H/1.75)*Math.max(0,Math.min(1,(hy-1.03)/.85));L=[0.025,hy+0.07*Math.sin(beilWinkel),hz-0.07*Math.cos(beilWinkel)];R=[-0.025,hy-0.07*Math.sin(beilWinkel),hz+0.07*Math.cos(beilWinkel)];}
       if(modus==='alt_gehen'){gelenke.bauch.rotation.x=.65;gelenke.brust.rotation.x=.12;gelenke.kopf.rotation.x=-.15;['L','R'].forEach(function(s){gelenke['huefte'+s].rotation.x=-.15+(s==='L'?-1:1)*.20*Math.sin(p.phase);gelenke['knie'+s].rotation.x=.3+.24*Math.max(0,(s==='L'?1:-1)*Math.cos(p.phase));});}
       if(modus==='kind_an_hand'&&p.kindRolle!=='kind'){var beuge=Math.min(.9,Math.max(0,(1.1/1.75-p.kindGroesse/H)*4));gelenke.bauch.rotation.x=.12+.5*beuge;['L','R'].forEach(function(s){gelenke['huefte'+s].rotation.x-=beuge;gelenke['knie'+s].rotation.x=Math.min(2.6,gelenke['knie'+s].rotation.x+2*beuge);});}
       if(modus==='trommeln'||modus==='trommeln_gehen'){gelenke.bauch.rotation.x=.4;gelenke.brust.rotation.x=.06;}
       if(modus==='tanzen'){gelenke.becken.position.x=.05*f*Math.sin(t*Math.PI*2);gelenke.huefteL.rotation.x=-.15+.15*Math.sin(t*Math.PI*2);gelenke.huefteR.rotation.x=-.15-.15*Math.sin(t*Math.PI*2);gelenke.knieL.rotation.x=.3+.15*Math.max(0,Math.sin(t*Math.PI*2));gelenke.knieR.rotation.x=.3+.15*Math.max(0,-Math.sin(t*Math.PI*2));}
       if(modus==='reifen_treiben'){gelenke.bauch.rotation.x=.65;gelenke.brust.rotation.x=.10;}
       // Nur interne Hüfthöhe korrigieren, niemals Ortsbewegung der Wurzel.
-      puppe.updateWorldMatrix(true,true);var inverse=puppe.matrixWorld.clone().invert(),matrix=new THREE.Matrix4(),b=new THREE.Box3(),unten=Infinity;['knoechelL','knoechelR'].forEach(function(n){gelenke[n].traverse(function(m){if(m.isMesh&&m.userData.art){if(!m.geometry.boundingBox)m.geometry.computeBoundingBox();matrix.multiplyMatrices(inverse,m.matrixWorld);b.copy(m.geometry.boundingBox).applyMatrix4(matrix);unten=Math.min(unten,b.min.y);}});});if(isFinite(unten))gelenke.becken.position.y-=unten;
+      puppe.updateWorldMatrix(true,true);var inverse=puppe.matrixWorld.clone().invert(),matrix=new THREE.Matrix4(),b=new THREE.Box3(),unten=Infinity;['knoechelL','knoechelR'].forEach(function(n){gelenke[n].traverse(function(m){if((m.isMesh||m.userData.zeichnungsQuelle)&&m.userData.art&&!m.userData.verschmolzen){if(!m.geometry.boundingBox)m.geometry.computeBoundingBox();matrix.multiplyMatrices(inverse,m.matrixWorld);b.copy(m.geometry.boundingBox).applyMatrix4(matrix);unten=Math.min(unten,b.min.y);}});});if(isFinite(unten))gelenke.becken.position.y-=unten;
       if(modus==='sack'||modus==='sack_tragen'){puppe.updateWorldMatrix(true,true);var schulter=puppe.worldToLocal(gelenke.schulterR.getWorldPosition(new THREE.Vector3())),a=-.12,co=Math.cos(a),si=Math.sin(a),x=schulter.x/f+.13*si,y=schulter.y/f-.13*co,z=schulter.z/f;lehre.lastOrt=[x,y,z];R=[x-.06*co-.30*si,y-.06*si+.30*co,z+.14];var frei=puppe.worldToLocal(gelenke.handL.getWorldPosition(new THREE.Vector3()));L=[frei.x/f,frei.y/f,frei.z/f];}
       if(modus==='eimer_tragen'){gelenke.bauch.rotation.z=.10;gelenke.schulterR.rotation.set(.04,0,-.28);gelenke.ellbogenR.rotation.set(-.05,0,0);puppe.updateWorldMatrix(true,true);var h=puppe.worldToLocal(gelenke.handR.getWorldPosition(new THREE.Vector3()));R=h.toArray().map(function(v){return v/f;});lehre.hand=R.slice();}
-      if(modus==='nachrufen'){puppe.updateWorldMatrix(true,true);var mund=gelenke.kopf.localToWorld(new THREE.Vector3(.04*f,.025*f,.095*f));mund=puppe.worldToLocal(mund);L=mund.toArray().map(function(v){return v/f;});}if(modus==='drohen'){Object.keys(gelenke).forEach(function(n){if(/^fingerR/.test(n))gelenke[n].rotation.z=1.1;if(/^daumenR/.test(n))gelenke[n].rotation.z=.9;});}if(['schalmei_spielen','dudelsack_spielen'].indexOf(modus)>=0){puppe.updateWorldMatrix(true,true);var mund=puppe.worldToLocal(gelenke.kopf.localToWorld(new THREE.Vector3(0,.025*f,.095*f))).toArray().map(function(v){return v/f;});lehre=festKontakt(modus,t,mund);L=lehre.handL;R=lehre.handR;Object.keys(gelenke).forEach(function(n){if(/^finger[LR]/.test(n)){var s=n.charAt(6)==='L'?-1:1,j=Number(n.charAt(7));gelenke[n].rotation.z=s*(.3+.18*Math.sin(t*12+j));}});}if(modus==='tanzen')gelenke.becken.position.y+=.03*f*Math.max(0,Math.sin(t*Math.PI*2));if(modus==='murmeln'){Object.keys(gelenke).forEach(function(n){if(/^daumenR/.test(n))gelenke[n].rotation.z=.7+.4*Math.sin(t*Math.PI*2/.6);});}if(modus==='anklopfen'){Object.keys(gelenke).forEach(function(n){if(/^fingerR/.test(n))gelenke[n].rotation.z=1.1;});}if(modus==='tuer_spalt'){gelenke.kopf.rotation.y=.3;gelenke.kopf.rotation.z=.12+.025*Math.sin(t*2);}/* GASSENFREI */
+      if(modus==='nachrufen'){puppe.updateWorldMatrix(true,true);var mund=gelenke.kopf.localToWorld(new THREE.Vector3(.04*f*p.kopfFaktor,.025*f*p.kopfFaktor,.095*f*p.kopfFaktor));mund=puppe.worldToLocal(mund);L=mund.toArray().map(function(v){return v/f;});}if(modus==='drohen'){Object.keys(gelenke).forEach(function(n){if(/^fingerR/.test(n))gelenke[n].rotation.z=1.1;if(/^daumenR/.test(n))gelenke[n].rotation.z=.9;});}if(['schalmei_spielen','dudelsack_spielen'].indexOf(modus)>=0){puppe.updateWorldMatrix(true,true);var mund=puppe.worldToLocal(gelenke.kopf.localToWorld(new THREE.Vector3(0,.025*f*p.kopfFaktor,.095*f*p.kopfFaktor))).toArray().map(function(v){return v/f;});lehre=festKontakt(modus,t,mund);L=lehre.handL;R=lehre.handR;Object.keys(gelenke).forEach(function(n){if(/^finger[LR]/.test(n)){var s=n.charAt(6)==='L'?-1:1,j=Number(n.charAt(7));gelenke[n].rotation.z=s*(.3+.18*Math.sin(t*12+j));}});}if(modus==='tanzen')gelenke.becken.position.y+=.03*f*Math.max(0,Math.sin(t*Math.PI*2));if(modus==='murmeln'){Object.keys(gelenke).forEach(function(n){if(/^daumenR/.test(n))gelenke[n].rotation.z=.7+.4*Math.sin(t*Math.PI*2/.6);});}if(modus==='anklopfen'){Object.keys(gelenke).forEach(function(n){if(/^fingerR/.test(n))gelenke[n].rotation.z=1.1;});}if(modus==='tuer_spalt'){gelenke.kopf.rotation.y=.3;gelenke.kopf.rotation.z=.12+.025*Math.sin(t*2);}/* GASSENFREI */
       if(modus==='anprobieren'){puppe.updateWorldMatrix(true,true);var fuss=puppe.worldToLocal(gelenke.knoechelR.getWorldPosition(new THREE.Vector3())),w=Math.sin(t*Math.PI*2/LADENTAKTE[modus]);L=[fuss.x/f+.07,fuss.y/f+.12,fuss.z/f+.03+.015*w];R=[fuss.x/f-.045,fuss.y/f+.12,fuss.z/f+.07-.015*w];}
       L=L.map(function(v){return v*f;});R=R.map(function(v){return v*f;});grindZiele={handL:L,handR:R};if(lehre){grindZiele.werkzeugWinkel=lehre.werkzeugWinkel;grindZiele.phase=lehre.phase;if(lehre.instrumentOrt){grindZiele.instrumentOrt=lehre.instrumentOrt.map(function(v){return v*f;});grindZiele.instrumentWinkel=lehre.instrumentWinkel.slice();}if(lehre.faust)grindZiele.faust=lehre.faust.map(function(v){return v*f;});if(lehre.arm)grindZiele.arm=lehre.arm.map(function(v){return v*f;});if(lehre.stock)grindZiele.stock=lehre.stock.map(function(v){return v*f;});if(lehre.hand)grindZiele.hand=lehre.hand.map(function(v){return v*f;});if(lehre.offen)grindZiele.offen=lehre.offen.slice();if(lehre.seite)grindZiele.seite=lehre.seite.slice();if(lehre.lastOrt){grindZiele.lastOrt=lehre.lastOrt.map(function(v){return v*f;});grindZiele.lastWinkel=lehre.lastWinkel;if(lehre.rollWinkel)grindZiele.rollWinkel=lehre.rollWinkel;}}if(beilWinkel!==null)grindZiele.beilWinkel=[beilWinkel];if(['sack','sack_tragen','eimer_tragen','alt_gehen','reifen_treiben'].indexOf(modus)>=0||modus==='kind_an_hand'&&p.kindRolle!=='kind'){puppe.updateWorldMatrix(true,true);var frei=puppe.worldToLocal(gelenke.handL.getWorldPosition(new THREE.Vector3()));grindZiele.handL=frei.toArray();}else grindHand('L',L);if(modus==='kind_an_hand'&&p.kindRolle==='kind'){puppe.updateWorldMatrix(true,true);grindZiele.handR=puppe.worldToLocal(gelenke.handR.getWorldPosition(new THREE.Vector3())).toArray();}else if(modus!=='eimer_tragen')grindHand('R',R);
     }
@@ -4375,6 +4410,8 @@ var Gliederpuppe = (function () {
     function bewegen(art, dt, tempo, parameter) {
       if (typeof dt !== 'number' || !isFinite(dt) || dt < 0) throw new Error('dt muss endlich und nicht negativ sein');
       if (tempo !== undefined && (typeof tempo !== 'number' || !isFinite(tempo) || tempo < 0)) throw new Error('tempo muss endlich und nicht negativ sein');
+      if(KLEINKINDARTEN.indexOf(art)>=0&&!p.kleinkind)throw new Error('Diese Bewegung benötigt eine Kleinkindfigur');
+      if(parameter&&parameter.rockHand!==undefined){if(!Array.isArray(parameter.rockHand)||parameter.rockHand.length!==3||parameter.rockHand.some(function(v){return typeof v!=='number'||!isFinite(v);}))throw new Error('rockHand muss [x,y,z] sein');p.rockHand=parameter.rockHand.slice();}
       if ([0,1,2].indexOf(p.lod) < 0) throw new Error('lod muss 0, 1 oder 2 sein');
       if ([null,'winken','packen','hacken','tragen','korb','karren','stein','sack'].indexOf(p.oben) < 0) throw new Error('Unbekannter Oberkörper-Zuschlag');
       if(parameter&&parameter.gang!==undefined){if(['schritt','trab','galopp'].indexOf(parameter.gang)<0)throw new Error('Unbekannter Reitgang');p.reitGang=parameter.gang;}if(parameter&&parameter.reitPhase!==undefined){if(parameter.reitPhase!==null&&(typeof parameter.reitPhase!=='number'||!isFinite(parameter.reitPhase)||parameter.reitPhase<0||parameter.reitPhase>1))throw new Error('reitPhase muss null oder 0–1 sein');p.reitPhase=parameter.reitPhase;}
@@ -4396,6 +4433,8 @@ var Gliederpuppe = (function () {
       p.angeforderteArt = gewuenscht; return ergebnis(art);
     }
     function aktualisieren(art, dt, tempo) {
+      if(p.kleinkind&&KLEINKINDARTEN.indexOf(art)>=0){kleinkindBewegen(art,dt,tempo);return;}
+      if(kindArt!==null){anwenden(kindGrund);kindArt=null;kindWeg=0;grundZuletzt=null;nachlaufZuletzt=null;grindZiele=null;}
       var vorher = p.lod === 1 ? merken() : null;
       if (grundZuletzt) Object.keys(grundZuletzt).forEach(function(n){gelenke[n].rotation.copy(grundZuletzt[n].rotation);gelenke[n].position.copy(grundZuletzt[n].position);});
       bewegenGrund(art, dt, tempo === undefined ? undefined : tempo / p.schrittfaktor);
@@ -4423,9 +4462,11 @@ var Gliederpuppe = (function () {
       if (vorher) for (var n in gelenke) if (!hauptglied(n)) { gelenke[n].rotation.copy(vorher[n].rotation); gelenke[n].position.copy(vorher[n].position); }
       if (neueArten.indexOf(art) >= 0 || p.landung > 0) bodenSichern(art === 'abrollen' && !p.fertig, ablauf && ablauf.wurzel ? ablauf.wurzel.position.y : puppe.position.y);
       grindAnwenden(art);
+      if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();
       p.aktualisierungen++;
     }
 
+    if(p.verschmelzen){var v=typeof Verschmelzen!=='undefined'?Verschmelzen:typeof require==='function'?require('./verschmelzen.js'):null;if(v)v.figur(p);}
     return p;
 
     // ---- Bewegung ----
@@ -4476,7 +4517,7 @@ var Gliederpuppe = (function () {
         faust = R ? 1.35 : 0.35;
       } else if (Object.prototype.hasOwnProperty.call(LADENTAKTE,art)) {
         Object.keys(POSEN[art]).forEach(function(n){ziel[n]=POSEN[art][n].slice();});
-        if(art==='anprobieren')hoch=-A.oberschenkel*.97;var at=Math.sin(t*Math.PI*2/LADENTAKTE[art]);setz('handR',.08*at);setz('handL',-.06*at);
+        if(art==='anprobieren'){hoch=-A.oberschenkel*.97;ziel.brust[0]=Math.min(.6,ziel.brust[0]+kopfZuwachs/H*4);}var at=Math.sin(t*Math.PI*2/LADENTAKTE[art]);setz('handR',.08*at);setz('handL',-.06*at);
       } else if (Object.prototype.hasOwnProperty.call(LEHRETAKTE,art)||['beil','pfluecken','korb','karren','stein','spinnrad'].indexOf(art)>=0) {
         Object.keys(POSEN[art]).forEach(function(n){ziel[n]=POSEN[art][n].slice();});
         if(art==='spinnrad'||Object.prototype.hasOwnProperty.call(LEHRETAKTE,art))hoch=-A.oberschenkel*0.97;
@@ -4563,7 +4604,7 @@ var Gliederpuppe = (function () {
     }
   }
 
-  return { bauen: bauen, REITTAKTE:REITTAKTE, LEHRETAKTE:LEHRETAKTE, LADENTAKTE:LADENTAKTE, LAENDETAKTE:LAENDETAKTE, PELZERTAKTE:PELZERTAKTE, GASSENTAKTE:GASSENTAKTE, FESTTAKTE:FESTTAKTE, ANTEIL: ANTEIL, MIXAMO: MIXAMO, SCHEMA: SCHEMA, POSEN: POSEN, POSENFOLGEN: POSENFOLGEN, winkelGrenzen: winkelGrenzen,
+  return { bauen: bauen, KOPF_ANTEIL:.150, KIND_KOPF_ANTEIL:.180, KLEINKINDARTEN:KLEINKINDARTEN, KLEINKINDANTEIL:KLEINKINDANTEIL, REITTAKTE:REITTAKTE, LEHRETAKTE:LEHRETAKTE, LADENTAKTE:LADENTAKTE, LAENDETAKTE:LAENDETAKTE, PELZERTAKTE:PELZERTAKTE, GASSENTAKTE:GASSENTAKTE, FESTTAKTE:FESTTAKTE, ANTEIL: ANTEIL, MIXAMO: MIXAMO, SCHEMA: SCHEMA, POSEN: POSEN, POSENFOLGEN: POSENFOLGEN, winkelGrenzen: winkelGrenzen,
     poseSpeichern: function (name, pose) { if (typeof name !== 'string' || !/^[a-z][a-z0-9_]*$/.test(name) || name === '__proto__' || name === 'constructor' || name === 'prototype') throw new Error('Gültiger deutscher Posenname benötigt'); pruefeWinkelsatz(pose); var kopie = {}; Object.keys(pose).forEach(function (n) { kopie[n] = pose[n].slice(); }); POSEN[name] = kopie; return kopie; }
   };
 })();
@@ -4850,6 +4891,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Waren;
  */
 var Tiere = (function () {
   'use strict';
+  function zeichnung(t) { var v = typeof Verschmelzen !== 'undefined' ? Verschmelzen : typeof module !== 'undefined' && module.exports ? require('./verschmelzen.js') : null; return v ? v.tier(t) : t; }
+
   var materialien = {}, geometrien = {};
   var F = { schwein: 0x655548, ferkel: 0x967b64, nase: 0x9b7969,
     huf: 0x352f29, auge: 0x201f1b, borste: 0x3d382e, weiss: 0xdedbc9,
@@ -4953,7 +4996,7 @@ var Tiere = (function () {
       schwanz.rotation.y = weich(schwanz.rotation.y, liegend ? 0 : Math.sin(zeit * 2 + phase) * 0.22, dt);
       bodenSichern();
     }
-    return { gruppe: gruppe, bewegen: bewegen };
+    return zeichnung({ gruppe: gruppe, bewegen: bewegen });
   }
   function vogelBauen(huhn) {
     var gruppe = new THREE.Group(); gruppe.name = huhn ? 'Huhn' : 'Gans';
@@ -5003,7 +5046,7 @@ var Tiere = (function () {
       schwanz.rotation.x = weich(schwanz.rotation.x, Math.sin(zeit * 1.5 + phase) * 0.045, dt);
       bodenSichern();
     }
-    return { gruppe: gruppe, bewegen: bewegen };
+    return zeichnung({ gruppe: gruppe, bewegen: bewegen });
   }
   return { schwein: function () { return schweinBauen(false); }, ferkel: function () { return schweinBauen(true); },
     gans: function () { return vogelBauen(false); }, huhn: function () { return vogelBauen(true); } };
@@ -5315,10 +5358,11 @@ var Kleidung = (function () {
     function farbe(t,standard){return Object.prototype.hasOwnProperty.call(farben,t)?farben[t]:standard;}
     function teil(t,n){var g=new THREE.Group();g.name=t+' / '+n;g.userData.kleidung=true;g.userData.teil=t;g.userData.gelenk=n;g.userData.verdeckt=[];g.userData.ziel=G[n];liste.push(g);return g;}
     function form(g,n,f,x,y,z,b,h,t){var m=new THREE.Mesh(geo(n),mat(f));m.position.set(x*H,y*H,z*H);m.scale.set(b*H,h*H,t*H);m.castShadow=true;m.userData.kleidungsMesh=true;g.add(m);return m;}
-    function verdecken(g,n){G[n].children.forEach(function(m){if(m.isMesh)g.userData.verdeckt.push(m);});}
+    function verdecken(g,n){G[n].children.forEach(function(m){if((m.isMesh||m.userData.zeichnungsQuelle)&&!m.userData.verschmolzen)g.userData.verdeckt.push(m);});}
     function huelle(t,n,f,zuschlag){
       var g=teil(t,n), m=G[n].userData.glied;
       if(!m)throw new Error('Körpersegment fehlt: '+n);
+      if(puppe.kleinkind){var eng=new THREE.Mesh(m.geometry,mat(f));eng.position.copy(m.position);eng.scale.copy(m.scale).multiplyScalar(1.01);eng.castShadow=true;eng.userData.kleidungsMesh=true;eng.userData.huellenGlied=n;g.add(eng);verdecken(g,n);return g;}
       var p=m.geometry.parameters, r=Math.max(p.radiusTop,p.radiusBottom)/H, h=p.height/H;
       // Weite Zylinder um das Glied und seine Gelenkkugel; Vierkant umschreibt den Körper.
       var a=(r+zuschlag)/Math.cos(Math.PI/4), z=Math.max(m.scale.z*a,r*1.13+0.008);
@@ -5337,9 +5381,9 @@ var Kleidung = (function () {
       if(t==='kittel'||t==='lumpen'||t==='wappenrock'){oberteil(t,f,0.034);if(t!=='wappenrock')aermel(t,f);rock(t,f,t==='lumpen');if(t==='wappenrock'){var g=teil(t,'brust');form(g,'box',farbe('wappen_links',0x943c32),0.05,0.105,0.11,0.09,0.18,0.008);form(g,'box',farbe('wappen_rechts',0xceba79),-0.05,0.105,0.11,0.09,0.18,0.008);}var b=teil(t,'becken');form(b,'ring',farbe('guertel',0x4e3828),0,0.066,0,0.145,0.019,0.105);}
       if(t==='beinlinge'){['L','R'].forEach(function(s){huelle(t,'huefte'+s,f,0.014);huelle(t,'knie'+s,f,0.014);});}
       if(t==='bruoche'){var u=teil(t,'becken');form(u,'ring',f,0,0.02,0,0.12,0.09,0.083);verdecken(u,'becken');['L','R'].forEach(function(s){var g=teil(t,'huefte'+s);form(g,'ring',f,0,-0.044,0,0.098,0.09,0.098);});}
-      if(t==='brautkranz'){var g=teil(t,'kopf'),ring=form(g,'kranz',farbe(t,0x527247),0,.095,0,.07,.07,.075);ring.rotation.x=Math.PI/2;form(g,'haube',farbe('haar',0x78553a),0,.077,0,.066,.060,.074);[-1,1].forEach(function(v){form(g,'box',farbe('haar',0x78553a),v*.052,.035,-.03,.018,.10,.06);});for(var j=0;j<3;j++){var a=j*Math.PI*2/3;form(g,'beutel',farbe('blueten',0xe5dcb3),Math.cos(a)*.07,.096,Math.sin(a)*.075,.015,.014,.015);}g.userData.verdeckt=[];G.kopf.traverse(function(m){if(m.isMesh&&m.userData.kleidungsMesh)g.userData.verdeckt.push(m);});}
+      if(t==='brautkranz'){var g=teil(t,'kopf'),ring=form(g,'kranz',farbe(t,0x527247),0,.095,0,.07,.07,.075);ring.rotation.x=Math.PI/2;form(g,'haube',farbe('haar',0x78553a),0,.077,0,.066,.060,.074);[-1,1].forEach(function(v){form(g,'box',farbe('haar',0x78553a),v*.052,.035,-.03,.018,.10,.06);});for(var j=0;j<3;j++){var a=j*Math.PI*2/3;form(g,'beutel',farbe('blueten',0xe5dcb3),Math.cos(a)*.07,.096,Math.sin(a)*.075,.015,.014,.015);}g.userData.verdeckt=[];G.kopf.traverse(function(m){if(m.userData.kleidungsMesh&&!m.userData.verschmolzen)g.userData.verdeckt.push(m);});}
       if(t==='festgewand'){var f=farbe(t,0x964b3d);['brust','bauch'].forEach(function(n){var g=teil(t,n),y=n==='brust'?.09:.025,h=n==='brust'?.20:.095;form(g,'box',f,0,y,.163,.30,h,.018);form(g,'box',f,0,y,-.154,.31,h,.018);});var g=teil(t,'becken');form(g,'ring',farbe('festband',0xc1a26a),0,.07,0,.16,.019,.13);form(g,'box',f,0,.015,.15,.29,.10,.02);['L','R'].forEach(function(v){var g=teil(t,'huefte'+v);form(g,'box',f,0,-.13,.18,.14,.25,.015);});}
-      if(t==='schleier'){var g=teil(t,'kopf'),f=farbe(t,0xe2d7bd);form(g,'ring',f,0,.09,0,.073,.035,.082);form(g,'haube',f,0,.115,0,.071,.040,.08);form(g,'box',f,0,.022,-.083,.14,.19,.018);[-1,1].forEach(function(v){form(g,'box',f,v*.070,.012,-.015,.012,.13,.12);});G.kopf.traverse(function(m){if(m.isMesh&&m.userData.kleidungsMesh)g.userData.verdeckt.push(m);});}
+      if(t==='schleier'){var g=teil(t,'kopf'),f=farbe(t,0xe2d7bd);form(g,'ring',f,0,.09,0,.073,.035,.082);form(g,'haube',f,0,.115,0,.071,.040,.08);form(g,'box',f,0,.022,-.083,.14,.19,.018);[-1,1].forEach(function(v){form(g,'box',f,v*.070,.012,-.015,.012,.13,.12);});G.kopf.traverse(function(m){if(m.userData.kleidungsMesh&&!m.userData.verschmolzen)g.userData.verdeckt.push(m);});}
       if(t==='pelzkragen'){var g=teil(t,'brust');[-1,1].forEach(function(v){form(g,'beutel',farbe(t,0x816346),v*.09,.195,0,.065,.042,.14);});form(g,'beutel',farbe(t,0x816346),0,.19,.10,.13,.042,.065);}
       if(t==='pelzmuetze'){var g=teil(t,'kopf');form(g,'hut',farbe(t,0x76583f),0,.15,0,.112,.115,.125);form(g,'ring',farbe(t,0x977a57),0,.108,0,.116,.035,.13);}
       if(t==='lederschuerze'){var o=teil(t,'brust');form(o,'box',f,0,.09,.145,.15,.18,.013);var a=teil(t,'bauch');form(a,'box',f,0,.025,.15,.15,.09,.013);var b=teil(t,'becken');form(b,'ring',0x4e3828,0,.06,0,.157,.014,.13);['L','R'].forEach(function(s){var g=teil(t,'huefte'+s);form(g,'box',f,0,-.145,.175,.145,.295,.013);var k=teil(t,'knie'+s);form(k,'box',f,0,-.035,.12,.145,.07,.013);});}
@@ -5348,12 +5392,13 @@ var Kleidung = (function () {
       if(t==='mantel'){['brust','bauch','becken'].forEach(function(n){var g=teil(t,n), y=n==='brust'?0.09:n==='bauch'?0.03:0;form(g,'box',f,0,y,-0.125,0.29,n==='brust'?0.205:0.11,0.018);});['L','R'].forEach(function(s){var g=teil(t,'huefte'+s);form(g,'box',f,0,-0.12,-0.16,0.19,0.245,0.02);});}
       if(t==='guertel_mit_beutel'){var v=teil(t,'becken');form(v,'ring',farbe('guertel',0x4e3828),0,0.064,0,0.15,0.022,0.11);form(v,'beutel',farbe('beutel',0x805638),-0.155,0.014,0.07,0.047,0.06,0.042);}
     });
+    liste.forEach(function(g){if(g.userData.gelenk==='kopf')g.scale.setScalar(puppe.kopfFaktor||1);if(g.userData.gelenk==='brust'&&['pelzkragen','gugel'].indexOf(g.userData.teil)>=0)g.position.y=(puppe.masse?puppe.masse.brust:.198*H)-.198*H;});
     // Montage erst nach erfolgreicher Prüfung/Bau; auch mehrere Lagen sind reversibel.
     if(liste.length) {
       var zustand=puppe.gruppe.userData.kleidungsLod;
       if(!zustand) {
         zustand={anzahl:0,formen:[]};puppe.gruppe.userData.kleidungsLod=zustand;
-        puppe.gruppe.traverse(function(m){if(!m.isMesh||m.userData.kleidungsMesh||!m.userData.art)return;var p=m.geometry.parameters,n=m.geometry.type,klein=m.geometry;
+        puppe.gruppe.traverse(function(m){if(!(m.isMesh||m.userData.zeichnungsQuelle)||m.userData.verschmolzen||m.userData.kleidungsMesh||!m.userData.art)return;var p=m.geometry.parameters,n=m.geometry.type,klein=m.geometry;
           var schluessel='puppe/'+n+'/'+JSON.stringify(p);
           if(!geometrien[schluessel]) {
             if(n==='SphereGeometry')klein=new THREE.SphereGeometry(p.radius,4,3);
@@ -5368,10 +5413,11 @@ var Kleidung = (function () {
       if(liste.some(function(g){return ['lederschuerze','pelzkragen','pelzmuetze','brautkranz','festgewand','schleier'].indexOf(g.userData.teil)>=0;})){liste[0].userData.schuerzenLod=true;zustand.schuerzen=(zustand.schuerzen||0)+1;if(zustand.schuerzen===1)zustand.formen.forEach(function(v){var m=v.mesh;if(m.geometry.type==='SphereGeometry'){v.vorSchuerze=m.geometry;var r=m.geometry.parameters.radius,k='schuerzenkugel/'+r;if(!geometrien[k])geometrien[k]=new THREE.SphereGeometry(r,4,2);m.geometry=geometrien[k];}});}
       liste.forEach(function(g){g.userData.puppe=puppe;zustand.anzahl++;});
     }
-    liste.forEach(function(g){g.userData.verdeckt.forEach(function(m){var v=m.userData.kleidungsSicht;if(!v){v={anzahl:0,vorher:m.visible};m.userData.kleidungsSicht=v;}v.anzahl++;m.visible=false;});g.userData.ziel.add(g);});return liste;
+    liste.forEach(function(g){g.userData.verdeckt.forEach(function(m){var v=m.userData.kleidungsSicht;if(!v){v={anzahl:0,vorher:m.visible};m.userData.kleidungsSicht=v;}v.anzahl++;m.visible=false;});g.userData.ziel.add(g);});aktualisieren(puppe);return liste;
   }
-  function ausziehen(liste){if(!Array.isArray(liste))throw new Error('Kleidungsliste benötigt');liste.forEach(function(g){if(!g||!g.userData.kleidung||g.userData.abgenommen)return;if(g.parent)g.parent.remove(g);g.userData.verdeckt.forEach(function(m){var v=m.userData.kleidungsSicht;if(v){v.anzahl--;if(!v.anzahl){m.visible=v.vorher;delete m.userData.kleidungsSicht;}}});g.userData.abgenommen=true;var p=g.userData.puppe,z=p&&p.gruppe.userData.kleidungsLod;if(z){if(g.userData.schuerzenLod){z.schuerzen--;if(!z.schuerzen)z.formen.forEach(function(v){if(v.vorSchuerze){v.mesh.geometry=v.vorSchuerze;delete v.vorSchuerze;}});}z.anzahl--;if(!z.anzahl){z.formen.forEach(function(v){v.mesh.geometry=v.geometrie;if(v.finger)v.mesh.visible=v.sicht;});delete p.gruppe.userData.kleidungsLod;}}});}
-  return {anziehen:anziehen,ausziehen:ausziehen,satz:satz};
+  function ausziehen(liste){var puppen=[];if(!Array.isArray(liste))throw new Error('Kleidungsliste benötigt');liste.forEach(function(g){if(!g||!g.userData.kleidung||g.userData.abgenommen)return;if(g.parent)g.parent.remove(g);g.userData.verdeckt.forEach(function(m){var v=m.userData.kleidungsSicht;if(v){v.anzahl--;if(!v.anzahl){m.visible=v.vorher;delete m.userData.kleidungsSicht;}}});g.userData.abgenommen=true;var p=g.userData.puppe;if(p&&puppen.indexOf(p)<0)puppen.push(p);var z=p&&p.gruppe.userData.kleidungsLod;if(z){if(g.userData.schuerzenLod){z.schuerzen--;if(!z.schuerzen)z.formen.forEach(function(v){if(v.vorSchuerze){v.mesh.geometry=v.vorSchuerze;delete v.vorSchuerze;}});}z.anzahl--;if(!z.anzahl){z.formen.forEach(function(v){v.mesh.geometry=v.geometrie;if(v.finger)v.mesh.visible=v.sicht;});delete p.gruppe.userData.kleidungsLod;}}});puppen.forEach(aktualisieren);}
+  function aktualisieren(p){if(!p||typeof p.grindKontakte!=='function'||p.verschmelzen===false)return;var v=typeof Verschmelzen!=='undefined'?Verschmelzen:typeof require==='function'?require('./verschmelzen.js'):null;if(v)v.kleidung(p);}
+  return {aktualisieren:aktualisieren,anziehen:anziehen,ausziehen:ausziehen,satz:satz};
 }());
 if(typeof module!=='undefined'&&module.exports)module.exports=Kleidung;
 
@@ -5477,6 +5523,8 @@ if(typeof module!=='undefined'&&module.exports)module.exports=Sammeln;
  */
 var Hund = (function () {
   'use strict';
+  function zeichnung(t) { var v = typeof Verschmelzen !== 'undefined' ? Verschmelzen : typeof module !== 'undefined' && module.exports ? require('./verschmelzen.js') : null; return v ? v.tier(t) : t; }
+
   var materialien = {}, geometrien = {};
   var FARBEN = {
     braun: { fell: 0x836445, hell: 0xc0a478, dunkel: 0x594333 },
@@ -5616,7 +5664,7 @@ var Hund = (function () {
       }
       sichern();
     }
-    return { gruppe: g, bewegen: bewegen, schauen: schauen };
+    return zeichnung({ gruppe: g, bewegen: bewegen, schauen: schauen });
   }
   return { hund: hund };
 }());
@@ -6600,6 +6648,8 @@ return {schalmei:schalmei,trommel:trommel,dudelsack:dudelsack,fiedel:fiedel,boge
  * Geteilte Ressourcen nicht je Tier dispose(). Ortsbewegung macht das Spiel. */
 var Pferde = (function () {
  'use strict';
+  function zeichnung(t) { var v = typeof Verschmelzen !== 'undefined' ? Verschmelzen : typeof module !== 'undefined' && module.exports ? require('./verschmelzen.js') : null; return v ? v.tier(t) : t; }
+
  var geometrien={},materialien={};
  function optionen(o){o=o||{};if(o.saat!==undefined&&(typeof o.saat!=='number'||!isFinite(o.saat)||Math.floor(o.saat)!==o.saat))throw new Error('Ganzzahlige Saat benötigt');return o;}
  function material(f){if(!materialien[f])materialien[f]=new THREE.MeshLambertMaterial({color:f});return materialien[f];}
@@ -6622,7 +6672,7 @@ var Pferde = (function () {
  g.gruppe=g;g.gelenke={rumpf:r,hals:hals,kopf:kopf,maehne:maehne,schweif:schweif};g.beine=beine;g.zeit=0;g.art='stehen';
  var gangZeit=0,weg=0,einmal=0,stand=[],schrittDaten={schritt:{tempo:1.6,weg:1.1,stand:.62,hub:.13,versatz:[0,.5,.75,.25]},trab:{tempo:3.5,weg:1.9,stand:.52,hub:.22,versatz:[0,.5,.5,0]},galopp:{tempo:7,weg:3,stand:.26,hub:.32,versatz:[0,.12,.40,.52]}};
  function ausrichten(m,a,b){m.position.copy(a).add(b).multiplyScalar(.5);m.scale.y=a.distanceTo(b);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());}
- function beinSetzen(b,z,y){var ziel=new THREE.Vector3(b.hip.x,y+.08,z),v=ziel.clone().sub(b.hip),d=v.length(),l=.64,mitte=b.hip.clone().add(ziel).multiplyScalar(.5),senk=new THREE.Vector3(0,-v.z,v.y).normalize().multiplyScalar(Math.sqrt(Math.max(0,l*l-d*d/4))*(b.name.indexOf('vorn')===0?-1:1));var knie=mitte.add(senk);ausrichten(b.ober,b.hip,knie);ausrichten(b.unter,knie,ziel);b.huf.position.set(ziel.x,y+.04,z);b.punkt.position.set(ziel.x,y,z);b.huf.rotation.x=-r.rotation.x;}
+ function beinSetzen(b,z,y){var ziel=new THREE.Vector3(b.hip.x,y+.08,z),v=ziel.clone().sub(b.hip),d=v.length(),l=.58,mitte=b.hip.clone().add(ziel).multiplyScalar(.5),senk=new THREE.Vector3(0,-v.z,v.y).normalize().multiplyScalar(Math.sqrt(Math.max(0,l*l-d*d/4))*(b.name.indexOf('vorn')===0?-1:1));var knie=mitte.add(senk);ausrichten(b.ober,b.hip,knie);ausrichten(b.unter,knie,ziel);b.huf.position.set(ziel.x,y+.04,z);b.punkt.position.set(ziel.x,y,z);b.huf.rotation.x=-r.rotation.x;}
  g.kontakte=function(){g.updateWorldMatrix(true,true);var inv=g.matrixWorld.clone().invert(),c={};beine.forEach(function(b,i){var v=b.punkt.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv);c[b.name]={ort:v.toArray(),stand:stand[i]===true};});return c;};
  g.bewegen=function(art,dt,tempo){var arten=['stehen','schritt','trab','galopp','steigen','grasen','scharren','huf_geben'];if(arten.indexOf(art)<0)throw new Error('Unbekannte Gangart: '+art);zahl(dt);var gang=schrittDaten[art];if(tempo===undefined)tempo=gang?gang.tempo:0;zahl(tempo);if(g.art!==art){gangZeit=0;weg=0;einmal=0;}g.zeit+=dt;gangZeit+=dt;weg+=tempo*dt;g.art=art;g.fertig=false;g.uebergang=0;r.position.set(0,0,0);r.rotation.set(0,0,0);hals.rotation.x=0;kopf.rotation.x=0;maehne.rotation.z=Math.sin(g.zeit*1.8)*.012;schweif.rotation.z=Math.sin(g.zeit*1.4)*.06;
  var winkel=0;if(art==='steigen'){einmal=Math.min(1.2,einmal+dt);g.uebergang=einmal/1.2;g.fertig=einmal>=1.2;winkel=-.65*Math.pow(Math.sin(g.uebergang*Math.PI),2);r.rotation.x=winkel;r.position.y=-.53*Math.sin(winkel);r.position.z=.53*(Math.cos(winkel)-1);}
@@ -6631,7 +6681,7 @@ var Pferde = (function () {
  g.updateMatrixWorld(true);return g;};
  g.bewegen('stehen',0);
 
- return g;
+ return zeichnung(g);
  }
  function sattelzeug(o){o=optionen(o);var art=o.art===undefined?'sattel':o.art,g=new THREE.Group();g.name=art;if(['sattel','zaum','packsattel'].indexOf(art)<0)throw new Error('Unbekanntes Sattelzeug');g.userData.montage='sattel';
  if(art==='sattel'){form(g,'box',0x6a3b2b,0,-.055,0,.68,.07,.72);form(g,'box',0x493020,0,.015,0,.44,.06,.59);form(g,'box',0x78543b,0,.115,.28,.43,.20,.07);form(g,'box',0x78543b,0,.135,-.28,.43,.24,.07);punkt(g,'sitz',0,.045,0);[-1,1].forEach(function(v){form(g,'box',0x483324,v*.35,-.32,.015,.028,.59,.033);form(g,'box',0x5d5a52,v*.35,-.65,.015,.16,.03,.14);form(g,'box',0x5d5a52,v*.42,-.60,.015,.025,.11,.14);form(g,'box',0x5d5a52,v*.28,-.60,.015,.025,.11,.14);punkt(g,v<0?'steigbuegelR':'steigbuegelL',v*.35,-.635,.015);});}
@@ -6639,7 +6689,7 @@ var Pferde = (function () {
  if(art==='zaum'){var k=punkt(g,'kopfzeug',0,.36,.94);[-1,1].forEach(function(v){form(k,'box',0x483224,v*.155,-.01,.10,.024,.32,.025);form(k,'box',0x483224,v*.135,-.12,.37,.025,.12,.025);});form(k,'box',0x483224,0,.15,.1,.33,.025,.025);form(k,'box',0x483224,0,-.12,.39,.28,.025,.025);var seg=[];[-1,1].forEach(function(v){var a=punkt(k,'gebiss'+(v<0?'R':'L'),v*.14,-.13,.39),b=punkt(g,'griff'+(v<0?'R':'L'),v*.06,.38,.40),m=verbindung(g,0x493321,new THREE.Vector3(v*.14,.23,1.33),b.position,.014);seg.push({a:a,b:b,m:m});});g.anpassen=function(tier){if(!tier||!tier.getObjectByName('kopf'))throw new Error('Tier mit Kopfpunkt benötigt');g.updateWorldMatrix(true,true);tier.updateWorldMatrix(true,true);var kopf=tier.getObjectByName('kopf'),inv=g.matrixWorld.clone().invert(),m=new THREE.Matrix4().multiplyMatrices(inv,kopf.matrixWorld);m.decompose(k.position,k.quaternion,k.scale);k.updateWorldMatrix(true,true);seg.forEach(function(s){var a=s.a.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv),b=s.b.position;s.m.position.copy(a).add(b).multiplyScalar(.5);s.m.scale.y=a.distanceTo(b);s.m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());});return g;};}
  return g;
  }
- function esel(o){o=optionen(o);var g=pferd({farbe:'schimmel',saat:o.saat}),r=g.gelenke.rumpf,alt=g.bewegen,letzte='stehen',bockZeit=0;r.scale.setScalar(.76);g.name='esel';g.userData.stockmass=1.45*.76;g.userData.art='esel';['ohrL','ohrR'].forEach(function(n){var o=g.getObjectByName(n);o.scale.y=.39;o.position.y=.32;});punkt(r,'last',0,1.47,-.08);g.bewegen=function(art,dt,tempo){if(art==='galopp')throw new Error('Esel galoppiert hier nicht');zahl(dt);if(tempo!==undefined)zahl(tempo);if(art!==letzte)bockZeit=0;if(art==='bocken'){alt('stehen',dt,0);bockZeit=Math.min(1.2,bockZeit+dt);g.gelenke.hals.rotation.x=.7*Math.min(1,bockZeit/.3);g.gelenke.kopf.rotation.x=.15;g.fertig=bockZeit>=1.2;g.uebergang=bockZeit/1.2;}else{if(tempo===undefined)tempo=art==='schritt'?1.2:art==='trab'?2.5:0;alt(art,dt,tempo/.76);}g.art=art;letzte=art;g.updateMatrixWorld(true);return g;};return g;}
+ function esel(o){o=optionen(o);var g=pferd({farbe:'schimmel',saat:o.saat}),r=g.gelenke.rumpf,alt=g.bewegen,letzte='stehen',bockZeit=0;r.scale.setScalar(.76);g.name='esel';g.userData.stockmass=1.45*.76;g.userData.art='esel';['ohrL','ohrR'].forEach(function(n){var o=g.getObjectByName(n);o.scale.y=.39;o.position.y=.32;});punkt(r,'last',0,1.47,-.08);g.bewegen=function(art,dt,tempo){if(art==='galopp')throw new Error('Esel galoppiert hier nicht');zahl(dt);if(tempo!==undefined)zahl(tempo);if(art!==letzte)bockZeit=0;if(art==='bocken'){alt('stehen',dt,0);bockZeit=Math.min(1.2,bockZeit+dt);g.gelenke.hals.rotation.x=.7*Math.min(1,bockZeit/.3);g.gelenke.kopf.rotation.x=.15;g.fertig=bockZeit>=1.2;g.uebergang=bockZeit/1.2;}else{if(tempo===undefined)tempo=art==='schritt'?1.2:art==='trab'?2.5:0;alt(art,dt,tempo/.76);}g.art=art;letzte=art;g.updateMatrixWorld(true);return g;};return zeichnung(g);}
  function fertig(g){g.updateMatrixWorld(true);var b=new THREE.Box3().setFromObject(g),x=(b.min.x+b.max.x)/2,z=(b.min.z+b.max.z)/2;g.children.forEach(function(c){c.position.x-=x;c.position.y-=b.min.y;c.position.z-=z;});g.userData.sperre=[Math.sqrt(Math.pow((b.max.x-b.min.x)/2,2)+Math.pow((b.max.z-b.min.z)/2,2))];return g;}
  function heuhaufen(o){o=optionen(o);var g=new THREE.Group(),seed=(o.saat===undefined?0:o.saat)>>>0;g.name='heuhaufen';function rnd(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}for(var i=0;i<9;i++){var x=(rnd()-.5)*.70,z=(rnd()-.5)*.65;form(g,'ico',i%2?0xb6a263:0xc7b16c,x,.12+rnd()*.13,z,.20+rnd()*.10,.14+rnd()*.05,.21);}return fertig(g);}
  function traenke(o){o=optionen(o);var g=new THREE.Group();g.name='traenke';form(g,'box',0x735238,0,.07,0,1.25,.14,.55);[-1,1].forEach(function(v){form(g,'box',0x856247,v*.61,.27,0,.065,.4,.60);form(g,'box',0x856247,0,.27,v*.27,1.27,.4,.06);});form(g,'box',0x607e86,0,.39,0,1.15,.012,.47);return fertig(g);}
@@ -6649,6 +6699,66 @@ var Pferde = (function () {
 
 }());
 if(typeof module!=='undefined'&&module.exports)module.exports=Pferde;
+
+/* Stadttiere: ES5 / THREE r128, Meter, +Y oben, +Z vorne.
+ * Formen, Maße, Farben und Takte sind Spielannahmen. Die Wurzel bewegt das Spiel.
+ * Gemeinsame Quellressourcen und Materialien nicht je Tier entsorgen. */
+var Stadttiere = (function () {
+  'use strict';
+  var geometrien={},materialien={};
+  function optionen(o){o=o||{};if(o.saat!==undefined&&(typeof o.saat!=='number'||!isFinite(o.saat)||Math.floor(o.saat)!==o.saat))throw new Error('Ganzzahlige Saat benötigt');return o;}
+  function zahl(v){if(typeof v!=='number'||!isFinite(v)||v<0)throw new Error('Endliche nichtnegative Zahl benötigt');return v;}
+  function geo(n){if(!geometrien[n]){if(n==='box')geometrien[n]=new THREE.BoxGeometry(1,1,1);else if(n==='ico')geometrien[n]=new THREE.IcosahedronGeometry(1,0);else if(n==='octa')geometrien[n]=new THREE.OctahedronGeometry(1,0);else if(n==='tetra')geometrien[n]=new THREE.TetrahedronGeometry(1,0);else{var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0,1,0,0,0,0,1],3));g.computeVertexNormals();geometrien[n]=g;}}return geometrien[n];}
+  function material(f){if(!materialien[f])materialien[f]=new THREE.MeshLambertMaterial({color:f,side:THREE.DoubleSide});return materialien[f];}
+  function form(g,n,f,x,y,z,b,h,t){var m=new THREE.Mesh(geo(n),material(f));m.position.set(x,y,z);m.scale.set(b,h,t);m.castShadow=true;g.add(m);return m;}
+  function punkt(g,n,x,y,z){var p=new THREE.Group();p.name=n;p.position.set(x,y,z);g.add(p);return p;}
+  function zeichnung(t){var v=typeof Verschmelzen!=='undefined'?Verschmelzen:typeof module!=='undefined'&&module.exports?require('./verschmelzen.js'):null;return v?v.tier(t):t;}
+  function weich(t){return t*t*(3-2*t);}
+  function verbindung(g,f,a,b,d){var m=form(g,'box',f,0,0,0,d,1,d);ausrichten(m,a,b);return m;}
+  function ausrichten(m,a,b){m.position.copy(a).add(b).multiplyScalar(.5);m.scale.y=a.distanceTo(b);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());}
+  function vierbeine(g,r,f,hell,l,hipY,lang){var beine=[];[-1,1].forEach(function(x){[-1,1].forEach(function(z){var name=(z>0?'vorn':'hinten')+(x>0?'L':'R'),h=new THREE.Vector3(x*l*.28,hipY,z*l*.65),a=punkt(r,name,0,0,0),kn=h.clone().add(new THREE.Vector3(0,-lang,.02)),so=kn.clone().add(new THREE.Vector3(0,-lang,.02));beine.push({name:name,hip:h,laenge:lang,hoehe:l*.13,ober:verbindung(a,f,h,kn,l*.13),unter:verbindung(a,f,kn,so,l*.09),pfote:form(a,'box',hell,so.x,so.y,so.z,l*.24,l*.13,l*.32),punkt:punkt(a,'pfote'+name,so.x,so.y,so.z),stand:true});});});return beine;}
+  function fussSetzen(b,z,y,r,g){b.pfote.scale.y=b.hoehe/r.scale.y;g.updateWorldMatrix(true,true);var welt=new THREE.Vector3(b.hip.x,y,z).applyMatrix4(g.matrixWorld),ziel=r.worldToLocal(welt),v=ziel.clone().sub(b.hip),d=v.length(),l=b.laenge;if(d>l*2){ziel.copy(b.hip).add(v.multiplyScalar(l*2/d));v=ziel.clone().sub(b.hip);d=l*2;}var mitte=b.hip.clone().add(ziel).multiplyScalar(.5),senk=new THREE.Vector3(0,-v.z,v.y).normalize().multiplyScalar(Math.sqrt(Math.max(0,l*l-d*d/4))*(b.name.indexOf('vorn')===0?-1:1)),kn=mitte.add(senk);ausrichten(b.ober,b.hip,kn);ausrichten(b.unter,kn,ziel);b.pfote.position.copy(ziel);b.pfote.quaternion.copy(r.quaternion).invert();b.punkt.position.copy(ziel).add(new THREE.Vector3(0,-b.pfote.scale.y/2,0).applyQuaternion(b.pfote.quaternion));}
+  function kontakte(g,beine){g.updateWorldMatrix(true,true);var inv=g.matrixWorld.clone().invert(),c={};beine.forEach(function(b){c[b.name]={ort:b.punkt.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv).toArray(),stand:b.stand};});return c;}
+  var KATZFARBEN={grau:0x777a78,rot:0xa36b3e,schwarz:0x343535,gefleckt:0xcac0a2};
+  function katze(o){o=optionen(o);var farbe=o.farbe===undefined?'grau':o.farbe;if(!Object.prototype.hasOwnProperty.call(KATZFARBEN,farbe))throw new Error('Unbekannte Katzenfarbe');var f=KATZFARBEN[farbe],g=new THREE.Group(),r=punkt(g,'rumpf',0,.24,0),beine=vierbeine(g,r,f,0xa9957d,.20,-.045,.115),kopf=punkt(r,'kopf',0,.07,.25),schwanz=punkt(r,'schwanz',0,.04,-.25),spitze=punkt(schwanz,'schwanzspitze',0,.19,-.045),zeit=0,artZeit=0,weg=0,alt='',seed=(o.saat===undefined?0:o.saat)>>>0;
+    g.name='katze';g.userData.farbe=farbe;g.userData.saat=seed;g.gruppe=g;g.beine=beine;
+    form(r,'ico',f,0,0,0,.10,.10,.28);var buckel=form(r,'ico',f,0,.065,-.025,.10,.11,.17);buckel.visible=false;punkt(r,'ruecken',0,.105,-.06);
+    form(kopf,'ico',f,0,0,0,.074,.074,.085);form(kopf,'ico',0xc1ad8e,0,-.02,.065,.045,.031,.043);form(kopf,'ico',0x654e46,0,-.007,.104,.014,.012,.012);
+    [-1,1].forEach(function(x){var e=form(kopf,'tetra',f,x*.052,.072,-.015,.033,.06,.028);e.rotation.z=-x*.2;form(kopf,'ico',0xb7a36a,x*.045,.013,.064,.015,.012,.010);form(kopf,'ico',0x282921,x*.045,.013,.073,.004,.009,.005);var w=form(kopf,'box',0xd1c7b1,x*.068,-.018,.073,.073,.003,.003);w.rotation.y=x*.25;});
+    form(schwanz,'box',f,0,.09,-.02,.026,.20,.026).rotation.x=-.22;form(spitze,'box',f,0,.04,.005,.025,.10,.025);
+    if(farbe==='gefleckt')for(var j=0;j<6;j++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;form(r,'ico',j%2?0x5d4d3d:0xa16a3c,(j%2?1:-1)*.073,.035,(seed/4294967296-.5)*.35,.025,.043,.05);}
+    g.kontakte=function(){return kontakte(g,beine);};
+    g.bewegen=function(art,dt,tempo){if(['sitzen','liegen','schleichen','laufen','sprung_hoch','putzen','fauchen'].indexOf(art)<0)throw new Error('Unbekannte Katzenbewegung');zahl(dt);if(tempo===undefined)tempo=art==='laufen'?1.8:art==='schleichen'?.45:0;zahl(tempo);if(art!==alt){artZeit=0;weg=0;}artZeit+=dt;zeit+=dt;weg+=tempo*dt;alt=art;g.art=art;g.zeit=zeit;g.fertig=false;g.uebergang=0;r.position.set(0,.24,0);r.rotation.set(0,0,0);r.scale.set(1,1,1);kopf.rotation.set(0,0,0);schwanz.rotation.set(0,0,Math.sin(zeit*3)*.10);spitze.rotation.x=Math.sin(zeit*4)*.14;
+      buckel.visible=art==='fauchen';if(art==='liegen'){r.position.y=.11;r.rotation.z=Math.PI/2;r.scale.z=.70;kopf.rotation.y=-1.1;schwanz.rotation.y=1.8;schwanz.rotation.z=-.8;}
+      if(art==='sitzen'||art==='putzen'){r.rotation.x=-.7;r.position.y=.225;schwanz.rotation.x=1.1;if(art==='putzen')kopf.rotation.x=.65+.15*Math.sin(zeit*4);}
+      if(art==='fauchen'){r.scale.y=1.35;kopf.rotation.x=.25;schwanz.rotation.x=-.5;}
+      if(art==='sprung_hoch'){g.uebergang=Math.min(1,artZeit/.6);g.fertig=artZeit>=.6;r.position.y+=1.2*weich(g.uebergang);kopf.rotation.x=-.15;}
+      var lauf=(art==='laufen'||art==='schleichen')&&tempo>0,strecke=art==='laufen'?.29:.22,stand=.62;
+      beine.forEach(function(b,i){b.hip.y=(art==='sitzen'||art==='putzen')&&b.name.indexOf('vorn')===0?-.11:-.045;var z=b.hip.z,y=b.hoehe/2,phase=((weg/strecke+(i===0||i===3?0:.5))%1+1)%1;b.stand=!lauf;if(lauf){b.stand=phase<stand;if(b.stand)z+=strecke*stand/2-strecke*phase;else{var q=(phase-stand)/(1-stand);z+=-strecke*stand/2+strecke*stand*weich(q);y+=.045*Math.sin(q*Math.PI);}}if(art==='sprung_hoch'){y+=1.2*weich(g.uebergang);b.stand=false;}if(art==='liegen'){y=.065;z=b.hip.z*.4;b.stand=false;}if(art==='putzen'&&b.name==='vornL'){y=.31;z=.24;b.stand=false;}fussSetzen(b,z,y,r,g);});g.phase=lauf?(weg/strecke)%1:0;g.updateMatrixWorld(true);return g;};
+    g.bewegen('sitzen',0);return zeichnung(g);
+  }
+  function taube(o){o=optionen(o);var seed=(o.saat===undefined?0:o.saat)>>>0,f=[0x92958d,0x858d94,0xa3a39b][seed%3],g=new THREE.Group(),r=punkt(g,'rumpf',0,.16,0),kopf=punkt(r,'kopf',0,.08,.11),fluegel=[],beine=[],zeit=0,artZeit=0,weg=0,alt='',phaseSeed=(seed%997)/997*Math.PI*2;
+    g.name='taube';g.gruppe=g;g.userData.saat=seed;
+    form(r,'octa',f,0,0,0,.082,.108,.15);form(kopf,'octa',0x697578,0,0,0,.045,.055,.05);form(kopf,'tetra',0xafa37f,0,-.015,.055,.017,.017,.035);
+    [-1,1].forEach(function(x){var e=form(kopf,'triangle',0x262920,x*.037,.002,.018,.014,1,.018);e.rotation.z=x*Math.PI/2;var w=punkt(r,'fluegel'+(x>0?'L':'R'),x*.05,.02,.035);form(w,'triangle',0x6d7478,0,0,0,x*.22,1,-.20);fluegel.push(w);var b=punkt(r,'bein'+(x>0?'L':'R'),0,0,0),m=form(b,'triangle',0x9b6c56,0,0,0,.007,1,.1),fuss=form(b,'triangle',0x9b6c56,0,0,0,.04,1,.05),p=punkt(b,'fuss'+(x>0?'L':'R'),x*.033,-.16,.035);beine.push({name:x>0?'L':'R',x:x*.033,mesh:m,fuss:fuss,punkt:p,stand:true});});
+    form(r,'triangle',0x6c7070,-.04,-.025,-.11,.08,1,-.14);
+    g.kontakte=function(){g.updateWorldMatrix(true,true);var inv=g.matrixWorld.clone().invert(),c={};beine.forEach(function(b){c[b.name]={ort:b.punkt.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv).toArray(),stand:b.stand};});return c;};
+    g.bewegen=function(art,dt,tempo){if(['picken','gehen','auffliegen','fliegen','landen'].indexOf(art)<0)throw new Error('Unbekannte Taubenbewegung');zahl(dt);if(tempo===undefined)tempo=art==='gehen'?.45:0;zahl(tempo);if(alt!==art){artZeit=0;weg=0;}alt=art;zeit+=dt;artZeit+=dt;weg+=tempo*dt;g.art=art;g.zeit=zeit;g.fertig=false;g.uebergang=0;var hoehe=0;if(art==='auffliegen'||art==='landen'){g.uebergang=Math.min(1,artZeit/.8);g.fertig=artZeit>=.8;hoehe=3*(art==='auffliegen'?weich(g.uebergang):1-weich(g.uebergang));}else if(art==='fliegen')hoehe=3+.04*Math.sin(zeit*4+phaseSeed);r.position.y=.16+hoehe;var flug=hoehe>.000001,lauf=art==='gehen'&&tempo>0,phase=(weg/.16)%1;g.phase=phase;kopf.rotation.x=art==='picken'?1.15+.15*Math.sin(zeit*5+phaseSeed):0;kopf.position.z=.11+(lauf?.022*Math.sin(phase*Math.PI*2):0);kopf.position.y=art==='picken'?-.055+.014*Math.sin(zeit*5+phaseSeed):.08+(lauf?.008*Math.cos(phase*Math.PI*2):0);fluegel.forEach(function(w,i){w.scale.x=flug?1:.35;w.rotation.z=(i===0?-1:1)*(flug?Math.sin(zeit*18+phaseSeed)*.85:-1.15);});
+      beine.forEach(function(b,i){var q=((phase+i*.5)%1+1)%1,z=.035,y=hoehe,basis=new THREE.Vector3(b.x,-.09,.035);b.stand=!flug;if(lauf){b.stand=q<.60;if(b.stand)z+=.048-.16*q;else{var u=(q-.60)/.40;z+=-.048+.096*weich(u);y+=.025*Math.sin(u*Math.PI);}}if(flug)y+=.06;var ziel=new THREE.Vector3(b.x,y-r.position.y,z);b.mesh.position.copy(basis);var v=ziel.clone().sub(basis);b.mesh.scale.z=v.length();b.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),v.normalize());b.fuss.position.copy(ziel).add(new THREE.Vector3(-.018,0,-.012));b.punkt.position.copy(ziel);});g.updateMatrixWorld(true);return g;};
+    g.setze=function(art,t){zahl(t);zeit=0;artZeit=0;weg=0;alt='';return g.bewegen(art,t);};g.bewegen('picken',0);return zeichnung(g);
+  }
+  function taubenschwarm(o){o=optionen(o);var n=o.anzahl===undefined?8:o.anzahl;if(typeof n!=='number'||Math.floor(n)!==n||n<5||n>12)throw new Error('Taubenschwarm benötigt 5 bis 12 Tiere');var g=new THREE.Group(),seed=(o.saat===undefined?0:o.saat)>>>0;g.name='taubenschwarm';g.gruppe=g;g.tauben=[];function zufall(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}for(var j=0;j<n;j++){var b=taube({saat:seed});b.position.set((j%4-1.5)*.28+(zufall()-.5)*.12,0,(Math.floor(j/4)-1)*.28+(zufall()-.5)*.12);b.userData.versatz=j*.045+zufall()*.035;g.add(b);g.tauben.push(b);}g.setze=function(art,t){zahl(t);g.tauben.forEach(function(b){b.setze(art,Math.max(0,t-b.userData.versatz));b.zeichnungAktualisieren();});g.fertig=g.tauben.every(function(b){return b.fertig;});return g;};g.setze('picken',0);return g;}
+  function ratte(o){o=optionen(o);var seed=(o.saat===undefined?0:o.saat)>>>0,g=new THREE.Group(),r=punkt(g,'rumpf',0,.085,0),f=0x625e56,beine=vierbeine(g,r,f,0xb09080,.08,-.020,.039),kopf=punkt(r,'kopf',0,.02,.12),schwanz=punkt(r,'schwanz',0,.01,-.105),spitze=punkt(schwanz,'schwanzspitze',0,0,-.18),zeit=0,artZeit=0,weg=0,alt='';g.name='ratte';g.gruppe=g;g.userData.saat=seed;
+    form(r,'ico',f,0,0,0,.035,.038,.12);form(kopf,'ico',f,0,0,0,.026,.03,.048);form(kopf,'ico',0xaf8d7c,0,-.008,.045,.012,.009,.015);
+    [-1,1].forEach(function(x){form(kopf,'ico',0xa88b7b,x*.025,.026,-.008,.017,.019,.013);form(kopf,'ico',0x24251f,x*.021,.008,.026,.005,.005,.004);});
+    form(schwanz,'box',0xa78b7e,0,0,-.09,.008,.008,.18);form(spitze,'box',0xa78b7e,0,0,-.05,.006,.006,.10);
+    g.kontakte=function(){return kontakte(g,beine);};g.bewegen=function(art,dt,tempo){if(['huschen','sitzen','verschwinden'].indexOf(art)<0)throw new Error('Unbekannte Rattenbewegung');zahl(dt);if(tempo===undefined)tempo=art==='huschen'?1.35:0;zahl(tempo);if(alt!==art){artZeit=0;weg=0;}alt=art;zeit+=dt;artZeit+=dt;weg+=tempo*dt;g.art=art;g.zeit=zeit;g.fertig=false;g.uebergang=0;r.position.y=.085;r.rotation.set(0,0,0);r.scale.set(1,1,1);kopf.rotation.set(0,0,0);schwanz.rotation.x=art==='sitzen'?.75:0;schwanz.rotation.y=.12*Math.sin(zeit*6+seed*.01);spitze.rotation.y=-.18*Math.sin(zeit*6+seed*.01);if(art==='sitzen'){r.rotation.x=-.75;r.position.y=.112;kopf.rotation.x=.3+.08*Math.sin(zeit*8);}if(art==='verschwinden'){g.uebergang=Math.min(1,artZeit/.5);g.fertig=artZeit>=.5;var q=weich(g.uebergang);r.scale.y=1-.82*q;r.position.y=.085-.040*q;}var lauf=art==='huschen'&&tempo>0,stand=.64,strecke=.075;beine.forEach(function(b,i){var z=b.hip.z,y=b.hoehe/2,phase=((weg/strecke+(i===0||i===3?0:.5))%1+1)%1;b.stand=!lauf;if(lauf){b.stand=phase<stand;if(b.stand)z+=strecke*stand/2-strecke*phase;else{var u=(phase-stand)/(1-stand);z+=-strecke*stand/2+strecke*stand*weich(u);y+=.016*Math.sin(u*Math.PI);}}if(art==='sitzen'&&b.name.indexOf('vorn')===0){y=.09;z=.10;b.stand=false;}fussSetzen(b,z,y,r,g);});g.updateMatrixWorld(true);return g;};g.bewegen('sitzen',0);return zeichnung(g);}
+  function spielzeug(name){var g=new THREE.Group();g.name=name;g.gruppe=g;g.userData.annahme=true;g.bewegen=function(art,dt){zahl(dt);return g;};return g;}
+  function holzpferdchen(){var g=spielzeug('holzpferdchen'),holz=0x9e774b;form(g,'box',holz,0,.18,0,.018,.36,.018);form(g,'box',holz,0,.365,0,.035,.09,.045);form(g,'ico',holz,0,.41,.025,.038,.05,.066);form(g,'box',holz,0,.397,.083,.038,.028,.046);[-1,1].forEach(function(x){form(g,'tetra',holz,x*.025,.452,.005,.016,.025,.02);form(g,'ico',0x332b24,x*.036,.418,.045,.004,.004,.004);});form(g,'box',0x584333,0,.423,-.034,.025,.048,.015);g.griff=punkt(g,'griff',0,.24,0);return zeichnung(g);}
+  function puppe_aus_lumpen(){var g=spielzeug('puppe_aus_lumpen'),stoff=0xbda98d;form(g,'ico',stoff,0,.128,0,.035,.06,.025);form(g,'ico',0xc7b292,0,.211,0,.031,.034,.029);[-1,1].forEach(function(x){verbindung(g,stoff,new THREE.Vector3(x*.023,.163,0),new THREE.Vector3(x*.063,.127,0),.015);verbindung(g,stoff,new THREE.Vector3(x*.017,.085,0),new THREE.Vector3(x*.022,.012,0),.019);form(g,'box',stoff,x*.022,.008,.004,.021,.016,.028);});form(g,'box',0x6e5140,0,.109,.024,.07,.009,.006);g.griff=punkt(g,'griff',0,.13,0);return zeichnung(g);}
+  return {katze:katze,taube:taube,taubenschwarm:taubenschwarm,ratte:ratte,holzpferdchen:holzpferdchen,puppe_aus_lumpen:puppe_aus_lumpen};
+}());
+if(typeof module!=='undefined'&&module.exports)module.exports=Stadttiere;
 </script>   <!-- 11.10.: Codex-Werkstatt Arbeitsszenen (Commit 97db2c7): Schmied, Bäcker, Metzger, Schuster, Weber -->
 <script>/* Landfahrzeuge und Schiffe. ES5, three.js r128; nur Grundformen/Lambert.
  * Annahmen: braunes Pferd mit ca. 1,5 m Widerrist; schlichte Holz-/Planwagen.
@@ -6658,6 +6768,8 @@ if(typeof module!=='undefined'&&module.exports)module.exports=Pferde;
  */
 var Fahrzeuge = (function () {
   'use strict';
+  function zeichnung(t) { var v = typeof Verschmelzen !== 'undefined' ? Verschmelzen : typeof module !== 'undefined' && module.exports ? require('./verschmelzen.js') : null; return v ? v.tier(t) : t; }
+
   var materialien = {}, geometrien = {};
   var F = { holz: 0x775338, hell: 0xa47b4a, eisen: 0x45443c, leinen: 0xc6b690,
     pferd: 0x80553a, maehne: 0x393128, huf: 0x33302a, auge: 0x201e19,
@@ -6751,7 +6863,7 @@ var Fahrzeuge = (function () {
       kopf.rotation.x = weich(kopf.rotation.x, laeuft ? Math.sin(p) * 0.055 : 0, dt);
       schwanz.rotation.x = weich(schwanz.rotation.x, laeuft ? Math.sin(p * 0.6) * 0.12 : 0, dt); sichern();
     }
-    return { gruppe: g, bewegen: bewegen };
+    return zeichnung({ gruppe: g, bewegen: bewegen });
   }
   function rad(g, x, y, z, r) {
     var dreh = gruppe('rad', g, x, y, z), m, j; dreh.userData.radius = r;
@@ -9735,6 +9847,7 @@ function grindGeraete(art) {
     [GG.beil, GG.karren, GG.ladung, GG.stein, GG.handkorb].forEach(function (o) { if (o) o.traverse(function (q) { if (q.isMesh) q.castShadow = true; }); }); }
   var beil = art === 'beil', c = beil && PUPPE.grindKontakte ? PUPPE.grindKontakte() : null;
   GG.beil.visible = !!c;
+  if (c && (!c.beilWinkel || !c.handR)) c = null; GG.beil.visible = !!c;   // 12.10. (Andreas: Stein im Arm, dann Holz hacken – Spiel stand): Trage-Haltung liefert keinen Beilwinkel
   if (c) { var w = c.beilWinkel[0]; GG.beil.rotation.set(w, 0, 0); GG.beil.position.set(0.13825, c.handR[1] - 0.0925 * Math.sin(w) - 0.10325 * Math.cos(w), c.handR[2] + 0.0925 * Math.cos(w) - 0.10325 * Math.sin(w)); }   // Montage wie in Codex' grind-vorschau.js
   if (GG.karren) { GG.karren.visible = PUPPE.oben === 'karren'; GG.ladung.visible = GG.karren.visible; GG.ladung.children.forEach(function (q, i) { q.visible = i < (STEIN.traegt || 0); }); }
   GG.stein.visible = PUPPE.oben === 'stein'; if (GG.schemel) GG.schemel.visible = art === 'spinnrad' || art === 'sitzen_rein';
@@ -10016,13 +10129,19 @@ function holzSchlag() {
     melden(r === 0 ? 'EIN BÜNDEL FERTIG (' + b + ') · BRING ES KONRAD, DEM BÄCKER' : 'SCHEIT ' + r + ' VON ' + HOLZ_BUENDEL + (b ? ' · ' + b + ' BÜNDEL FERTIG' : ''), 2.2); }
   holzStapelZeigen(); speichern();
 }
+function haendeVoll() { if (STEIN.traegt) return AUFTRAG.karren ? 'DEN STEINKARREN' : 'EINEN STEIN'; if (LESE.traegt) return 'DEN TRAUBENKORB'; return null; }   // 12.10.: was man gerade schleppt, sperrt die Arbeit
+// 12.10. (Andreas: „wir müssten sehen können, was wir in der Hand haben“): Zeile über dem Stand unten links
+function handText() { if (STEIN.traegt) return AUFTRAG.karren ? STEIN.traegt + (STEIN.traegt > 1 ? ' STEINE' : ' STEIN') + ' AUF DEM KARREN' : 'EIN STEIN'; if (LESE.traegt) return 'DER TRAUBENKORB'; if (REITEN.auf) return 'DIE ZÜGEL';
+  if ((AUFTRAG.beutel || []).some(function (b) { return b.id === 'ww_eimer' || /^kram_/.test(b.id || ''); })) return ((AUFTRAG.beutel || []).filter(function (b) { return b.id === 'ww_eimer' || /^kram_/.test(b.id || ''); })[0].name || 'KRAM').toUpperCase();
+  return null; }
+function steinAblegen() { if (!STEIN.traegt || AUFTRAG.rede) return false; var n = STEIN.traegt; STEIN.traegt = 0; melden(n > 1 ? 'DU KIPPST DIE STEINE AB · SIE ROLLEN IN DIE GOSSE' : 'DU LEGST DEN STEIN AB', 2.5); return true; }   // überall: Rechtsklick, wenn sonst nichts zu tun ist
 function holzWeiter(dt) {
   var H = HOLZ.platz; if (!H) return;
   HOLZ.spaene.forEach(function (sp) { if (sp.leben <= 0) return; sp.leben -= dt; sp.v.y -= 9.8 * dt; sp.m.position.addScaledVector(sp.v, dt); sp.m.rotation.x += dt * 9; if (sp.m.position.y < 0.01) { sp.m.position.y = 0.01; sp.v.set(0, 0, 0); } if (sp.leben <= 0) sp.m.visible = false; });
   H.beil.visible = !(HOLZ.hackenBis > P.t - 0.3);
   if (PUPPE) { if (!PUPPE.__beil && window.Moebel) { var bb = new THREE.Group(), bm = Moebel.beil(); bm.rotation.x = -Math.PI / 2; bb.add(bm); bb.visible = false; PUPPE.gelenke.handR.add(bb); PUPPE.__beil = bb; } if (PUPPE.__beil) PUPPE.__beil.visible = !GG && HOLZ.hackenBis > P.t - 0.3; }   // mit Codex' Beil (grindGeraete) nicht doppelt
   if (!holzNah()) return;
-  var halten = maus.links || taste.q;
+  var halten = maus.links || taste.q, voll = haendeVoll(); if (voll) { if (P.t > (AUFTRAG.meldungBis || 0)) melden('DU HAST ' + voll + ' IN DEN HÄNDEN · ERST ABLEGEN (RECHTSKLICK)', 0.4); return; }
   if (halten && P.t >= HOLZ.naechster && !AUFTRAG.rede && !INVENTAR) { holzSchlag(); HOLZ.naechster = P.t + 0.55; }
   else if (!halten && P.t > (AUFTRAG.meldungBis || 0)) { var bdl = Math.floor((AUFTRAG.scheite || 0) / HOLZ_BUENDEL); melden('LINKE MAUS HALTEN (ODER Q): HOLZ HACKEN · ' + (AUFTRAG.beil ? 'GUTES BEIL' : 'ALTES BEIL') + (bdl ? ' · ' + bdl + ' BÜNDEL FÜR KONRAD' : ''), 0.4); }
 }
@@ -10873,6 +10992,7 @@ function erlaubt(x, y) {
   if (!RING || innerhalbMauer(x, y)) return true;
   if (hatSchluessel() && (P.draussen || inPforte(x, y))) return true;
   if (AUFTRAG.zehnt || AUFTRAG.amt) return true;
+  if (AUFTRAG.einf && AUFTRAG.einf < 9 && EINF.tor && Math.hypot(x - EINF.tor[0], y - EINF.tor[1]) < 30) return true;   // 12.10.: Ankunft vor dem Tor
   if (FAEHRE && (Math.hypot(x - FAEHRE.a[0], y - FAEHRE.a[1]) < 40 || Math.hypot(x - (FAEHRE.a[0] + FAEHRE.ux * FAEHRE.sB), y - (FAEHRE.a[1] + FAEHRE.uy * FAEHRE.sB)) < 470)) return true;   // Mainlände vor dem Maintor und drüben Kreuzwertheim              // im Dienst des Grafen: mit dem Zehntkarren darf man hinaus
   if (AUFTRAG.passBis > UHR.t) return true;     // die bestochene Wache hat nichts gesehen   // durch die Schlupfpforte hinaus: draußen darf man dann überall hin
   if (!BURG_HUELLE) BURG_HUELLE = burgHuelle();
@@ -12588,7 +12708,7 @@ function leuteAufstellen() {                    // Schiffer hinter dem Maintor, 
       l.tor = t; var A = Gliederpuppe.ANTEIL, G = 1.80, holzM = new THREE.MeshLambertMaterial({ color: 0x5a3e26 }), eisen = new THREE.MeshLambertMaterial({ color: 0x8c9196 });
       var spiess = new THREE.Group(), stab = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 2.5, 6), holzM), spitze = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.28, 6), eisen);
       stab.position.y = 0.55; spitze.position.y = 1.94; spiess.add(stab); spiess.add(spitze); stab.castShadow = true; l.puppe.gelenke.handR.add(spiess);
-      var helm = new THREE.Mesh(new THREE.SphereGeometry(A.kopf * G * 0.53, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), eisen); helm.position.y = A.kopf * G * 0.6; helm.scale.set(0.9, 0.85, 1); l.puppe.gelenke.kopf.add(helm);
+      var kh = l.puppe.masse ? l.puppe.masse.kopf : A.kopf * G, helm = new THREE.Mesh(new THREE.SphereGeometry(kh * 0.53, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), eisen); helm.position.y = kh * 0.6; helm.scale.set(0.9, 0.85, 1); l.puppe.gelenke.kopf.add(helm);
     });
   });
   tagesleuteAufstellen(person, freierPlatz); tiereAufstellen(); schaetzeVerteilen(); spielplaetzeFinden(); pforteFinden(); lieferungenRechnen(); navVorwaermen(true);
@@ -13925,8 +14045,12 @@ var EINF = { fuhrmann: null, karren: null, wackelBis: 0, redeAb: 0 };
 function einfStarten() {
   if (AUFTRAG.einf !== 1 || EPOCHE !== 1400) return;
   var sh = ((UMLAND && UMLAND.doerfer) || []).filter(function (d) { return d.name === 'Sachsenhausen'; })[0] || { x: WELT.start[0], y: WELT.start[1] - 3000 }, best = null;
-  (WELT.tore || []).forEach(function (t) { var dx = WELT.start[0] - t[0], dy = WELT.start[1] - t[1], l0 = Math.hypot(dx, dy) || 1, ux = dx / l0, uy = dy / l0;
-    var x = t[0] + ux * 7, y = t[1] + uy * 7; if (!innerhalbMauer(x, y) || hausInnen(x, y) || !frei(x, y)) return;
+  (WELT.tore || []).forEach(function (t, ti) { var wk = TORE_W[ti] || 0, ux = -Math.sin(wk), uy = Math.cos(wk); if (!innerhalbMauer(t[0] + ux * 6, t[1] + uy * 6)) { ux = -ux; uy = -uy; }   // 12.10.: Achse der Durchfahrt (quer zur Mauer), nicht die Richtung zum Stadtmittelpunkt – die traf den Torpfeiler
+    // 12.10. (Andreas: „der Fuhrmann verschwand durch die Mauer neben dem Tor … man wird vor dem Tor abgegeben und der Wache überantwortet“):
+    // jetzt VOR dem Tor auf der Straße; Hannes wendet und fährt die Straße zurück, die Torwache lässt dich herein
+    var x = null, y = null; NAVMODUS = true; for (var a = 9; a <= 15 && x === null; a += 1.5) { var x0 = t[0] - ux * a, y0 = t[1] - uy * a; if (!innerhalbMauer(x0, y0) && !hausInnen(x0, y0) && frei(x0, y0) && !wasser(x0, y0)) { x = x0; y = y0; } }
+    var weg = x !== null; for (var s2 = 4; weg && s2 <= 28; s2 += 2) { var wx = x - ux * s2, wy = y - uy * s2; weg = frei(wx, wy) && !wasser(wx, wy) && !hausInnen(wx, wy); } NAVMODUS = false;   // die Straße hinaus muss 28 m frei sein
+    if (!weg || (BURGHOF && Math.hypot(t[0] - BURGHOF[0], t[1] - BURGHOF[1]) < 150)) return;   // kein Burgtor
     var d = Math.hypot(t[0] - sh.x, t[1] - sh.y); if (!best || d < best.d) best = { d: d, t: t, x: x, y: y, ux: ux, uy: uy }; });
   if (!best) { AUFTRAG.einf = 9; return; }
   P.x = best.x; P.y = best.y; P.bodenZ = undefined; P.blick = Math.atan2(best.ux, best.uy); P.nick = 0;
@@ -13936,8 +14060,10 @@ function einfStarten() {
   var qx = -best.uy, qy = best.ux, fx = best.x + qx * 1.6, fy = best.y + qy * 1.6;
   if (window.Gliederpuppe) { var pu = Gliederpuppe.bauen({ groesse: 1.74, schema: 'gewand', einfach: true }); if (window.Kleidung) try { Kleidung.anziehen(pu, Kleidung.satz('knecht')); } catch (e) {}
     szene.add(pu.gruppe); EINF.fuhrmann = { name: 'HANNES, DER FUHRMANN', x: fx, y: fy, puppe: pu, richtung: Math.atan2(best.x - fx, best.y - fy), geht: false }; }
-  if (window.Fahrzeuge) { EINF.karren = Fahrzeuge.ochsenkarren({ ladung: 'saecke' }); szene.add(EINF.karren.gruppe); EINF.karren.x = fx - best.ux * 2.6 + qx * 1.2; EINF.karren.y = fy - best.uy * 2.6 + qy * 1.2; EINF.karren.richtung = Math.atan2(-best.ux, -best.uy); }
-  EINF.raus = [-best.ux, -best.uy]; EINF.tor = best.t; EINF.redeAb = 1.2;
+  if (window.Fahrzeuge) { EINF.karren = Fahrzeuge.ochsenkarren({ ladung: 'saecke' }); szene.add(EINF.karren.gruppe); EINF.karren.x = fx - best.ux * 3.2 + qx * 0.4; EINF.karren.y = fy - best.uy * 3.2 + qy * 0.4; EINF.karren.richtung = Math.atan2(best.ux, best.uy); }   // kam von draußen, steht zur Stadt hin
+  if (window.Gliederpuppe) { var wp = Gliederpuppe.bauen({ groesse: 1.8, schema: 'gewand', einfach: true }); if (window.Kleidung) try { Kleidung.anziehen(wp, Kleidung.satz('wache')); } catch (e) {}   // die Torwache neben dem Tor
+    var wx = best.t[0] - best.ux * 2.2 - qx * 2.4, wy = best.t[1] - best.uy * 2.2 - qy * 2.4; szene.add(wp.gruppe); EINF.wache = { name: 'DIE TORWACHE', x: wx, y: wy, puppe: wp, richtung: Math.atan2(best.x - wx, best.y - wy) }; }
+  EINF.raus = [-best.ux, -best.uy]; EINF.quer = [qx, qy]; EINF.start = [best.x, best.y]; EINF.tor = best.t; EINF.redeAb = 1.2;
 }
 function einfZiel() {
   if (EPOCHE !== 1400 || !AUFTRAG.einf || AUFTRAG.einf >= 9) return null;
@@ -13949,12 +14075,19 @@ function einfWeiter(dt) {
   var F = EINF.fuhrmann, K = EINF.karren; if (!F && !K) return;
   if (F && !F.geht && EINF.redeAb && P.t > EINF.redeAb && !STARTSCHIRM && !AUFTRAG.rede) { EINF.redeAb = 0;   // er redet von selbst los
     AUFTRAG.rede = { wer: F, name: F.name, zeilen: ['So, Junge – da ist Wertheim. Hier setz ich dich ab.', 'Als ich dich am Weg gefunden hab, zwischen dem umgestürzten Wagen … von den anderen hat keiner überlebt. Du hast einen Schutzengel gehabt.', 'Du hast keinen mehr, hm? Hör zu: Mein Freund Jörg, der Steinmetzmeister, hat ein Herz und nimmt solche wie dich auf. Er wohnt am Markt – frag dich durch.', 'Gott befohlen, Junge. Und halt den Kopf hoch.'], i: 0,
-      danach: function () { F.geht = true; melden('FINDE JÖRG, DEN STEINMETZMEISTER · ER WOHNT AM MARKT', 5); } }; }
-  var los = F && F.geht, v = 1.1 * dt;
-  if (F) { if (los) { F.x += EINF.raus[0] * v; F.y += EINF.raus[1] * v; F.richtung = Math.atan2(EINF.raus[0], EINF.raus[1]); } else if (Math.hypot(P.x - F.x, P.y - F.y) < 6) F.richtung = Math.atan2(P.x - F.x, P.y - F.y);
+      danach: function () { F.geht = true; F.wendet = 0; var W_ = EINF.wache; if (W_) AUFTRAG.rede = { wer: W_, name: W_.name, zeilen: ['Der Hannes bringt mir einen Streuner? … Na, komm rein, Junge. Das Tor ist bis zur Nacht offen.', 'Und mach mir keinen Ärger in meiner Stadt. Den Jörg findest du am Markt.'], i: 0,
+        danach: function () { melden('FINDE JÖRG, DEN STEINMETZMEISTER · ER WOHNT AM MARKT', 5); } }; else melden('FINDE JÖRG, DEN STEINMETZMEISTER · ER WOHNT AM MARKT', 5); } }; }
+  var los = F && F.geht, v = 1.1 * dt, ra = Math.atan2(EINF.raus[0], EINF.raus[1]);
+  if (K && los && K.richtung !== ra) { var dk = Math.atan2(Math.sin(ra - K.richtung), Math.cos(ra - K.richtung)); K.richtung += Math.abs(dk) < dt * 0.9 ? dk : Math.sign(dk) * dt * 0.9; }   // der Ochse wendet in gut 3 s
+  var W_ = EINF.wache; if (W_) { var wv = V(W_.x, W_.y, bodenHoehe(W_.x, W_.y)); W_.puppe.gruppe.position.set(wv[0], wv[1], wv[2]); W_.richtung = Math.atan2(P.x - W_.x, P.y - W_.y); W_.puppe.gruppe.rotation.y = Math.PI - W_.richtung; W_.puppe.bewegen('stehen', Math.min(0.05, dt), 0);
+    if (!F && Math.hypot(P.x - W_.x, P.y - W_.y) > 40) { szene.remove(W_.puppe.gruppe); EINF.wache = null; } }   // ist man weg, geht sie wieder auf ihren Posten
+  var gewendet = K && K.richtung === ra;
+  if (F) { if (los && K) { var zx = K.x + EINF.quer[0] * 1.3 + EINF.raus[0] * 1.8, zy = K.y + EINF.quer[1] * 1.3 + EINF.raus[1] * 1.8, dz = Math.hypot(zx - F.x, zy - F.y);   // an den Kopf des Ochsen, dann führt er ihn
+      if (dz > 0.05) { var sch = Math.min(dz, (gewendet ? 1.1 : 1.4) * dt); F.x += (zx - F.x) / dz * sch; F.y += (zy - F.y) / dz * sch; F.richtung = Math.atan2(zx - F.x, zy - F.y); } else F.richtung = ra; }
+    else if (los) { F.x += EINF.raus[0] * v; F.y += EINF.raus[1] * v; F.richtung = ra; } else if (Math.hypot(P.x - F.x, P.y - F.y) < 6) F.richtung = Math.atan2(P.x - F.x, P.y - F.y);
     F.puppe.bewegen(los ? 'gehen' : 'stehen', Math.min(0.05, dt), los ? 1.1 : 0); var fv = V(F.x, F.y, bodenHoehe(F.x, F.y)); F.puppe.gruppe.position.set(fv[0], fv[1], fv[2]); F.puppe.gruppe.rotation.y = Math.PI - F.richtung; }   // Figuren: π − Richtung (wie die Stadtleute)
-  if (K) { if (los) { K.x += EINF.raus[0] * v; K.y += EINF.raus[1] * v; } K.bewegen(los ? 'fahren' : 'stehen', Math.min(0.05, dt), los ? 1.1 : 0); var kv = V(K.x, K.y, bodenHoehe(K.x, K.y)); K.gruppe.position.set(kv[0], kv[1], kv[2]); K.gruppe.rotation.y = Math.PI - K.richtung; }
-  if (los && Math.hypot(F.x - EINF.tor[0], F.y - EINF.tor[1]) > 45) { szene.remove(F.puppe.gruppe); if (K) szene.remove(K.gruppe); EINF.fuhrmann = EINF.karren = null; }   // hinter der nächsten Kurve
+  if (K) { if (los && gewendet) { K.x += EINF.raus[0] * v; K.y += EINF.raus[1] * v; } K.bewegen(los ? 'fahren' : 'stehen', Math.min(0.05, dt), los ? 1.1 : 0); var kv = V(K.x, K.y, bodenHoehe(K.x, K.y)); K.gruppe.position.set(kv[0], kv[1], kv[2]); K.gruppe.rotation.y = Math.PI - K.richtung; }
+  if (los && F && EINF.start && Math.hypot(F.x - EINF.start[0], F.y - EINF.start[1]) > 26) { szene.remove(F.puppe.gruppe); if (K) szene.remove(K.gruppe); EINF.fuhrmann = EINF.karren = null; }   // hinter der nächsten Kurve
 }
 function einfWecken() {                          // die erste Nacht ist vorbei: der Onkel rüttelt dich wach
   AUFTRAG.einf = 3; speichern(); abblenden(false); EINF.wackelBis = P.t + 1.4; AUFTRAG.meldungBis = 0; if (ONKEL) ONKEL.hinweis = true;
@@ -14271,7 +14404,7 @@ function tagesleuteAufstellen(person, freierPlatz) {
     var lat = new THREE.Group(), glas = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.2, 0.14), new THREE.MeshLambertMaterial({ color: 0xffd28a, emissive: 0xffb050, emissiveIntensity: 0.9 }));
     var deckel = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.1, 4), eisen); glas.position.y = -0.22; deckel.position.y = -0.07; lat.add(glas); lat.add(deckel);
     nw.licht = new THREE.PointLight(0xffb45a, 0, 11, 1.4); nw.licht.position.y = -0.22; lat.add(nw.licht); nw.puppe.gelenke.handL.add(lat); nw.laterneGlas = glas;
-    var hut = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.05, 10), new THREE.MeshLambertMaterial({ color: 0x2a2420 })); hut.position.y = Gliederpuppe.ANTEIL.kopf * 1.78 * 0.5; nw.puppe.gelenke.kopf && nw.puppe.gelenke.kopf.add(hut);
+    var hut = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.05, 10), new THREE.MeshLambertMaterial({ color: 0x2a2420 })); hut.position.y = (nw.puppe.masse ? nw.puppe.masse.kopf : Gliederpuppe.ANTEIL.kopf * 1.78) * 0.5;   // 12.10.: Codex Auftrag 22, Kopf 15 % statt 13 % nw.puppe.gelenke.kopf && nw.puppe.gelenke.kopf.add(hut);
     // Die Runde: Markt, Brunnen, Kirche und jedes Tor (von innen), im Kreis um die Stadt sortiert
     var pk = []; if (STAND) pk.push([STAND.x + 3, STAND.y + 3]); (BRUNNEN || []).forEach(function (b) { if (!b.burg) pk.push([b.x + (b.r1400 || 1.1) + 1.2, b.y]); }); if (KIRCHE) pk.push(KIRCHE);
     var mx = 0, my = 0; RING.forEach(function (q) { mx += q[0]; my += q[1]; }); mx /= RING.length; my /= RING.length;
@@ -14457,15 +14590,31 @@ function freierPunktNah(p, maxR, innen, von) {   // nächster begehbarer Punkt (
 // Abstand halten (12.10., „Boids“-Trennung nach Reynolds): wer sich beim Gehen näher als 0,45 m kommt, wird sanft auseinandergeschoben.
 // Nur in Spielernähe (60 m), nur wenn die neue Stelle frei ist; Kind an der Hand, Eltern und Ochsenführer bleiben zusammen. Rasterzellen 1 m statt alle gegen alle.
 function abstandHalten() { if (EPOCHE !== 1400) return; var Z = {}, liste = [];
-  for (var i = 0; i < TAGESLEUTE.length; i++) { var l = TAGESLEUTE[i]; if (!l.weg || l.ankunft || l.hl || l.anHand || Math.abs(l.x - P.x) > 60 || Math.abs(l.y - P.y) > 60) continue; var k = Math.floor(l.x) + ',' + Math.floor(l.y); (Z[k] = Z[k] || []).push(l); liste.push(l); }
+  var S = {};   // 12.10.: Stehende als festes Hindernis – nur der Gehende weicht
+  for (var i = 0; i < TAGESLEUTE.length; i++) { var l = TAGESLEUTE[i]; if (l.hl || l.anHand || Math.abs(l.x - P.x) > 60 || Math.abs(l.y - P.y) > 60) continue; var k = Math.floor(l.x) + ',' + Math.floor(l.y);
+    if (!l.weg || l.ankunft) { if (!istVersteckt(l)) (S[k] = S[k] || []).push(l); continue; } (Z[k] = Z[k] || []).push(l); liste.push(l); }
   NAVMODUS = true;
   for (var a = 0; a < liste.length; a++) { var p = liste[a], cx = Math.floor(p.x), cy = Math.floor(p.y);
-    for (var ox = -1; ox <= 1; ox++) for (var oy = -1; oy <= 1; oy++) { var z = Z[(cx + ox) + ',' + (cy + oy)]; if (!z) continue;
+    for (var ox = -1; ox <= 1; ox++) for (var oy = -1; oy <= 1; oy++) { var z = Z[(cx + ox) + ',' + (cy + oy)] || [];
       for (var b = 0; b < z.length; b++) { var q = z[b]; if (q.nr <= p.nr || p.eltern === q || q.eltern === p || p.anHand === q || q.anHand === p) continue;
         var dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy); if (d >= 0.45) continue; if (d < 1e-3) { dx = Math.cos(p.nr); dy = Math.sin(p.nr); d = 1; }
         var schub = (0.45 - Math.min(d, 0.45)) * 0.25, ux = dx / d * schub, uy = dy / d * schub;
-        if (frei(q.x + ux, q.y + uy) && !hausInnen(q.x + ux, q.y + uy)) { q.x += ux; q.y += uy; } if (frei(p.x - ux, p.y - uy) && !hausInnen(p.x - ux, p.y - uy)) { p.x -= ux; p.y -= uy; } } } }
+        if (frei(q.x + ux, q.y + uy) && !hausInnen(q.x + ux, q.y + uy)) { q.x += ux; q.y += uy; } if (frei(p.x - ux, p.y - uy) && !hausInnen(p.x - ux, p.y - uy)) { p.x -= ux; p.y -= uy; } }
+      var st = S[(cx + ox) + ',' + (cy + oy)]; if (st) for (var c = 0; c < st.length; c++) { var m = st[c]; if (m === p.eltern || m === p.ziel) continue; var ex = p.x - m.x, ey = p.y - m.y, ed = Math.hypot(ex, ey);
+        if (ed >= 0.6 || ed < 1e-3 || (p.ziel && Math.hypot(p.ziel[0] - p.x, p.ziel[1] - p.y) < 0.8)) continue; var sv = (0.6 - ed) * 0.9, vx = ex / ed * sv, vy = ey / ed * sv; if (frei(p.x + vx, p.y + vy) && !hausInnen(p.x + vx, p.y + vy)) { p.x += vx; p.y += vy; } } } }
   NAVMODUS = false; }
+// Vorausschauen (12.10., Andreas' Idee über Motion Matching – ohne Datenbank, nur der Kern: die Figur weiß, wie der Weg weitergeht):
+// · liegt der nächste Wegpunkt keine 0,7 m mehr voraus und ist der Weg zum übernächsten frei, nimmt sie gleich den übernächsten → Bogen statt Knick
+// · vor einem scharfen Knick (über 60°) wird sie bis auf 65 % langsamer, auf dem letzten Meter vor dem Ziel bis auf 45 %
+function drehWeich(l, ziel, dt, k) { var r = l.puppe.gruppe.rotation, d = Math.atan2(Math.sin(ziel - r.y), Math.cos(ziel - r.y)); var st = d * Math.min(1, dt * k), mx = dt * 7; r.y += dt > 0.5 ? d : Math.max(-mx, Math.min(mx, st)); }   // Wende in ~0,3 s statt in einem Bild (große Sprünge nach Zeitsprung sofort)
+function vorausSchauen(l) { var w = l.weg, q = w[l.wi]; if (!q) return 1; var L = Math.hypot(q[0] - l.x, q[1] - l.y), f = 1;
+  if (l.wi < w.length - 1) { var n = w[l.wi + 1];
+    if (L < 0.7 && EPOCHE === 1400) { var ok = true; NAVMODUS = true; var sx = n[0] - l.x, sy = n[1] - l.y, sl = Math.hypot(sx, sy) || 1, px = -sy / sl * 0.35, py = sx / sl * 0.35;   // Korridor in Schulterbreite
+      for (var i = 1; i <= 3 && ok; i++) { var x = l.x + sx * i / 4, y = l.y + sy * i / 4; ok = !hausInnen(x, y) === !hausInnen(l.x, l.y); for (var sd = -1; sd <= 1 && ok; sd++) ok = frei(x + px * sd, y + py * sd) && !kleinHindernis(x + px * sd, y + py * sd); } NAVMODUS = false;
+      if (ok) { l.wi++; q = n; L = Math.hypot(q[0] - l.x, q[1] - l.y); n = w[l.wi + 1]; } }
+    if (n && L < 1.5 && L > 1e-3) { var ax = (q[0] - l.x) / L, ay = (q[1] - l.y) / L, bx = n[0] - q[0], by = n[1] - q[1], bl = Math.hypot(bx, by) || 1, c = (ax * bx + ay * by) / bl; if (c < 0.5) f = Math.min(f, 0.65 + 0.35 * L / 1.5); } }
+  else if (L < 1.2) f = Math.min(f, 0.45 + 0.55 * L / 1.2);
+  return f; }
 function kleinHindernis(x, y) {               // was zu klein fürs 1-m-Wegnetz ist: Gassenkram, Marktstände, Brunnen, Garküche (mit Schulterbreite)
   if (KRAM.length && kramSperrt(x, y)) return true;
   if (MARKT) for (var i = 0; i < MARKT.length; i++) { var m = MARKT[i], mx = x - m.x, my = y - m.y, c = Math.cos(m.dreh), sn = Math.sin(m.dreh); if (Math.abs(mx * -sn + my * c) < 1.1 + R && Math.abs(mx * c + my * sn) < 0.45 + R) return true; }
@@ -14522,6 +14671,7 @@ function tagesGehen(l, dt) {                    // → true, wenn die Person ger
   } else l.wartet = 0;
   if (dP < 3.2 && EPOCHE === 1400 && (!l.gruss || P.t - l.gruss > 90) && hash(l.nr * 1.1 + Math.floor(P.t / 30)) < 0.45) { l.gruss = P.t; l.winkBis = P.t + 1.2; gruessen(l); }   // im Vorbeigehen grüßen
   if (EPOCHE === 1400 && !(l.umBis > P.t) && l.weg[l.wi] && dP < 120) kleinUmgehen(l);   // 12.10. Stadtwache: nicht mehr mitten durch Eimer, Fässer und Marktstände
+  tempo *= vorausSchauen(l);   // 12.10.: Ecken weich nehmen, vor scharfen Knicken und am Ziel langsamer
   var rest = tempo * dt;
   while (rest > 0 && l.wi < l.weg.length) { var q = l.weg[l.wi], dx = q[0] - l.x, dy = q[1] - l.y, L = Math.hypot(dx, dy);
     if (L <= rest) { l.x = q[0]; l.y = q[1]; rest -= L; l.wi++; } else { l.x += dx / L * rest; l.y += dy / L * rest; l.richtung = Math.PI - Math.atan2(dx, dy); rest = 0; } }
@@ -14691,7 +14841,9 @@ function tiereAufstellen() {
   }
   if (window.Tiere && BRUNNEN) BRUNNEN.filter(function (b) { return b.r && !b.burg; }).slice(0, 2).forEach(function (b, i) { for (var n = 0; n < 3; n++) hinsetzen('gans', null, b.x + 3 + n * 0.7, b.y + 1 + i, 6); });   // ein paar Gänse an den Brunnen
 }
+var TIERE_NAHE = [];   // gehende Bewohner in Spielernähe, je Bild einmal gesammelt
 function tiereBewegen(dt) {
+  TIERE_NAHE = TAGESLEUTE.filter(function (l) { return l.weg && !l.ankunft && !l.hl && Math.abs(l.x - P.x) < 45 && Math.abs(l.y - P.y) < 45; });
   TIERE.forEach(function (t) {
     var d = Math.hypot(P.x - t.x, P.y - t.y); t.g.visible = EPOCHE === 1400 && d < 40; if (!t.g.visible) return;
     var nacht = sonnenstand(himmelsZeit()).hoehe < -2;   // nachts sind die Hühner im Stall
@@ -14700,6 +14852,8 @@ function tiereBewegen(dt) {
     if (t.art === 'ratte' && d < 4) { var rx = t.x - P.x, ry = t.y - P.y, rl = Math.hypot(rx, ry) || 1; t.zx = t.x + rx / rl * 3; t.zy = t.y + ry / rl * 3; t.warte = 0; t.flieht = P.t + 1.2; }   // weg!
     if (t.art === 'huhn' && d < 1.6) { var fx = t.x - P.x, fy = t.y - P.y, fl = Math.hypot(fx, fy) || 1; t.zx = t.x + fx / fl * 2; t.zy = t.y + fy / fl * 2; t.warte = 0; }   // weg vom Spieler!
     if ((t.art === 'schwein' || t.art === 'ferkel' || t.art === 'gans' || t.art === 'katze' || t.art === 'ziege') && d < (t.art === 'katze' ? 2.6 : 1.8)) { var fx2 = t.x - P.x, fy2 = t.y - P.y, fl2 = Math.hypot(fx2, fy2) || 1; t.zx = t.x + fx2 / fl2 * 2.5; t.zy = t.y + fy2 / fl2 * 2.5; t.warte = 0; t.flieht = P.t + 1.5; }   // ausweichen
+    if (t.art !== 'ratte' && !(t.flieht > P.t)) { var nb = null, nd = 1.5; for (var ti = 0; ti < TIERE_NAHE.length; ti++) { var q = TIERE_NAHE[ti], qd = Math.hypot(q.x - t.x, q.y - t.y); if (qd < nd) { nd = qd; nb = q; } }   // 12.10. (Andreas: „Tiere und NPCs laufen durch sich durch“)
+      if (nb) { var ax = t.x - nb.x, ay = t.y - nb.y, al = Math.hypot(ax, ay) || 1; t.zx = t.x + ax / al * 1.8; t.zy = t.y + ay / al * 1.8; t.warte = 0; t.flieht = P.t + 1.0; } }
     var dx = t.zx - t.x, dy = t.zy - t.y, L = Math.hypot(dx, dy), tempo = t.art === 'huhn' ? (d < 1.6 ? 2.2 : 0.6) : t.art === 'ratte' ? (t.flieht > P.t ? 3.2 : 1.4) : t.flieht > P.t ? 2.0 : t.art === 'gans' ? 0.45 : t.art === 'katze' ? 0.5 : 0.55;
     if (L < 0.05) { t.warte -= dt; if (t.warte <= 0) { var w = hash(t.nr * 9.1 + P.t * 0.37) * 6.283, r = hash(t.nr * 3.3 + P.t * 0.21) * t.r, nx = t.hx + Math.cos(w) * r, ny = t.hy + Math.sin(w) * r; NAVMODUS = true; if (frei(nx, ny)) { t.zx = nx; t.zy = ny; } NAVMODUS = false; t.warte = 1 + hash(t.nr + P.t) * (t.art === 'katze' ? 8 : 3); } }
     else { var sch = Math.min(L, tempo * dt), nx2 = t.x + dx / L * sch, ny2 = t.y + dy / L * sch;
@@ -14785,12 +14939,12 @@ function leuteBewegen(dt) {
     else
     l.puppe.bewegen(l.jagd ? 'rennen' : altGeht ? 'alt_gehen' : fuehrt2 ? 'fuehren' : geht ? 'gehen' : spielt ? l.spielAnim : sitzt ? (l.ort === 'betteln' ? 'bodensitzen' : l.rolle === 'alte' && hash(l.nr * 4.1) < 0.6 ? 'spinnen' : 'sitzen') : winkt ? 'winken' : 'stehen', dt, geht ? (altGeht ? Math.min(l.tempo || 1, 0.75) : l.tempo) : spielt ? l.spielTempo : 0);
     if (altGeht && l.puppe.grindKontakte) { var ks = l.puppe.grindKontakte(); if (ks && ks.stock) { var sg = l.stock.getObjectByName('griff'); l.stock.position.fromArray(ks.stock); if (sg) l.stock.position.sub(sg.position); if (ks.stockWinkel) l.stock.rotation.fromArray(ks.stockWinkel); } else if (ks && ks.handR) { var sg2 = l.stock.getObjectByName('griff'); l.stock.position.fromArray(ks.handR); if (sg2) l.stock.position.sub(sg2.position); } }
-    var ox = 0, oy = 0; if (geht && l.ziel) { var rest = Math.hypot(l.ziel[0] - l.x, l.ziel[1] - l.y), sd = (hash(l.nr * 5.1) - 0.5) * 0.9 * Math.min(1, rest / 3); ox = Math.cos(l.richtung) * sd; oy = Math.sin(l.richtung) * sd; }   // 09.10.: nicht alle auf derselben Spur
-    if (geht && (TAGESABLAUF.rollen[l.rolle] || {}).torkelt) { var sw = Math.sin(P.t * 2.1 + l.nr) * 0.38; ox += Math.cos(l.richtung) * sw; oy += Math.sin(l.richtung) * sw; }   // er torkelt
+    var ox = 0, oy = 0, torkelt = geht && (TAGESABLAUF.rollen[l.rolle] || {}).torkelt;   // 12.10.: der Seitenversatz von 09.10. war nur fürs Auge (ungeprüft, auch in Wände) – jetzt echte Laufspuren (wegSpur)
+    if (torkelt) { var sw = Math.sin(P.t * 2.1 + l.nr) * 0.38; ox += Math.cos(l.richtung) * sw; oy += Math.sin(l.richtung) * sw; }   // er torkelt
     var v = V(l.x + ox, l.y + oy, (l.zFest !== undefined ? l.zFest : bodenHoehe(l.x, l.y))); l.puppe.gruppe.position.set(v[0], v[1], v[2]);
     if (anHand && anHand.puppe.grindKontakte && l.puppe.grindKontakte) { var ka = anHand.puppe.grindKontakte(), kb = l.puppe.grindKontakte(); if (ka && kb && ka.hand && kb.hand) { var eg = anHand.puppe.gruppe; eg.updateMatrixWorld(true); var wH = eg.localToWorld(new THREE.Vector3().fromArray(ka.hand));
       l.puppe.gruppe.quaternion.copy(eg.quaternion); var off = new THREE.Vector3().fromArray(kb.hand).multiply(l.puppe.gruppe.scale).applyQuaternion(eg.quaternion); var np = wH.sub(off); l.x = np.x; l.y = -np.z; l.richtung = anHand.richtung; l.puppe.gruppe.position.set(np.x, bodenHoehe(l.x, l.y), np.z); } }
-    if (geht) l.puppe.gruppe.rotation.y = l.richtung + (ox || oy ? Math.sin(P.t * 2.1 + l.nr + 1) * 0.35 : 0); else if (sitzt) l.puppe.gruppe.rotation.y = l.ort === 'betteln' ? Math.PI - Math.atan2(l.x - KIRCHE[0], l.y - KIRCHE[1]) : l.bankDreh; else if (spielt) l.puppe.gruppe.rotation.y = l.richtung; else if (l.marktBlick || (l.gegenueber && d >= 4)) { var dr = Math.atan2(Math.sin(l.richtung - l.puppe.gruppe.rotation.y), Math.cos(l.richtung - l.puppe.gruppe.rotation.y)); l.puppe.gruppe.rotation.y += dr * Math.min(1, dt * 3); }
+    if (geht && anHand) l.puppe.gruppe.rotation.y = l.richtung; else if (geht) drehWeich(l, l.richtung + (torkelt ? Math.sin(P.t * 2.1 + l.nr + 1) * 0.35 : 0), dt, 9); else if (sitzt) l.puppe.gruppe.rotation.y = l.ort === 'betteln' ? Math.PI - Math.atan2(l.x - KIRCHE[0], l.y - KIRCHE[1]) : l.bankDreh; else if (spielt) drehWeich(l, l.richtung, dt, 5); else if (l.marktBlick || (l.gegenueber && d >= 4)) { var dr = Math.atan2(Math.sin(l.richtung - l.puppe.gruppe.rotation.y), Math.cos(l.richtung - l.puppe.gruppe.rotation.y)); l.puppe.gruppe.rotation.y += dr * Math.min(1, dt * 3); }
     if (l.last) l.last.visible = !!l.traegt;
     if (l.sau) { l.sau.visible = !!l.traegt && !istVersteckt(l); if (l.sau.visible) { var sr = l.richtung || 0, bx2 = l.x - Math.sin(sr) * 1.2, by2 = l.y + Math.cos(sr) * 1.2;   // hinter ihm her
         var sv = V(bx2, by2, bodenHoehe(bx2, by2)); l.sau.position.set(sv[0], sv[1] + (l.sau.tier ? 0 : geht ? Math.abs(Math.sin(P.t * 9)) * 0.04 : 0), sv[2]); l.sau.rotation.y = sr; if (l.sau.tier) l.sau.tier.bewegen(geht ? 'gehen' : 'stehen', dt); } }
@@ -14949,7 +15103,7 @@ function handhaben() {
   if (essenKaufen()) return true;
   var sc = schatzNah(); if (sc) { sc.weg = true; sc.m.visible = false; inBeutel(sc.d); return true; }
   var vs = versteckNah(); if (vs && (JAGD || AUFTRAG.schmuggel === 1 || !naechsteePerson())) { versteckRein(vs); return true; }
-  return reitenHandhaben() || karrenHandhaben() || lehreSchlafen() || leseAbgeben() || steinAbgeben() || steinNehmen() || kramZurueck() || kramNehmen() || moebelKaufen() || strohsack() || kammerSchlafen() || aufheben() || hinstellenStart() || grabHohl() || schmiedBeil() || weberHandel() || kircheSitzen() || hundAnfassen() || sammeln();   // 12.10.: der Karren steht oben (Andreas: „sitzen konnte ich nicht“ – Aufheben/Sammeln kamen ihm zuvor)
+  return reitenHandhaben() || karrenHandhaben() || lehreSchlafen() || leseAbgeben() || steinAbgeben() || steinNehmen() || kramZurueck() || kramNehmen() || moebelKaufen() || strohsack() || kammerSchlafen() || aufheben() || hinstellenStart() || grabHohl() || schmiedBeil() || weberHandel() || kircheSitzen() || hundAnfassen() || sammeln() || steinAblegen();   // 12.10.: der Karren steht oben (Andreas: „sitzen konnte ich nicht“ – Aufheben/Sammeln kamen ihm zuvor)
 }
 weltCv.addEventListener('mousedown', function (e) { if (document.pointerLockElement !== weltCv) return; if (e.button === 0) { if (PLATZ) { hinstellenJetzt(); return; } if ((holzNah() || spinnradNah() || (leseStock() >= 0 && leseZeit())) && !AUFTRAG.rede) { maus.links = true; return; } if (!reden() && !handhaben() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } else if (e.button === 2) { if (PLATZ) { hinstellenAbbrechen(); melden('ZURÜCK IN DEN BEUTEL', 1.5); return; } if (!handhaben()) { maus.rechts = true; if (!P.klettert) springenJetzt(); } } });
 addEventListener('mouseup', function (e) { if (e.button === 2) maus.rechts = false; if (e.button === 0) maus.links = false; });
@@ -15152,7 +15306,7 @@ function hudMalen() {
     var ez2 = einfZiel(); if (ez2) zeile = ez2.text + (ez2.x !== undefined ? '  · ' + Math.round(Math.hypot(ez2.x - P.x, ez2.y - P.y)) + ' M' : '');   // die Ankunft geht vor
     text(zeile, 6, 26, zeile.length > 92 ? 6 : zeile.length > 72 ? 7 : 8, AUFTRAG.stufe >= 4 ? '#9fe39f' : '#f2ecdc', 'left');   // lange Zeilen kleiner – sonst laufen sie ins Datum
     var zl = lebenszielText(); if (zl) text(zl, 6, 37, zl.length > 95 ? 5.5 : 6.5, '#e8c878', 'left');   // 11.10.: das nächste eigene Ziel – wofür man gerade arbeitet
-    if (SPIELER && !INVENTAR && !AUFTRAG.rede) { schnellleiste(W, H); var kd = SPIELER.kleidung[AUFTRAG.kleid]; text((AUFTRAG.nachname ? AUFTRAG.nachname + ' · ' : '') + kd.stand + (AUFTRAG.lehre === 3 ? ' · SCHUSTERMEISTER' + (AUFTRAG.ladenVorrat ? ' · ' + AUFTRAG.ladenVorrat + ' PAAR IM LADEN' : '') : AUFTRAG.lehre === 2 ? ' · SCHUSTERGESELLE' + (AUFTRAG.buergerrecht ? ' · BÜRGER' : '') : AUFTRAG.lehre ? ' · SCHUSTERLEHRLING (' + Math.min(AUFTRAG.lehrePaare || 0, LEHRE_PAARE) + '/' + LEHRE_PAARE + ' PAAR)' : '') + (AUFTRAG.hunger >= SPIELER.hunger.schwach_ab ? ' · SCHWACH VOR HUNGER' : AUFTRAG.hunger >= SPIELER.hunger.hungrig_ab ? ' · HUNGRIG' : '') + ' · I: INVENTAR', 6, H - 22, 8, AUFTRAG.hunger >= SPIELER.hunger.hungrig_ab ? '#ffcf7a' : '#f2ecdc', 'left'); }
+    if (SPIELER && !INVENTAR && !AUFTRAG.rede) { schnellleiste(W, H); var kd = SPIELER.kleidung[AUFTRAG.kleid], hd = handText(); if (hd) text('IN DER HAND: ' + hd + (STEIN.traegt ? ' · RECHTSKLICK: ABLEGEN' : ''), 6, H - 36, 8, '#ffd75e', 'left'); text((AUFTRAG.nachname ? AUFTRAG.nachname + ' · ' : '') + kd.stand + (AUFTRAG.lehre === 3 ? ' · SCHUSTERMEISTER' + (AUFTRAG.ladenVorrat ? ' · ' + AUFTRAG.ladenVorrat + ' PAAR IM LADEN' : '') : AUFTRAG.lehre === 2 ? ' · SCHUSTERGESELLE' + (AUFTRAG.buergerrecht ? ' · BÜRGER' : '') : AUFTRAG.lehre ? ' · SCHUSTERLEHRLING (' + Math.min(AUFTRAG.lehrePaare || 0, LEHRE_PAARE) + '/' + LEHRE_PAARE + ' PAAR)' : '') + (AUFTRAG.hunger >= SPIELER.hunger.schwach_ab ? ' · SCHWACH VOR HUNGER' : AUFTRAG.hunger >= SPIELER.hunger.hungrig_ab ? ' · HUNGRIG' : '') + ' · I: INVENTAR', 6, H - 22, 8, AUFTRAG.hunger >= SPIELER.hunger.hungrig_ab ? '#ffcf7a' : '#f2ecdc', 'left'); }
     var nah = naechsteePerson(), scn = schatzNah(); if (scn && !AUFTRAG.rede) text('RECHTSKLICK: AUFHEBEN', W / 2, H - 56, 9, '#ffd75e'); else if (nah && !AUFTRAG.rede && !AUFTRAG.wahl && !AUFTRAG.karrenWahl) text('KLICK: MIT ' + dativ(nah.name) + ' REDEN', W / 2, H - 56, 9, '#ffd75e');
     if (AUSDAUER < 99.5) { var ab = Math.round(AUSDAUER / 100 * 60); hud.fillStyle = 'rgba(0,0,0,.5)'; hud.fillRect(W / 2 - 31, H - 76, 62, 5); hud.fillStyle = AUSDAUER < 25 ? '#e0603a' : '#e8d070'; hud.fillRect(W / 2 - 30, H - 75, ab, 3); }   // Ausdauer beim Klettern
     if (!AUFTRAG.rede && !P.versteckt && versteckNah() && (JAGD || AUFTRAG.schmuggel === 1)) text('RECHTSKLICK: IM HEU VERSTECKEN', W / 2, H - 44, 8, '#e8d27a');
@@ -15377,7 +15531,10 @@ function karteMalen(W) {
 
 // ---------- Laden + Schleife ----------
 var zuletzt = 0;
-function schleife(t) { var dt = Math.min(0.05, (t - zuletzt) / 1000 || 0); zuletzt = t; P.dtLetzt = dt; schritt(dt); zeichnen(); requestAnimationFrame(schleife); }
+var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel nie mehr anhalten – melden (je Meldung einmal in der Konsole) und weiter
+function schleife(t) { requestAnimationFrame(schleife); var dt = Math.min(0.05, (t - zuletzt) / 1000 || 0); zuletzt = t; P.dtLetzt = dt;
+  try { schritt(dt); } catch (e) { schleifeFehler('schritt', e); } try { zeichnen(); } catch (e) { schleifeFehler('zeichnen', e); try { renderer.render(szene, kamera); } catch (e2) {} } }   // das Bild läuft weiter, auch wenn ein Teil hakt
+function schleifeFehler(wo, e) { var k = wo + ':' + (e && e.message); if (SCHLEIFE_FEHLER[k]) return; SCHLEIFE_FEHLER[k] = 1; console.error('Spielschleife (' + wo + '):', e); }
 function laden(src) { return new Promise(function (ok) { var i = new Image(); i.onload = function () { ok(i); }; i.src = src; }); }
 Promise.all([laden(BODEN), laden(KATLAS), laden(BATLAS), FATLAS ? laden(FATLAS) : Promise.resolve(null)]).then(function (b) {
   bodenBildHud = b[0];
