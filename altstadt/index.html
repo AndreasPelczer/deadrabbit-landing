@@ -9988,6 +9988,12 @@ function begehbarWaehlen() {                    // vor weltBauen: welche Häuser
   var rg = null; HAEUSER.forEach(function (h) { if (h.n === 'Ehemaliges Rotgerberhaus') rg = h; }); setz(rg, 'gerber', 'ROTGERBEREI');
   var th = HAEUSER.filter(function (h) { return h.innen && h.art === 'haus' && innerhalbMauer(h.cx, h.cy) && !h.begehbar && (!HAUSZUORDNUNG || h.beruf === 'mueller'); }).sort(function (a, b) { return Math.hypot(a.cx + 132, a.cy - 168) - Math.hypot(b.cx + 132, b.cy - 168); })[0];
   setz(th, 'mueller', 'MÜHLE AN DER TAUBER');
+  // 12.10. (Koop-Tafel, Andreas: „bräuchten min. 4 zum Testen“): vier weitere leere Kammern, eine je Mitspieler (höchstens 5). Erst ganz am Ende gewählt,
+  // damit alle bisherigen Häuser – und damit die Spielstände – gleich bleiben. Klein, Handwerker- oder Nebenhaus, mindestens 25 m voneinander.
+  if (HAUSZUORDNUNG && nahe.length > 40) { var fl2 = function (pp) { var a = 0; for (var k = 0; k < pp.length; k++) { var q1 = pp[k], q2 = pp[(k + 1) % pp.length]; a += q1[0] * q2[1] - q2[0] * q1[1]; } return Math.abs(a) / 2; };
+    var kn = BEGEHBAR.filter(function (h) { return h.zweck === 'kammer'; });
+    for (var i4 = 0; i4 < nahe.length && kn.length < 5; i4++) { var h4 = nahe[i4]; if (h4.begehbar || (h4.beruf !== 'handwerk' && h4.beruf !== 'neben')) continue; var f4 = fl2(h4.pts); if (f4 < 24 || f4 > 70) continue;
+      if (kn.some(function (o) { return Math.hypot(o.cx - h4.cx, o.cy - h4.cy) < 25; })) continue; setz(h4, 'kammer', 'KAMMER · BELEGT'); h4.kammerNr = kn.length + 1; kn.push(h4); } }
   var skh = HAEUSER.filter(function (h) { return h.n === 'Stiftskirche'; })[0]; if (skh && !skh.begehbar) { skh.begehbar = true; skh.zweck = 'kirche'; skh.anzeige = 'STIFTSKIRCHE'; skh.tuer = kircheTuer(skh); BEGEHBAR.push(skh); STIFT.haus = skh; }   // 09.10.: Kirche begehbar, Südportal
 }
 function begehbarSperrt(o, x, y) {              // Wände des Hauses mit Türlücke; innen frei; Möbel als Kreise
@@ -14099,10 +14105,11 @@ function schiffModell(art) {
 var KAMMER = null;
 function kammerHaus() {
   if (KAMMER !== null) return KAMMER || null;
-  var k = BEGEHBAR.filter(function (h) { return h.zweck === 'kammer' && h.bett; })[0] || BEGEHBAR.filter(function (h) { return h.zweck === 'wohnen' && h.bett && (!ONKEL || h !== ONKEL.haus); }).sort(function (a, b) { return Math.hypot(a.cx - WELT.start[0], a.cy - WELT.start[1]) - Math.hypot(b.cx - WELT.start[0], b.cy - WELT.start[1]); })[0];
+  var m0 = kammerMiete(), kl = kammerListe(), k = (m0 && kl.filter(function (h) { return h.id === m0.haus; })[0]) || kl[0] || BEGEHBAR.filter(function (h) { return h.zweck === 'wohnen' && h.bett && (!ONKEL || h !== ONKEL.haus); }).sort(function (a, b) { return Math.hypot(a.cx - WELT.start[0], a.cy - WELT.start[1]) - Math.hypot(b.cx - WELT.start[0], b.cy - WELT.start[1]); })[0];
   KAMMER = k || false; if (k) k.anzeige = k.zweck === 'kammer' ? 'KAMMER FREI' : 'WOHNHAUS · KAMMER FREI';
   return k || null;
 }
+function kammerListe() { return BEGEHBAR.filter(function (h) { return h.zweck === 'kammer' && h.bett; }).sort(function (a, b) { return (a.kammerNr || 1) - (b.kammerNr || 1); }); }   // 12.10.: Kammer 1 (wie bisher) + 2–5 für Mitspieler
 function kammerMiete() { try { var s = (localStorage.getItem(SPEICHER + '_kammer') || '').split('|'); return s[0] ? { haus: s[0], bis: +s[1] } : null; } catch (e) { return null; } }
 function kammerGemietet() { var k = kammerHaus(), m = kammerMiete(); return !!(k && m && m.haus === k.id && m.bis > UHR.t); }
 function kammerBett() { var k = kammerHaus(); if (!k || !k.bett) return null; var w = new THREE.Vector3(); k.bett.getWorldPosition(w); return [w.x, -w.z]; }
