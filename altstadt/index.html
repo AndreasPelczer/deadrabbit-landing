@@ -10442,7 +10442,9 @@ function spinnWeiter(dt) {
 function weberHandel() {                         // Rechtsklick in der Weberei: Garn verkaufen, sonst Wolle kaufen
   if (EPOCHE !== 1400) return false; var b = BERUFSSZENEN.filter(function (q) { return q.art === 'weber'; })[0]; if (!b || Math.hypot(P.x - b.x, P.y - b.y) > 3.2) return false;
   var heute = holzTagNr(); if (AUFTRAG.garnTag !== heute) { AUFTRAG.garnTag = heute; AUFTRAG.garnHeute = 0; }
-  if (AUFTRAG.garn > 0) { var n = Math.min(AUFTRAG.garn, GARN_TAGESMAX - (AUFTRAG.garnHeute || 0));
+  if (!AUFTRAG.angel && AUFTRAG.rute && !(AUFTRAG.garn > 0)) { if (AUFTRAG.heller < 1) { melden('DER WEBER: „EIN REST GARN FÜR DIE ANGEL? EIN HELLER.“', 4); return true; }   // 12.10.: Spinnen braucht Kammer + Spinnrad – für die Angel reicht ein Rest
+    AUFTRAG.heller -= 1; AUFTRAG.garn = 1; speichern(); melden('DER WEBER GIBT DIR EINEN REST GARN · −1 HELLER · DAS REICHT FÜR EINE SCHNUR', 4); return true; }
+  if (AUFTRAG.garn > (AUFTRAG.angel ? 0 : 1)) { var n = Math.min(AUFTRAG.garn - (AUFTRAG.angel ? 0 : 1), GARN_TAGESMAX - (AUFTRAG.garnHeute || 0));
     if (n <= 0) { melden('DER WEBER: „FÜR HEUTE HAB ICH GENUG GARN. MORGEN WIEDER.“', 4); return true; }
     AUFTRAG.garn -= n; AUFTRAG.garnHeute = (AUFTRAG.garnHeute || 0) + n; AUFTRAG.heller += n * GARN_LOHN; tagNotiz('heller', n * GARN_LOHN); speichern(); melden('DER WEBER PRÜFT DEIN GARN · ' + n + ' SPULE' + (n > 1 ? 'N' : '') + ' · +' + n * GARN_LOHN + ' HELLER', 4); return true; }
   if (AUFTRAG.heller < WOLLE_PREIS) { melden('EIN BUND WOLLE KOSTET ' + WOLLE_PREIS + ' HELLER', 3); return true; }
@@ -12534,7 +12536,7 @@ var STARTSCHIRM = !/[?&](intro=0|probe=1)/.test(Q) && !(function () { try { retu
   ak.addEventListener('click', function () { if (!akScharf) { akScharf = true; ak.textContent = 'Wirklich? Dein Spielstand fängt von vorn an – nochmal klicken'; return; }
     try { sessionStorage.setItem('wzf_gestartet', '1'); } catch (e) {} location.search = '?jahr=1400&auftrag=neu' + (/[?&]probe=1/.test(Q) ? '&probe=1' : ''); });
   addEventListener('keydown', function (e) { if (STARTSCHIRM && e.key === 'Enter') los(1400); }); })();
-addEventListener('keydown', function (e) { var k = e.key.toLowerCase(); if (STARTSCHIRM) return; if (e.metaKey || e.ctrlKey) return; taste[k] = true; if (e.key.indexOf('Arrow') === 0 || e.key === ' ') e.preventDefault(); if (k === 'm') KARTE = !KARTE; if (k === 'o') rumtreiberOeffnen(); if (k === 'n') stadtbuchOeffnen(); if (k === 'y') { WEGWEISER.an = !WEGWEISER.an; try { localStorage.setItem('wzf_wegweiser', WEGWEISER.an ? 'an' : 'aus'); } catch (e2) {} melden(WEGWEISER.an ? 'WEGWEISER AN (Y)' : 'WEGWEISER AUS (Y)', 2); } if (k === 't' || k === ',' || k === '.' || k === ';' || k === ':') uhrTaste(k);   // 11.10.: vorher lief uhrGesprungen() bei JEDEM Tastendruck (fehlende Klammern)
+addEventListener('keydown', function (e) { var k = e.key.toLowerCase(); if (STARTSCHIRM) return; if (e.metaKey || e.ctrlKey) return; taste[k] = true; if (e.key.indexOf('Arrow') === 0 || e.key === ' ') e.preventDefault(); if (k === 'm') KARTE = KARTE === 1 || KARTE === true ? 2 : KARTE ? 0 : 1; if (k === 'o') rumtreiberOeffnen(); if (k === 'n') stadtbuchOeffnen(); if (k === 'y') { WEGWEISER.an = !WEGWEISER.an; try { localStorage.setItem('wzf_wegweiser', WEGWEISER.an ? 'an' : 'aus'); } catch (e2) {} melden(WEGWEISER.an ? 'WEGWEISER AN (Y)' : 'WEGWEISER AUS (Y)', 2); } if (k === 't' || k === ',' || k === '.' || k === ';' || k === ':') uhrTaste(k);   // 11.10.: vorher lief uhrGesprungen() bei JEDEM Tastendruck (fehlende Klammern)
   if (k === 'i') { inventarAuf(!INVENTAR); QUESTBUCH = false; } if (k === 'tab') { e.preventDefault(); if (EPOCHE === 1400) { QUESTBUCH = !QUESTBUCH; if (QUESTBUCH && INVENTAR) inventarAuf(false); } } if (k === 'escape') QUESTBUCH = false; if (SPIELER && EPOCHE === 1400) for (var eg in SPIELER.essen) if (SPIELER.essen[eg].taste === k) essen(eg);   // 1–4: essen wie aus der Schnellleiste
   if (k === 'g' && AUFTRAG.karrenWahl) karrenWahlTreffen('schlafen'); else if (k === 'g' && AUFTRAG.wahl) wahlTreffen('nachlass'); else if (k === 'g' && AUFTRAG.zehnt > 0 && SPIELERKARREN && EPOCHE === 1400 && !AUFTRAG.rede && !AUFTRAG.hundWahl && !P.drinnen && !REITEN.auf && !KARRENSCHLAF) { P.aufKarren = true; karrenWahlTreffen('schlafen'); }   // 12.10. (Andreas: „ich wurde nicht gefragt“): G geht die ganze Fahrt über
   if (k === 'escape' && PAUSE) pauseWeiter(); else if (k === 'escape' && !document.pointerLockElement && !INVENTAR && performance.now() > PAUSE_RUHE) pauseZeigen(true); if (AUFTRAG.hundWahl && !AUFTRAG.rede) { if (k === 'g') hundWahlTreffen('vergeben'); if (k === 'r') hundWahlTreffen('rache'); } if (k === 'h') himmelEcht(!HIMMEL_ECHT); if (k === 'l') tonAnAus(); if (k === 'k') { STERNBILDER_AN = !STERNBILDER_AN; melden(STERNBILDER_AN ? 'STERNBILDER AN' : 'STERNBILDER AUS', 2); }
@@ -15239,7 +15241,7 @@ function tonStart() {
   var c = TON.ctx = new AC(), haupt = TON.haupt = c.createGain(); haupt.gain.value = 0.55; haupt.connect(c.destination);
   var nb = c.createBuffer(1, c.sampleRate * 2, c.sampleRate), d = nb.getChannelData(0), braun = 0; for (var i = 0; i < d.length; i++) { var w = Math.random() * 2 - 1; braun = (braun + 0.02 * w) / 1.02; d[i] = i % 2 ? w : braun * 3.5; } TON.rausch = nb;
   function schleife(typ, freq, q) { var src = c.createBufferSource(); src.buffer = nb; src.loop = true; var f = c.createBiquadFilter(); f.type = typ; f.frequency.value = freq; f.Q.value = q || 0.7; var g = c.createGain(); g.gain.value = 0; src.connect(f); f.connect(g); g.connect(haupt); src.start(); return g; }
-  TON.regen = schleife('highpass', 900); TON.wind = schleife('lowpass', 320); TON.wasser = schleife('bandpass', 520, 0.5); TON.stimmen = schleife('bandpass', 420, 2.2); TON.feuer = schleife('highpass', 2500);
+  TON.regen = schleife('highpass', 900); TON.wind = schleife('lowpass', 320); TON.wasser = schleife('bandpass', 520, 0.5); TON.stimmen = schleife('bandpass', 420, 2.2); TON.feuer = schleife('highpass', 2500); TON.markt = schleife('bandpass', 520, 1.1);
   TON.letzteStunde = new Date(himmelsZeit()).getHours(); TON.schrittWeg = 0;
 }
 function tonAnAus() { TON.an = !TON.an; try { localStorage.setItem('wzf_ton', TON.an ? 'an' : 'aus'); } catch (e) {} if (TON.ctx) { TON.haupt.gain.value = TON.an ? 0.55 : 0; try { if (TON.an) TON.ctx.resume(); else TON.ctx.suspend(); } catch (e) {} } else if (TON.an) tonStart(); melden(TON.an ? 'TON AN' : 'TON AUS', 2); }
@@ -15299,7 +15301,7 @@ function klangWeiter(dt) {
     if (b.art === 'schuster' && klangAb('schuster' + b.x, 0.3 + (R() < 0.2 ? 1.2 : 0))) klang('schusterhammer', b.x, b.y, 0.35, 5);
     if (b.art === 'weber' && klangAb('weber' + b.x, 0.7)) klang('webstuhl_klappern', b.x, b.y, 0.3, 6); });
   var leute = 0, ruf = null; if (STAND && Math.hypot(P.x - STAND.x, P.y - STAND.y) < 70) TAGESLEUTE.forEach(function (l) { if (!istVersteckt(l) && Math.hypot(l.x - STAND.x, l.y - STAND.y) < 22) { leute++; if (!ruf || R() < 0.2) ruf = l; } });
-  klangSchleife('menge_murmeln', 'markt', leute > 3 && tag ? STAND.x : null, STAND ? STAND.y : 0, Math.min(0.28, 0.06 + leute * 0.015), 14, { dichte: Math.min(1, leute / 14) });
+  var mo = leute > 3 && tag ? klangOrt(STAND.x, STAND.y, Math.min(0.1, 0.02 + leute * 0.005), 14) : null; TON.markt.gain.setTargetAtTime(mo ? mo.lautstaerke * (0.75 + 0.25 * Math.sin(TON.ctx.currentTime * 0.9) * Math.sin(TON.ctx.currentTime * 2.3)) : 0, TON.ctx.currentTime, 0.5);   // 12.10.: Codex' menge_murmeln brummte (Dauertöne) – jetzt gefiltertes Rauschen
   if (ruf && tag && leute > 3 && klangAb('marktruf', 5 + R() * 9)) klang('marktruf', ruf.x, ruf.y, 0.3, 10, { tonhoehe: 0.8 + R() * 0.5, saat: Math.floor(R() * 999) });
   var S = SPIELLEUTE, jetzt = TON.ctx.currentTime; if (S && S.g.visible && S.musik.length) { var m = S.musik[0], dm = Math.hypot(P.x - m.x, P.y - m.y), W = KL.weise;
     if (!W && jetzt >= (KL.t.weisePause || 0)) { var ws = Klang.melodien(), nm = Object.keys(ws); W = KL.weise = { n: ws[nm[Math.floor(R() * nm.length)]], i: 0, naechste: jetzt, tempo: 140 }; }
@@ -15313,8 +15315,8 @@ function klangWeiter(dt) {
   if (s_ >= 17 && klangAb('lachen', 7 + R() * 10)) { var wh = null, wd = 30; BEGEHBAR.forEach(function (k) { if ((k.zweck === 'wirt' || k.zweck === 'gasthaus') && k.plaetze && Object.keys(k.plaetze).length > 2) { var d = Math.hypot(P.x - k.cx, P.y - k.cy); if (d < wd) { wd = d; wh = k; } } }); if (wh) klang('lachen', wh.cx, wh.cy, 0.3, 7, { tonhoehe: 0.85 + R() * 0.3, saat: Math.floor(R() * 99) }); }
   var hs = Math.floor(s_); if (nacht && hs !== KL.nwStunde) { KL.nwStunde = hs; var nw = klangNaechster(TAGESLEUTE, function (l) { return l.rolle === 'nachtwaechter' && !istVersteckt(l); }); if (nw) klang('nachtwaechter_horn', nw.x, nw.y, 0.5, 40); }
   var kn = null, kd = 1e9; (KARREN_NAH || []).forEach(function (k) { var d = Math.hypot(P.x - k[0], P.y - k[1]); if (d < kd) { kd = d; kn = k; } });
-  if (P.aufKarren && SPIELERKARREN && P.tempo > 0.6) klangSchleife('karren_rad', 'karren', P.x, P.y, 0.18, 4);
-  else klangSchleife('karren_rad', 'karren', kn ? kn[0] : null, kn ? kn[1] : 0, 0.22, 7);
+  var eigen = P.aufKarren && SPIELERKARREN && P.tempo > 0.6, kq = eigen ? [P.x, P.y] : kn;
+  if (kq && klangAb('karren', 0.28 + R() * 0.25)) klang('hammer_holz', kq[0], kq[1], eigen ? 0.12 : 0.16, eigen ? 3 : 6, { tonhoehe: 0.45 + R() * 0.2, saat: Math.floor(R() * 99) });   // 12.10.: statt karren_rad (brummte) Holzrad rumpelt über Steine
   if (REITEN.auf && REITEN.gang !== 'stehen') { var takt = REITEN.gang === 'galopp' ? 0.14 : REITEN.gang === 'trab' ? 0.22 : 0.32; if (klangAb('huf', takt)) klang('huf_pflaster', P.x, P.y, innerhalbMauer(P.x, P.y) ? 0.3 : 0.15, 3, { tonhoehe: 0.9 + R() * 0.2, saat: Math.floor(R() * 99) }); }
 }
 addEventListener('keydown', tonStart); addEventListener('mousedown', tonStart); addEventListener('touchstart', tonStart);
@@ -15607,7 +15609,7 @@ function hudMalen() {
       var sx = (vk.x + 1) / 2 * W, sy = (1 - vk.y) / 2 * H; if (l.jagd) text('!', sx, sy, 14, '#ff4a3a'); else { hud.globalAlpha = 0.4 + l.verdacht * 0.6; text('?', sx, sy, 8 + Math.round(l.verdacht * 6), l.verdacht > 0.6 ? '#ff9a3a' : '#ffe07a'); hud.globalAlpha = 1; } }); }
   if (STADTBUCH && STADT) stadtbuchMalen(W, H);
   if (INVENTAR && SPIELER && EPOCHE === 1400) inventarMalen(W, H); else if (QUESTBUCH && EPOCHE === 1400) questbuchMalen(W, H);
-  if (KARTE && bodenBildHud) karteMalen(W);
+  if (KARTE && bodenBildHud) karteMalen(W, H);
   if (false && P.t < 6 && !/[?&]intro=0/.test(Q)) {   // AUS: ersetzt durch den Startschirm (09.10.) hud.globalAlpha = Math.max(0, Math.min(1, 6 - P.t)); hud.fillStyle = 'rgba(0,0,0,.55)'; hud.fillRect(70, 190, 340, 52);
     text('WERTHEIM ZU FUSS', W / 2, 207, 13, '#ffd75e'); text('PFEILE/WASD · SHIFT RENNEN · KLICK = MAUS · M KARTE · P SCHARF · Z 1400 · T UHR · U ZEIT · B BERGFRIED · V ANSICHT · E REDEN · TAB QUESTBUCH · I INVENTAR · J STADTBUCH · LEERTASTE SPRINGEN (AN DER WAND HALTEN = KLETTERN) · MAUS LINKS = E · MAUS RECHTS = SPRINGEN/KLETTERN · C DUCKEN · L TON · H ECHTER HIMMEL · F FACKEL · K STERNBILDER', W / 2, 222, 8, '#ddd'); text('HANDY: LINKS LAUFEN · RECHTS UMSCHAUEN', W / 2, 234, 8, '#ddd'); hud.globalAlpha = 1; }
   if (finger.links) { hud.strokeStyle = 'rgba(255,255,255,.35)'; hud.beginPath(); hud.arc(finger.links.x0, finger.links.y0, 26, 0, 7); hud.stroke(); hud.beginPath(); hud.arc(finger.links.x, finger.links.y, 8, 0, 7); hud.stroke(); }
@@ -15629,7 +15631,7 @@ function questListe() {
   if (A.brief === 1) neben.push(['Der versiegelte Brief', 'Über die Dächer ins Dachfenster mit der Kerze']); else if (A.briefZahl) neben.push(['Briefe über die Dächer', '✓ ' + A.briefZahl + ' zugestellt']);
   if (A.schmuggel === 1) neben.push(['Pfeffer für die Burg', 'Ungesehen zur Burgmagd Kunigunde – nicht erwischen lassen']); else if (A.schmuggelZahl) neben.push(['Pfeffer für die Burg', '✓ ' + A.schmuggelZahl + '-mal geschmuggelt']);
   if (A.zehnt === 1) neben.push(['Der Zehnt', 'Mit dem Ochsenkarren nach Sachsenhausen zur Zehntscheune']); else if (A.zehnt === 2) neben.push(['Der Zehnt', 'Beladen – zurück in den Burghof']); else if (A.zehntFahrten) neben.push(['Der Zehnt', '✓ ' + A.zehntFahrten + ' Fahrten' + (A.amt ? ' · du bist Eintreiber des Grafen' : A.zehntFahrten >= 3 ? ' · frag den Burgvogt nach mehr' : '')]);
-  if (A.einf >= 9 && !A.angel) neben.push(['Eine eigene Angel', (A.messer ? '✓' : '·') + ' Messer (Messerschmied, 5 Heller) · ' + (A.rute ? '✓' : '·') + ' Haselrute (Strauch an der Lände, mit dem Messer) · ' + (A.garn > 0 ? '✓' : '·') + ' Garn · ' + (A.haken ? '✓' : '·') + ' Haken (Schmied, 1 Heller)']);
+  if (A.einf >= 9 && !A.angel) neben.push(['Eine eigene Angel', (A.messer ? '✓' : '·') + ' Messer (Messerschmied, 5 Heller) · ' + (A.rute ? '✓' : '·') + ' Haselrute (Strauch an der Lände, mit dem Messer) · ' + (A.garn > 0 ? '✓' : '·') + ' Garn (Weberei, ein Rest für 1 Heller) · ' + (A.haken ? '✓' : '·') + ' Haken (Schmied, 1 Heller)']);
   else if (A.angel) neben.push(['Angeln', 'Am Ufer Rechtsklick wirft aus, taucht der Schwimmer weg: sofort Rechtsklick · ' + (A.fischGesamt || 0) + ' Fische gefangen']);
   if (A.hundWahl) neben.push(['Der Hund', 'Er ist tot. Klagen, vergeben oder Rache – du musst dich entscheiden']); else if (/^zahm/.test(hs)) neben.push(['Der Hund', 'Er folgt dir']); else if (/^tot/.test(hs)) neben.push(['Der Hund', 'Erschlagen. Die Wachen wissen, was du danach getan hast']);
   if (A.tammo && !A.verheiratet) { var wi = (A.werben || {}).imke || A.imke || 0; neben.push(['Imke, die Tochter des Wildwerkers', A.lehre >= 2 ? 'Tammo hält dich für würdig – besuch Imke weiter' : 'Tammo will einen mit Handwerk und Namen (erst Geselle)']); }
@@ -15789,12 +15791,40 @@ function stadtbuchMalen(W, H) {               // J: Preise, Haushalte, Chronik �
   hud.fillStyle = 'rgba(255,255,255,.6)'; hud.textAlign = 'right'; hud.fillText('X: HAGEL (MISSERNTE) · T: ZEITRAFFER · J: SCHLIESSEN', W - x0, H - 22);
 }
 function umbrechen(t, n) { var w = t.split(' '), z = [], a = ''; w.forEach(function (x) { if ((a + ' ' + x).trim().length > n) { z.push(a.trim()); a = x; } else a += ' ' + x; }); if (a.trim()) z.push(a.trim()); return z; }
-function karteMalen(W) {
-  var gx = W - 134, gy = 22, gr = 124, m = 260, sk = gr / m;
+// ---- Zeichen auf der Karte (12.10., Andreas: „Kreuze, wo ich Job, Quest oder Einkauf finde – ohne Lesen, Farben“) ----
+// grün = Arbeit (Holz hacken, Mauer flicken, Weinberg, Lehrherr), blau = Essen/Einkauf (Bäcker, Metzger, Markt, Garküche, Wirtshaus),
+// weißes Kreuz (blinkt) = was dir gerade fehlt (Angel: Messerschmied → Haselstrauch → Weberei/Garn → Schmied/Haken). Gelb bleibt die Aufgabe.
+// Wichtige Zeichen (gelb, weiß) bleiben am Kartenrand stehen, wenn sie außerhalb liegen. M: klein → groß → aus.
+var KZ = { t: -9, liste: [] };
+function kartenZeichen() {
+  if (P.t - KZ.t < 1) return KZ.liste; KZ.t = P.t; var o = [], A = AUFTRAG; KZ.liste = o; if (EPOCHE !== 1400) return o;
+  var z = function (x, y, art) { o.push({ x: x, y: y, art: art }); }, szene = function (art) { return BERUFSSZENEN.filter(function (q) { return q.art === art; })[0]; };
+  if (HOLZ.platz) z(HOLZ.platz.klotz[0], HOLZ.platz.klotz[1], 'arbeit');
+  if (STEIN.platz) z(STEIN.platz.hp[0], STEIN.platz.hp[1], 'arbeit');
+  if (WEINBERG) z(WEINBERG.x, WEINBERG.y, 'arbeit');
+  var lm = typeof lehrMeister === 'function' ? lehrMeister() : null; if (lm && lm.werkbank) z(lm.werkbank.x, lm.werkbank.y, 'arbeit');
+  BEGEHBAR.forEach(function (h) { if (h.zweck === 'baecker' || h.zweck === 'metzger' || h.zweck === 'wirt' || h.zweck === 'gasthaus') z(h.tuer ? h.tuer.mitte[0] : h.cx, h.tuer ? h.tuer.mitte[1] : h.cy, 'essen'); });
+  if (STAND) z(STAND.x, STAND.y, 'essen'); if (GARKUECHE) z(GARKUECHE.x, GARKUECHE.y, 'essen');
+  if (A.einf >= 9 && !A.angel) { var f = null;
+    if (!A.messer) { var ms = TAGESLEUTE.filter(function (l) { return /MESSERSCHMIED/.test(l.name || '') && l.werkbank; })[0]; if (ms) f = [ms.werkbank.x, ms.werkbank.y]; }
+    else if (!A.rute) { var hs = ANGEL.hasel.length ? klangNaechster(ANGEL.hasel) : null; if (hs) f = [hs.x, hs.y]; else if (FAEHRE) f = [FAEHRE.a[0], FAEHRE.a[1]]; }
+    else if (!(A.garn > 0)) { var wb = szene('weber'); if (wb) f = [wb.x, wb.y]; }
+    else if (!A.haken) { var sm = szene('schmied'); if (sm) f = [sm.x, sm.y]; }
+    if (f) z(f[0], f[1], 'fehlt'); }
+  return o;
+}
+function karteMalen(W, H) {
+  var gross = KARTE === 2, gr = gross ? Math.min(W - 40, (H || 240) - 40) : 124, gx = gross ? Math.round((W - gr) / 2) : W - 134, gy = gross ? 20 : 22, m = gross ? 700 : 260, sk = gr / m;
   hud.save(); hud.fillStyle = '#000'; hud.fillRect(gx - 2, gy - 2, gr + 4, gr + 4); hud.beginPath(); hud.rect(gx, gy, gr, gr); hud.clip();
   hud.drawImage(bodenBildHud, bu(P.x - m / 2), bv(P.y + m / 2), m * B.px, m * B.px, gx, gy, gr, gr);
   hud.fillStyle = 'rgba(70,52,40,.85)';
   HAEUSER.forEach(function (h) { if (Math.abs(h.cx - P.x) > m * 0.6 || Math.abs(h.cy - P.y) > m * 0.6) return; hud.beginPath(); h.pts.forEach(function (q, i) { var x = gx + gr / 2 + (q[0] - P.x) * sk, y = gy + gr / 2 - (q[1] - P.y) * sk; i ? hud.lineTo(x, y) : hud.moveTo(x, y); }); hud.fill(); });
+  var blink = Math.floor(P.t * 2.5) % 2 === 0, gross_ = gross;
+  kartenZeichen().forEach(function (q) { var x = gx + gr / 2 + (q.x - P.x) * sk, y = gy + gr / 2 - (q.y - P.y) * sk, aussen = x < gx + 3 || x > gx + gr - 3 || y < gy + 3 || y > gy + gr - 3;
+    if (aussen && q.art !== 'fehlt') return; x = Math.max(gx + 4, Math.min(gx + gr - 4, x)); y = Math.max(gy + 4, Math.min(gy + gr - 4, y)); var r = gross_ ? 3 : 2;
+    if (q.art === 'arbeit') { hud.fillStyle = '#123'; hud.fillRect(x - r - 1, y - r - 1, 2 * r + 3, 2 * r + 3); hud.fillStyle = '#4fd14a'; hud.fillRect(x - r, y - r, 2 * r + 1, 2 * r + 1); }
+    else if (q.art === 'essen') { hud.fillStyle = '#123'; hud.beginPath(); hud.arc(x + 0.5, y + 0.5, r + 1.5, 0, 6.3); hud.fill(); hud.fillStyle = '#5ab4ff'; hud.beginPath(); hud.arc(x + 0.5, y + 0.5, r + 0.5, 0, 6.3); hud.fill(); }
+    else { if (blink) r += 1.5; hud.strokeStyle = '#000'; hud.lineWidth = 3; hud.beginPath(); hud.moveTo(x - r - 2, y - r - 2); hud.lineTo(x + r + 2, y + r + 2); hud.moveTo(x + r + 2, y - r - 2); hud.lineTo(x - r - 2, y + r + 2); hud.stroke(); hud.strokeStyle = '#fff'; hud.lineWidth = 1.5; hud.stroke(); } });
   var zk = auftragZiel(); if (zk) { var zx = gx + gr / 2 + (zk.x - P.x) * sk, zy = gy + gr / 2 - (zk.y - P.y) * sk; zx = Math.max(gx + 3, Math.min(gx + gr - 3, zx)); zy = Math.max(gy + 3, Math.min(gy + gr - 3, zy)); hud.fillStyle = '#ffd75e'; hud.fillRect(zx - 2, zy - 2, 5, 5); }
   var cx = gx + gr / 2, cy = gy + gr / 2, fx = Math.sin(P.blick), fy = -Math.cos(P.blick);
   hud.fillStyle = '#ff3b3b'; hud.beginPath(); hud.moveTo(cx + fx * 6, cy + fy * 6); hud.lineTo(cx - fy * 4 - fx * 4, cy + fx * 4 - fy * 4); hud.lineTo(cx + fy * 4 - fx * 4, cy - fx * 4 - fy * 4); hud.fill();
