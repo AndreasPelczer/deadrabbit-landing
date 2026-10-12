@@ -16847,7 +16847,7 @@ function karteMalen(W, H) {
   pos.forEach(function (pp) { pp.x = Math.max(gx + rd, Math.min(gx + gr - rd, pp.x)); pp.y = Math.max(gy + rd, Math.min(gy + gr - rd, pp.y)); if (Math.hypot(pp.x - pp.ox, pp.y - pp.oy) > rd * 0.8 && !pp.aussen) { hud.strokeStyle = 'rgba(20,14,10,.8)'; hud.lineWidth = 1.5; hud.beginPath(); hud.moveTo(pp.ox, pp.oy); hud.lineTo(pp.x, pp.y); hud.stroke(); hud.fillStyle = '#1a1410'; hud.fillRect(pp.ox - 1.5, pp.oy - 1.5, 3, 3); } });
   pos.forEach(function (pp) { var q = pp.q, x = pp.x, y = pp.y; hud.globalAlpha = pp.aussen && q.art === 'arbeit' ? 0.6 : 1;
     hud.fillStyle = '#1a1410'; hud.beginPath(); hud.arc(x, y, rd + 1.5, 0, 6.3); hud.fill(); hud.fillStyle = RING[q.art] || '#fff'; hud.beginPath(); hud.arc(x, y, rd + 0.5, 0, 6.3); hud.fill();
-    if (q.art === 'quest' || q.art === 'geruecht') { hud.fillStyle = q.art === 'quest' ? '#3a2a10' : '#f4f4f4'; hud.font = 'bold ' + (gross ? 11 : 9) + 'px monospace'; hud.textAlign = 'center'; hud.textBaseline = 'middle'; hud.fillText(q.art === 'quest' ? String(q.nr) : '?', x, y + 0.5); hud.textBaseline = 'alphabetic'; }
+    if (q.art === 'quest' || q.art === 'geruecht') { hud.fillStyle = q.art === 'quest' ? '#3a2a10' : '#f4f4f4'; hud.font = 'bold ' + (gross ? 11 : 9) + 'px monospace'; hud.textAlign = 'center'; hud.textBaseline = 'middle'; hud.fillText(q.art === 'quest' ? String(q.nr) : '!', x, y + 0.5); hud.textBaseline = 'alphabetic'; }
     else { hud.fillStyle = '#f4ecd8'; hud.beginPath(); hud.arc(x, y, rd - 1, 0, 6.3); hud.fill(); var ik = IKON[q.ik]; if (ik) pixelbild(ik.m, ik.p, x - 6 * sc, y - 6 * sc, sc); }
     if (gross && KARTE_ZOOM >= 1 && q.n) { var tw = q.n.length * 4.4 + 4, r0 = [x - tw / 2, y + rd + 2, tw, 9], frei_ = pos.every(function (o) { return Math.abs(o.x - x) < 0.1 && Math.abs(o.y - y) < 0.1 || Math.hypot(o.x - (x), o.y - (y + rd + 6)) > rd + 3; }) && schilder.every(function (r) { return r0[0] + r0[2] < r[0] || r[0] + r[2] < r0[0] || r0[1] + r0[3] < r[1] || r[1] + r[3] < r0[1]; });
       if (frei_) { schilder.push(r0); mcText(q.n.toUpperCase(), x, y + rd + 9, '#fff', 7, 'center'); } } hud.globalAlpha = 1; });   // Namen nur, wo Platz ist
@@ -16882,8 +16882,33 @@ document.addEventListener('pointerlockchange', function () { if (document.pointe
 document.addEventListener('pointerlockerror', function () { if (!PAUSE) melden('KLICK INS BILD – DANN GEHT ES WEITER', 4); });   // Safari verweigert den Mausfang gleich nach einem Esc
 
 var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel nie mehr anhalten – melden (je Meldung einmal in der Konsole) und weiter
+// 12.10. (Andreas: „dem Questgeber fehlt dieser Diamant über dem Kopf“): ein kleines Wappenschild schwebt über Quest-Orten und Leuten, die etwas zu erzählen haben.
+// Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
+var KOPFSCHILD = { pool: [], tex: {} };
+function kopfSchildTextur(art, text) {
+  var k = art + text; if (KOPFSCHILD.tex[k]) return KOPFSCHILD.tex[k];
+  var c = document.createElement('canvas'); c.width = 32; c.height = 40; var g = c.getContext('2d');
+  function form(r) { g.beginPath(); g.moveTo(16 - r * 13, 3 + (1 - r) * 4); g.lineTo(16 + r * 13, 3 + (1 - r) * 4); g.lineTo(16 + r * 13, 18); g.quadraticCurveTo(16 + r * 13, 30, 16, 37 - (1 - r) * 4); g.quadraticCurveTo(16 - r * 13, 30, 16 - r * 13, 18); g.closePath(); }
+  var gold = art === 'quest'; g.fillStyle = gold ? '#3a2a10' : '#2a2a30'; form(1.08); g.fill(); g.fillStyle = gold ? '#ffd75e' : '#dcdde4'; form(0.92); g.fill();
+  g.fillStyle = gold ? '#fff2b0' : '#ffffff'; g.fillRect(6, 6, 20, 2);   // Glanzkante oben
+  g.fillStyle = gold ? '#3a2a10' : '#7a1f1f'; g.font = 'bold 20px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 16, 20);
+  var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; KOPFSCHILD.tex[k] = t; return t;
+}
+function kopfSchilde() {
+  var liste = EPOCHE === 1400 && !AUFTRAG.rede && !KARTE ? kartenZeichen().filter(function (q) { return q.art === 'quest' || q.art === 'geruecht'; }) : [], n = 0;
+  liste.forEach(function (q) {
+    var d = Math.hypot(q.x - P.x, q.y - P.y); if (d > 70 || d < 1.5) return;
+    var x = q.x, y = q.y, best = 2.5; LEUTE.forEach(function (l) { if (l.weg || istVersteckt(l)) return; var e = Math.hypot(l.x - q.x, l.y - q.y); if (e < best) { best = e; x = l.x; y = l.y; } });   // steht jemand dort, hängt das Schild über seinem Kopf
+    var sp = KOPFSCHILD.pool[n]; if (!sp) { sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false })); sp.renderOrder = 5; szene.add(sp); KOPFSCHILD.pool[n] = sp; } n++;
+    var tex = kopfSchildTextur(q.art, q.art === 'quest' ? String(q.nr) : '!'); if (sp.material.map !== tex) { sp.material.map = tex; sp.material.needsUpdate = true; }
+    var gr = 0.6 + Math.min(1, d / 40) * 0.6, wipp = Math.sin(P.t * 2.2 + q.x) * 0.08, dreh = Math.abs(Math.cos(P.t * 0.9 + q.y));   // weiter weg etwas größer, damit man es sieht; „dreht“ sich langsam
+    var v = V(x, y, bodenHoehe(x, y) + 2.45 + wipp); sp.position.set(v[0], v[1], v[2]); sp.scale.set(gr * (0.35 + 0.65 * dreh), gr * 1.25, 1);
+    sp.material.opacity = Math.max(0, Math.min(1, (d - 1.5) / 5)); sp.visible = true;
+  });
+  for (var i = n; i < KOPFSCHILD.pool.length; i++) KOPFSCHILD.pool[i].visible = false;
+}
 function schleife(t) { requestAnimationFrame(schleife); if (PAUSE) { zuletzt = t; return; } var dt = Math.min(0.05, (t - zuletzt) / 1000 || 0); zuletzt = t; P.dtLetzt = dt;
-  try { schritt(dt); } catch (e) { schleifeFehler('schritt', e); } try { zeichnen(); } catch (e) { schleifeFehler('zeichnen', e); try { renderer.render(szene, kamera); } catch (e2) {} } }   // das Bild läuft weiter, auch wenn ein Teil hakt
+  try { schritt(dt); } catch (e) { schleifeFehler('schritt', e); } try { kopfSchilde(); } catch (e) { schleifeFehler('kopfschild', e); } try { zeichnen(); } catch (e) { schleifeFehler('zeichnen', e); try { renderer.render(szene, kamera); } catch (e2) {} } }   // das Bild läuft weiter, auch wenn ein Teil hakt
 function schleifeFehler(wo, e) { var k = wo + ':' + (e && e.message); if (SCHLEIFE_FEHLER[k]) return; SCHLEIFE_FEHLER[k] = 1; console.error('Spielschleife (' + wo + '):', e); }
 function laden(src) { return new Promise(function (ok) { var i = new Image(); i.onload = function () { ok(i); }; i.src = src; }); }
 Promise.all([laden(BODEN), laden(KATLAS), laden(BATLAS), FATLAS ? laden(FATLAS) : Promise.resolve(null)]).then(function (b) {
