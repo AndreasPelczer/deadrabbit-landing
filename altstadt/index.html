@@ -3890,6 +3890,7 @@ function tier(t){var g=t.gruppe||t,pakete=g._tierPakete;if(!pakete){pakete=[];g.
 return {kleidung:kleidung,figur:figur,figurAktualisieren:figurAktualisieren,schreiben:schreiben,paket:paket,tier:tier};}());
 if(typeof module!=='undefined'&&module.exports)module.exports=Verschmelzen;
 
+var ANGELTAKTE={fisch_zeigen:{dauer:1.5,schleife:false},anschlagen:{dauer:0.5,schleife:false},angeln_warten:{dauer:1.8,schleife:true},angel_auswerfen:{dauer:1,schleife:false},rute_schneiden:{dauer:2,schleife:false}};
 var GESTEN={wegdrehen:{dauer:1,schleife:false},zuwinken_freudig:{dauer:1.5,schleife:false},tuscheln:{dauer:1.8,schleife:true},zeigen:{dauer:1,schleife:true},arme_verschraenkt:{dauer:1.8,schleife:true},kopf_schuetteln:{dauer:1,schleife:false},hut_ziehen:{dauer:1.2,schleife:false},nicken:{dauer:0.8,schleife:false},};
 var KLEINKINDARTEN=['krabbeln','tapsen','sitzen_boden','am_rock'];
 var REITTAKTE={aufsitzen:1.6,reiten:1,absitzen:1.3,fuehren:1,hufbeschlag:.7};
@@ -3903,6 +3904,11 @@ var LADENTAKTE={schauen:2,anprobieren:1.4,verkaufen:1.6,zaehlen:.8};
 var LEHRETAKTE={zuschneiden:0.8,pechen:1.0,naehen:0.9,besohlen:0.45};
 // Benannte Winkelsätze in Radiant. Partialposen ergänzen die Grundpose.
 var POSEN = {
+  fisch_zeigen:{bauch:[.08,0,0]},
+  anschlagen:{bauch:[.08,0,0]},
+  angeln_warten:{bauch:[.08,0,0]},
+  angel_auswerfen:{bauch:[.08,0,0]},
+  rute_schneiden:{bauch:[.65,0,0],brust:[.12,0,0],huefteL:[-.25,0,0],huefteR:[-.25,0,0],knieL:[.5,0,0],knieR:[.5,0,0]},
   wegdrehen:{brust:[0,-.6,0],kopf:[0,-.5,0],schulterR:[0,0,-.18]},
   zuwinken_freudig:{schulterL:[-2.5,0,.2],schulterR:[-2.5,0,-.2]},
   tuscheln:{brust:[.12,0,0],kopf:[.12,.1,0]},
@@ -4026,6 +4032,21 @@ var Gliederpuppe = (function () {
   // Proportionen des Spielentwurfs, keine Wachstumstabelle.
   var KLEINKINDANTEIL={huefte:.39,bauch:.11,brust:.24,hals:.05,kopf:.21,schulterBreite:.27,hueftAbstand:.14,oberarm:.19,unterarm:.16,hand:.11,oberschenkel:.18,unterschenkel:.175,knoechel:.035,fuss:.14};
 
+  // SPIELANNAHME: keine medizinische Wachstumstabelle.
+  var ALTERSVERLAUF=[[0,.50,.25],[1,.75,.21],[2.5,.92,.20],[4,1.05,.195],[7,1.22,.18],[10,1.40,.17],[14,1.62,.16],[18,1.75,.15],[25,1.75,.15]];
+  function altersSanft(q){q=Math.max(0,Math.min(1,q));return q*q*(3-2*q);}
+  function altersprofil(alter){
+    if(typeof alter!=='number'||!isFinite(alter)||alter<0||alter>25)throw new Error('alter muss zwischen 0 und 25 Jahren liegen');
+    var a=ALTERSVERLAUF[0],b=a,i;for(i=1;i<ALTERSVERLAUF.length;i++){b=ALTERSVERLAUF[i];if(alter<=b[0])break;a=b;}
+    var q=altersSanft((alter-a[0])/(b[0]-a[0])),h=a[1]+(b[1]-a[1])*q,k=a[2]+(b[2]-a[2])*q,t=altersSanft(alter/18),r={};
+    Object.keys(ANTEIL).forEach(function(n){r[n]=KLEINKINDANTEIL[n]+(ANTEIL[n]-KLEINKINDANTEIL[n])*t;});
+    r.kopf=k;r.huefte=r.oberschenkel+r.unterschenkel+r.knoechel;r.brust=1-r.huefte-r.bauch*1.2-r.hals-r.kopf;
+    return {alter:alter,groesse:h,kopfAnteil:k,anteile:r};
+  }
+
+  var ALTERSGRENZEN={saeugling:0,krabbeln:.7,sitzen_boden:.7,tapsen:1,am_rock:1,stehen:2.5,gehen:2.5,rennen:2.5,winken:2.5,sitzen:2.5,warten:2.5,schauen:2.5,hand_reichen:4,anklopfen:4,tuer_spalt:4,liegen:0,nicken:.7,kopf_schuetteln:1,reifen_treiben:4,murmeln:4};
+  function mindestalter(art){if(Object.prototype.hasOwnProperty.call(ALTERSGRENZEN,art))return ALTERSGRENZEN[art];if(Object.prototype.hasOwnProperty.call(GESTEN,art))return 2.5;return 10;}
+  function altersbewegung(alter,art){altersprofil(alter);if(art==='saeugling'&&alter>=1)return alter<2.5?'tapsen':'stehen';return alter>=mindestalter(art)?art:alter<.7?'saeugling':alter<1?'krabbeln':alter<2.5?'tapsen':'stehen';}
   var MIXAMO = {
     becken: 'Hips', bauch: 'Spine', brust: 'Spine2', hals: 'Neck', kopf: 'Head',
     schulterL: 'LeftArm', ellbogenL: 'LeftForeArm', handL: 'LeftHand',
@@ -4055,11 +4076,13 @@ var Gliederpuppe = (function () {
     opt = opt || {};
     if (Object.prototype.hasOwnProperty.call(opt, 'eigenart') && (typeof opt.eigenart !== 'number' || !isFinite(opt.eigenart) || opt.eigenart < 0 || opt.eigenart > 1)) throw new Error('eigenart muss zwischen 0 und 1 liegen');
     if(opt.kleinkind!==undefined&&typeof opt.kleinkind!=='boolean')throw new Error('kleinkind muss boolesch sein');
-    var H = opt.kleinkind?(opt.groesse===undefined?.85:opt.groesse):(opt.groesse||1.75), A = {},anteile=opt.kleinkind?KLEINKINDANTEIL:ANTEIL;
-    if(opt.kleinkind&&(typeof H!=='number'||!isFinite(H)||H<.75||H>.95))throw new Error('Kleinkindgröße muss 0,75–0,95 m sein');
+    var altersdaten=opt.alter===undefined?null:altersprofil(opt.alter);
+    var H = altersdaten?(opt.groesse===undefined?altersdaten.groesse:opt.groesse):opt.kleinkind?(opt.groesse===undefined?.85:opt.groesse):(opt.groesse||1.75), A = {},anteile=altersdaten?altersdaten.anteile:opt.kleinkind?KLEINKINDANTEIL:ANTEIL;
+    if(altersdaten&&(typeof H!=='number'||!isFinite(H)||H<=0))throw new Error('groesse muss positiv sein');
+    if(!altersdaten&&opt.kleinkind&&(typeof H!=='number'||!isFinite(H)||H<.75||H>.95))throw new Error('Kleinkindgröße muss 0,75–0,95 m sein');
     for (var k in anteile) A[k] = anteile[k] * H;
-    var kopfAnteil=opt.kopfAnteil===undefined?(opt.kleinkind?KLEINKINDANTEIL.kopf:H<=1?Gliederpuppe.KIND_KOPF_ANTEIL:H>=1.5?Gliederpuppe.KOPF_ANTEIL:Gliederpuppe.KIND_KOPF_ANTEIL+(Gliederpuppe.KOPF_ANTEIL-Gliederpuppe.KIND_KOPF_ANTEIL)*sanft((H-1)/.5)):opt.kopfAnteil;
-    if(typeof kopfAnteil!=='number'||!isFinite(kopfAnteil)||kopfAnteil<.10||kopfAnteil>.24)throw new Error('kopfAnteil muss zwischen 0,10 und 0,24 liegen');
+    var kopfAnteil=opt.kopfAnteil===undefined?(altersdaten?altersdaten.kopfAnteil:opt.kleinkind?KLEINKINDANTEIL.kopf:H<=1?Gliederpuppe.KIND_KOPF_ANTEIL:H>=1.5?Gliederpuppe.KOPF_ANTEIL:Gliederpuppe.KIND_KOPF_ANTEIL+(Gliederpuppe.KOPF_ANTEIL-Gliederpuppe.KIND_KOPF_ANTEIL)*sanft((H-1)/.5)):opt.kopfAnteil;
+    if(typeof kopfAnteil!=='number'||!isFinite(kopfAnteil)||kopfAnteil<.10||kopfAnteil>(altersdaten?.30:.24))throw new Error('kopfAnteil muss zwischen 0,10 und 0,24 liegen');
     var kopfZuwachs=(kopfAnteil-anteile.kopf)*H;A.kopf=kopfAnteil*H;A.hals-=kopfZuwachs*.25;A.brust-=kopfZuwachs*.75;
 
     var MAT = {}, gelenke = {}, kugeln = [];
@@ -4131,8 +4154,13 @@ var Gliederpuppe = (function () {
       var zform = mesh(new THREE.BoxGeometry(A.fuss * 0.34, A.knoechel * 0.7, A.fuss * 0.2), 'fuss'); zform.position.set(0, -A.knoechel * 0.15, A.fuss * 0.1); zehen.add(zform);
     });
 
+    // Quellen behalten Geometrien: Wachstum verändert nur Transformationen.
+    var wachstumsQuellen=[];
+    puppe.traverse(function(m){if(m.isMesh&&m.userData.art)wachstumsQuellen.push({mesh:m,name:m.parent.name,position:m.position.clone(),scale:m.scale.clone()});});
+    var geburtsMasse={};Object.keys(A).forEach(function(n){geburtsMasse[n]=A[n];});
+    function gliedMass(n){if(n==='becken'||n==='bauch')return 'bauch';if(n==='brust')return 'brust';if(n==='hals'||n==='kopf')return 'kopf';if(/^schulter/.test(n))return 'oberarm';if(/^ellbogen/.test(n))return 'unterarm';if(/^knoechel/.test(n))return 'unterschenkel';if(/^hand|^finger|^daumen/.test(n))return 'hand';if(/^huefte/.test(n))return 'oberschenkel';if(/^knie/.test(n))return 'unterschenkel';return 'fuss';}
     var p = {
-      gruppe: puppe, gelenke: gelenke, groesse: H, kopfAnteil:kopfAnteil, kopfFaktor:kopfAnteil/.13, masse:A, kleinkind:opt.kleinkind===true, mixamo: MIXAMO,
+      gruppe: puppe, gelenke: gelenke, groesse: H, kopfAnteil:kopfAnteil, kopfFaktor:kopfAnteil/.13, masse:A, alter:altersdaten?opt.alter:null, kleinkind:altersdaten?opt.alter<2.5:opt.kleinkind===true, mixamo: MIXAMO,
       art: 'stehen', phase: 0, zeit: 0, sprung: -1, hoehe: 0,
       farben: function (name) {
         var sch = SCHEMA[name] || SCHEMA.holz; p.schema = name;
@@ -4309,7 +4337,7 @@ var Gliederpuppe = (function () {
     if (eigen !== null) { var versatz = eigen * Math.PI * 2 * 0.61803398875; p.phase = versatz; p.zeit = versatz * 0.25; kletterPhase = versatz; }
     var gesteAlt=null,gesteZeit=0,gesteHut=[];p.geste=null;p.gesteWunsch=null;p.gestenBefund=null;
     function gesteAnwenden(dt){gesteHut.forEach(function(v){v.g.position.y=v.y;});gesteHut=[];var n=p.gesteWunsch;if(!n){gesteAlt=null;p.geste=null;return;}if(gesteAlt!==n){gesteZeit=0;gesteAlt=n;}var d=GESTEN[n];gesteZeit=d.schleife?gesteZeit+dt:Math.min(d.dauer,gesteZeit+dt);p.geste=n;p.fertig=!d.schleife&&gesteZeit>=d.dauer;p.uebergang=d.schleife?0:gesteZeit/d.dauer;p.gestenBefund=null;gestenPose(n,p.uebergang,gesteZeit);}
-    function gestenPose(n,q,t){var c=grindZiele||{werkzeugWinkel:[0,0,0]},beide=['korb','stein','karren','tragen'].indexOf(p.oben)>=0,rechts=beide||p.oben==='sack'||['sack_tragen','eimer_tragen','fuehren'].indexOf(p.art)>=0||p.art==='kind_an_hand'&&p.kindRolle!=='kind',links=beide||p.art==='kind_an_hand'&&p.kindRolle==='kind',ein=sanft(Math.min(1,t/.25));function hand(seite,ziel,w){if(seite==='R'?rechts:links){p.gestenBefund='Hand belegt; Tragekontakt hat Vorrang';return;}puppe.updateWorldMatrix(true,true);var h=puppe.worldToLocal(gelenke['hand'+seite].getWorldPosition(new THREE.Vector3()));h.lerp(ziel,w);grindHand(seite,h.toArray());if(p.nachlauf)gelenke['hand'+seite].rotation.z+=.025*Math.sin(t*8)*w;}if(n==='nicken'){gelenke.kopf.rotation.x+=.18*Math.pow(Math.sin(q*Math.PI*2),2);}
+    function gestenPose(n,q,t){var c=grindZiele||{werkzeugWinkel:[0,0,0]},beide=Object.prototype.hasOwnProperty.call(ANGELTAKTE,p.art)||['korb','stein','karren','tragen'].indexOf(p.oben)>=0,rechts=beide||p.oben==='sack'||['sack_tragen','eimer_tragen','fuehren'].indexOf(p.art)>=0||p.art==='kind_an_hand'&&p.kindRolle!=='kind',links=beide||p.art==='kind_an_hand'&&p.kindRolle==='kind',ein=sanft(Math.min(1,t/.25));function hand(seite,ziel,w){if(seite==='R'?rechts:links){p.gestenBefund='Hand belegt; Tragekontakt hat Vorrang';return;}puppe.updateWorldMatrix(true,true);var h=puppe.worldToLocal(gelenke['hand'+seite].getWorldPosition(new THREE.Vector3()));h.lerp(ziel,w);grindHand(seite,h.toArray());if(p.nachlauf)gelenke['hand'+seite].rotation.z+=.025*Math.sin(t*8)*w;}if(n==='nicken'){gelenke.kopf.rotation.x+=.18*Math.pow(Math.sin(q*Math.PI*2),2);}
 if(n==='hut_ziehen'){gelenke.kopf.rotation.x+=.07*Math.sin(q*Math.PI);puppe.updateWorldMatrix(true,true);var hub=.04*H*Math.pow(Math.sin(q*Math.PI),2),h=null;gelenke.kopf.children.forEach(function(g){if(g.userData.kleidung&&['filzhut','strohhut','eisenhut','pelzmuetze','haube','gebende'].indexOf(g.userData.teil)>=0)h=g;});if(!rechts){if(h){gesteHut.push({g:h,y:h.position.y});h.position.y+=hub;}var z=puppe.worldToLocal(gelenke.kopf.localToWorld(new THREE.Vector3(-A.kopf*.42,A.kopf*.86+hub,A.kopf*.08)));c.hutOrt=z.toArray();hand('R',z,Math.pow(Math.sin(q*Math.PI),2));}else p.gestenBefund='Rechte Hand belegt; Gruß nur mit dem Kopf';}
 if(n==='kopf_schuetteln'){gelenke.kopf.rotation.y+=.28*Math.sin(q*Math.PI*6)*Math.pow(Math.sin(q*Math.PI),2);}
 if(n==='arme_verschraenkt'){if(!links&&!rechts)gelenke.brust.rotation.z+=.07+.02*Math.sin(t*2);hand('L',new THREE.Vector3(-.07*H,.72*H,.17*H),ein);hand('R',new THREE.Vector3(.07*H,.68*H,.20*H),ein);}
@@ -4319,7 +4347,7 @@ if(n==='zuwinken_freudig'){var w=Math.pow(Math.sin(q*Math.PI),2);hand('R',new TH
 if(n==='wegdrehen'){var w=sanft(q);if(!links&&!rechts){gelenke.brust.rotation.y-=.65*w;gelenke.schulterR.rotation.z-=.18*w;}else p.gestenBefund='Last bleibt sicher; nur Kopf abgewendet';gelenke.kopf.rotation.y-=.5*w;}
 /* GESTENPOSEN */
 puppe.updateWorldMatrix(true,true);['L','R'].forEach(function(s){c['hand'+s]=puppe.worldToLocal(gelenke['hand'+s].getWorldPosition(new THREE.Vector3())).toArray();});grindZiele=c;}
-    var kindGrund=p.kleinkind?merken():null,kindArt=null,kindWeg=0;
+    var kindGrund=p.kleinkind||altersdaten?merken():null,kindArt=null,kindWeg=0;
     var gangZiel='normal',gangZeit=GANGWECHSEL,gangStart={normal:1},gangGewichte={normal:1},gangProfil=GANGARTEN.normal,gangWeg=0,gangFuesse=null,gangSohlen={},gangLetzte=[],gangGrundHoehe=null;
     p.gangart='normal';p.gangUebergang=1;
     function gangAktualisieren(dt){gangZeit=Math.min(GANGWECHSEL,gangZeit+dt);var q=sanft(gangZeit/GANGWECHSEL);Object.keys(GANGARTEN).forEach(function(n){gangGewichte[n]=(gangStart[n]||0)*(1-q)+(gangZiel===n?q:0);});p.gangUebergang=gangZeit/GANGWECHSEL;gangProfil={};Object.keys(GANGARTEN.normal).forEach(function(k){var z=0;Object.keys(GANGARTEN).forEach(function(n){z+=(GANGARTEN[n]||GANGARTEN.normal)[k]*(gangGewichte[n]||0);});gangProfil[k]=z;});}
@@ -4332,7 +4360,7 @@ puppe.updateWorldMatrix(true,true);['L','R'].forEach(function(s){c['hand'+s]=pup
       Object.keys(pose).forEach(function (n) { if (!gelenke[n]) throw new Error('Unbekanntes Gelenk: ' + n); });
       Object.keys(pose).forEach(function (n) { gelenke[n].rotation.set(pose[n][0], pose[n][1], pose[n][2]); });
       wurzelZurueck(); ablauf = null; p.fertig = false; p.uebergang = 0; grundZuletzt = null; nachlaufZuletzt = null;hebenZeit=null;
-      gesteAlt=null;gesteHut.forEach(function(v){v.g.position.y=v.y;});gesteHut=[];p.gesteWunsch=null;p.geste=null;if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();grindZiele=null; landeGrund = null; p.landung = 0; p.landungsZeit = 0; obenStart = null; obenZuletzt = null; obenModus = null; obenZeit = 0.22; lodRest = 0;
+      angelArt=null;angelZeit=0;gesteAlt=null;gesteHut.forEach(function(v){v.g.position.y=v.y;});gesteHut=[];p.gesteWunsch=null;p.geste=null;if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();grindZiele=null; landeGrund = null; p.landung = 0; p.landungsZeit = 0; obenStart = null; obenZuletzt = null; obenModus = null; obenZeit = 0.22; lodRest = 0;
     };
     function hauptglied(n) { return /^(becken|huefte[LR]|knie[LR]|knoechel[LR]|zehen[LR]|schulter[LR]|ellbogen[LR]|hand[LR])$/.test(n); }
     function begrenze(x, grenze) { return Math.max(-grenze, Math.min(grenze, x)); }
@@ -4354,7 +4382,7 @@ puppe.updateWorldMatrix(true,true);['L','R'].forEach(function(s){c['hand'+s]=pup
       nachlaufZuletzt = pose;
     }
     function obenAnwenden(art, dt) {
-      if(Object.prototype.hasOwnProperty.call(GESTEN,p.oben))return;
+      if(Object.prototype.hasOwnProperty.call(GESTEN,p.oben)||p.obenGesperrt)return;
       if (neueArten.indexOf(art) >= 0 || p.luft !== null && p.luft !== undefined || p.sprung >= 0) return;
       if (obenModus !== p.oben) {
         obenStart = obenZuletzt || {};
@@ -4385,6 +4413,32 @@ puppe.updateWorldMatrix(true,true);['L','R'].forEach(function(s){c['hand'+s]=pup
     }
     function kindHandWaagerecht(seite){puppe.updateWorldMatrix(true,true);var h=gelenke['hand'+seite],q=h.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(puppe.getWorldQuaternion(new THREE.Quaternion())).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-Math.PI/2));h.quaternion.copy(q);}
     function kindKrabbelBein(seite,ziel){var hue=gelenke['huefte'+seite],kn=gelenke['knie'+seite],fuss=gelenke['knoechel'+seite],hip=new THREE.Vector3(hue.position.x,gelenke.becken.position.y,gelenke.becken.position.z),oben=new THREE.Vector3().fromArray(ziel).sub(hip).normalize(),r=A.oberschenkel*.16*1.12,dy=A.knoechel-r,dz=-Math.sqrt(A.unterschenkel*A.unterschenkel-dy*dy),unten=new THREE.Vector3(0,dy,dz).normalize(),cos=Math.max(-1,Math.min(1,oben.dot(unten))),b=Math.acos(cos),y=oben.clone().negate(),z=oben.clone().multiplyScalar(cos).sub(unten).normalize(),x=y.clone().cross(z).normalize();hue.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,z));kn.rotation.set(b,0,0);puppe.updateWorldMatrix(true,true);fuss.quaternion.copy(fuss.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(puppe.getWorldQuaternion(new THREE.Quaternion())));}
+    var angelArt=null,angelZeit=0,angelGrund=merken();p.angelSitzend=false;
+    function angelnBewegen(art,dt){
+      if(angelArt!==art){angelArt=art;angelZeit=0;}var d=ANGELTAKTE[art];angelZeit=d.schleife?angelZeit+dt:Math.min(d.dauer,angelZeit+dt);if(!d.schleife&&angelZeit>d.dauer-1e-9)angelZeit=d.dauer;
+      anwenden(angelGrund);p.art=art;p.zeit+=dt;p.fertig=!d.schleife&&angelZeit>=d.dauer;p.uebergang=d.schleife?0:angelZeit/d.dauer;
+      Object.keys(POSEN[art]).forEach(function(n){var w=POSEN[art][n];gelenke[n].rotation.set(w[0],w[1],w[2]);});
+      var q=p.uebergang,f=H/1.75,L=[.14,.75,.43],R=[-.12,.72,.45],winkel=[.9,0,0];
+      if(art==='rute_schneiden'){var schnitt=q>=1?0:Math.sin(q*Math.PI*6)*Math.pow(Math.sin(q*Math.PI),2);R[1]+=.05*schnitt;R[2]+=.055*schnitt;winkel=[.9+.2*schnitt,0,0];}
+      if(art==='angel_auswerfen'){var folge=[[0,1.35,.18,-.7],[.3,1.67,-.08,-1.3],[.6,1.55,.08,.1],[1,1.07,.36,.7]],a=folge[0],b=folge[1];for(var i=1;i<folge.length;i++){b=folge[i];if(q<=b[0])break;a=b;}var w=sanft((q-a[0])/(b[0]-a[0]));R=[-.16,a[1]+(b[1]-a[1])*w,a[2]+(b[2]-a[2])*w];winkel=[a[3]+(b[3]-a[3])*w,0,0];L=[R[0],R[1]+.12*Math.cos(winkel[0]),R[2]+.12*Math.sin(winkel[0])];}
+      if(art==='angeln_warten'){var w=.012*Math.sin(angelZeit*3);winkel=[.7+w,0,0];R=[-.16,1.07+w,.36];if(p.angelSitzend){gelenke.becken.position.y=.08*H;['L','R'].forEach(function(S,i){reitFuss(S,[(i===0?1:-1)*A.hueftAbstand/2,A.knoechel,.30*H]);});R=[-.14,.56+w,.38];}L=[R[0],R[1]+.14*Math.cos(winkel[0]),R[2]+.14*Math.sin(winkel[0])];}
+      if(art==='anschlagen'){var w=sanft(q);R=[-.16,1.07+.52*w,.36-.18*w];winkel=[.7-1.05*w,0,0];L=[R[0],R[1]+.12*Math.cos(winkel[0]),R[2]+.12*Math.sin(winkel[0])];}
+      if(art==='fisch_zeigen'){var w=sanft(Math.min(1,q/.75));R=[-.16,1.07,.36];winkel=[.7,0,0];L=[.20,1.06+.58*w,.28];gelenke.kopf.rotation.y=-.16*w;}
+      /* ANGELKONTAKTE */
+      bodenSichern(false,puppe.position.y);L=L.map(function(v){return v*f;});R=R.map(function(v){return v*f;});grindHand('R',R);grindHand('L',L);puppe.updateWorldMatrix(true,true);
+      grindZiele={werkzeugWinkel:winkel.slice(),phase:[d.schleife?(angelZeit/d.dauer)%1:q]};if(art!=='rute_schneiden')grindZiele.rutenWinkel=winkel.slice();['L','R'].forEach(function(S){grindZiele['hand'+S]=puppe.worldToLocal(gelenke['hand'+S].getWorldPosition(new THREE.Vector3())).toArray();});p.hoehe=gelenke.becken.position.y-A.huefte;
+      if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();p.aktualisierungen++;
+    }
+    function saeuglingBewegen(dt){
+      anwenden(kindGrund||merken());p.art='saeugling';p.zeit+=dt;p.fertig=false;p.uebergang=0;
+      gelenke.becken.rotation.set(-Math.PI/2,0,0);gelenke.becken.position.set(0,.13*H,.22*H);
+      ['L','R'].forEach(function(seite,i){var w=Math.sin(p.zeit*3+i*Math.PI);gelenke.schulterL.rotation.z=.12;gelenke.schulterR.rotation.z=-.12;gelenke['ellbogen'+seite].rotation.x=-.25-.12*w;gelenke['huefte'+seite].rotation.x=-.12-.08*w;gelenke['knie'+seite].rotation.x=.3+.1*w;});
+      puppe.updateWorldMatrix(true,true);var inverse=puppe.matrixWorld.clone().invert(),min=Infinity;
+      puppe.traverse(function(m){if((m.isMesh||m.userData.zeichnungsQuelle)&&!m.userData.verschmolzen&&m.geometry&&m.userData.art){if(!m.geometry.boundingBox)m.geometry.computeBoundingBox();min=Math.min(min,m.geometry.boundingBox.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverse,m.matrixWorld)).min.y);}});
+      if(isFinite(min))gelenke.becken.position.y-=min;p.hoehe=gelenke.becken.position.y-A.huefte;puppe.updateWorldMatrix(true,true);
+      grindZiele={arm:[0,.08*H,.02*H],werkzeugWinkel:[0,0,0]};['L','R'].forEach(function(seite){grindZiele['hand'+seite]=puppe.worldToLocal(gelenke['hand'+seite].getWorldPosition(new THREE.Vector3())).toArray();});
+      kindArt='saeugling';if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();p.aktualisierungen++;
+    }
     function kleinkindBewegen(art,dt,tempo){if(kindArt!==art){kindWeg=0;kindArt=art;}anwenden(kindGrund);p.art=art;p.zeit+=dt;p.fertig=false;p.uebergang=0;grindZiele={werkzeugWinkel:[0,0,0]};if(tempo===undefined)tempo=art==='krabbeln'?.4:art==='tapsen'||art==='am_rock'?.6:0;kindWeg+=tempo*dt;var lauf=art!=='sitzen_boden'&&tempo>0,strecke=H*(art==='krabbeln'?.16:.25)*(art==='tapsen'||art==='am_rock'?gangProfil.schritt:1),phase=(kindWeg/strecke)%1;grindZiele.phase=[phase];p.phase=phase*Math.PI*2;var b=gelenke.becken,krabbeln=art==='krabbeln',knieR=A.oberschenkel*.16*1.12;
       function fuss(q,stand,hub,basis){q=((q%1)+1)%1;if(!lauf)return {z:basis,y:0,stand:true};if(q<stand)return {z:basis+strecke*stand/2-strecke*q,y:0,stand:true};var u=(q-stand)/(1-stand);return {z:basis-strecke*stand/2+strecke*stand*sanft(u),y:hub*Math.sin(u*Math.PI),stand:false};}
       if(krabbeln){b.position.z=-.06*H;var qL=phase,qR=(phase+.5)%1,qStand=qL<.4?qL:qR<.4?qR:null,delta=!lauf?0:qStand===null?strecke*.2:strecke*.2-strecke*qStand;b.position.y=knieR+Math.sqrt(A.oberschenkel*A.oberschenkel-delta*delta);gelenke.bauch.rotation.x=1.45;gelenke.kopf.rotation.x=-1.20;
@@ -4404,7 +4458,7 @@ puppe.updateWorldMatrix(true,true);['L','R'].forEach(function(s){c['hand'+s]=pup
  L=L.map(function(v){return v*f;});R=R.map(function(v){return v*f;});FL=FL.map(function(v){return v*f;});FR=FR.map(function(v){return v*f;});reitFuss('L',FL);reitFuss('R',FR);grindHand('L',L);grindHand('R',R);grindZiele={handL:L,handR:R,fussL:FL,fussR:FR,sattel:[b.position.x,b.position.y-A.bauch*.3,b.position.z],phase:[art==='reiten'?phase:p.uebergang],werkzeugWinkel:[0,0,0]};if(art==='reiten')grindZiele.zuegel=[0,1.85*f,.32*f];}
     function grindAnwenden(art){
       if(Object.prototype.hasOwnProperty.call(REITTAKTE,art)){reiterAnwenden(art);return;}
-      var modus=Object.prototype.hasOwnProperty.call(FESTTAKTE,art)?art:Object.prototype.hasOwnProperty.call(GASSENTAKTE,art)?art:Object.prototype.hasOwnProperty.call(PELZERTAKTE,art)?art:Object.prototype.hasOwnProperty.call(LAENDETAKTE,art)?art:Object.prototype.hasOwnProperty.call(LADENTAKTE,art)?art:Object.prototype.hasOwnProperty.call(LEHRETAKTE,art)?art:['beil','pfluecken','spinnrad'].indexOf(art)>=0?art:['sack','korb','karren','stein','sack'].indexOf(p.oben)>=0?p.oben:null;grindZiele=null;if(!modus||neueArten.indexOf(art)>=0||p.luft!==null&&p.luft!==undefined||p.sprung>=0)return;
+      var modus=Object.prototype.hasOwnProperty.call(FESTTAKTE,art)?art:Object.prototype.hasOwnProperty.call(GASSENTAKTE,art)?art:Object.prototype.hasOwnProperty.call(PELZERTAKTE,art)?art:Object.prototype.hasOwnProperty.call(LAENDETAKTE,art)?art:Object.prototype.hasOwnProperty.call(LADENTAKTE,art)?art:Object.prototype.hasOwnProperty.call(LEHRETAKTE,art)?art:['beil','pfluecken','spinnrad'].indexOf(art)>=0?art:['sack','korb','karren','stein','sack'].indexOf(p.oben)>=0?p.oben:null;grindZiele=null;if(p.obenGesperrt&&modus===p.oben)return;if(!modus||neueArten.indexOf(art)>=0||p.luft!==null&&p.luft!==undefined||p.sprung>=0)return;
       var f=H/1.75,t=p.zeit,L,R,beilWinkel=null,lehre=null;
       if(Object.prototype.hasOwnProperty.call(FESTTAKTE,modus)){lehre=festKontakt(modus,t,[0,1.65,.13]);L=lehre.handL;R=lehre.handR;}
       else if(Object.prototype.hasOwnProperty.call(GASSENTAKTE,modus)){lehre=gassenKontakt(modus,t);L=lehre.handL;R=lehre.handR;}
@@ -4438,10 +4492,11 @@ puppe.updateWorldMatrix(true,true);['L','R'].forEach(function(s){c['hand'+s]=pup
     function bewegen(art, dt, tempo, parameter) {
       if (typeof dt !== 'number' || !isFinite(dt) || dt < 0) throw new Error('dt muss endlich und nicht negativ sein');
       if (tempo !== undefined && (typeof tempo !== 'number' || !isFinite(tempo) || tempo < 0)) throw new Error('tempo muss endlich und nicht negativ sein');
-      var direkteGeste=Object.prototype.hasOwnProperty.call(GESTEN,art)?art:null,g=parameter&&parameter.geste!==undefined?parameter.geste:direkteGeste|| (Object.prototype.hasOwnProperty.call(GESTEN,p.oben)?p.oben:null);if(g!==null&&(typeof g!=='string'||!Object.prototype.hasOwnProperty.call(GESTEN,g)))throw new Error('Unbekannte Geste');if(parameter&&parameter.ziel!==undefined&&(!Array.isArray(parameter.ziel)||parameter.ziel.length!==3||parameter.ziel.some(function(v){return typeof v!=='number'||!isFinite(v);})))throw new Error('ziel muss [x,y,z] sein');if(parameter&&parameter.ziel)p.zeigeZiel=parameter.ziel.slice();if(direkteGeste)art=parameter&&parameter.grundart||'stehen';if(!g&&gesteAlt){p.fertig=false;p.uebergang=0;}p.gesteWunsch=g;
+      if(parameter&&parameter.sitzend!==undefined&&typeof parameter.sitzend!=='boolean')throw new Error('sitzend muss boolesch sein');p.angelSitzend=!!(parameter&&parameter.sitzend);
+      var direkteGeste=Object.prototype.hasOwnProperty.call(GESTEN,art)?art:null,g=parameter&&parameter.geste!==undefined?parameter.geste:direkteGeste|| (Object.prototype.hasOwnProperty.call(GESTEN,p.oben)?p.oben:null);if(g!==null&&(typeof g!=='string'||!Object.prototype.hasOwnProperty.call(GESTEN,g)))throw new Error('Unbekannte Geste');if(parameter&&parameter.ziel!==undefined&&(!Array.isArray(parameter.ziel)||parameter.ziel.length!==3||parameter.ziel.some(function(v){return typeof v!=='number'||!isFinite(v);})))throw new Error('ziel muss [x,y,z] sein');if(parameter&&parameter.ziel)p.zeigeZiel=parameter.ziel.slice();if(direkteGeste)art=parameter&&parameter.grundart||'stehen';if(!g&&gesteAlt){p.fertig=false;p.uebergang=0;}p.altersBefund=null;p.altersWunsch=art;p.obenGesperrt=false;if(p.alter!==null){var passend=altersbewegung(p.alter,art);if(passend!==art){p.altersBefund=art+' passt noch nicht zum Alter; '+passend;art=passend;}if(g&&p.alter<mindestalter(g)){p.altersBefund='Geste '+g+' passt noch nicht zum Alter';g=null;}p.obenGesperrt=!!p.oben&&p.alter<mindestalter(p.oben);if(p.obenGesperrt)p.altersBefund='Oberkoerper '+p.oben+' passt noch nicht zum Alter';}p.gesteWunsch=g;
       if(parameter&&parameter.lastSeite!==undefined&&['links','rechts','mitte'].indexOf(parameter.lastSeite)<0)throw new Error('lastSeite muss links, rechts oder mitte sein');p.gangLastSeite=parameter&&parameter.lastSeite!==undefined?parameter.lastSeite:null;
-      var gang=parameter&&parameter.gangart!==undefined?parameter.gangart:'normal';if(typeof gang!=='string'||!Object.prototype.hasOwnProperty.call(GANGARTEN,gang))throw new Error('Unbekannte Gangart');if((p.kleinkind||H<1.5)&&['normal','muede','eilig'].indexOf(gang)<0)throw new Error('Kinder erlauben nur normal, muede und eilig');if(gang!==gangZiel){gangStart={};Object.keys(gangGewichte).forEach(function(n){gangStart[n]=gangGewichte[n];});gangZeit=0;gangZiel=gang;p.gangart=gang;}
-      if(KLEINKINDARTEN.indexOf(art)>=0&&!p.kleinkind)throw new Error('Diese Bewegung benötigt eine Kleinkindfigur');
+      var gang=parameter&&parameter.gangart!==undefined?parameter.gangart:'normal';if(typeof gang!=='string'||!Object.prototype.hasOwnProperty.call(GANGARTEN,gang))throw new Error('Unbekannte Gangart');if(p.alter!==null&&p.alter<10&&['normal','muede','eilig'].indexOf(gang)<0){gang='normal';p.altersBefund='Gangart passt noch nicht zum Alter';}if(p.alter===null&&(p.kleinkind||H<1.5)&&['normal','muede','eilig'].indexOf(gang)<0)throw new Error('Kinder erlauben nur normal, muede und eilig');if(gang!==gangZiel){gangStart={};Object.keys(gangGewichte).forEach(function(n){gangStart[n]=gangGewichte[n];});gangZeit=0;gangZiel=gang;p.gangart=gang;}
+      if(KLEINKINDARTEN.indexOf(art)>=0&&!p.kleinkind&&p.alter===null)throw new Error('Diese Bewegung benötigt eine Kleinkindfigur');
       if(parameter&&parameter.rockHand!==undefined){if(!Array.isArray(parameter.rockHand)||parameter.rockHand.length!==3||parameter.rockHand.some(function(v){return typeof v!=='number'||!isFinite(v);}))throw new Error('rockHand muss [x,y,z] sein');p.rockHand=parameter.rockHand.slice();}
       if ([0,1,2].indexOf(p.lod) < 0) throw new Error('lod muss 0, 1 oder 2 sein');
       if (Object.keys(GESTEN).concat([null,'winken','packen','hacken','tragen','korb','karren','stein','sack']).indexOf(p.oben) < 0) throw new Error('Unbekannter Oberkörper-Zuschlag');
@@ -4472,7 +4527,10 @@ puppe.updateWorldMatrix(true,true);['L','R'].forEach(function(s){c['hand'+s]=pup
     function aktualisieren(art, dt, tempo) {
       if(p.gesteWunsch){p.fertig=false;p.uebergang=0;}
       gangAktualisieren(dt);
-      if(p.kleinkind&&KLEINKINDARTEN.indexOf(art)>=0){kleinkindBewegen(art,dt,tempo);gesteAnwenden(dt);if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();return;}
+      if(Object.prototype.hasOwnProperty.call(ANGELTAKTE,art)){if(kindArt!==null){kindArt=null;kindWeg=0;}angelnBewegen(art,dt);gesteAnwenden(dt);if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();return;}
+      if(angelArt!==null){anwenden(angelGrund);angelArt=null;angelZeit=0;grundZuletzt=null;nachlaufZuletzt=null;grindZiele=null;}
+      if(art==='saeugling'){saeuglingBewegen(dt);return;}
+      if((p.kleinkind||p.alter!==null)&&KLEINKINDARTEN.indexOf(art)>=0){kleinkindBewegen(art,dt,tempo);gesteAnwenden(dt);if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();return;}
       if(kindArt!==null){anwenden(kindGrund);kindArt=null;kindWeg=0;grundZuletzt=null;nachlaufZuletzt=null;grindZiele=null;}
       var vorher = p.lod === 1 ? merken() : null;
       if (grundZuletzt) Object.keys(grundZuletzt).forEach(function(n){gelenke[n].rotation.copy(grundZuletzt[n].rotation);gelenke[n].position.copy(grundZuletzt[n].position);});
@@ -4509,6 +4567,41 @@ puppe.updateWorldMatrix(true,true);['L','R'].forEach(function(s){c['hand'+s]=pup
       if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();
       p.aktualisierungen++;
     }
+
+    p.setzeAlter=function(alter){
+      var daten=altersprofil(alter),altH=H,altA={};Object.keys(A).forEach(function(n){altA[n]=A[n];});
+      var neuH=opt.groesse===undefined?daten.groesse:opt.groesse,neuK=opt.kopfAnteil===undefined?daten.kopfAnteil:opt.kopfAnteil;
+      if(typeof neuH!=='number'||!isFinite(neuH)||neuH<=0)throw new Error('groesse muss positiv sein');
+      if(typeof neuK!=='number'||!isFinite(neuK)||neuK<.10||neuK>.30)throw new Error('kopfAnteil muss zwischen 0,10 und 0,30 liegen');
+      gesteHut.forEach(function(v){v.g.position.y=v.y;});gesteHut=[];if(p.geste&&grundZuletzt)Object.keys(grundZuletzt).forEach(function(n){gelenke[n].rotation.copy(grundZuletzt[n].rotation);});
+      H=neuH;kopfAnteil=neuK;anteile=daten.anteile;Object.keys(A).forEach(function(n){A[n]=anteile[n]*H;});kopfZuwachs=(neuK-anteile.kopf)*H;A.kopf=neuK*H;A.hals-=kopfZuwachs*.25;A.brust-=kopfZuwachs*.75;
+      p.alter=alter;p.groesse=H;p.H=H;p.kopfAnteil=neuK;p.kopfFaktor=neuK/.13;p.kleinkind=alter<2.5;
+      function r(n){return A[n]/geburtsMasse[n];}
+      wachstumsQuellen.forEach(function(v){var m=v.mesh,n=v.name,k=gliedMass(n),x=r(k),y=x,z=x,py=x;
+        if(n==='becken'||n==='bauch'){x=z=r('hueftAbstand');y=py=r('bauch');}
+        if(n==='brust'){x=z=r('schulterBreite');y=py=r('brust');}
+        if(n==='hals'){x=z=r('kopf');y=py=r('hals');}
+        if(/^knoechel|^zehen/.test(n)){x=z=r('fuss');y=r('knoechel');py=y;}
+        if(m.geometry.type==='SphereGeometry'&&n!=='kopf'){if(n==='bauch'||n==='brust')x=y=z=r('hueftAbstand');else if(n==='hals')x=y=z=r('kopf');else if(/^knoechel/.test(n))x=y=z=r('unterschenkel');else if(/^zehen/.test(n))x=y=z=r('knoechel');}
+        m.position.copy(v.position).multiply(new THREE.Vector3(x,py,z));m.scale.copy(v.scale).multiply(new THREE.Vector3(x,y,z));
+      });
+      var hoehenFaktor=H/altH;p.hoehe*=hoehenFaktor;gelenke.becken.position.set(0,A.huefte+p.hoehe,0);
+      gelenke.bauch.position.set(0,A.bauch*.45,0);gelenke.brust.position.set(0,A.bauch*.75,0);gelenke.hals.position.set(0,A.brust,0);gelenke.kopf.position.set(0,A.hals,0);
+      ['L','R'].forEach(function(S,i){var sign=i===0?1:-1;gelenke['schulter'+S].position.set(sign*A.schulterBreite*.5,A.brust-A.oberarm*.12,0);gelenke['ellbogen'+S].position.set(0,-A.oberarm,0);gelenke['hand'+S].position.set(0,-A.unterarm,0);gelenke['huefte'+S].position.set(sign*A.hueftAbstand*.5,0,0);gelenke['knie'+S].position.set(0,-A.oberschenkel,0);gelenke['knoechel'+S].position.set(0,-A.unterschenkel,0);gelenke['zehen'+S].position.set(0,-A.knoechel*.5,A.fuss*.72);});
+      Object.keys(gelenke).forEach(function(n){if(/^finger|^daumen/.test(n))gelenke[n].position.multiplyScalar(A.hand/altA.hand);});
+      kindGrund=merken();Object.keys(kindGrund).forEach(function(n){kindGrund[n].rotation.copy(p.ruhe[n]);});kindGrund.becken.position.set(0,A.huefte,0);angelGrund=kindGrund;
+      grundZuletzt=null;nachlaufZuletzt=null;obenStart=null;obenZuletzt=null;obenModus=null;gangGrundHoehe=null;gangLetzte=[];gangFuesse=null;landeGrund=null;ablauf=null;kindWeg*=hoehenFaktor;
+      var kl=typeof Kleidung!=='undefined'?Kleidung:typeof require==='function'?require('./kleidung.js'):null;if(kl&&kl.wachsen)kl.wachsen(p,altH,altA);
+      var passend=altersbewegung(alter,p.art);p.obenGesperrt=!!p.oben&&alter<mindestalter(p.oben);
+      if(passend!==p.art){p.altersBefund=p.art+' passt nicht mehr zum Alter; '+passend;anwenden(kindGrund);p.art=passend;kindArt=null;gesteAlt=null;p.gesteWunsch=null;p.geste=null;}
+      if(Object.prototype.hasOwnProperty.call(ANGELTAKTE,p.art))angelnBewegen(p.art,0);else if(p.art==='saeugling')saeuglingBewegen(0);else if(KLEINKINDARTEN.indexOf(p.art)>=0)kleinkindBewegen(p.art,0,0);else{
+        if(kindArt!==null){anwenden(kindGrund);kindArt=null;}
+        grindAnwenden(p.art);
+        if(p.geste){if(alter<mindestalter(p.geste)){p.geste=null;p.gesteWunsch=null;gesteAlt=null;}else gestenPose(p.geste,p.uebergang,gesteZeit);}
+      }
+      puppe.updateWorldMatrix(true,true);if(grindZiele)['L','R'].forEach(function(S){grindZiele['hand'+S]=puppe.worldToLocal(gelenke['hand'+S].getWorldPosition(new THREE.Vector3())).toArray();});
+      if(p.zeichnungAktualisieren)p.zeichnungAktualisieren();return p;
+    };
 
     if(p.verschmelzen){var v=typeof Verschmelzen!=='undefined'?Verschmelzen:typeof require==='function'?require('./verschmelzen.js'):null;if(v)v.figur(p);}
     return p;
@@ -4649,7 +4742,7 @@ puppe.updateWorldMatrix(true,true);['L','R'].forEach(function(s){c['hand'+s]=pup
     }
   }
 
-  return { bauen: bauen, GESTEN:GESTEN, GANGARTEN:GANGARTEN, GANGWECHSEL:GANGWECHSEL, KOPF_ANTEIL:.150, KIND_KOPF_ANTEIL:.180, KLEINKINDARTEN:KLEINKINDARTEN, KLEINKINDANTEIL:KLEINKINDANTEIL, REITTAKTE:REITTAKTE, LEHRETAKTE:LEHRETAKTE, LADENTAKTE:LADENTAKTE, LAENDETAKTE:LAENDETAKTE, PELZERTAKTE:PELZERTAKTE, GASSENTAKTE:GASSENTAKTE, FESTTAKTE:FESTTAKTE, ANTEIL: ANTEIL, MIXAMO: MIXAMO, SCHEMA: SCHEMA, POSEN: POSEN, POSENFOLGEN: POSENFOLGEN, winkelGrenzen: winkelGrenzen,
+  return { bauen: bauen, ANGELTAKTE:ANGELTAKTE, SAEUGLING:true, ALTERSGRENZEN:ALTERSGRENZEN, altersbewegung:altersbewegung, mindestalter:mindestalter, altersprofil:altersprofil, ALTERSVERLAUF:ALTERSVERLAUF, GESTEN:GESTEN, GANGARTEN:GANGARTEN, GANGWECHSEL:GANGWECHSEL, KOPF_ANTEIL:.150, KIND_KOPF_ANTEIL:.180, KLEINKINDARTEN:KLEINKINDARTEN, KLEINKINDANTEIL:KLEINKINDANTEIL, REITTAKTE:REITTAKTE, LEHRETAKTE:LEHRETAKTE, LADENTAKTE:LADENTAKTE, LAENDETAKTE:LAENDETAKTE, PELZERTAKTE:PELZERTAKTE, GASSENTAKTE:GASSENTAKTE, FESTTAKTE:FESTTAKTE, ANTEIL: ANTEIL, MIXAMO: MIXAMO, SCHEMA: SCHEMA, POSEN: POSEN, POSENFOLGEN: POSENFOLGEN, winkelGrenzen: winkelGrenzen,
     poseSpeichern: function (name, pose) { if (typeof name !== 'string' || !/^[a-z][a-z0-9_]*$/.test(name) || name === '__proto__' || name === 'constructor' || name === 'prototype') throw new Error('Gültiger deutscher Posenname benötigt'); pruefeWinkelsatz(pose); var kopie = {}; Object.keys(pose).forEach(function (n) { kopie[n] = pose[n].slice(); }); POSEN[name] = kopie; return kopie; }
   };
 })();
@@ -5369,7 +5462,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Moebel;
  */
 var Kleidung = (function () {
   'use strict';
-  var materialien = {}, geometrien = {}, teileNamen = ['kittel','hemd','beinlinge','bruoche','schuerze','lederschuerze','pelzkragen','pelzmuetze','brautkranz','festgewand','schleier','haube','gebende','gugel','filzhut','strohhut','wappenrock','eisenhut','mantel','lumpen','guertel_mit_beutel'];
+  var materialien = {}, geometrien = {}, teileNamen = ['kinderkittel','hemdchen','kittel','hemd','beinlinge','bruoche','schuerze','lederschuerze','pelzkragen','pelzmuetze','brautkranz','festgewand','schleier','haube','gebende','gugel','filzhut','strohhut','wappenrock','eisenhut','mantel','lumpen','guertel_mit_beutel'];
   var saetze = {
     bettler:['lumpen','bruoche'], knecht:['hemd','beinlinge','kittel','guertel_mit_beutel'], magd:['hemd','beinlinge','kittel','schuerze','haube'],
     buerger:['hemd','beinlinge','kittel','filzhut','guertel_mit_beutel'], buergerin:['hemd','beinlinge','kittel','gebende','mantel'],
@@ -5407,11 +5500,11 @@ var Kleidung = (function () {
     function huelle(t,n,f,zuschlag){
       var g=teil(t,n), m=G[n].userData.glied;
       if(!m)throw new Error('Körpersegment fehlt: '+n);
-      if(puppe.kleinkind){var eng=new THREE.Mesh(m.geometry,mat(f));eng.position.copy(m.position);eng.scale.copy(m.scale).multiplyScalar(1.01);eng.castShadow=true;eng.userData.kleidungsMesh=true;eng.userData.huellenGlied=n;g.add(eng);verdecken(g,n);return g;}
-      var p=m.geometry.parameters, r=Math.max(p.radiusTop,p.radiusBottom)/H, h=p.height/H;
+      if(puppe.kleinkind){var eng=new THREE.Mesh(m.geometry,mat(f));eng.position.copy(m.position);eng.scale.copy(m.scale).multiplyScalar(1.01);eng.castShadow=true;eng.userData.kleidungsMesh=true;eng.userData.huellenGlied=n;eng.userData.kindEng=true;g.add(eng);verdecken(g,n);return g;}
+      var p=m.geometry.parameters, r=Math.max(p.radiusTop,p.radiusBottom)*Math.max(m.scale.x,m.scale.z)/H, h=p.height*m.scale.y/H;
       // Weite Zylinder um das Glied und seine Gelenkkugel; Vierkant umschreibt den Körper.
       var a=(r+zuschlag)/Math.cos(Math.PI/4), z=Math.max(m.scale.z*a,r*1.13+0.008);
-      var k=form(g,'ring',f,0,m.position.y/H,0,a,h+0.018,z);k.userData.huellenGlied=n;verdecken(g,n);return g;
+      var k=form(g,'ring',f,0,m.position.y/H,0,a,h+0.018,z);k.userData.huellenGlied=n;k.userData.huellenWeite=zuschlag;verdecken(g,n);return g;
     }
     function oberteil(t,f,weit){huelle(t,'bauch',f,weit);huelle(t,'brust',f,weit);var g=teil(t,'becken');form(g,'ring',f,0,0.018,0,0.105+weit,0.105,0.081+weit);verdecken(g,'becken');}
     function aermel(t,f){['L','R'].forEach(function(s){huelle(t,'schulter'+s,f,0.025);huelle(t,'ellbogen'+s,f,0.02);});}
@@ -5421,9 +5514,9 @@ var Kleidung = (function () {
       if(t==='gugel'){form(g,'kapuze',f,0,0.065,0,0.074,0.077,0.081);var z=form(g,'zipfel',f,0,0.065,-0.113,0.028,0.14,0.028);z.rotation.x=1.8;var k=teil(t,'brust');form(k,'ring',f,0,0.184,0,0.145,0.037,0.11);}
       if(t==='filzhut'||t==='strohhut'||t==='eisenhut'){form(g,'krempe',f,0,0.112,0,0.099,0.013,0.11);form(g,'hut',f,0,0.146,0,0.068,0.065,0.075);if(t==='strohhut')form(g,'ring',farbe('band',0x715437),0,0.12,0,0.07,0.012,0.078);}
     }
-    teile.forEach(function(t){var f=farbe(t, t==='hemd'||t==='bruoche'||t==='haube'||t==='gebende'?0xd6ccb5:t==='eisenhut'?0x666b6c:t==='strohhut'?0xc6aa66:t==='lederschuerze'?0x825037:t==='beinlinge'?0x67523d:t==='mantel'?0x4c5866:t==='lumpen'?0x7b715a:0x63704b);
-      if(t==='hemd'){oberteil(t,f,0.02);aermel(t,f);}
-      if(t==='kittel'||t==='lumpen'||t==='wappenrock'){oberteil(t,f,0.034);if(t!=='wappenrock')aermel(t,f);rock(t,f,t==='lumpen');if(t==='wappenrock'){var g=teil(t,'brust');form(g,'box',farbe('wappen_links',0x943c32),0.05,0.105,0.11,0.09,0.18,0.008);form(g,'box',farbe('wappen_rechts',0xceba79),-0.05,0.105,0.11,0.09,0.18,0.008);}var b=teil(t,'becken');form(b,'ring',farbe('guertel',0x4e3828),0,0.066,0,0.145,0.019,0.105);}
+    teile.forEach(function(t){var f=farbe(t, t==='hemd'||t==='hemdchen'||t==='bruoche'||t==='haube'||t==='gebende'?0xd6ccb5:t==='eisenhut'?0x666b6c:t==='strohhut'?0xc6aa66:t==='lederschuerze'?0x825037:t==='beinlinge'?0x67523d:t==='mantel'?0x4c5866:t==='lumpen'?0x7b715a:0x63704b);
+      if(t==='hemd'||t==='hemdchen'){oberteil(t,f,0.02);aermel(t,f);}
+      if(t==='kittel'||t==='kinderkittel'||t==='lumpen'||t==='wappenrock'){oberteil(t,f,0.034);if(t!=='wappenrock')aermel(t,f);rock(t,f,t==='lumpen');if(t==='wappenrock'){var g=teil(t,'brust');form(g,'box',farbe('wappen_links',0x943c32),0.05,0.105,0.11,0.09,0.18,0.008);form(g,'box',farbe('wappen_rechts',0xceba79),-0.05,0.105,0.11,0.09,0.18,0.008);}var b=teil(t,'becken');form(b,'ring',farbe('guertel',0x4e3828),0,0.066,0,0.145,0.019,0.105);}
       if(t==='beinlinge'){['L','R'].forEach(function(s){huelle(t,'huefte'+s,f,0.014);huelle(t,'knie'+s,f,0.014);});}
       if(t==='bruoche'){var u=teil(t,'becken');form(u,'ring',f,0,0.02,0,0.12,0.09,0.083);verdecken(u,'becken');['L','R'].forEach(function(s){var g=teil(t,'huefte'+s);form(g,'ring',f,0,-0.044,0,0.098,0.09,0.098);});}
       if(t==='brautkranz'){var g=teil(t,'kopf'),ring=form(g,'kranz',farbe(t,0x527247),0,.095,0,.07,.07,.075);ring.rotation.x=Math.PI/2;form(g,'haube',farbe('haar',0x78553a),0,.077,0,.066,.060,.074);[-1,1].forEach(function(v){form(g,'box',farbe('haar',0x78553a),v*.052,.035,-.03,.018,.10,.06);});for(var j=0;j<3;j++){var a=j*Math.PI*2/3;form(g,'beutel',farbe('blueten',0xe5dcb3),Math.cos(a)*.07,.096,Math.sin(a)*.075,.015,.014,.015);}g.userData.verdeckt=[];G.kopf.traverse(function(m){if(m.userData.kleidungsMesh&&!m.userData.verschmolzen)g.userData.verdeckt.push(m);});}
@@ -5461,8 +5554,19 @@ var Kleidung = (function () {
     liste.forEach(function(g){g.userData.verdeckt.forEach(function(m){var v=m.userData.kleidungsSicht;if(!v){v={anzahl:0,vorher:m.visible};m.userData.kleidungsSicht=v;}v.anzahl++;m.visible=false;});g.userData.ziel.add(g);});aktualisieren(puppe);return liste;
   }
   function ausziehen(liste){var puppen=[];if(!Array.isArray(liste))throw new Error('Kleidungsliste benötigt');liste.forEach(function(g){if(!g||!g.userData.kleidung||g.userData.abgenommen)return;if(g.parent)g.parent.remove(g);g.userData.verdeckt.forEach(function(m){var v=m.userData.kleidungsSicht;if(v){v.anzahl--;if(!v.anzahl){m.visible=v.vorher;delete m.userData.kleidungsSicht;}}});g.userData.abgenommen=true;var p=g.userData.puppe;if(p&&puppen.indexOf(p)<0)puppen.push(p);var z=p&&p.gruppe.userData.kleidungsLod;if(z){if(g.userData.schuerzenLod){z.schuerzen--;if(!z.schuerzen)z.formen.forEach(function(v){if(v.vorSchuerze){v.mesh.geometry=v.vorSchuerze;delete v.vorSchuerze;}});}z.anzahl--;if(!z.anzahl){z.formen.forEach(function(v){v.mesh.geometry=v.geometrie;if(v.finger)v.mesh.visible=v.sicht;});delete p.gruppe.userData.kleidungsLod;}}});puppen.forEach(aktualisieren);}
+  function wachsen(p,altH,altA){
+    p.gruppe.traverse(function(g){if(!g.userData.kleidung||g.userData.abgenommen)return;var n=g.userData.gelenk,H=p.groesse,a=p.masse;
+      if(n==='kopf')g.scale.setScalar(p.kopfFaktor);
+      if(n==='brust'&&['pelzkragen','gugel'].indexOf(g.userData.teil)>=0)g.position.y=a.brust-.198*H;
+      g.children.forEach(function(m){if(!m.userData.kleidungsMesh||m.userData.verschmolzen)return;
+        var gl=m.userData.huellenGlied;if(gl){var b=p.gelenke[gl].userData.glied;m.position.copy(b.position);if(m.userData.kindEng){m.geometry=b.geometry;m.scale.copy(b.scale).multiplyScalar(1.01);}else{var t=b.geometry.parameters,r=Math.max(t.radiusTop,t.radiusBottom)*b.scale.x/H,we=m.userData.huellenWeite,w=(r+we)/Math.cos(Math.PI/4);m.scale.set(w*H,t.height*b.scale.y+.018*H,Math.max(b.scale.z/b.scale.x*w,r*1.13+.008)*H);}return;}
+        var x=H/altH,y=x,z=x;if(n==='brust'){x=z=a.schulterBreite/altA.schulterBreite;y=a.brust/altA.brust;}else if(n==='bauch'||n==='becken'){x=z=a.hueftAbstand/altA.hueftAbstand;y=a.bauch/altA.bauch;}else if(/^huefte/.test(n)){x=z=a.hueftAbstand/altA.hueftAbstand;y=a.oberschenkel/altA.oberschenkel;}else if(/^knie/.test(n)){y=a.unterschenkel/altA.unterschenkel;}
+        m.position.multiply(new THREE.Vector3(x,y,z));m.scale.multiply(new THREE.Vector3(x,y,z));
+      });
+    });aktualisieren(p);
+  }
   function aktualisieren(p){if(!p||typeof p.grindKontakte!=='function'||p.verschmelzen===false)return;var v=typeof Verschmelzen!=='undefined'?Verschmelzen:typeof require==='function'?require('./verschmelzen.js'):null;if(v)v.kleidung(p);}
-  return {aktualisieren:aktualisieren,anziehen:anziehen,ausziehen:ausziehen,satz:satz};
+  return {kinderkittel:function(p,f){return anziehen(p,['kinderkittel'],f);},hemdchen:function(p,f){return anziehen(p,['hemdchen'],f);},wachsen:wachsen,aktualisieren:aktualisieren,anziehen:anziehen,ausziehen:ausziehen,satz:satz};
 }());
 if(typeof module!=='undefined'&&module.exports)module.exports=Kleidung;
 
@@ -6827,6 +6931,39 @@ function spiele(n,o){return erzeugen(n,o);}
 function melodie(instrument,noten,tempo,o){var d=daten(instrument);if(!d.instrument)throw new Error('Kein Melodieinstrument');zahl(tempo,.001,1000,'tempo (BPM)');if(!Array.isArray(noten)||!noten.length)throw new Error('Nichtleere Notenliste benötigt');var a=noten.map(function(n){var ton=typeof n==='number'?n:n.ton,schlaege=typeof n==='number'?1:n.schlaege===undefined?1:n.schlaege;if(ton!==null)zahl(ton,0,127,'MIDI-Ton');zahl(schlaege,.001,100,'schlaege');return {ton:ton,schlaege:schlaege};}),dauer=a.reduce(function(t,n){return t+n.schlaege*60/tempo;},0);return erzeugen(instrument,o, {noten:a,tempo:tempo,dauer:dauer});}
 return {start:start,spiele:spiele,dauer:function(n,o){var d=daten(n);if(o&&o.schleife!==undefined&&typeof o.schleife!=='boolean')throw new Error('schleife muss boolesch sein');if(o&&o.schleife===true){if(!d.schleifeErlaubt&&d.dauer!==null)throw new Error('Optionale Schleife für diesen Klang nicht vorgesehen');return Infinity;}return d.dauer===null?Infinity:d.dauer;},namen:function(){return Object.keys(katalog);},melodie:melodie,melodien:function(){return JSON.parse(JSON.stringify(weisen));},stimmen:function(){if(m&&m.ctx.state==='closed')m.stimmen.slice().forEach(entfernen);return m?m.stimmen.length:0;},beenden:function(){if(m){m.stimmen.slice().forEach(function(v){v.stop();});}},KATALOG:katalog};}());
 if(typeof module!=='undefined'&&module.exports)module.exports=Klang;
+
+/* Angelbausteine: ES5, THREE r128, Meter, +Y oben, +Z Fischmaul.
+ * Alle Formen, Maße und Bewegungszeiten SPIELANNAHME.
+ * Gemeinsame Geometrien/Materialien nicht je Instanz entsorgen. */
+var Angeln=(function(){'use strict';var geos={},mats={},ARTEN=['rotauge','brachse','barbe','hecht','aal'],MASSE={rotauge:[.28,.11,.06],brachse:[.38,.20,.06],barbe:[.42,.11,.075],hecht:[.65,.12,.09],aal:[.55,.045,.045]};
+function mat(f){if(!mats[f])mats[f]=new THREE.MeshLambertMaterial({color:f});return mats[f];}
+function geo(n){if(!geos[n]){if(n==='zyl')geos[n]=new THREE.CylinderGeometry(1,1,1,6);if(n==='kugel')geos[n]=new THREE.SphereGeometry(1,6,4);if(n==='ico')geos[n]=new THREE.IcosahedronGeometry(1,0);if(n==='box')geos[n]=new THREE.BoxGeometry(1,1,1);if(n==='flosse'){var b=new THREE.BufferGeometry();b.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0,0,1,-1,0,.2,-.7,0,0,0,0,.2,-.7,0,1,-1,0,0,0,0,-.2,-.7,0,-1,-1,0,0,0,0,-1,-1,0,-.2,-.7],3));b.computeVertexNormals();geos[n]=b;}}return geos[n];}
+function form(g,n,f,x,y,z,b,h,t){var m=new THREE.Mesh(geo(n),mat(f));m.position.set(x,y,z);m.scale.set(b,h,t);m.castShadow=false;g.add(m);return m;}
+function punkt(g,n,x,y,z){var p=new THREE.Object3D();p.name=n;p.position.set(x,y,z);g.add(p);return p;}
+function gruppe(n){var g=new THREE.Group();g.name=n;g.userData.annahme=true;return g;}
+function zufall(o){o=o||{};var s=o.saat===undefined?0:o.saat;if(typeof s!=='number'||!isFinite(s)||Math.floor(s)!==s||s<0||s>4294967295)throw new Error('saat muss eine Ganzzahl von 0 bis 4294967295 sein');return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+function stab(g,a,b,r,f){var v=new THREE.Vector3().fromArray(b).sub(new THREE.Vector3().fromArray(a)),m=form(g,'zyl',f,(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2,r,v.length(),r);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize());return m;}
+function dtPruefen(dt){if(typeof dt!=='number'||!isFinite(dt)||dt<0)throw new Error('dt muss endlich und nicht negativ sein');}
+function verschmelzen(g){var v=typeof Verschmelzen!=='undefined'?Verschmelzen:typeof require==='function'?require('./verschmelzen.js'):null;if(v)v.tier(g);return g;}
+function schnur(a,b){var g=gruppe('Angelschnur'),buf=new THREE.Float32BufferAttribute(new Float32Array(27),3),geometrie=new THREE.BufferGeometry();geometrie.setAttribute('position',buf);if(!mats.schnur)mats.schnur=new THREE.LineBasicMaterial({color:0xc9bea2});var l=new THREE.Line(geometrie,mats.schnur);g.add(l);
+  g.setze=function(v,w){function vektor(q){var a=q instanceof THREE.Vector3?q.toArray():q;if(!Array.isArray(a)||a.length!==3||a.some(function(n){return typeof n!=='number'||!isFinite(n);}))throw new Error('Schnurpunkte müssen endliche [x,y,z] sein');return new THREE.Vector3().fromArray(a);}var x=vektor(v),y=vektor(w),durchhang=x.distanceTo(y)*.06;for(var i=0;i<=8;i++){var q=i/8,p=x.clone().lerp(y,q);p.y-=Math.sin(q*Math.PI)*durchhang;buf.setXYZ(i,p.x,p.y,p.z);}buf.needsUpdate=true;geometrie.computeBoundingBox();geometrie.computeBoundingSphere();return g;};g.entsorgen=function(){geometrie.dispose();};g.setze(a,b);return g;}
+function rute(o){var rand=zufall(o),g=gruppe('Haselrute'),a=[0,-.10,0],b;for(var i=0;i<8;i++){var q=(i+1)/8;b=[.012*Math.sin(q*Math.PI)* (rand()-.5),q*2.3,.18*q*q];stab(g,a,b,.014*(1-q)+.003,0x806346);a=b;}
+  for(i=0;i<4;i++)form(g,'box',0x4d4030,.006,.25+i*.47,.01+i*.02,.014,.025,.014);
+  punkt(g,'griff',0,0,0);punkt(g,'spitze',b[0],b[1],b[2]);g.userData.laenge=2.4;g.userData.saat=o&&o.saat!==undefined?o.saat:0;var f=schnur(b,[b[0],b[1]-.30,b[2]]);f.name='endschnur';g.add(f);return verschmelzen(g);}
+function schwimmer(){var g=gruppe('Schwimmer'),w=new THREE.Group(),zeit=0,art=null;w.name='wippe';g.add(w);form(w,'ico',0xc9b88f,0,0,0,.024,.06,.024);form(w,'zyl',0xd8d3c5,0,.065,0,.006,.10,.006);form(w,'zyl',0xa8382d,0,.13,0,.006,.04,.006);punkt(w,'oese',0,.151,0);g.fertig=false;
+ g.bewegen=function(n,dt){dtPruefen(dt);if(['ruhig','zuppeln','abtauchen'].indexOf(n)<0)throw new Error('Unbekannte Schwimmerbewegung');if(!dt)return g;if(n!==art){zeit=0;art=n;}zeit=n==='abtauchen'?Math.min(.8,zeit+dt):zeit+dt;w.rotation.set(0,0,n==='zuppeln'?.09*Math.sin(zeit*32):n==='ruhig'?.05*Math.sin(zeit*3):0);w.position.y=n==='abtauchen'?-.35*Math.pow(Math.sin(zeit/.8*Math.PI/2),2):n==='zuppeln'?.008*Math.sin(zeit*36):.004*Math.sin(zeit*3);g.fertig=n==='abtauchen'&&zeit>=.8;g.art=n;g.zeit=zeit;return g;};return verschmelzen(g);}
+function fisch(o){o=o||{};var rand=zufall(o),art=o.art===undefined?'rotauge':o.art;if(ARTEN.indexOf(art)<0)throw new Error('Unbekannte Fischart: '+art);var g=gruppe(art),d=MASSE[art],L=d[0],H=d[1],B=d[2],bewegung=new THREE.Group(),schwanz=new THREE.Group(),glieder=[],farbe=art==='hecht'?0x65733c:art==='aal'?0x555b35:art==='barbe'?0x9d9474:0xa4a79c;
+ bewegung.name='koerper';g.add(bewegung);schwanz.name='schwanz';schwanz.position.set(0,H/2,-L*.34);bewegung.add(schwanz);
+ if(art==='aal'){for(var i=0;i<7;i++){var k=new THREE.Group();k.name='aalglied'+i;k.position.set(0,H/2,L*.42-i*L*.13);bewegung.add(k);form(k,'ico',farbe,0,0,0,B*.48*(1-i*.075),H*.48*(1-i*.07),L*.095);glieder.push(k);}}
+ else{form(bewegung,'kugel',farbe,0,H/2,0,B/2,H/2,L*.36);form(bewegung,'ico',farbe,0,H*.54,L*.30,B*.44,H*.36,L*(art==='hecht'?.21:.17));var f=form(schwanz,'flosse',art==='rotauge'?0x964c34:0x747657,0,0,0,1,H*.37,L*.16);f.name='schwanzflosse';var oben=form(bewegung,'flosse',farbe,0,H*.9,art==='hecht'?-L*.20:0,1,H*.32,L*.14);oben.rotation.x=-.9;[-1,1].forEach(function(v){var fl=form(bewegung,'flosse',art==='rotauge'?0x9a5336:farbe,v*B*.36,H*.40,L*.09,1,H*.27,L*.14);fl.rotation.z=v*.8;});}
+ [-1,1].forEach(function(v){var e=form(bewegung,'kugel',art==='rotauge'?0xb83829:0xddd2a3,v*B*.39,H*.64,L*.34,.006,.006,.006);e.name=v<0?'augeR':'augeL';form(bewegung,'kugel',0x24251e,v*(B*.39+.003),H*.64,L*.344,.003,.003,.003);});
+ if(art==='barbe'){[-1,1].forEach(function(v){[0,1].forEach(function(j){stab(bewegung,[v*.007,H*.39,L*.43],[v*(.019+j*.006),H*.25,L*(.47+j*.03)],.0014,0x7d7154);});});}
+ if(art==='hecht'){for(var j=0;j<4;j++){var z=(j-1.5)*L*.13,x=(rand()<.5?-1:1)*B*.47;form(bewegung,'ico',0xbab572,x,H*.58,z,.004,.018,.012);}}
+ punkt(bewegung,'maul',0,H*.48,L*.50);punkt(bewegung,'griff',0,H*.52,L*.02);g.userData.art=art;g.userData.masse=d.slice();g.userData.saat=o.saat===undefined?0:o.saat;var zeit=0;
+ g.bewegen=function(n,dt){dtPruefen(dt);if(['zappeln','liegen'].indexOf(n)<0)throw new Error('Unbekannte Fischbewegung');if(!dt)return g;zeit+=dt;var w=n==='zappeln'?Math.sin(zeit*22):0;bewegung.rotation.set(.10*w,0,.08*w);schwanz.rotation.y=.5*w;glieder.forEach(function(k,i){k.position.x=n==='zappeln'?Math.sin(zeit*18-i*.7)*B*.9:0;k.rotation.y=n==='zappeln'?.35*Math.cos(zeit*18-i*.7):0;});g.art=n;g.zeit=zeit;return g;};return verschmelzen(g);}
+function alter_schuh(){var g=gruppe('Alter Schuh');form(g,'ico',0x5d4730,0,.045,.05,.055,.045,.13);form(g,'box',0x493a29,0,.012,0,.11,.024,.27);form(g,'ico',0x70563a,0,.08,-.08,.065,.08,.065);form(g,'box',0x30271e,0,.135,-.08,.075,.012,.065);punkt(g,'maul',0,.13,-.10);punkt(g,'griff',0,.08,0);return verschmelzen(g);}
+return {fisch:fisch,alter_schuh:alter_schuh,rute:rute,schwimmer:schwimmer,schnur:schnur,arten:function(){return ARTEN.slice();},masse:function(art){if(ARTEN.indexOf(art)<0)throw new Error('Unbekannte Fischart');return MASSE[art].slice();}};
+}());if(typeof module!=='undefined'&&module.exports)module.exports=Angeln;
 </script>   <!-- 11.10.: Codex-Werkstatt Arbeitsszenen (Commit 97db2c7): Schmied, Bäcker, Metzger, Schuster, Weber -->
 <script>/* Landfahrzeuge und Schiffe. ES5, three.js r128; nur Grundformen/Lambert.
  * Annahmen: braunes Pferd mit ca. 1,5 m Widerrist; schlichte Holz-/Planwagen.
@@ -10221,38 +10358,63 @@ function haselNah() { for (var i = 0; i < ANGEL.hasel.length; i++) if (Math.hypo
 function haselSchneiden() { if (EPOCHE !== 1400 || !haselNah()) return false;
   if (AUFTRAG.angel || AUFTRAG.rute) { melden('DU HAST SCHON EINE RUTE', 2); return true; }
   if (!AUFTRAG.messer) { melden('EIN HASELSTRAUCH · OHNE MESSER KRIEGST DU KEINE RUTE AB – DER MESSERSCHMIED HAT WELCHE (5 HELLER)', 4); return true; }
-  kling('messer_schnitt', 0.4); AUFTRAG.rute = 1; speichern(); melden('DU SCHNEIDEST EINE LANGE, GERADE HASELRUTE · JETZT FEHLEN ' + angelFehlt(), 5); angelBinden(); return true; }
+  kling('messer_schnitt', 0.4); ANGEL.schneidenBis = P.t + 2; var hn = haselNah(); if (hn) P.blick = Math.atan2(hn.x - P.x, hn.y - P.y); AUFTRAG.rute = 1; speichern(); melden('DU SCHNEIDEST EINE LANGE, GERADE HASELRUTE · JETZT FEHLEN ' + angelFehlt(), 5); angelBinden(); return true; }
 function angelFehlt() { var f = []; if (!AUFTRAG.rute) f.push('EINE HASELRUTE'); if (!(AUFTRAG.garn > 0)) f.push('GARN FÜR DIE SCHNUR'); if (!AUFTRAG.haken) f.push('EIN HAKEN (SCHMIED)'); return f.join(' UND ') || 'NICHTS'; }
 function angelBinden() { if (AUFTRAG.angel || !AUFTRAG.rute || !AUFTRAG.haken || !(AUFTRAG.garn > 0)) return false; AUFTRAG.garn--; AUFTRAG.rute = 0; AUFTRAG.haken = 0; AUFTRAG.angel = 1; speichern();
   melden('DU BINDEST DIR EINE ANGEL: RUTE, SCHNUR, HAKEN · AM WASSER: RECHTSKLICK WIRFT AUS', 7); return true; }
 function schmiedHaken() { if (EPOCHE !== 1400 || AUFTRAG.angel || AUFTRAG.haken || !AUFTRAG.rute) return false; var b = BERUFSSZENEN.filter(function (q) { return q.art === 'schmied'; })[0]; if (!b || Math.hypot(P.x - b.x, P.y - b.y) > 3) return false;
   if (AUFTRAG.heller < 1) { melden('DER GESELLE: „EIN ANGELHAKEN? EIN HELLER.“ · DU HAST KEINEN', 3); return true; }
   AUFTRAG.heller -= 1; AUFTRAG.haken = 1; speichern(); melden('DER GESELLE BIEGT DIR EINEN HAKEN AUS EINEM NAGEL · −1 HELLER · JETZT FEHLEN ' + angelFehlt(), 5); angelBinden(); return true; }
-function angelTeile() { if (ANGEL.rute || !PUPPE || !PUPPE.gelenke.handR) return; var holz = new THREE.MeshLambertMaterial({ color: 0x8a6a3a }), r = new THREE.Group(), st = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.016, 2.4, 6), holz); st.position.y = 1.2; r.add(st); r.visible = false; szene.add(r); ANGEL.rute = r;   // jedes Bild von der Hand aus schräg zum Schwimmer ausgerichtet
+function angelTeile() { if (ANGEL.rute || !PUPPE || !PUPPE.gelenke.handR) return;
+  if (window.Angeln && Angeln.rute && Angeln.schwimmer && Angeln.schnur) { try {   // 12.10.: Codex Auftrag 27 – Haselrute, Federkiel-Schwimmer, Schnur mit Durchhang, Fische
+      var cr = Angeln.rute({ saat: 7 }), es = cr.getObjectByName('endschnur'); if (es) es.visible = false; cr.visible = false; cr.traverse(function (q) { if (q.isMesh) q.castShadow = true; }); PUPPE.gruppe.add(cr); ANGEL.rute = cr;
+      var csw = Angeln.schwimmer(); csw.visible = false; szene.add(csw); ANGEL.schwimmer = csw; var csn = Angeln.schnur([0, 0, 0], [0, 0, 1]); csn.visible = false; szene.add(csn); ANGEL.schnur = csn; ANGEL.codex = true;
+      var mg = new THREE.Group(), mk = new THREE.MeshLambertMaterial({ color: 0xc8ccd0 }), mh = new THREE.MeshLambertMaterial({ color: 0x6a4424 }), kl = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.11, 0.025), mk), hg = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.09, 0.03), mh);
+      kl.position.y = 0.1; hg.position.y = 0.0; mg.add(kl); mg.add(hg); if (window.Werkstattware && Werkstattware.ware) try { mg = Werkstattware.ware('messer', { saat: 7 }); } catch (e) {} mg.visible = false; PUPPE.gruppe.add(mg); ANGEL.messer = mg; return; } catch (e) { console.warn('Angeln', e); ANGEL.rute = null; ANGEL.codex = false; } }
+  var holz = new THREE.MeshLambertMaterial({ color: 0x8a6a3a }), r = new THREE.Group(), st = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.016, 2.4, 6), holz); st.position.y = 1.2; r.add(st); r.visible = false; szene.add(r); ANGEL.rute = r;   // jedes Bild von der Hand aus schräg zum Schwimmer ausgerichtet
   var sw = new THREE.Group(), o = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshLambertMaterial({ color: 0xc8302a })), u = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), new THREE.MeshLambertMaterial({ color: 0xf0ead8 })); o.position.y = 0.02; u.position.y = -0.02; sw.add(o); sw.add(u); sw.visible = false; szene.add(sw); ANGEL.schwimmer = sw;
   var lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0], 3)); ANGEL.schnur = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0xe8e0d0, transparent: true, opacity: 0.7 })); ANGEL.schnur.visible = false; szene.add(ANGEL.schnur); }
-function angelEinholen(text) { ANGEL.aktiv = false; ANGEL.phase = ''; if (ANGEL.rute) ANGEL.rute.visible = false; if (ANGEL.schwimmer) ANGEL.schwimmer.visible = false; if (ANGEL.schnur) ANGEL.schnur.visible = false; if (text) melden(text, 3); }
+function angelEinholen(text) { ANGEL.aktiv = false; ANGEL.phase = ''; if (ANGEL.codex && ANGEL.zeigeBis > P.t) { if (text) melden(text, 3); return; } if (ANGEL.rute) ANGEL.rute.visible = false; if (ANGEL.schwimmer) ANGEL.schwimmer.visible = false; if (ANGEL.schnur) ANGEL.schnur.visible = false; if (text) melden(text, 3); }
 function fischZiehen() { var sh = sonnenstand(himmelsZeit()).hoehe, daemmer = sh < 6 && sh > -7, w = { rotauge: 40, brachse: 22, barbe: 18, hecht: 5, aal: daemmer ? 30 : 3, schuh: 4 }, sum = 0, k; for (k in w) sum += w[k]; var z = Math.random() * sum; for (k in w) { z -= w[k]; if (z <= 0) return k; } return 'rotauge'; }
 function angelHandhaben() { if (EPOCHE !== 1400 || !AUFTRAG.angel || P.drinnen || REITEN.auf || P.aufKarren) return false;
   if (ANGEL.aktiv) { if (ANGEL.phase === 'biss') { var f = fischZiehen(), F = FISCHE[f]; AUFTRAG.fisch = (AUFTRAG.fisch || 0) + F[2]; if (F[2]) { AUFTRAG.fischGesamt = (AUFTRAG.fischGesamt || 0) + 1; tatMerken('angeln', P.x, P.y); } if (SPIELER) AUFTRAG.hunger = Math.min(100, AUFTRAG.hunger + 0.3); speichern();
-      angelEinholen(); if (F[2]) kling('fisch_zappeln', 0.4); else kling('platsch_klein', 0.3); melden(F[0] + ' ' + F[1] + (F[2] ? ' · TASTE 5: ESSEN (' + AUFTRAG.fisch + ')' : ''), 7); return true; }
+      angelEinholen(); if (ANGEL.codex) angelFangZeigen(f); if (F[2]) kling('fisch_zappeln', 0.4); else kling('platsch_klein', 0.3); melden(F[0] + ' ' + F[1] + (F[2] ? ' · TASTE 5: ESSEN (' + AUFTRAG.fisch + ')' : ''), 7); return true; }
     angelEinholen('DU HOLST DIE SCHNUR EIN'); var se = kling('schnur_einholen', 0.15); if (se) setTimeout(se.stop, 900); return true; }
   if (haendeVoll()) return false; var wp = wurfPunkt(); if (!wp) return false;
   if (sonnenstand(himmelsZeit()).hoehe < -6) { melden('ZU DUNKEL – DEN SCHWIMMER SIEHST DU NICHT MEHR', 3); return true; }
   if (!AUFTRAG.fischErlaubt) { AUFTRAG.rede = { wer: { x: P.x, y: P.y, name: 'DER FISCHER VON DER LÄNDE' }, name: 'DER FISCHER VON DER LÄNDE', i: 0, zeilen: ['He, Junge! Der Main gehört dem Grafen, und fischen darf eigentlich nur die Zunft.', 'Mit einer Rute vom Ufer, für den eigenen Topf … na gut, da drück ich ein Auge zu.', 'Aber keine Netze. Und nicht an meinem Steg! Petri Heil.'],
       danach: function () { AUFTRAG.fischErlaubt = 1; speichern(); } }; return true; }
-  angelTeile(); ANGEL.aktiv = true; ANGEL.phase = 'warten'; ANGEL.x = wp[0]; ANGEL.y = wp[1]; ANGEL.ort = [P.x, P.y]; ANGEL.biss = P.t + 4 + Math.random() * 14; P.blick = Math.atan2(wp[0] - P.x, wp[1] - P.y); kling('angel_wurf', 0.35); setTimeout(function () { if (ANGEL.aktiv) klang('platsch_klein', wp[0], wp[1], 0.35, 6); }, 650);
+  angelTeile(); ANGEL.aktiv = true; ANGEL.phase = 'warten'; ANGEL.x = wp[0]; ANGEL.y = wp[1]; ANGEL.ort = [P.x, P.y]; ANGEL.biss = P.t + 4 + Math.random() * 14; P.blick = Math.atan2(wp[0] - P.x, wp[1] - P.y); ANGEL.wurfBis = P.t + 1; ANGEL.zeigeBis = 0; kling('angel_wurf', 0.35); setTimeout(function () { if (ANGEL.aktiv) klang('platsch_klein', wp[0], wp[1], 0.35, 6); }, 650);
   melden('AUSGEWORFEN · WARTEN … TAUCHT DER SCHWIMMER WEG: SOFORT RECHTSKLICK', 4); return true; }
-function angelnWeiter(dt) { if (EPOCHE !== 1400) return; if (!ANGEL.haselVersucht && FAEHRE && window.Sammeln) haselAufstellen(); if (!AUFTRAG.angel && !ANGEL.aktiv) return;
+function angelnWeiter(dt) { if (EPOCHE !== 1400) return; if (!ANGEL.haselVersucht && FAEHRE && window.Sammeln) haselAufstellen(); if (ANGEL.zeigeBis > P.t && (P.tempo > 0.5 || AUFTRAG.rede)) ANGEL.zeigeBis = 0; if (!AUFTRAG.angel && !ANGEL.aktiv) return;
   if (!ANGEL.aktiv) { if (P.t > (AUFTRAG.meldungBis || 0) && !AUFTRAG.rede && !P.drinnen && Math.floor(P.t * 4) % 4 === 0 && wurfPunkt()) melden('RECHTSKLICK: ANGEL AUSWERFEN', 0.5); return; }
   if (Math.hypot(P.x - ANGEL.ort[0], P.y - ANGEL.ort[1]) > 1.2 || AUFTRAG.rede || P.drinnen) { angelEinholen('DU HOLST DIE SCHNUR EIN'); return; }
   var tief = 0; if (ANGEL.phase === 'warten' && P.t > ANGEL.biss) { ANGEL.phase = 'biss'; ANGEL.bissBis = P.t + 1.2; if (KL.an) klang('platsch_fisch', ANGEL.x, ANGEL.y, 0.45, 8); melden('ES BEISST! JETZT RECHTSKLICK!', 1.2); }
   if (ANGEL.phase === 'biss') { tief = 0.12 + Math.sin(P.t * 30) * 0.04; if (P.t > ANGEL.bissBis) { ANGEL.phase = 'warten'; ANGEL.biss = P.t + 3 + Math.random() * 10; melden('ZU SPÄT – DER FISCH IST WEG. WARTEN …', 2.5); } }
   else tief = P.t > ANGEL.biss - 1.5 ? Math.abs(Math.sin(P.t * 9)) * 0.03 : 0;   // kurz vorher zuppelt es schon
+  ANGEL.tief = tief; if (ANGEL.codex) return;
   var hw = new THREE.Vector3(); PUPPE.gelenke.handR.getWorldPosition(hw); var zw = V(ANGEL.x, ANGEL.y, SPIEGEL), dir = new THREE.Vector3(zw[0] - hw.x, 0, zw[2] - hw.z).normalize(); dir.y = 0.75; dir.normalize();
   ANGEL.rute.position.copy(hw); ANGEL.rute.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir); ANGEL.rute.updateMatrixWorld(true);
   ANGEL.rute.visible = true; var sv = V(ANGEL.x, ANGEL.y, SPIEGEL + 0.01 - tief + Math.sin(P.t * 1.7) * 0.012); ANGEL.schwimmer.position.set(sv[0], sv[1], sv[2]); ANGEL.schwimmer.visible = true;
   var spitze = ANGEL.rute.localToWorld(new THREE.Vector3(0, 2.4, 0)), pa = ANGEL.schnur.geometry.attributes.position; pa.setXYZ(0, spitze.x, spitze.y, spitze.z); pa.setXYZ(1, sv[0], sv[1] + 0.03, sv[2]); pa.needsUpdate = true; ANGEL.schnur.geometry.computeBoundingSphere(); ANGEL.schnur.visible = true; }
+// 12.10. (Codex Auftrag 27): Rute an der rechten Hand (rutenWinkel), Schwimmer schaukelt/zuppelt/taucht ab, Schnur mit Durchhang, Fang links hochhalten
+function angelPose() { var a = null; if (ANGEL.schneidenBis > P.t) a = 'rute_schneiden'; else if (ANGEL.zeigeBis > P.t) a = P.t < ANGEL.anschlagBis ? 'anschlagen' : 'fisch_zeigen'; else if (ANGEL.aktiv) a = P.t < ANGEL.wurfBis ? 'angel_auswerfen' : 'angeln_warten'; return a && lehrePoseDa(a) ? a : null; }
+function angelFangZeigen(art) { if (!window.Angeln) return; try { if (ANGEL.fisch) { PUPPE.gruppe.remove(ANGEL.fisch); ANGEL.fisch = null; }
+    var fg = art === 'schuh' ? Angeln.alter_schuh() : Angeln.fisch({ art: art, saat: Math.floor(Math.random() * 999) }); fg.traverse(function (q) { if (q.isMesh) q.castShadow = true; }); PUPPE.gruppe.add(fg); ANGEL.fisch = fg;
+    ANGEL.anschlagBis = P.t + 0.5; ANGEL.zeigeBis = P.t + 4; } catch (e) { console.warn('Fisch', e); } }
+function angelAnHand(g, c, hand, winkel, anker) { if (!g || !c || !c[hand]) { if (g) g.visible = false; return false; } g.rotation.fromArray(c[winkel] || [0, 0, 0]); g.position.fromArray(c[hand]); var m = anker && g.getObjectByName(anker);
+  if (m) { g.updateMatrixWorld(true); var lok = g.worldToLocal(m.getWorldPosition(new THREE.Vector3())); g.position.sub(lok.applyEuler(g.rotation)); } g.visible = true; return true; }
+function angelMontieren(art) { if (!ANGEL.codex || !ANGEL.rute) return; var zeigt = ANGEL.zeigeBis > P.t, schneidet = ANGEL.schneidenBis > P.t, an = (ANGEL.aktiv || zeigt) && !schneidet;
+  var c = (an || schneidet) && PUPPE.grindKontakte ? PUPPE.grindKontakte() : null; PUPPE.gruppe.updateMatrixWorld(true);
+  if (an) angelAnHand(ANGEL.rute, c, 'handR', 'rutenWinkel', 'griff'); else ANGEL.rute.visible = false;
+  if (ANGEL.messer) { if (schneidet) angelAnHand(ANGEL.messer, c, 'handR', 'werkzeugWinkel', 'griff'); else ANGEL.messer.visible = false; }
+  if (ANGEL.fisch) { if (zeigt && P.t > ANGEL.anschlagBis) { if (ANGEL.fisch.bewegen) ANGEL.fisch.bewegen('zappeln', P.dtLetzt || 0.016); angelAnHand(ANGEL.fisch, c, 'handL', 'fischWinkel', 'griff'); } else if (!zeigt) { PUPPE.gruppe.remove(ANGEL.fisch); ANGEL.fisch = null; } else ANGEL.fisch.visible = false; }
+  var sw = ANGEL.schwimmer, sn = ANGEL.schnur, dt = P.dtLetzt || 0.016;
+  if (ANGEL.aktiv && ANGEL.rute.visible) { var sv = V(ANGEL.x, ANGEL.y, SPIEGEL + 0.005); sw.position.set(sv[0], sv[1], sv[2]); sw.rotation.y = Math.PI - P.blick; sw.visible = P.t > ANGEL.wurfBis - 0.3;
+    var sa = ANGEL.phase === 'biss' ? 'abtauchen' : P.t > ANGEL.biss - 1.5 ? 'zuppeln' : 'ruhig'; if (sw.bewegen) sw.bewegen(sa, dt);
+    var sp = ANGEL.rute.getObjectByName('spitze'), oe = sw.getObjectByName('oese'); if (sp && oe && sw.visible) { sn.setze(sp.getWorldPosition(new THREE.Vector3()), oe.getWorldPosition(new THREE.Vector3())); sn.visible = true; } else sn.visible = false; }
+  else if (zeigt && ANGEL.fisch && ANGEL.fisch.visible && ANGEL.rute.visible) { sw.visible = false; var sp2 = ANGEL.rute.getObjectByName('spitze'), ma = ANGEL.fisch.getObjectByName('maul'); if (sp2 && ma) { sn.setze(sp2.getWorldPosition(new THREE.Vector3()), ma.getWorldPosition(new THREE.Vector3())); sn.visible = true; } }
+  else { sw.visible = false; sn.visible = false; } }
 function haendeVoll() { if (ANGEL.aktiv) return 'DIE ANGEL'; if (KAI.traegt) return 'EINEN SACK'; if (STEIN.traegt) return AUFTRAG.karren ? 'DEN STEINKARREN' : 'EINEN STEIN'; if (LESE.traegt) return 'DEN TRAUBENKORB'; return null; }   // 12.10.: was man gerade schleppt, sperrt die Arbeit
 // 12.10. (Andreas: „wir müssten sehen können, was wir in der Hand haben“): Zeile über dem Stand unten links
 function handText() { if (KAI.traegt) return 'EIN SACK KORN'; if (STEIN.traegt) return AUFTRAG.karren ? STEIN.traegt + (STEIN.traegt > 1 ? ' STEINE' : ' STEIN') + ' AUF DEM KARREN' : 'EIN STEIN'; if (LESE.traegt) return 'DER TRAUBENKORB'; if (REITEN.auf) return 'DIE ZÜGEL'; if (ANGEL.aktiv) return 'DIE ANGEL';
@@ -15530,6 +15692,7 @@ function zeichnen() {
     else if (REITEN.auf && lehrePoseDa('reiten')) { art = REITEN.absitzBis ? 'absitzen' : P.t < REITEN.aufsitzBis && lehrePoseDa('aufsitzen') ? 'aufsitzen' : 'reiten'; tp = 0; }
     else if (HOCHZEIT && HOCHZEIT.ringe && P.t < HOCHZEIT.ringe + 4 && lehrePoseDa('hand_reichen')) { art = 'hand_reichen'; tp = 0; P.blick = Math.atan2(HOCHZEIT.bx - P.x, HOCHZEIT.by - P.y); }
     else if (KLOPF && KLOPF.bis > P.t && lehrePoseDa('anklopfen')) { art = 'anklopfen'; tp = 0; P.blick = Math.atan2(KLOPF.t.mitte[0] - P.x, KLOPF.t.mitte[1] - P.y); }
+    else if (angelPose()) { art = angelPose(); tp = 0; }
     else if (KAI.traegt && lehrePoseDa('sack_tragen')) { art = 'sack_tragen'; }
     else if (HOLZ.hackenBis > P.t) { art = 'beil'; tp = 0; }
     else if (LESE.bis > P.t) { art = 'pfluecken'; tp = 0; }
@@ -15551,6 +15714,7 @@ function zeichnen() {
     PUPPE.bewegen(art, Math.min(0.05, P.dtLetzt || 0.016), tp, art === 'reiten' && REITEN.pferd ? { gang: REITEN.gang === 'stehen' ? 'schritt' : REITEN.gang, reitPhase: REITEN.gang === 'stehen' ? null : REITEN.pferd.phase } : spGang ? { gangart: spGang } : undefined);
     spielerEimer(traegtEimer);
     lehreHaende(art);
+    angelMontieren(art);
     var pv = V(P.x, P.y, fuss + (P.aufKarren ? 0.36 : 0)); PUPPE.gruppe.position.set(pv[0], pv[1], pv[2]);   // auf dem Karren: Sitzfläche 0,81 m statt Bank 0,45 m
     // 11.10. (Andreas: „nach dem Abrollen sind die Achsen vertauscht, nach dem zweiten Abrollen wieder gut“): die Rolle dreht die Figur
     // um die Querachse; three.js liest die Drehung danach in XYZ-Reihenfolge als (π, π−y, π) zurück – gleiche Lage, aber jedes weitere
