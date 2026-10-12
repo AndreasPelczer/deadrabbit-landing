@@ -10894,7 +10894,7 @@ function aufheben() {                            // Rechtsklick auf ein hingeste
   if (!best) return false; szene.remove(best.o); var i = k.moebel.indexOf(best.kreis); if (i >= 0) k.moebel.splice(i, 1); KAMMER_OBJ.splice(KAMMER_OBJ.indexOf(best), 1);
   KINHALT.stuecke.splice(KINHALT.stuecke.indexOf(best.st), 1); KINHALT.beutel.unshift(best.st.a); kinhaltSpeichern(); kammerBettPruefen(); melden(MOEBEL_KATALOG[best.st.a].n.toUpperCase() + ' AUFGEHOBEN · RECHTSKLICK: WIEDER HINSTELLEN', 3); return true;
 }
-addEventListener('wheel', function (e) { if (!PLATZ) { if (EPOCHE === 1400 && SPIELER && !INVENTAR && !QUESTBUCH && (document.pointerLockElement === weltCv || 'ontouchstart' in window === false)) { handRad(e.deltaY > 0 ? 1 : -1); e.preventDefault(); } return; } PLATZ.d += (e.deltaY > 0 ? 1 : -1) * Math.PI / 8; e.preventDefault(); }, { passive: false });
+addEventListener('wheel', function (e) { if (KARTE === 2 && !PLATZ) { KARTE_ZOOM = Math.max(0, Math.min(2, KARTE_ZOOM + (e.deltaY < 0 ? 1 : -1))); e.preventDefault(); return; } if (!PLATZ) { if (EPOCHE === 1400 && SPIELER && !INVENTAR && !QUESTBUCH && (document.pointerLockElement === weltCv || 'ontouchstart' in window === false)) { handRad(e.deltaY > 0 ? 1 : -1); e.preventDefault(); } return; } PLATZ.d += (e.deltaY > 0 ? 1 : -1) * Math.PI / 8; e.preventDefault(); }, { passive: false });
 // ---- Spinnen (11.10., Grind 3): Wolle vom Weber → am eigenen Spinnrad in der Kammer → Garn zurück an den Weber ----
 // Ein Kreislauf mit Einsatz: Kammer (6 Heller/Woche) + Spinnrad (9 Heller beim Drechsler) – dafür bringt es mehr als Holz:
 // 12 Umdrehungen (linke Maus halten) = 1 Spule, Wolle 1 Heller, Garn 3 Heller, der Weber nimmt höchstens 6 Spulen am Tag.
@@ -12539,23 +12539,58 @@ function kramHinweis() { if (EPOCHE !== 1400 || AUFTRAG.rede || P.drinnen || P.t
   else if (z && (AUFTRAG.beutel || []).some(function (b) { return b.kram === z.nr; })) { melden('RECHTSKLICK: ' + KRAM_TRAGBAR[z.art].toUpperCase() + ' ZURÜCKSTELLEN', 2); kramHinweis.bis = P.t + 2.5; } }
 function kramVorwurf(l) { var w = AUFTRAG.kramWeg; if (!w || !l || !l.heimHaus) return null; var o = KRAM.filter(function (q) { return q.h === l.heimHaus && w[q.nr] && w[q.nr].zeuge; })[0]; if (!o) return null; var n = KRAM_TRAGBAR[o.art];
   return w[o.nr].zeuge === 'besitzer' ? ['Du hast Nerven, mich anzusprechen. Mein ' + n + ' – ich hab dich gesehen.', 'Stell ihn zurück, wo er stand. Dann ist es vergessen. Sonst erfährt es die Wache.'] : ['Mein ' + n + ' ist weg. Die Nachbarn sagen, ein Fremder hat ihn mitgenommen.', 'Du bist doch fremd hier … Wenn er wieder vor meiner Tür steht, frag ich nicht weiter.']; }
-function torbauBauen() {                        // der Torbau der Burg (Archiv) nach Andreas' Foto: zwei Rundtürme mit Schiefer-Kegeldach, Torbogen mit Flügeln
+// 12.10. abends (Andreas mit Foto des heutigen Burgtors: „da müssen wir noch nacharbeiten“): Sandstein statt Einheitsbraun, Konsolenkranz, Fenster,
+// flachere Schieferhauben, dazwischen eine Sandsteinfassade mit Fensterreihen, Rundfenstern und hellem Torbogen. Vorbild ist der heutige Bau (teils jünger als 1400 – ANNAHME/SPIELENTSCHEIDUNG, damit man ihn wiedererkennt).
+function sandsteinTextur() { if (sandsteinTextur.t) return sandsteinTextur.t; var c = document.createElement('canvas'); c.width = c.height = 64; var g = c.getContext('2d'), farben = ['#a4705e', '#b98370', '#8f5c4c', '#c4927c', '#9c6a58', '#ae7864', '#b07a6a', '#94665a', '#c08a76'];
+  g.fillStyle = '#b8907a'; g.fillRect(0, 0, 64, 64); var y = 0, r = 0; while (y < 64) { var hh = 4 + Math.floor(hash(r * 3.1) * 6), x = -Math.floor(hash(r * 7.7) * 12); while (x < 64) { var ww = 5 + Math.floor(hash(x * 1.3 + r * 9.1) * 16); g.fillStyle = farben[Math.floor(hash(x * 2.7 + r * 5.3) * farben.length)]; g.fillRect(x + 1, y + 1, ww - 1, hh - 1);
+      for (var fl = 0; fl < 3; fl++) { g.fillStyle = hash(x * 4.1 + r * 2.3 + fl) < 0.5 ? 'rgba(255,235,215,.13)' : 'rgba(60,30,20,.13)'; g.fillRect(x + 1 + Math.floor(hash(x + fl * 9.7 + r) * (ww - 3)), y + 1 + Math.floor(hash(r + fl * 3.3 + x) * (hh - 2)), 2, 1); }
+      g.fillStyle = 'rgba(40,20,10,.10)'; g.fillRect(x + 1, y + hh - 1, ww - 1, 1); x += ww; } y += hh; r++; }
+  var t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestMipmapLinearFilter; sandsteinTextur.t = t; return t; }
+function torbauBauen() {                        // der Torbau der Burg (Archiv) nach Andreas' Fotos: zwei Rundtürme mit Schieferhaube, Konsolenkranz, Fassade mit Torbogen
   var ar = null; HAEUSER.forEach(function (h) { if (h.n === 'Archiv') ar = h; }); if (!ar) return;
-  var stein = new THREE.MeshLambertMaterial({ color: 0x9a5e48 }), schiefer = new THREE.MeshLambertMaterial({ color: 0x4a4e58 }), sims = new THREE.MeshLambertMaterial({ color: 0xb07058 }), holzT = new THREE.MeshLambertMaterial({ color: 0x6a4a2a });
-  [[160.2, 150.0], [149.8, 137.9]].forEach(function (g) {            // Rundungen im OSM-Umriss: Mittelpunkt und Radius aus den Eckpunkten
-    var nah = ar.pts.filter(function (q) { return Math.hypot(q[0] - g[0], q[1] - g[1]) < 4; }); if (nah.length < 3) return;
+  var tex = sandsteinTextur(), schiefer = new THREE.MeshLambertMaterial({ color: 0x4a4e58 }), sims = new THREE.MeshLambertMaterial({ color: 0xb8806a }), holzT = new THREE.MeshLambertMaterial({ color: 0x8a6440 }),
+    hell = new THREE.MeshLambertMaterial({ color: 0xc08a72 }), glas = new THREE.MeshLambertMaterial({ color: 0x2a2e34 }), gitter = new THREE.MeshLambertMaterial({ color: 0x1e1e20 });
+  function steinMat(ru, rv) { var t = tex.clone(); t.needsUpdate = true; t.repeat.set(ru, rv); return new THREE.MeshLambertMaterial({ map: t }); }
+  function box(b, h, d, mat, x, y, z, g) { var k = new THREE.Mesh(new THREE.BoxGeometry(b, h, d), mat); k.position.set(x, y, z); g.add(k); return k; }
+  var d = DURCHGAENGE && DURCHGAENGE.filter(function (q) { return drin(q.p[1][0], q.p[1][1], ar.pts); })[0];
+  var aussen = d ? [d.p[0][0], d.p[0][1]] : [ar.cx - 10, ar.cy], rausX = d ? d.p[0][0] - d.p[1][0] : -1, rausY = d ? d.p[0][1] - d.p[1][1] : 0, rl = Math.hypot(rausX, rausY) || 1; rausX /= rl; rausY /= rl;   // Torweg von innen nach außen = die Anfahrt
+  var tuerme = [];
+  [[160.2, 150.0], [149.8, 137.9]].forEach(function (gp) {            // Rundungen im OSM-Umriss: Mittelpunkt und Radius aus den Eckpunkten
+    var nah = ar.pts.filter(function (q) { return Math.hypot(q[0] - gp[0], q[1] - gp[1]) < 4; }); if (nah.length < 3) return;
     var cx = 0, cy = 0; nah.forEach(function (q) { cx += q[0]; cy += q[1]; }); cx /= nah.length; cy /= nah.length;
     var r = 0; nah.forEach(function (q) { r += Math.hypot(q[0] - cx, q[1] - cy); }); r = Math.max(2.4, r / nah.length + 0.4);
     var z = Math.min(bodenHoehe(cx, cy), ar.b), hoch = ar.h + 4, gr = new THREE.Group();
-    var turm = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.04, hoch + 2, 16), stein); turm.position.y = hoch / 2 - 1; gr.add(turm);
-    var kranz = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.25, r + 0.25, 0.5, 16), sims); kranz.position.y = hoch * 0.55; gr.add(kranz);   // Bogenfries
-    var dach = new THREE.Mesh(new THREE.ConeGeometry(r + 0.5, r * 2.2, 16), schiefer); dach.position.y = hoch + r * 1.1; gr.add(dach);
-    var v = V(cx, cy, z); gr.position.set(v[0], v[1], v[2]); gr.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); szene.add(gr);
+    var turm = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.04, hoch + 2, 20), steinMat(Math.round(2 * Math.PI * r / 2.2), Math.round((hoch + 2) / 1.6))); turm.position.y = hoch / 2 - 1; gr.add(turm);
+    var kranz = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.3, r + 0.3, 0.45, 20), sims); kranz.position.y = hoch * 0.58; gr.add(kranz);   // Bogenfries
+    for (var k = 0; k < 18; k++) { var a = k / 18 * Math.PI * 2, ko = box(0.28, 0.55, 0.35, hell, Math.cos(a) * (r + 0.1), hoch * 0.58 - 0.45, Math.sin(a) * (r + 0.1), gr); ko.rotation.y = -a; }   // Konsolen unter dem Kranz
+    var sims2 = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.18, r + 0.18, 0.25, 20), sims); sims2.position.y = hoch - 0.2; gr.add(sims2);
+    var prof = [new THREE.Vector2(r + 0.45, 0), new THREE.Vector2(r + 0.35, r * 0.35), new THREE.Vector2(r * 0.75, r * 0.85), new THREE.Vector2(r * 0.3, r * 1.3), new THREE.Vector2(0.05, r * 1.55)];   // Haube: unten breit, leicht gewölbt
+    var dach = new THREE.Mesh(new THREE.LatheGeometry(prof, 16), new THREE.MeshLambertMaterial({ color: 0x4a4e58, side: THREE.DoubleSide })); dach.position.y = hoch - 0.1; gr.add(dach);
+    var vorn = Math.atan2(-rausY, rausX);   // Richtung zur Anfahrt (Welt → three: y wird −z)
+    [[-0.45, hoch * 0.36], [0.35, hoch * 0.36], [-0.3, hoch * 0.78], [0.45, hoch * 0.78]].forEach(function (f) { var a = vorn + f[0], wx = Math.cos(a) * (r + 0.02), wz = Math.sin(a) * (r + 0.02), fr = new THREE.Group();
+      box(1.15, 1.35, 0.12, hell, 0, 0, 0, fr); box(0.9, 1.1, 0.14, glas, 0, 0, 0.02, fr); box(0.06, 1.1, 0.16, hell, 0, 0, 0.03, fr); fr.position.set(wx, f[1], wz); fr.rotation.y = -a + Math.PI / 2; gr.add(fr); });
+    var v = V(cx, cy, z); gr.position.set(v[0], v[1], v[2]); gr.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); szene.add(gr); tuerme.push({ x: cx, y: cy, r: r, z: z, hoch: hoch });
   });
-  var d = DURCHGAENGE && DURCHGAENGE.filter(function (q) { return drin(q.p[1][0], q.p[1][1], ar.pts); })[0]; if (!d) return;   // Torflügel am äußeren Ende des Torwegs
+  if (tuerme.length === 2 && d) {                 // Fassade zwischen den Türmen, zur Anfahrt hin, mit Torbogen dort, wo der Torweg hindurchgeht
+    var A = tuerme[0], B = tuerme[1], lx = B.x - A.x, ly = B.y - A.y, LL = Math.hypot(lx, ly), ux = lx / LL, uy = ly / LL, nx = -uy, ny = ux, mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2;
+    if (rausX * nx + rausY * ny < 0) { nx = -nx; ny = -ny; }
+    var off = Math.min(A.r, B.r) * 0.95, z0 = Math.min(A.z, B.z), fh = ar.h + 1.2, exA = -ny, eyA = nx, sB = LL * (ux * exA + uy * eyA), s0 = Math.min(0, sB) + (sB > 0 ? A.r : B.r) * 0.75, s1 = Math.max(0, sB) - (sB > 0 ? B.r : A.r) * 0.75;   // lokale X-Achse der Fassade = (−ny, nx), Front (+Z) = nach außen
+    var pa = d.p[0], pb = d.p[1], dx = pb[0] - pa[0], dy = pb[1] - pa[1], den = dx * ny - dy * nx, oxp = A.x + nx * off, oyp = A.y + ny * off;   // Schnitt Torweg × Fassadenlinie
+    var tt = Math.abs(nx * dx + ny * dy) > 1e-6 ? ((oxp - pa[0]) * nx + (oyp - pa[1]) * ny) / (nx * dx + ny * dy) : 0.5, gx0 = pa[0] + dx * tt, gy0 = pa[1] + dy * tt, sg = (gx0 - oxp) * exA + (gy0 - oyp) * eyA, gw = Math.max(2.4, (d.b || 3) + 0.4), gh = 3.4;
+    var fa = new THREE.Group(), v0 = V(oxp, oyp, z0); fa.position.set(v0[0], v0[1], v0[2]); fa.rotation.y = Math.atan2(nx, -ny); szene.add(fa);
+    function teil(a0, a1, y0, y1) { if (a1 - a0 < 0.2 || y1 - y0 < 0.2) return; var m = box(a1 - a0, y1 - y0, 0.5, steinMat(Math.max(1, Math.round((a1 - a0) / 2.2)), Math.max(1, Math.round((y1 - y0) / 1.6))), (a0 + a1) / 2, (y0 + y1) / 2, 0, fa); m.castShadow = m.receiveShadow = true; }
+    teil(s0, sg - gw / 2, -1, fh); teil(sg + gw / 2, s1, -1, fh); teil(sg - gw / 2, sg + gw / 2, gh + 0.9, fh);
+    box(gw + 0.9, 0.5, 0.65, hell, sg, gh + 0.65, 0, fa); [-1, 1].forEach(function (q) { box(0.45, gh + 0.5, 0.65, hell, sg + q * (gw / 2 + 0.22), (gh + 0.5) / 2 - 0.1, 0, fa); });   // Torgewände
+    var bogen = new THREE.Mesh(new THREE.TorusGeometry(gw / 2, 0.22, 6, 14, Math.PI), hell); bogen.position.set(sg, gh - gw / 2 + 0.45, 0.05); fa.add(bogen);
+    var spieg = new THREE.Mesh(new THREE.CircleGeometry(gw / 2 - 0.15, 14, 0, Math.PI), holzT); spieg.position.set(sg, gh - gw / 2 + 0.45, 0.02); spieg.material.side = THREE.DoubleSide; fa.add(spieg);
+    [[sg - gw / 2 - 1.6, 2.2], [sg + gw / 2 + 1.6, 2.2]].forEach(function (q) { var rf = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.1, 6, 14), hell); rf.position.set(q[0], q[1], 0.28); fa.add(rf); var rg = new THREE.Mesh(new THREE.CircleGeometry(0.36, 12), gitter); rg.position.set(q[0], q[1], 0.27); fa.add(rg); });   // Rundfenster
+    for (var reihe = 0; reihe < 2; reihe++) for (var sp = -1; sp <= 1; sp++) { var fx_ = sg + sp * Math.min(2.4, (s1 - s0) / 4), fy_ = gh + 2.0 + reihe * 2.4; if (fy_ + 0.8 > fh) continue; var fr2 = new THREE.Group(); box(1.1, 1.5, 0.1, hell, 0, 0, 0, fr2); box(0.86, 1.25, 0.12, reihe ? glas : gitter, 0, 0, 0.02, fr2); fr2.position.set(fx_, fy_, 0.27); fa.add(fr2); }
+    fa.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  }
+  if (!d) return;                                 // Torflügel am äußeren Ende des Torwegs
   var a = d.p[0], b = d.p[1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), ex = (b[0] - a[0]) / L, ey = (b[1] - a[1]) / L, t0 = 0; for (var i = 0; i <= 40; i++) { var t = i / 40; if (drin(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, ar.pts)) { t0 = t; break; } }
-  var tx = a[0] + (b[0] - a[0]) * t0 + ex * 0.4, ty = a[1] + (b[1] - a[1]) * t0 + ey * 0.4, z0 = bodenHoehe(tx, ty), w = d.b / 2;
-  [-1, 1].forEach(function (sd) { var ang = [tx - ey * sd * w, ty + ex * sd * w], g = new THREE.Group(), v = V(ang[0], ang[1], z0); g.position.set(v[0], v[1], v[2]);
+  var tx = a[0] + (b[0] - a[0]) * t0 + ex * 0.4, ty = a[1] + (b[1] - a[1]) * t0 + ey * 0.4, z0b = bodenHoehe(tx, ty), w = d.b / 2;
+  [-1, 1].forEach(function (sd) { var ang = [tx - ey * sd * w, ty + ex * sd * w], g = new THREE.Group(), v = V(ang[0], ang[1], z0b); g.position.set(v[0], v[1], v[2]);
     var fl = new THREE.Mesh(new THREE.BoxGeometry(w, 2.9, 0.12), holzT); fl.position.set(w / 2, 1.45, 0); g.add(fl);
     g.rotation.y = Math.atan2(ey, ex) + (sd > 0 ? -0.15 : Math.PI + 0.15);   // offen, an die Seitenwände geklappt
     g.traverse(function (o) { if (o.isMesh) o.castShadow = true; }); szene.add(g); });
@@ -13227,7 +13262,7 @@ var STARTSCHIRM = !/[?&](intro=0|probe=1)/.test(Q) && !(function () { try { retu
   ak.addEventListener('click', function () { if (!akScharf) { akScharf = true; ak.textContent = 'Wirklich? Dein Spielstand fängt von vorn an – nochmal klicken'; return; }
     try { sessionStorage.setItem('wzf_gestartet', '1'); } catch (e) {} location.search = '?jahr=1400&auftrag=neu' + (/[?&]probe=1/.test(Q) ? '&probe=1' : ''); });
   addEventListener('keydown', function (e) { if (STARTSCHIRM && e.key === 'Enter') los(1400); }); })();
-addEventListener('keydown', function (e) { var k = e.key.toLowerCase(); if (STARTSCHIRM) return; if (e.metaKey || e.ctrlKey) return; taste[k] = true; if (e.key.indexOf('Arrow') === 0 || e.key === ' ') e.preventDefault(); if (k === 'm') KARTE = KARTE === 1 || KARTE === true ? 2 : KARTE ? 0 : 1; if (k === 'o') rumtreiberOeffnen(); if (k === 'n') stadtbuchOeffnen(); if (k === 'y') { WEGWEISER.an = !WEGWEISER.an; try { localStorage.setItem('wzf_wegweiser', WEGWEISER.an ? 'an' : 'aus'); } catch (e2) {} melden(WEGWEISER.an ? 'WEGWEISER AN (Y)' : 'WEGWEISER AUS (Y)', 2); } if (k === 't' || k === ',' || k === '.' || k === ';' || k === ':') uhrTaste(k);   // 11.10.: vorher lief uhrGesprungen() bei JEDEM Tastendruck (fehlende Klammern)
+addEventListener('keydown', function (e) { var k = e.key.toLowerCase(); if (STARTSCHIRM) return; if (e.metaKey || e.ctrlKey) return; taste[k] = true; if (e.key.indexOf('Arrow') === 0 || e.key === ' ') e.preventDefault(); if (k === 'm') KARTE = KARTE === 1 || KARTE === true ? 2 : KARTE ? 0 : 1; if (KARTE === 2 && (k === '+' || k === '=')) KARTE_ZOOM = Math.min(2, KARTE_ZOOM + 1); if (KARTE === 2 && (k === '-' || k === '_')) KARTE_ZOOM = Math.max(0, KARTE_ZOOM - 1); if (k === 'o') rumtreiberOeffnen(); if (k === 'n') stadtbuchOeffnen(); if (k === 'y') { WEGWEISER.an = !WEGWEISER.an; try { localStorage.setItem('wzf_wegweiser', WEGWEISER.an ? 'an' : 'aus'); } catch (e2) {} melden(WEGWEISER.an ? 'WEGWEISER AN (Y)' : 'WEGWEISER AUS (Y)', 2); } if (k === 't' || k === ',' || k === '.' || k === ';' || k === ':') uhrTaste(k);   // 11.10.: vorher lief uhrGesprungen() bei JEDEM Tastendruck (fehlende Klammern)
   if (k === 'i') { inventarAuf(!INVENTAR); QUESTBUCH = false; } if (k === 'tab') { e.preventDefault(); if (EPOCHE === 1400) { questbuchAuf(!QUESTBUCH); if (QUESTBUCH && INVENTAR) inventarAuf(false); } } if (k === 'escape' && QUESTBUCH) questbuchAuf(false); if (sprungTaste(k)) { e.preventDefault(); return; } if (SPIELER && EPOCHE === 1400 && /^[1-9]$/.test(k) && !INVENTAR) { var ld = leisteDinge(); if (ld[+k - 1]) handSetzen(ld[+k - 1]); }   // 12.10.: 1–9 wählt, was in die Hand kommt (wie Minecraft); Rechtsklick isst
   if (k === 'g' && AUFTRAG.karrenWahl) karrenWahlTreffen('schlafen'); else if (k === 'g' && AUFTRAG.wahl) wahlTreffen('nachlass'); else if (k === 'g' && AUFTRAG.zehnt > 0 && SPIELERKARREN && EPOCHE === 1400 && !AUFTRAG.rede && !AUFTRAG.hundWahl && !P.drinnen && !REITEN.auf && !KARRENSCHLAF) { P.aufKarren = true; karrenWahlTreffen('schlafen'); }   // 12.10. (Andreas: „ich wurde nicht gefragt“): G geht die ganze Fahrt über
   if (k === 'escape' && PAUSE) pauseWeiter(); else if (k === 'escape' && !document.pointerLockElement && !INVENTAR && performance.now() > PAUSE_RUHE) pauseZeigen(true); if (AUFTRAG.hundWahl && !AUFTRAG.rede) { if (k === 'g') hundWahlTreffen('vergeben'); if (k === 'r') hundWahlTreffen('rache'); } if (k === 'h') himmelEcht(!HIMMEL_ECHT); if (k === 'l') tonAnAus(); if (k === 'k') { STERNBILDER_AN = !STERNBILDER_AN; melden(STERNBILDER_AN ? 'STERNBILDER AN' : 'STERNBILDER AUS', 2); }
@@ -13434,7 +13469,18 @@ function gsGerede(l, zeilen) { if (EPOCHE !== 1400 || !l || l.rolle === 'schmugg
 var GS_T = 0; function gsWeiter() { if (EPOCHE !== 1400 || P.t < GS_T) return; GS_T = P.t + 1; GESCHICHTEN.forEach(function (g) { if (gsZustand(g) !== 'neu' || !g.kann() || !g.gerede) return; var p = g.geber(); if (p && Math.hypot(P.x - p[0], P.y - p[1]) < 8) gsGehoert(g.id); }); }
 function angebotAus(fn, label, preis, mehrmals) { fn.angebot = { label: label, preis: preis || 0, mehrmals: !!mehrmals }; return fn; }
 var STAND = null;                               // der Marktstand (Mittelpunkt, Ausrichtung) – auch für die Kollision
-function brunnenBauen() {                       // um 1400: Ziehbrunnen (ANNAHME) · heute: die echten Brunnen (vereinfacht)
+// 12.10. abends (Andreas: „die Menschen verteilen sich nicht auf die Brunnen – alle auf dem Marktplatz“): OSM kennt nur Engels- und Marktbrunnen.
+// Um 1400 hatte jedes Viertel seinen Ziehbrunnen (ANNAHME, Lage erfunden): bis zu sechs auf freien Gassenplätzen, ≥ 50 m auseinander, dort wo viele wohnen.
+// Jeder Bewohner bekommt einen festen Brunnen – den nächsten, der noch nicht voll ist (brunnenVerteilen).
+function zusatzBrunnen() { if (!BRUNNEN || BRUNNEN.__zusatz || !RING) return; BRUNNEN.__zusatz = true; var stadt = BRUNNEN.filter(function (b) { return !b.burg; }), kand = [];
+  var xs = RING.map(function (q) { return q[0]; }), ys = RING.map(function (q) { return q[1]; }), x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+  NAVMODUS = true; for (var x = x0; x < x1; x += 6) for (var y = y0; y < y1; y += 6) { if (!innerhalbMauer(x, y) || hausInnen(x, y) || !frei(x, y)) continue; var ok = true; for (var w = 0; w < 6.28 && ok; w += 0.8) if (!frei(x + Math.cos(w) * 2.8, y + Math.sin(w) * 2.8) || hausInnen(x + Math.cos(w) * 2.8, y + Math.sin(w) * 2.8)) ok = false; if (ok) kand.push([x, y]); } NAVMODUS = false;
+  var heime = HAEUSER.filter(function (h) { return innerhalbMauer(h.cx, h.cy) && h.art === 'haus'; });
+  for (var n = 0; n < 6; n++) { var best = null, bw = 0; kand.forEach(function (k) { var dmin = Math.min.apply(null, stadt.map(function (b) { return Math.hypot(b.x - k[0], b.y - k[1]); })); if (dmin < 50) return; var leute = heime.filter(function (h) { return Math.hypot(h.cx - k[0], h.cy - k[1]) < 45; }).length, wert = leute * Math.min(1, dmin / 90); if (wert > bw) { bw = wert; best = k; } });
+    if (!best || bw < 4) break; var nb = { name: 'Ziehbrunnen', x: best[0], y: best[1], heute: '', zusatz: true, burg: false }; BRUNNEN.push(nb); stadt.push(nb); } }
+function brunnenVerteilen() { if (!BRUNNEN) return; var bs = BRUNNEN.filter(function (b) { return !b.burg; }), last = bs.map(function () { return 0; }), cap = Math.ceil(TAGESLEUTE.length / Math.max(1, bs.length)) + 3;
+  TAGESLEUTE.forEach(function (l) { var hp = l.heimPunkt || [l.x, l.y], ord = bs.map(function (b, i) { return [Math.hypot(b.x - hp[0], b.y - hp[1]), i]; }).sort(function (a, c) { return a[0] - c[0]; }); for (var k = 0; k < ord.length; k++) if (last[ord[k][1]] < cap || k === ord.length - 1) { l.brunnen = bs[ord[k][1]]; last[ord[k][1]]++; break; } }); }
+function brunnenBauen() { zusatzBrunnen();                       // um 1400: Ziehbrunnen (ANNAHME) · heute: die echten Brunnen (vereinfacht)
   if (!BRUNNEN) return;
   var stein = new THREE.MeshLambertMaterial({ color: 0xa8604c }), steinHell = new THREE.MeshLambertMaterial({ color: 0xc08a72 }), holz = new THREE.MeshLambertMaterial({ color: 0x5a3e26 }),
     dach = new THREE.MeshLambertMaterial({ color: 0x7a3426 }), wasserM = new THREE.MeshLambertMaterial({ color: 0x2f4a55 }), eisen = new THREE.MeshLambertMaterial({ color: 0x3a3d40 }), gold = new THREE.MeshLambertMaterial({ color: 0xc9a25a });
@@ -13462,7 +13508,7 @@ function brunnenBauen() {                       // um 1400: Ziehbrunnen (ANNAHME
       m(new THREE.CylinderGeometry(0.11, 0.13, 1.6, 8), eisen, 0, 0.8, 0, neu); var hb = m(new THREE.BoxGeometry(0.7, 0.05, 0.05), eisen, 0.3, 1.45, 0, neu); hb.rotation.z = -0.4;
       b.r = 1.1;
     }
-    b.r1400 = 1.1; alt.visible = false; szene.add(alt); szene.add(neu); b.gAlt = alt; b.gNeu = neu;
+    b.r1400 = 1.1; if (b.zusatz) { b.r = 0; neu.clear(); } alt.visible = false; szene.add(alt); szene.add(neu); b.gAlt = alt; b.gNeu = neu;   // Ziehbrunnen gibt es heute nicht mehr
   });
 }
 // Gras und Wildblumen (08.10., Andreas: „Pflanzen, Kleinigkeiten“): Büschel wo das Bodenbild grün ist, Unkraut am Fuß der Stadtmauer und an
@@ -14649,14 +14695,14 @@ function junkerBauen() {
   // der Junker selbst: rostiger Eisenhut, ausgeblichener Wappenrock, Mantel – alles grauer, als es sein sollte
   var pu = Gliederpuppe.bauen({ groesse: 1.68, schema: 'gewand', einfach: true }); try { if (window.Kleidung) Kleidung.anziehen(pu, ['hemd', 'beinlinge', 'wappenrock', 'mantel', 'eisenhut']); } catch (e) {}
   var fahl = new THREE.Color(0x6a6050); pu.gruppe.traverse(function (q) { if (q.isMesh) { q.material = q.material.clone(); if (q.material.color) q.material.color.lerp(fahl, 0.3); q.castShadow = true; } }); szene.add(pu.gruppe);
-  var tuer = welt(0.7, 2.0), turm = welt(-2.4, 0.4), thron = welt(-0.9, 3.25), torW = welt(0, 6.6), pferdW = welt(4.1, -0.4);
+  var tuer = welt(0.7, 2.0), turm = welt(-2.4, 0.4), thron = welt(-0.9, 3.25), torW = welt(0, 6.6), pferdW = welt(4.1, 0.9);
   JUNKER = { g: g, x: pl.x, y: pl.y, pferd: pf2, hals: pf2 && pf2.getObjectByName('hals'), pferdW: pferdW, p: pu, tuer: tuer, turm: turm, thron: thron, tor: torW, ax: tuer[0], ay: tuer[1], blick: pl.blick, t: 0, rufT: 0, rufN: 0, frissBis: 0 }; }
 function junkerDa() { var h = stunde(); return h >= 6.5 && h < 21; }
 function junkerBurgBlick(J) { var bx = typeof BF !== 'undefined' && BF ? BF.cx : WELT.start[0], by = typeof BF !== 'undefined' && BF ? BF.cy : WELT.start[1]; return Math.atan2(bx - J.ax, by - J.ay); }
 function junkerWeiter(dt) {
   junkerBauen(); var J = JUNKER; if (!J || J.fehlt) return; var an = EPOCHE === 1400, d = Math.hypot(P.x - J.x, P.y - J.y); J.g.visible = an && d < 700; J.p.gruppe.visible = J.g.visible && junkerDa() && d < 160;
   if (!J.g.visible) return; dt = Math.min(0.05, dt); J.t += dt;
-  if (J.pferd && d < 160) { if (J.hals) J.hals.rotation.x -= J.halsPlus || 0; J.pferd.bewegen(P.t < J.frissBis ? 'grasen' : 'stehen', dt); var senk = Math.max(0.12, 0.55 - Math.min(6, AUFTRAG.gaul || 0) * 0.07); J.halsPlus = J.hals && P.t >= J.frissBis ? senk : 0; if (J.hals) J.hals.rotation.x += J.halsPlus; J.pferd.rotation.z = Math.sin(P.t * 0.6) * 0.025; }   // je öfter gefüttert, desto höher der Kopf
+  if (J.pferd && d < 160) { if (J.hals) J.hals.rotation.x -= J.halsPlus || 0; J.pferd.bewegen(P.t < J.frissBis ? 'grasen' : 'stehen', dt); var senk = Math.max(0.2, 0.95 - Math.min(6, AUFTRAG.gaul || 0) * 0.12); J.halsPlus = J.hals && P.t >= J.frissBis ? senk : 0; if (J.hals) J.hals.rotation.x += J.halsPlus; J.pferd.rotation.z = Math.sin(P.t * 0.6) * 0.025; }   // je öfter gefüttert, desto höher der Kopf
   if (!J.p.gruppe.visible) return;
   var dJ = Math.hypot(P.x - J.ax, P.y - J.ay), art = 'stehen', tempo, opt, blick = J.blick, zyk = J.t % 30;
   function gehe(z, v) { var dx = z[0] - J.ax, dy = z[1] - J.ay, l = Math.hypot(dx, dy); if (l < 0.15) return true; var s = Math.min(l, v * dt); J.ax += dx / l * s; J.ay += dy / l * s; blick = Math.atan2(dx, dy); art = 'gehen'; tempo = v; return false; }
@@ -14675,7 +14721,7 @@ function junkerWeiter(dt) {
   if (!lehrePoseDa(art) && art !== 'gehen' && art !== 'stehen' && art !== 'winken') art = 'stehen';
   J.blickJetzt = J.blickJetzt === undefined ? blick : J.blickJetzt + Math.atan2(Math.sin(blick - J.blickJetzt), Math.cos(blick - J.blickJetzt)) * Math.min(1, dt * 5);
   var v = V(J.ax, J.ay, umlandHoehe(J.ax, J.ay)); J.p.gruppe.position.set(v[0], v[1], v[2]); J.p.gruppe.rotation.y = Math.PI - J.blickJetzt; J.p.bewegen(art, dt, tempo, opt);
-  if (!AUFTRAG.rede && P.t > (AUFTRAG.meldungBis || 0)) { if (dJ < 2.6) melden('KLICK: MIT JUNKER KUNZ REDEN', 0.4); else if (J.pferd && Math.hypot(P.x - J.pferdW[0], P.y - J.pferdW[1]) < 3) melden(AUFTRAG.gaulTag === heute() ? 'DONNERHUF HAT HEUTE SCHON GEFRESSEN' : 'RECHTSKLICK: DEM GAUL EIN BÜSCHEL GRAS GEBEN', 0.4); } }
+  if (!AUFTRAG.rede && P.t > (AUFTRAG.meldungBis || 0)) { if (dJ < 2.6) melden('KLICK: MIT JUNKER KUNZ REDEN', 0.4); else if (J.pferd && Math.hypot(P.x - J.pferdW[0], P.y - J.pferdW[1]) < 1.9) melden(AUFTRAG.gaulTag === heute() ? 'DONNERHUF HAT HEUTE SCHON GEFRESSEN' : 'RECHTSKLICK: DEM GAUL EIN BÜSCHEL GRAS GEBEN', 0.4); } }
 function junkerReden() {
   var J = JUNKER; if (!J || J.fehlt || AUFTRAG.rede || EPOCHE !== 1400 || !J.p.gruppe.visible || Math.hypot(P.x - J.ax, P.y - J.ay) > 2.6) return false;
   var A = AUFTRAG, z, danach = null;
@@ -14683,7 +14729,9 @@ function junkerReden() {
       'Siehst du die Burg da drüben auf dem Berg? Die gehört eigentlich MIR. Mein Urgroßvater hat sie dem Grafen … überlassen. Beim Würfeln. Das zählt nicht!', 'Die Urkunde hab ich. Irgendwo. Unter dem Mist vielleicht.', 'Das hier ist nur mein Sommersitz. Die Zinnen lass ich gerade … erneuern.'];
     danach = function () { A.junker = 1; tatMerken('junker', J.x, J.y); speichern(); }; }
   else if (A.junker === 1) { z = ['Du schon wieder. Gut. Ich brauche einen Boten. Einen, der nicht wegläuft.', 'Hier: ein Herausforderungsbrief an den Grafen. Ich fordere meine Burg zurück. Oder ein Duell. Oder wenigstens ein Fass Wein.', 'Bring ihn dem Burgvogt. Der Graf liest eh nichts selber.'];
-    danach = gsAngebot('junker', function () { A.junker = 2; speichern(); melden('DER BRIEF DES JUNKERS · ZUM BURGVOGT IN DIE BURG', 5); }, 'DEN BRIEF DES JUNKERS MITNEHMEN'); }
+    z.push('(Rechtsklick, wenn du willst – sonst geh einfach weiter.)'); var ang = gsAngebot('junker', function () { A.junker = 2; speichern(); melden('DER BRIEF DES JUNKERS · ZUM BURGVOGT IN DIE BURG', 5); }, 'DEN BRIEF DES JUNKERS MITNEHMEN');   // nichts erzwingen (11.10.)
+    if (gsZustand(gsVon('junker')) === 'neu' || gsZustand(gsVon('junker')) === 'gehoert') gsSetzen('junker', 'spaeter');
+    A.angebotEssen = { l: { x: J.ax, y: J.ay }, label: ang.angebot.label, preisFn: function () { return 0; }, bis: P.t + 60, kauf: function () { ang(); A.angebotEssen = null; } }; }
   else if (A.junker === 2) z = ['Was stehst du noch hier? Der Brief! Zur Burg! LAUF!'];
   else if (A.junker === 3) { z = ['Und? Was hat er gesagt? Hat er gezittert?', '(Du sagst ihm, was der Burgvogt gesagt hat: Der Graf zittert.)', 'ER ZITTERT! Ha! Ich hab es gewusst! Hörst du, Donnerhuf? Sie zittern!', '(Im Stall hebt der Gaul kurz ein Ohr. Dann nicht mehr.)', 'Ich würde dich ja bezahlen. Aber mein Schatzmeister ist … verreist.'];
     danach = function () { A.junker = 4; A.ruf = (A.ruf || 0) + 1; speichern(); melden('DER BRIEF DES JUNKERS · ERLEDIGT – DER GRAF ZITTERT (ANGEBLICH)', 5); }; }
@@ -14694,7 +14742,7 @@ function junkerReden() {
   if ((A.gaul || 0) >= 5 && A.junker >= 1 && !A.gaulDank) { z.push('Du fütterst meinen Gaul. Denk nicht, ich seh das nicht.', '… Danke.'); A.gaulDank = 1; speichern(); }
   A.rede = { wer: { x: J.ax, y: J.ay }, name: 'JUNKER KUNZ VOM GALGENBUCKEL', zeilen: z, i: 0, danach: danach }; return true; }
 function junkerHandhaben() {                     // Rechtsklick am Stall: Donnerhuf ein Büschel Gras geben, einmal am Tag – nach fünf Tagen hebt er den Kopf
-  var J = JUNKER; if (!J || J.fehlt || !J.pferd || EPOCHE !== 1400 || Math.hypot(P.x - J.pferdW[0], P.y - J.pferdW[1]) > 3) return false;
+  var J = JUNKER; if (!J || J.fehlt || !J.pferd || EPOCHE !== 1400) return false; var dP = Math.hypot(P.x - J.pferdW[0], P.y - J.pferdW[1]); if (dP > 1.9 || (J.p.gruppe.visible && Math.hypot(P.x - J.ax, P.y - J.ay) < dP)) return false;   // steht der Junker näher, gilt der Klick ihm
   if (AUFTRAG.gaulTag === heute()) { melden('DONNERHUF HAT HEUTE SCHON GEFRESSEN · KOMM MORGEN WIEDER', 3); return true; }
   AUFTRAG.gaul = (AUFTRAG.gaul || 0) + 1; AUFTRAG.gaulTag = heute(); J.frissBis = P.t + 7; speichern();
   melden(AUFTRAG.gaul === 5 ? 'DONNERHUF HEBT DEN KOPF EIN WENIG HÖHER' : 'DU RUPFST GRAS FÜR DONNERHUF · ER FRISST, GANZ LANGSAM', 4);
@@ -15237,7 +15285,7 @@ function ortPunkt(l, ort) {                     // wohin? → { p: [x, y], weg: 
       var ms0 = (l.zettel && l.zettel.length && l.zettel[0].anteil > 0.8) ? l.zettel[0] : mo[Math.floor(hash(l.nr * 1.7 + Math.floor(P.t / 7)) * mo.length)]; return marktPlatz(l, ms0); } ort = 'treff'; }   // 09.10.: von Stand zu Stand, nach Zettel   // einkaufen am Stand; ist noch keiner offen, auf den Platz
   if (ort === 'essen' && GARKUECHE && ['tageloehner', 'bauer_korn', 'bauer_sau', 'muellerknecht', 'reisender'].indexOf(l.rolle) >= 0) { var wg = l.nr * 2.4, rg = 2.0 + (l.nr % 3) * 0.7; return [GARKUECHE.x + Math.cos(wg) * rg, GARKUECHE.y + Math.sin(wg) * rg]; }   // Garküche: wer wenig hat, isst am Kessel
   if (ort === 'essen' || ort === 'wirtshaus') return wirtshaus() || l.heimPunkt;
-  if (ort === 'treff' && l.treffOrt === 'brunnen' && BRUNNEN) { var bq = BRUNNEN.filter(function (q) { return q.r; })[l.nr % 2] || BRUNNEN[0], wb = l.nr * 2.1, rb = (bq.r1400 || 1.1) + 1.2 + (l.nr % 3) * 0.8; return [bq.x + Math.cos(wb) * rb, bq.y + Math.sin(wb) * rb]; }
+  if (ort === 'treff' && l.treffOrt === 'brunnen' && BRUNNEN) { var bq = l.brunnen || BRUNNEN.filter(function (q) { return q.r1400; })[l.nr % 2] || BRUNNEN[0], wb = l.nr * 2.1, rb = (bq.r1400 || 1.1) + 1.2 + (l.nr % 3) * 0.8; return [bq.x + Math.cos(wb) * rb, bq.y + Math.sin(wb) * rb]; }
   if (ort === 'treff') { if (!STAND) return l.heimPunkt;   // 11.10. (Andreas: „die stehen in komischen 3er-Reihen“): kleine Grüppchen an verschiedenen Ecken des Marktes statt dreier Ringe um einen Punkt
     var gi = Math.floor(hash(l.nr * 1.31 + heute() * 0.7) * 7), wg = gi * 0.898 + hash(gi * 3.7 + heute()) * 0.5, rg = 5 + (gi % 3) * 4, cx = STAND.x + Math.cos(wg) * rg, cy = STAND.y + Math.sin(wg) * rg;
     NAVMODUS = true; var okg = frei(cx, cy) && !hausInnen(cx, cy); NAVMODUS = false; if (!okg) { cx = STAND.x + Math.cos(wg) * 4; cy = STAND.y + Math.sin(wg) * 4; }
@@ -15265,7 +15313,7 @@ function ortPunkt(l, ort) {                     // wohin? → { p: [x, y], weg: 
       if (sk2) reihe(KIRCHE, KIRCHE[0] - sk2.cx, KIRCHE[1] - sk2.cy); if (STAND) reihe([STAND.x - 6, STAND.y + 4], -1, 0.6); }
     if (BETTELPLAETZE.length) return BETTELPLAETZE[l.nr % BETTELPLAETZE.length]; }
   if (ort === 'runde' && l.runde && l.runde.length) return l.runde[l.rundeI % l.runde.length];
-  if (ort === 'brunnen' && BRUNNEN) { var hp0 = l.heimPunkt || [l.x, l.y]; var bb = BRUNNEN.filter(function (q) { return q.r; }).sort(function (a, c) { return Math.hypot(a.x - hp0[0], a.y - hp0[1]) - Math.hypot(c.x - hp0[0], c.y - hp0[1]); })[0]; if (bb) { var bw = l.nr * 1.9, br = (EPOCHE === 1400 ? bb.r1400 : bb.r) + 0.7; return [bb.x + Math.cos(bw) * br, bb.y + Math.sin(bw) * br]; } }
+  if (ort === 'brunnen' && BRUNNEN) { var hp0 = l.heimPunkt || [l.x, l.y]; var bb = l.brunnen || BRUNNEN.filter(function (q) { return q.r1400; }).sort(function (a, c) { return Math.hypot(a.x - hp0[0], a.y - hp0[1]) - Math.hypot(c.x - hp0[0], c.y - hp0[1]); })[0]; if (bb) { var bw = l.nr * 1.9, br = (EPOCHE === 1400 ? bb.r1400 : bb.r) + 0.7; return [bb.x + Math.cos(bw) * br, bb.y + Math.sin(bw) * br]; } }
   if (ort === 'baecker') { var bk = BEGEHBAR.filter(function (h) { return h.zweck === 'baecker'; })[0]; return kundePunkt(bk, l) || l.heimPunkt; }
   return l.heimPunkt;
 }
@@ -16723,7 +16771,7 @@ function umbrechen(t, n) { var w = t.split(' '), z = [], a = ''; w.forEach(funct
 // grün = Arbeit (Holz hacken, Mauer flicken, Weinberg, Lehrherr), blau = Essen/Einkauf (Bäcker, Metzger, Markt, Garküche, Wirtshaus),
 // weißes Kreuz (blinkt) = was dir gerade fehlt (Angel: Messerschmied → Haselstrauch → Weberei/Garn → Schmied/Haken). Gelb bleibt die Aufgabe.
 // Wichtige Zeichen (gelb, weiß) bleiben am Kartenrand stehen, wenn sie außerhalb liegen. M: klein → groß → aus.
-var KZ = { t: -9, liste: [] };
+var KZ = { t: -9, liste: [] }, KARTE_ZOOM = 0;   // 12.10. abends (Andreas: „zu viele auf einmal … zoomen je dichter“): große Karte Mausrad/+ − = 480 → 260 → 140 m
 // 12.10. abends (Andreas: „ich finde die Leute so schwer … nur grüne Quadrate und blaue Punkte … Fass für den Böttcher, Brot für den Bäcker, 1-2-3-4 für die Quests“):
 // jedes Zeichen ist ein Bildchen im farbigen Ring – grün = Arbeit, blau = kaufen/essen; offene Aufgaben als gelbe Nummern (dieselben Nummern im Questbuch).
 // Arbeit und Aufgaben bleiben am Kartenrand stehen, wenn sie außerhalb liegen (vorher sah es aus, als wären die Jobs verschwunden).
@@ -16743,37 +16791,46 @@ function questOrte() {                              // [{titel, x, y}] in fester
   if (A.brand && EV.brand) q('Wiederaufbau an der Lände', EV.brand.pos); if (EV.speisung && A.suppeTag !== holzTagNr()) q('Armenspeisung', [EV.speisung.x, EV.speisung.y]);
   return o; }
 function questNr(titel) { var l = questOrte(); for (var i = 0; i < l.length; i++) if (l[i].titel === titel) return i + 1; return 0; }
-var KARTE_LADEN = [[/BÖTTCHER/, 'fass'], [/KRÄMER/, 'salz'], [/MESSERSCHMIED/, 'messer']];
+var KARTE_LADEN = [[/BÖTTCHER/, 'fass', 'Böttcher'], [/KRÄMER/, 'salz', 'Krämer'], [/MESSERSCHMIED/, 'messer', 'Messerschmied']];
 function kartenZeichen() {
   if (P.t - KZ.t < 1) return KZ.liste; KZ.t = P.t; var o = [], A = AUFTRAG; KZ.liste = o; if (EPOCHE !== 1400) return o;
-  var z = function (x, y, art, ik) { o.push({ x: x, y: y, art: art, ik: ik }); }, szene = function (art) { return BERUFSSZENEN.filter(function (q) { return q.art === art; })[0]; };
-  if (HOLZ.platz) z(HOLZ.platz.klotz[0], HOLZ.platz.klotz[1], 'arbeit', 'beil');
-  if (STEIN.platz) z(STEIN.platz.hp[0], STEIN.platz.hp[1], 'arbeit', 'stein');
-  if (KAI.platz) z(KAI.platz.steg[0], KAI.platz.steg[1], 'arbeit', 'sack');
-  if (WEINBERG) z(WEINBERG.x, WEINBERG.y, 'arbeit', 'traube');
-  var lm = typeof lehrMeister === 'function' ? lehrMeister() : null; if (lm && lm.werkbank && A.kleid >= 2) z(lm.werkbank.x, lm.werkbank.y, 'arbeit', 'schuh');
-  var wirte = []; BEGEHBAR.forEach(function (h) { var ik = h.zweck === 'baecker' ? 'brot' : h.zweck === 'metzger' ? 'fleisch' : null, tx = h.tuer ? h.tuer.mitte[0] : h.cx, ty = h.tuer ? h.tuer.mitte[1] : h.cy; if (ik) z(tx, ty, 'kauf', ik); else if (h.zweck === 'wirt' || h.zweck === 'gasthaus') wirte.push({ x: tx, y: ty, d: Math.hypot(tx - P.x, ty - P.y) }); });
-  wirte.sort(function (a, b) { return a.d - b.d; }).slice(0, 3).forEach(function (w) { z(w.x, w.y, 'kauf', 'wein'); });   // nur die drei nächsten Wirtshäuser – sonst ist die Karte voller Krüge
-  if (STAND) z(STAND.x, STAND.y, 'kauf', 'kohl'); if (GARKUECHE) z(GARKUECHE.x, GARKUECHE.y, 'kauf', 'sauerkraut');
-  var sm = szene('schmied'); if (sm) z(sm.x, sm.y, 'kauf', 'hufeisen'); var wb = szene('weber'); if (wb) z(wb.x, wb.y, 'kauf', 'wolle');
-  TAGESLEUTE.forEach(function (l) { if (!l.werkbank) return; for (var i = 0; i < KARTE_LADEN.length; i++) if (KARTE_LADEN[i][0].test(l.name || '')) { z(l.werkbank.x, l.werkbank.y, 'kauf', KARTE_LADEN[i][1]); return; } });
-  var kh = kammerHaus(); if (kh) z(kh.cx, kh.cy, 'heim', 'schluessel'); if (ONKEL && !kammerGemietet()) z(ONKEL.haus.cx, ONKEL.haus.cy, 'heim', 'haus');
-  questOrte().forEach(function (q, i) { o.push({ x: q.x, y: q.y, art: 'quest', nr: i + 1 }); });
-  GESCHICHTEN.forEach(function (g) { if (gsZustand(g) !== 'gehoert') return; var p = g.geber(); if (p) o.push({ x: p[0], y: p[1], art: 'geruecht' }); });
+  var z = function (x, y, art, ik, n) { o.push({ x: x, y: y, art: art, ik: ik, n: n || '' }); }, szene = function (art) { return BERUFSSZENEN.filter(function (q) { return q.art === art; })[0]; };
+  if (HOLZ.platz) z(HOLZ.platz.klotz[0], HOLZ.platz.klotz[1], 'arbeit', 'beil', 'Holz hacken');
+  if (STEIN.platz) z(STEIN.platz.hp[0], STEIN.platz.hp[1], 'arbeit', 'stein', 'Mauer flicken');
+  if (KAI.platz) z(KAI.platz.steg[0], KAI.platz.steg[1], 'arbeit', 'sack', 'Säcke tragen');
+  if (WEINBERG) z(WEINBERG.x, WEINBERG.y, 'arbeit', 'traube', 'Weinberg');
+  var lm = typeof lehrMeister === 'function' ? lehrMeister() : null; if (lm && lm.werkbank && A.kleid >= 2) z(lm.werkbank.x, lm.werkbank.y, 'arbeit', 'schuh', 'Schuster');
+  var wirte = []; BEGEHBAR.forEach(function (h) { var ik = h.zweck === 'baecker' ? 'brot' : h.zweck === 'metzger' ? 'fleisch' : null, tx = h.tuer ? h.tuer.mitte[0] : h.cx, ty = h.tuer ? h.tuer.mitte[1] : h.cy; if (ik) z(tx, ty, 'kauf', ik, ik === 'brot' ? 'Bäcker' : 'Metzger'); else if (h.zweck === 'wirt' || h.zweck === 'gasthaus') wirte.push({ x: tx, y: ty, d: Math.hypot(tx - P.x, ty - P.y) }); });
+  wirte.sort(function (a, b) { return a.d - b.d; }).slice(0, 3).forEach(function (w) { z(w.x, w.y, 'kauf', 'wein', 'Wirtshaus'); });   // nur die drei nächsten Wirtshäuser – sonst ist die Karte voller Krüge
+  if (STAND) z(STAND.x, STAND.y, 'kauf', 'kohl', 'Markt'); if (GARKUECHE) z(GARKUECHE.x, GARKUECHE.y, 'kauf', 'sauerkraut', 'Garküche');
+  var sm = szene('schmied'); if (sm) z(sm.x, sm.y, 'kauf', 'hufeisen', 'Schmied'); var wb = szene('weber'); if (wb) z(wb.x, wb.y, 'kauf', 'wolle', 'Weber');
+  var laden = {}; TAGESLEUTE.forEach(function (l) { if (!l.werkbank) return; for (var i = 0; i < KARTE_LADEN.length; i++) if (KARTE_LADEN[i][0].test(l.name || '')) { var d = Math.hypot(l.werkbank.x - P.x, l.werkbank.y - P.y), L0 = laden[i]; if (!L0 || d < L0.d) laden[i] = { d: d, x: l.werkbank.x, y: l.werkbank.y }; return; } });
+  Object.keys(laden).forEach(function (i) { z(laden[i].x, laden[i].y, 'kauf', KARTE_LADEN[i][1], KARTE_LADEN[i][2]); });   // je Handwerk nur die nächste Werkstatt (es gibt z. B. drei Böttcher)
+  var kh = kammerHaus(); if (kh) z(kh.cx, kh.cy, 'heim', 'schluessel', kammerGemietet() ? 'Deine Kammer' : 'Kammer frei'); if (ONKEL && !kammerGemietet()) z(ONKEL.haus.cx, ONKEL.haus.cy, 'heim', 'haus', 'Jörg');
+  questOrte().forEach(function (q, i) { o.push({ x: q.x, y: q.y, art: 'quest', nr: i + 1, n: q.titel === 'Lebensweg' ? 'Ziel' : q.titel }); });
+  GESCHICHTEN.forEach(function (g) { if (gsZustand(g) !== 'gehoert') return; var p = g.geber(); if (p) o.push({ x: p[0], y: p[1], art: 'geruecht', n: g.titel }); });
   return o;
 }
 function karteMalen(W, H) {
-  var gross = KARTE === 2, gr = gross ? Math.min(W - 40, (H || 240) - 40) : 124, gx = gross ? Math.round((W - gr) / 2) : W - 134, gy = gross ? 20 : 22, m = gross ? 480 : 260, sk = gr / m;
+  var gross = KARTE === 2, gr = gross ? Math.min(W - 40, (H || 240) - 40) : 124, gx = gross ? Math.round((W - gr) / 2) : W - 134, gy = gross ? 20 : 22, m = gross ? [480, 260, 140][KARTE_ZOOM] : 260, sk = gr / m;
   hud.save(); hud.fillStyle = '#000'; hud.fillRect(gx - 2, gy - 2, gr + 4, gr + 4); hud.beginPath(); hud.rect(gx, gy, gr, gr); hud.clip();
   hud.drawImage(bodenBildHud, bu(P.x - m / 2), bv(P.y + m / 2), m * B.px, m * B.px, gx, gy, gr, gr);
   hud.fillStyle = 'rgba(70,52,40,.85)';
   HAEUSER.forEach(function (h) { if (Math.abs(h.cx - P.x) > m * 0.6 || Math.abs(h.cy - P.y) > m * 0.6) return; hud.beginPath(); h.pts.forEach(function (q, i) { var x = gx + gr / 2 + (q[0] - P.x) * sk, y = gy + gr / 2 - (q[1] - P.y) * sk; i ? hud.lineTo(x, y) : hud.moveTo(x, y); }); hud.fill(); });
   var RING = { arbeit: '#3fbf3a', kauf: '#4a9ae8', heim: '#c89a5a', quest: '#ffd75e', geruecht: '#9a9a9a' }, sc = gross ? 1 : 0.75, liste = kartenZeichen().slice().sort(function (a, b) { return (a.art === 'quest') - (b.art === 'quest'); });
-  liste.forEach(function (q) { var x = gx + gr / 2 + (q.x - P.x) * sk, y = gy + gr / 2 - (q.y - P.y) * sk, rd = gross ? 8 : 6, aussen = x < gx + rd || x > gx + gr - rd || y < gy + rd || y > gy + gr - rd;
-    if (aussen && q.art !== 'quest' && q.art !== 'arbeit' && q.art !== 'geruecht') return; x = Math.max(gx + rd, Math.min(gx + gr - rd, x)); y = Math.max(gy + rd, Math.min(gy + gr - rd, y)); hud.globalAlpha = aussen && q.art === 'arbeit' ? 0.6 : 1;
+  var rd = gross ? 8 : 6, pos = [], schilder = [];
+  liste.forEach(function (q) { var x = gx + gr / 2 + (q.x - P.x) * sk, y = gy + gr / 2 - (q.y - P.y) * sk, aussen = x < gx + rd || x > gx + gr - rd || y < gy + rd || y > gy + gr - rd;
+    if (aussen && q.art !== 'quest' && q.art !== 'arbeit' && q.art !== 'geruecht') return; var cx = Math.max(gx + rd, Math.min(gx + gr - rd, x)), cy = Math.max(gy + rd, Math.min(gy + gr - rd, y)); pos.push({ q: q, ox: cx, oy: cy, x: cx, y: cy, aussen: aussen }); });
+  for (var it = 0; it < 14; it++) for (var a1 = 0; a1 < pos.length; a1++) for (var b1 = a1 + 1; b1 < pos.length; b1++) { var A1 = pos[a1], B1 = pos[b1], ddx = B1.x - A1.x, ddy = B1.y - A1.y, dd = Math.hypot(ddx, ddy) || 0.01, min = rd * 2 + 2;   // überlappende Zeichen sanft auseinanderschieben
+    if (dd < min) { var push = (min - dd) / 2, ux = ddx / dd, uy = ddy / dd; if (dd < 0.02) { ux = Math.cos(a1 + b1); uy = Math.sin(a1 + b1); } A1.x -= ux * push; A1.y -= uy * push; B1.x += ux * push; B1.y += uy * push; } }
+  pos.forEach(function (pp) { pp.x = Math.max(gx + rd, Math.min(gx + gr - rd, pp.x)); pp.y = Math.max(gy + rd, Math.min(gy + gr - rd, pp.y)); if (Math.hypot(pp.x - pp.ox, pp.y - pp.oy) > rd * 0.8 && !pp.aussen) { hud.strokeStyle = 'rgba(20,14,10,.8)'; hud.lineWidth = 1.5; hud.beginPath(); hud.moveTo(pp.ox, pp.oy); hud.lineTo(pp.x, pp.y); hud.stroke(); hud.fillStyle = '#1a1410'; hud.fillRect(pp.ox - 1.5, pp.oy - 1.5, 3, 3); } });
+  pos.forEach(function (pp) { var q = pp.q, x = pp.x, y = pp.y; hud.globalAlpha = pp.aussen && q.art === 'arbeit' ? 0.6 : 1;
     hud.fillStyle = '#1a1410'; hud.beginPath(); hud.arc(x, y, rd + 1.5, 0, 6.3); hud.fill(); hud.fillStyle = RING[q.art] || '#fff'; hud.beginPath(); hud.arc(x, y, rd + 0.5, 0, 6.3); hud.fill();
     if (q.art === 'quest' || q.art === 'geruecht') { hud.fillStyle = q.art === 'quest' ? '#3a2a10' : '#f4f4f4'; hud.font = 'bold ' + (gross ? 11 : 9) + 'px monospace'; hud.textAlign = 'center'; hud.textBaseline = 'middle'; hud.fillText(q.art === 'quest' ? String(q.nr) : '?', x, y + 0.5); hud.textBaseline = 'alphabetic'; }
-    else { hud.fillStyle = '#f4ecd8'; hud.beginPath(); hud.arc(x, y, rd - 1, 0, 6.3); hud.fill(); var ik = IKON[q.ik]; if (ik) pixelbild(ik.m, ik.p, x - 6 * sc, y - 6 * sc, sc); } hud.globalAlpha = 1; });
+    else { hud.fillStyle = '#f4ecd8'; hud.beginPath(); hud.arc(x, y, rd - 1, 0, 6.3); hud.fill(); var ik = IKON[q.ik]; if (ik) pixelbild(ik.m, ik.p, x - 6 * sc, y - 6 * sc, sc); }
+    if (gross && KARTE_ZOOM >= 1 && q.n) { var tw = q.n.length * 4.4 + 4, r0 = [x - tw / 2, y + rd + 2, tw, 9], frei_ = pos.every(function (o) { return Math.abs(o.x - x) < 0.1 && Math.abs(o.y - y) < 0.1 || Math.hypot(o.x - (x), o.y - (y + rd + 6)) > rd + 3; }) && schilder.every(function (r) { return r0[0] + r0[2] < r[0] || r[0] + r[2] < r0[0] || r0[1] + r0[3] < r[1] || r[1] + r[3] < r0[1]; });
+      if (frei_) { schilder.push(r0); mcText(q.n.toUpperCase(), x, y + rd + 9, '#fff', 7, 'center'); } } hud.globalAlpha = 1; });   // Namen nur, wo Platz ist
+  if (gross) mcText('MAUSRAD / + −: ZOOM ' + (KARTE_ZOOM + 1) + '/3', gx + gr - 4, gy + 10, '#fff', 7, 'right');
   if (gross) { var ly = gy + gr - 12; hud.fillStyle = 'rgba(20,14,10,.75)'; hud.fillRect(gx, ly - 4, gr, 16); [['#3fbf3a', 'ARBEIT'], ['#4a9ae8', 'KAUFEN'], ['#c89a5a', 'ZUHAUSE'], ['#ffd75e', 'AUFGABE'], ['#9a9a9a', 'GEHÖRT']].forEach(function (e, i) { var lx = gx + 6 + i * gr / 5; hud.fillStyle = e[0]; hud.beginPath(); hud.arc(lx, ly + 4, 4, 0, 6.3); hud.fill(); mcText(e[1], lx + 7, ly + 7, '#fff', 7); }); }
   var cx = gx + gr / 2, cy = gy + gr / 2, fx = Math.sin(P.blick), fy = -Math.cos(P.blick);
   hud.fillStyle = '#ff3b3b'; hud.beginPath(); hud.moveTo(cx + fx * 6, cy + fy * 6); hud.lineTo(cx - fy * 4 - fx * 4, cy + fx * 4 - fy * 4); hud.lineTo(cx + fy * 4 - fx * 4, cy - fx * 4 - fy * 4); hud.fill();
@@ -16821,7 +16878,7 @@ Promise.all([laden(BODEN), laden(KATLAS), laden(BATLAS), FATLAS ? laden(FATLAS) 
   weltBauen(b[0], b[1], b[2], b[3]);
   if (typeof Gliederpuppe !== 'undefined') { PUPPE = Gliederpuppe.bauen({ groesse: 1.75, schema: EPOCHE === 1400 ? 'gewand' : 'holz' }); szene.add(PUPPE.gruppe); }
   weltLaden('uhr'); stadtStarten();
-  brunnenBauen(); gaertenBauen(); grasBauen(b[0]); torwegeBauen(); torbauBauen(); kramBauen(); schornsteineBauen(); kramWegLaden(); kirchhofBauen(); berufeDraussenBauen(); holzBauen(); steinBauen(); kleiderFarben(); leuteAufstellen(); schultheissenAufstellen(); faehreBauen(); versteckeBauen(); weltLaden('ort'); einfStarten(); gangBauen(); kammerLaden();
+  brunnenBauen(); gaertenBauen(); grasBauen(b[0]); torwegeBauen(); torbauBauen(); kramBauen(); schornsteineBauen(); kramWegLaden(); kirchhofBauen(); berufeDraussenBauen(); holzBauen(); steinBauen(); kleiderFarben(); leuteAufstellen(); brunnenVerteilen(); schultheissenAufstellen(); faehreBauen(); versteckeBauen(); weltLaden('ort'); einfStarten(); gangBauen(); kammerLaden();
   groesse(); if (/[?&]himmel=echt/.test(Q)) himmelEcht(true); requestAnimationFrame(schleife);
 });
 window.__altstadt = function () { return { P: P, frei: frei, gel: gel, HAEUSER: HAEUSER }; };
