@@ -8900,6 +8900,21 @@ var SPIELER = {
    "name": "gebratener Fisch",
    "satt": 45,
    "taste": "5"
+  },
+  "belegt": {
+   "name": "belegtes Brot",
+   "satt": 60,
+   "taste": ""
+  },
+  "salzfisch": {
+   "name": "Salzfisch",
+   "satt": 40,
+   "taste": ""
+  },
+  "sauerkraut": {
+   "name": "Schüssel Sauerkraut",
+   "satt": 25,
+   "taste": ""
   }
  },
  "hunger": {
@@ -9053,7 +9068,8 @@ var SPIELER = {
    "text": "„In der Kneipe am Maintor sitzt der einäugige Jakob. Der hat Arbeit – aber keine ehrliche. Hehe.“"
   }
  ]
-};                                 // spiel/spieler.json – Inventar, Hunger, Kleidung, Tagelohn
+}
+;                                 // spiel/spieler.json – Inventar, Hunger, Kleidung, Tagelohn
 var STADTKATALOG = {
  "_lies_mich": [
   "Katalog Stadtleben (08.10.2026) – erste Fassung nach Andreas: sechs Berufe, Markt, Zehnt, Missernte.",
@@ -10355,7 +10371,7 @@ function haselAufstellen() { if (!window.Sammeln || !Sammeln.haselstrauch || !FA
     var g = Sammeln.haselstrauch(); g.scale.setScalar(2.2); var v = V(x, y, bodenHoehe(x, y)); g.position.set(v[0], v[1], v[2]); g.rotation.y = w; g.traverse(function (o) { if (o.isMesh) o.castShadow = true; }); szene.add(g); ANGEL.hasel.push({ x: x, y: y, g: g }); n++;
     var ko = { art: 'szene', x: x, y: y, r: 0.6, d: 0, nr: KRAM.length }; KRAM.push(ko); var key = Math.floor(x / 10) + ',' + Math.floor(y / 10); (KRAMRASTER[key] = KRAMRASTER[key] || []).push(ko); } }
 function haselNah() { for (var i = 0; i < ANGEL.hasel.length; i++) if (Math.hypot(P.x - ANGEL.hasel[i].x, P.y - ANGEL.hasel[i].y) < 2.2) return ANGEL.hasel[i]; return null; }
-function haselSchneiden() { if (EPOCHE !== 1400 || !haselNah()) return false;
+function haselSchneiden() { if (EPOCHE !== 1400 || !haselNah()) return false; messerUebernehmen();
   if (AUFTRAG.angel || AUFTRAG.rute) { melden('DU HAST SCHON EINE RUTE', 2); return true; }
   if (AUFTRAG.messer && !handIst('messer')) handSetzen('messer');
   if (!AUFTRAG.messer) { melden('EIN HASELSTRAUCH · OHNE MESSER KRIEGST DU KEINE RUTE AB – DER MESSERSCHMIED HAT WELCHE (5 HELLER)', 4); return true; }
@@ -10364,8 +10380,33 @@ function angelFehlt() { var f = []; if (!AUFTRAG.rute) f.push('EINE HASELRUTE');
 function angelBinden() { if (AUFTRAG.angel || !AUFTRAG.rute || !AUFTRAG.haken || !(AUFTRAG.garn > 0)) return false; AUFTRAG.garn--; AUFTRAG.rute = 0; AUFTRAG.haken = 0; AUFTRAG.angel = 1; speichern();
   HAND.wahl = 'angel'; HAND.zeigBis = P.t + 3; kling('messer_schnitt', 0.3); melden('DU BINDEST DIR EINE ANGEL: RUTE, SCHNUR, HAKEN · SIE IST JETZT IN DEINER HAND (UNTEN IN DER LEISTE) · AM WASSER: RECHTSKLICK WIRFT AUS', 8); return true; }
 // Bauen wie in Minecraft (12.10.): im Inventar steht das Rezept mit Bildern; was fehlt, ist grau und sagt, wo es das gibt. Sind alle Teile da: Klick bindet.
-var REZEPTE = [{ id: 'angel', name: 'Angel', teile: [['rute', 'Haselrute', 'Am Haselstrauch an der Lände schneiden – das Messer gibt es beim Messerschmied.', function () { return AUFTRAG.rute; }], ['garn', 'Garn', 'In der Weberei ein Rest für 1 Heller (oder selbst spinnen).', function () { return AUFTRAG.garn > 0; }], ['haken', 'Haken', 'Beim Schmied, 1 Heller.', function () { return AUFTRAG.haken; }]], zeigen: function () { return EPOCHE === 1400 && AUFTRAG.einf >= 9 && !AUFTRAG.angel; }, tun: angelBinden }];
-function rezeptBereit() { return REZEPTE.some(function (r) { return r.zeigen() && r.teile.every(function (t) { return t[3](); }); }); }
+// 12.10. (Andreas, Koch: „so könnten wir uns doch auch belegte Brote machen … Salz + Fisch … Sauerkraut einmachen“): Veredeln macht satter, spart Plätze und bringt beim Wirt Geld.
+// Nichts verdirbt (Andreas' Wahl). Zutaten aus den Läden, die es schon gibt: Fass beim Böttcher, Salz beim Krämer (liegen im Beutel), Kohl am Käsestand auf dem Markt.
+// BELEGT: Salzen und Einsäuern als Vorrat; Salzhering kam per Schiff bis an den Main. Mengen, Sättigung, Preise ERFUNDEN.
+function beutelZahl(id) { return (KINHALT.beutel || []).filter(function (a) { return a === id; }).length; }
+function beutelNimm(id) { var i = KINHALT.beutel.indexOf(id); if (i >= 0) { KINHALT.beutel.splice(i, 1); kinhaltSpeichern(); } }
+var REZEPTE = [
+  { id: 'angel', name: 'Angel', n: 1, teile: [{ ik: 'rute', name: 'Haselrute', wo: 'Am Haselstrauch an der Lände schneiden – das Messer gibt es beim Messerschmied.', hat: function () { return AUFTRAG.rute; } }, { ik: 'garn', name: 'Garn', wo: 'In der Weberei ein Rest für 1 Heller (oder selbst spinnen).', hat: function () { return AUFTRAG.garn > 0; } }, { ik: 'haken', name: 'Haken', wo: 'Beim Schmied, 1 Heller.', hat: function () { return AUFTRAG.haken; } }],
+    zeigen: function () { return EPOCHE === 1400 && AUFTRAG.einf >= 9 && !AUFTRAG.angel; }, tun: angelBinden },
+  { id: 'belegt', name: '3 belegte Brote', n: 3, teile: [{ ik: 'brot', name: 'Laib Brot', wo: 'Beim Bäcker oder am Brotstand.', hat: function () { return AUFTRAG.brot > 0; } }, { ik: 'fleisch', name: 'Pfund Fleisch', wo: 'Beim Metzger oder am Wurststand.', hat: function () { return AUFTRAG.fleisch > 0; } }, { ik: 'messer', name: 'Messer (bleibt)', wo: 'Beim Messerschmied, 5 Heller.', hat: function () { return AUFTRAG.messer; }, bleibt: true }],
+    zeigen: function () { return EPOCHE === 1400 && AUFTRAG.einf >= 9; }, tun: function () { AUFTRAG.brot--; AUFTRAG.fleisch--; AUFTRAG.belegt = (AUFTRAG.belegt || 0) + 3; return 'DU SCHNEIDEST BROT UND FLEISCH · 3 BELEGTE BROTE (SATTER ALS EINZELN, UND ZWEI PLÄTZE FREI)'; } },
+  { id: 'salzfisch', name: '2 Salzfische', n: 2, teile: [{ ik: 'fisch', name: 'Fisch', wo: 'Selbst angeln – am Ufer mit der Angel.', hat: function () { return AUFTRAG.fisch > 0; } }, { ik: 'salz', name: 'Säckchen Salz', wo: 'Beim Krämer, 2 Heller.', hat: function () { return beutelZahl('ww_salz') > 0; } }, { ik: 'messer', name: 'Messer (bleibt)', wo: 'Beim Messerschmied, 5 Heller.', hat: function () { return AUFTRAG.messer; }, bleibt: true }],
+    zeigen: function () { return EPOCHE === 1400 && AUFTRAG.angel; }, tun: function () { AUFTRAG.fisch--; beutelNimm('ww_salz'); AUFTRAG.salzfisch = (AUFTRAG.salzfisch || 0) + 2; return 'AUSGENOMMEN, GESALZEN, EINGELEGT · 2 SALZFISCHE · DER WIRT ZAHLT 3 HELLER DAS STÜCK'; } },
+  { id: 'krautfass', name: 'Sauerkrautfass', n: 1, teile: [{ ik: 'fass', name: 'Fass', wo: 'Beim Böttcher.', hat: function () { return beutelZahl('fass') > 0; } }, { ik: 'kohl', name: '4 Kohlköpfe', wo: 'Am Käsestand auf dem Markt, 1 Heller das Stück.', hat: function () { return AUFTRAG.kohl >= 4; }, zahl: function () { return Math.min(4, AUFTRAG.kohl || 0) + '/4'; } }, { ik: 'salz', name: 'Säckchen Salz', wo: 'Beim Krämer, 2 Heller.', hat: function () { return beutelZahl('ww_salz') > 0; } }],
+    zeigen: function () { return EPOCHE === 1400 && AUFTRAG.einf >= 9; }, tun: function () { beutelNimm('fass'); beutelNimm('ww_salz'); AUFTRAG.kohl -= 4; (AUFTRAG.kraut = AUFTRAG.kraut || []).push(holzTagNr() + 3); return 'KOHL GEHOBELT, GESALZEN, FEST GESTAMPFT · DAS FASS GÄRT JETZT DREI TAGE'; } }];
+function messerUebernehmen() { if (!AUFTRAG.messer && beutelZahl('ww_messer')) { beutelNimm('ww_messer'); AUFTRAG.messer = 1; speichern(); } }   // gekaufte Messer lagen als Ware im Beutel
+function rezeptAlle(r) { messerUebernehmen(); return r.teile.every(function (t) { return t.hat(); }); }
+function rezeptBereit() { return REZEPTE.some(function (r) { return r.id === 'angel' && r.zeigen() && rezeptAlle(r); }); }
+function rezeptMachen(r) { if (!rezeptAlle(r)) return; var t = r.tun(); if (typeof t === 'string') { kling('messer_schnitt', 0.3); HAND.wahl = r.id === 'krautfass' ? HAND.wahl : r.id; HAND.zeigBis = P.t + 2; speichern(); melden(t, 6); } }
+var REZ_SEITE = 0;
+// Sauerkraut gärt: nach drei Tagen ist es durch. Ein Fass anbrechen = 10 Schüsseln; ganze Fässer kauft der Wirt.
+function krautWeiter() { var K = AUFTRAG.kraut; if (!K || !K.length) return; var heute = holzTagNr(), fertig = K.filter(function (d) { return d <= heute; }).length; if (!fertig) return;
+  AUFTRAG.kraut = K.filter(function (d) { return d > heute; }); AUFTRAG.krautfass = (AUFTRAG.krautfass || 0) + fertig; speichern(); melden('DEIN SAUERKRAUT IST DURCH · ' + AUFTRAG.krautfass + ' FASS · ANBRECHEN IM INVENTAR ODER DEM WIRT VERKAUFEN (18 HELLER)', 6); }
+function krautAnbrechen() { if (!(AUFTRAG.krautfass > 0)) return; AUFTRAG.krautfass--; AUFTRAG.sauerkraut = (AUFTRAG.sauerkraut || 0) + 10; speichern(); melden('FASS ANGEBROCHEN · 10 SCHÜSSELN SAUERKRAUT', 4); }
+var WIRT_ANKAUF = { krautfass: 18, salzfisch: 3 };
+function wirtAnkauf() { var h = handWahl(), preis = WIRT_ANKAUF[h]; if (!preis || !(AUFTRAG[h] > 0)) return false; var w = null, bd = 3; LEUTE.concat(TAGESLEUTE).forEach(function (l) { if ((l.art === 'gasthaus' || l.rolle === 'wirt') && !istVersteckt(l)) { var d = Math.hypot(P.x - l.x, P.y - l.y); if (d < bd) { bd = d; w = l; } } }); if (!w) return false;
+  AUFTRAG[h]--; AUFTRAG.heller += preis; tagNotiz('heller', preis); muenzTon(); speichern(); melden('DER WIRT KAUFT ' + (h === 'krautfass' ? 'DEIN SAUERKRAUTFASS' : 'EINEN SALZFISCH') + ' · +' + preis + ' HELLER', 4); return true; }
+function kohlKaufen() { if (AUFTRAG.heller < 1) { melden('EIN KOHLKOPF KOSTET 1 HELLER', 3); return; } AUFTRAG.heller -= 1; AUFTRAG.kohl = (AUFTRAG.kohl || 0) + 1; speichern(); melden('EIN KOHLKOPF · −1 HELLER · DU HAST ' + AUFTRAG.kohl + (AUFTRAG.kohl < 4 ? ' (4 FÜR EIN FASS)' : ' · GENUG FÜR EIN SAUERKRAUTFASS'), 3); }
 function schmiedHaken() { if (EPOCHE !== 1400 || AUFTRAG.angel || AUFTRAG.haken || !AUFTRAG.rute) return false; var b = BERUFSSZENEN.filter(function (q) { return q.art === 'schmied'; })[0]; if (!b || Math.hypot(P.x - b.x, P.y - b.y) > 3) return false;
   if (AUFTRAG.heller < 1) { melden('DER GESELLE: „EIN ANGELHAKEN? EIN HELLER.“ · DU HAST KEINEN', 3); return true; }
   AUFTRAG.heller -= 1; AUFTRAG.haken = 1; speichern(); melden('DER GESELLE BIEGT DIR EINEN HAKEN AUS EINEM NAGEL · −1 HELLER · JETZT FEHLEN ' + angelFehlt(), 5); angelBinden(); return true; }
@@ -10390,7 +10431,7 @@ function angelHandhaben() { if (EPOCHE !== 1400 || !AUFTRAG.angel || P.drinnen |
       danach: function () { AUFTRAG.fischErlaubt = 1; speichern(); } }; return true; }
   angelTeile(); ANGEL.aktiv = true; ANGEL.phase = 'warten'; ANGEL.x = wp[0]; ANGEL.y = wp[1]; ANGEL.ort = [P.x, P.y]; ANGEL.biss = P.t + 4 + Math.random() * 14; P.blick = Math.atan2(wp[0] - P.x, wp[1] - P.y); ANGEL.wurfBis = P.t + 1; ANGEL.zeigeBis = 0; kling('angel_wurf', 0.35); setTimeout(function () { if (ANGEL.aktiv) klang('platsch_klein', wp[0], wp[1], 0.35, 6); }, 650);
   melden('AUSGEWORFEN · WARTEN … TAUCHT DER SCHWIMMER WEG: SOFORT RECHTSKLICK', 4); return true; }
-function angelnWeiter(dt) { if (EPOCHE !== 1400) return; if (!ANGEL.haselVersucht && FAEHRE && window.Sammeln) haselAufstellen(); if (ANGEL.zeigeBis > P.t && (P.tempo > 0.5 || AUFTRAG.rede)) ANGEL.zeigeBis = 0; if (rezeptBereit() && !AUFTRAG.rede && !INVENTAR && P.t > (AUFTRAG.meldungBis || 0) && Math.floor(P.t / 3) % 4 === 0) melden('ALLES FÜR DIE ANGEL BEISAMMEN · I DRÜCKEN → UNTER „BAUEN“ DIE ANGEL BINDEN', 0.5);   // 12.10. (Andreas: „die müssten wir craften?“) if (!AUFTRAG.angel && !ANGEL.aktiv) return;
+function angelnWeiter(dt) { if (EPOCHE !== 1400) return; if (!ANGEL.haselVersucht && FAEHRE && window.Sammeln) haselAufstellen(); if (ANGEL.zeigeBis > P.t && (P.tempo > 0.5 || AUFTRAG.rede)) ANGEL.zeigeBis = 0; messerUebernehmen(); krautWeiter(); if (rezeptBereit() && !AUFTRAG.rede && !INVENTAR && P.t > (AUFTRAG.meldungBis || 0) && Math.floor(P.t / 3) % 4 === 0) melden('ALLES FÜR DIE ANGEL BEISAMMEN · I DRÜCKEN → UNTER „BAUEN“ DIE ANGEL BINDEN', 0.5);   // 12.10. (Andreas: „die müssten wir craften?“) if (!AUFTRAG.angel && !ANGEL.aktiv) return;
   if (!ANGEL.aktiv) { if (P.t > (AUFTRAG.meldungBis || 0) && !AUFTRAG.rede && !P.drinnen && Math.floor(P.t * 4) % 4 === 0 && wurfPunkt()) melden('RECHTSKLICK: ANGEL AUSWERFEN', 0.5); return; }
   if (Math.hypot(P.x - ANGEL.ort[0], P.y - ANGEL.ort[1]) > 1.2 || AUFTRAG.rede || P.drinnen) { angelEinholen('DU HOLST DIE SCHNUR EIN'); return; }
   var tief = 0; if (ANGEL.phase === 'warten' && P.t > ANGEL.biss) { ANGEL.phase = 'biss'; ANGEL.bissBis = P.t + 1.2; if (KL.an) klang('platsch_fisch', ANGEL.x, ANGEL.y, 0.45, 8); melden('ES BEISST! JETZT RECHTSKLICK!', 1.2); }
@@ -10424,8 +10465,8 @@ function angelMontieren(art) { if (!ANGEL.codex || !ANGEL.rute) return; var zeig
 // in der rechten Hand, der Rechtsklick benutzt es: Angel am Ufer auswerfen, Messer am Haselstrauch, Wolle am Spinnrad, Brot essen.
 // Das gute Beil hackt schneller – mit leerer Hand nimmt man Konrads altes Beil vom Klotz. Türen, Aufheben usw. gehen mit allem.
 var HAND = { wahl: 'hand', zeigBis: 0, modelle: {} };
-var HAND_DING = { hand: 'LEERE HAND', messer: 'MESSER', beil: 'GUTES BEIL', angel: 'ANGEL', wolle: 'WOLLE' };
-function leisteDinge() { var A = AUFTRAG, l = ['hand']; if (EPOCHE !== 1400 || !SPIELER) return l; if (A.messer) l.push('messer'); if (A.beil) l.push('beil'); if (A.angel) l.push('angel'); if (A.wolle > 0) l.push('wolle');
+var HAND_DING = { hand: 'LEERE HAND', messer: 'MESSER', beil: 'GUTES BEIL', angel: 'ANGEL', wolle: 'WOLLE', krautfass: 'SAUERKRAUTFASS' };
+function leisteDinge() { var A = AUFTRAG, l = ['hand']; if (EPOCHE !== 1400 || !SPIELER) return l; if (A.messer) l.push('messer'); if (A.beil) l.push('beil'); if (A.angel) l.push('angel'); if (A.wolle > 0) l.push('wolle'); if (A.krautfass > 0) l.push('krautfass');
   for (var g in SPIELER.essen) if (A[g] > 0) l.push(g); return l.slice(0, 9); }
 function handWahl() { if (HAND.wahl !== 'hand' && leisteDinge().indexOf(HAND.wahl) < 0) HAND.wahl = 'hand'; return HAND.wahl; }
 function handIst(id) { return handWahl() === id; }
@@ -10534,6 +10575,7 @@ function moebelKaufen() {
   if (MOEBEL_KATALOG[a.art].tragen && AUFTRAG[MOEBEL_KATALOG[a.art].tragen]) { melden('DU TRÄGST SCHON ' + (a.art === 'pelzkragen_tragen' ? 'EINEN PELZKRAGEN' : 'EINE PELZMÜTZE'), 3); AUFTRAG.angebot = null; return true; }
   AUFTRAG.heller -= a.preis; AUFTRAG.angebot = null; if (MOEBEL_KATALOG[a.art].tragen) { AUFTRAG[MOEBEL_KATALOG[a.art].tragen] = 1; speichern(); spielerAnziehen(kleidSchema()); muenzTon && muenzTon(); melden('GEKAUFT UND ANGEZOGEN: ' + MOEBEL_KATALOG[a.art].n.toUpperCase() + ' · −' + a.preis + ' HELLER', 5); return true; }
   if (MOEBEL_KATALOG[a.art].werkzeug) { AUFTRAG[a.art] = 1; speichern(); melden('GEKAUFT: ' + MOEBEL_KATALOG[a.art].n.toUpperCase() + ' · −' + a.preis + ' HELLER · JETZT DREI STEINE AUF EINMAL', 5); return true; }
+  if (a.art === 'ww_messer') { AUFTRAG.messer = 1; speichern(); muenzTon(); melden('GEKAUFT: EIN MESSER · −' + a.preis + ' HELLER · DAMIT SCHNEIDEST DU HASELRUTEN, BROT UND FISCH', 5); return true; }   // 12.10.: vorher landete es nur als Ware im Beutel
   KINHALT.beutel.push(a.art); kinhaltSpeichern(); speichern();
   melden('GEKAUFT: ' + MOEBEL_KATALOG[a.art].n.toUpperCase() + ' · −' + a.preis + ' HELLER · ' + (kammerGemietet() ? 'STELL ES IN DEINE KAMMER' : 'ERST BRAUCHST DU EINE KAMMER'), 5); return true;
 }
@@ -10545,7 +10587,7 @@ function moebelBauen(st) {                       // ein hingestelltes Stück wir
   phongMachen(o); var e = { st: st, o: o, kreis: kreis }; if (m.licht) e.lichtPunkt = o.getObjectByName('licht'); KAMMER_OBJ.push(e); kammerBettPruefen(); return e;
 }
 function kammerBettPruefen() { var k = kammerWelt(); if (!k) return; var b = KAMMER_OBJ.filter(function (e) { return e.st.a === 'bett'; })[0]; k.bett = b ? b.o : k.strohsack; if (k.strohsack) k.strohsack.visible = !b; }
-function kammerLaden() { KINHALT = kinhaltLaden(); if (!kammerWelt() || EPOCHE !== 1400) return; KINHALT.stuecke.forEach(moebelBauen); }
+function kammerLaden() { KINHALT = kinhaltLaden(); try { messerUebernehmen(); } catch (e) {} if (!kammerWelt() || EPOCHE !== 1400) return; KINHALT.stuecke.forEach(moebelBauen); }
 function platzGueltig(x, y, r) {
   var k = kammerWelt(); if (!k || !drin(x, y, k.pts)) return false;
   for (var i = 0; i < k.pts.length; i++) { var a = k.pts[i], b = k.pts[(i + 1) % k.pts.length]; if (abstandStrecke(x, y, a[0], a[1], b[0], b[1]) < r * 0.85 + 0.12) return false; }
@@ -11635,10 +11677,11 @@ function wetterRechnen(ht) {
   WETTER.art = schauer > 0.4 ? 'REGEN' : nebel > 0.35 ? 'NEBEL' : WETTER.wolken > 0.55 ? 'BEDECKT' : WETTER.wolken > 0.3 ? 'WOLKIG' : 'KLAR';
 }
 var C_GRAU = new THREE.Color(0x8e959c);
+function unterDach() { if ((GANG && GANG.drin) || imEngenTurm()) return true; if (!P.drinnen) return false; var dh = dachHoehe(P.x, P.y); return !(dh !== null && P.z - AUGE > dh - 0.6); }   // wer oben auf dem Dach steht, wird nass
 function regenWeiter(kam, dt) {                     // Regenstriche in einem Kasten um die Kamera
   if (!REGEN) { var n = 1400, pos = new Float32Array(n * 6); for (var i = 0; i < n; i++) { var x = (hash(i * 1.1) - 0.5) * 36, y = hash(i * 2.3) * 22, z = (hash(i * 3.7) - 0.5) * 36; pos.set([x, y, z, x + 0.05, y - 0.55, z], i * 6); }
     var g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); REGEN = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xaab4c0, transparent: true, opacity: 0.5, depthWrite: false })); REGEN.frustumCulled = false; REGEN.fall = 0; szene.add(REGEN); }
-  REGEN.visible = WETTER.regen > 0.05; if (!REGEN.visible) return;
+  REGEN.visible = WETTER.regen > 0.05 && !unterDach(); if (!REGEN.visible) return;   // 12.10. (Andreas: „die Dächer lassen den Regen noch durch“)
   REGEN.fall = (REGEN.fall + dt * 9) % 22; REGEN.position.set(kam.x, kam.y - 6 - REGEN.fall + 11, kam.z); REGEN.material.opacity = 0.15 + 0.45 * WETTER.regen;
 }
 function tageslicht(kam) {
@@ -15492,7 +15535,7 @@ function vogel() { var c = TON.ctx, t = c.currentTime + Math.random() * 0.2, n =
 function tonWeiter(dt) {
   if (!TON.ctx || !TON.an) return; var c = TON.ctx, t = c.currentTime, d = new Date(himmelsZeit()), h = d.getHours(), nacht = TAG.nacht > 0.5;
   function gl(g, z) { g.gain.setTargetAtTime(z, t, 0.4); }
-  gl(TON.regen, 0.22 * WETTER.regen); gl(TON.wind, 0.05 + 0.1 * WETTER.wolken + 0.25 * Math.max(0, ((P.z - AUGE) - bodenHoehe(P.x, P.y)) / 20));
+  gl(TON.regen, 0.22 * WETTER.regen * (unterDach() ? 0.35 : 1));   // drinnen trommelt es nur gedämpft aufs Dach gl(TON.wind, 0.05 + 0.1 * WETTER.wolken + 0.25 * Math.max(0, ((P.z - AUGE) - bodenHoehe(P.x, P.y)) / 20));
   var wd = 1e9; if (WASSERSTELLE) wd = Math.hypot(P.x - WASSERSTELLE[0], P.y - WASSERSTELLE[1]); if (FAEHRE && aufFaehre(P.x, P.y, 1)) wd = 0; gl(TON.wasser, 0.12 / (1 + wd / 25));
   var kd = 1e9, voll = 0; BEGEHBAR.forEach(function (k) { if ((k.zweck === 'wirt' || k.zweck === 'gasthaus') && k.plaetze) { var n = Object.keys(k.plaetze).length; if (n > 2) { var dd = Math.hypot(P.x - k.cx, P.y - k.cy); if (dd < kd) { kd = dd; voll = n; } } } });
   gl(TON.stimmen, Math.min(0.09, voll * 0.012) / (1 + kd / 8) * (0.7 + 0.3 * Math.sin(t * 1.3)));
@@ -15583,6 +15626,7 @@ function essenAngebot(l) {
   if (l.art === 'gasthaus') return { satz: 'Mittagstisch – Brot und ein Krug Bier – ' + (Math.ceil(STADT.preis('brot') - 1e-9) + Math.ceil(STADT.preis('bier') - 1e-9)) + ' Heller. Rechtsklick, wenn du hungrig bist.', label: 'MITTAGSTISCH', preis: function () { return Math.ceil(STADT.preis('brot') - 1e-9) + Math.ceil(STADT.preis('bier') - 1e-9); }, kauf: mittagKaufen };
   if (l.art === 'garkoch' && GARKUECHE && GARKUECHE.brennt && AUFTRAG.heller >= 1) return { satz: 'Einen Heller die Schüssel. Rechtsklick, dann setz dich auf die Bank – und bring mir die Schüssel wieder!', label: 'ERBSENSUPPE', preis: function () { return 1; }, kauf: suppeKaufen };
   if (l.art === 'baecker' || l.art === 'metzger' || l.art === 'winzer') return { gut: l.art === 'baecker' ? 'brot' : l.art === 'winzer' ? 'wein' : 'fleisch', bei: l.art };
+  if (l.rolle === 'haendler' && l.stand && l.ort === 'stand' && l.ankunft && l.stand.anteil >= 1 && !l.stand.abbau && l.stand.art === 'kaese') return { satz: 'Käse und Kohl vom Hof. Ein Kohlkopf, ein Heller – für Kraut im Fass brauchst du vier. Rechtsklick, auch mehrmals.', label: 'KOHLKOPF', preis: function () { return 1; }, kauf: kohlKaufen };   // 12.10.: Kohl fürs Sauerkraut
   if (l.rolle === 'haendler' && l.stand && l.ort === 'stand' && l.ankunft && l.stand.anteil >= 1 && !l.stand.abbau && (l.stand.art === 'baecker' || l.stand.art === 'metzger')) return { gut: l.stand.art === 'baecker' ? 'brot' : 'fleisch', bei: l.stand.art, stand: l.stand };
   return null; }
 function essenNachReden() {                      // hängt an jedes Gespräch mit einem Verkäufer den Preis an
@@ -15608,6 +15652,7 @@ function handhaben() {
   if (AUFTRAG.rede) return false;
   if (ladenHandhaben()) return true;
   if (laendeHandhaben()) return true;
+  if (wirtAnkauf()) return true;
   if (essenKaufen()) return true;
   var sc = schatzNah(); if (sc) { sc.weg = true; sc.m.visible = false; inBeutel(sc.d); return true; }
   var vs = versteckNah(); if (vs && (JAGD || AUFTRAG.schmuggel === 1 || !naechsteePerson())) { versteckRein(vs); return true; }
@@ -15865,7 +15910,7 @@ function questListe() {
   var A = AUFTRAG, j = [], weg = [], neben = [], hs = ''; try { hs = localStorage.getItem(SPEICHER + '_hund') || ''; } catch (e) {}
   if (A.einf && A.einf < 9) j.push(['Finde Jörg, den Steinmetzmeister – der Fuhrmann sagt, er nimmt dich auf. Er wohnt am Markt, frag die Leute nach ihm.', 'Leg dich auf den Strohsack unter Jörgs Treppe (E).', 'Jörg will etwas von dir – rede mit ihm (E).'][Math.min(2, A.einf - 1)]);
   var dq = new Date(himmelsZeit()), hq = dq.getHours() + dq.getMinutes() / 60; if (dq.getDay() === 0 && hq >= 6 && hq < 13) j.push(hq < 10.5 ? 'Heute ist Sonntag: Messe in der Stiftskirche bis halb elf – die ganze Stadt ist dort.' : 'Heute ist Sonntag: Spielleute und Reigen auf dem Marktplatz bis ein Uhr.');   // 12.10.
-  var nz = naechstesZiel(); if (nz) j.push(nz[0].charAt(0).toUpperCase() + nz[0].slice(1) + (nz[1] ? ' – ' + nz[1] + ' Heller (du hast ' + A.heller + ')' : ''));
+  var nz = naechstesZiel(), qnz = questNr('Lebensweg'); if (nz) j.push((qnz ? qnz + ' · ' : '') + nz[0].charAt(0).toUpperCase() + nz[0].slice(1) + (nz[1] ? ' – ' + nz[1] + ' Heller (du hast ' + A.heller + ')' : ''));
   weg.push([A.einf >= 9, 'Bei Jörg, dem Steinmetz, untergekommen']); weg.push([!!(A.holzErklaert || A.scheite || A.beil), 'Erstes Geld: Holz hacken für Konrad']); weg.push([kammerGemietet(), 'Eine eigene Kammer']);
   weg.push([A.kleid >= 2, 'Ein Wollrock – jetzt nimmt dich ein Meister']); weg.push([A.lehre >= 1, 'Lehrling bei Meister Matthes']); weg.push([A.lehre >= 2, 'Geselle (Gesellenstück)']);
   weg.push([!!A.buergerrecht, 'Bürger der Stadt Wertheim']); weg.push([A.lehre >= 3, 'Meister mit eigenem Laden']); weg.push([!!A.verheiratet, A.verheiratet ? 'Verheiratet mit ' + (A.frau || '').charAt(0) + (A.frau || '').slice(1).toLowerCase() + (A.nachname ? ' · du heißt jetzt ' + A.nachname : '') : 'Eine Frau, ein Name, eine Familie']);
@@ -15893,7 +15938,7 @@ function questbuchMalen(W, H) { var Q = questListe(), x0 = 40, y0 = 14, bw = 400
   y += 4; t('DEIN WEG', x0 + 10, y, '#7a1c14', true); y += 10; Q.weg.forEach(function (w) { t(w[0] ? '✓' : '·', x0 + 12, y, w[0] ? '#2a6a2a' : '#8a7a6a', true); umbrechen(w[1], 28).slice(0, 2).forEach(function (zz, i) { t(zz, x0 + 22, y + i * 9, w[0] ? '#3a2a1a' : '#8a7a6a'); y += i ? 9 : 0; }); y += 10; });
   var y2 = y0 + 30, x2 = x0 + bw / 2 + 10; t('GESCHICHTEN', x2, y2, '#7a1c14', true); y2 += 11;
   if (!Q.neben.length) { umbrechen('Noch keine. Rede mit den Leuten – in den Kneipen hört man am meisten.', 28).forEach(function (zz) { t(zz, x2 + 2, y2, '#8a7a6a'); y2 += 9; }); }
-  Q.neben.forEach(function (n) { if (y2 > y0 + bh - 20) return; t(n[0], x2 + 2, y2, '#3a2a1a', true); y2 += 9; umbrechen(n[1], 30).slice(0, 3).forEach(function (zz) { t(zz, x2 + 6, y2, n[1].charAt(0) === '✓' ? '#2a6a2a' : '#5a4a3a'); y2 += 9; }); y2 += 4; }); }
+  Q.neben.forEach(function (n) { if (y2 > y0 + bh - 20) return; var qn = questNr(n[0]); t((qn ? qn + ' · ' : '') + n[0], x2 + 2, y2, qn ? '#8a5a00' : '#3a2a1a', true); y2 += 9; umbrechen(n[1], 30).slice(0, 3).forEach(function (zz) { t(zz, x2 + 6, y2, n[1].charAt(0) === '✓' ? '#2a6a2a' : '#5a4a3a'); y2 += 9; }); y2 += 4; }); }
 function kleidSchema() { if (!SPIELER) return 'gewand'; var k = SPIELER.kleidung[AUFTRAG.kleid] || SPIELER.kleidung[0], n = 'spieler_' + k.id;
   if (!Gliederpuppe.SCHEMA[n]) { var sch = Object.assign({}, Gliederpuppe.SCHEMA.gewand); for (var t in k.farbe) sch[t] = parseInt(k.farbe[t].slice(1), 16); Gliederpuppe.SCHEMA[n] = sch; } return n; }
 function essen(g) { var e = SPIELER.essen[g]; if (!AUFTRAG[g]) { melden('DU HAST KEIN ' + e.name.toUpperCase()); return; } AUFTRAG[g]--; AUFTRAG.hunger = Math.max(0, AUFTRAG.hunger - e.satt); speichern(); melden(e.name.toUpperCase() + ' GEGESSEN' + (AUFTRAG.hunger < 20 ? ' · SATT' : '')); }
@@ -15918,6 +15963,18 @@ var IKON = {
   angel: { p: { b: '#8a6a3a', s: '#e8e0d0', r: '#c8302a' }, m: ['..........b.', '.........b.s', '........b..s', '.......b...s', '......b....s', '.....b.....s', '....b......s', '...b.......r', '..b.........', '.b..........', 'b...........', '............'] },
   rute: { p: { b: '#8a6a3a', g: '#5a8a3a' }, m: ['..........bg', '.........b..', '........b...', '.......b....', '......b.....', '.....b......', '....b.......', '...b........', '..b.........', '.b..........', 'b...........', '............'] },
   haken: { p: { g: '#8a9096', w: '#d0d6da' }, m: ['............', '.....gw.....', '.....gg.....', '.....gg.....', '.....gg.....', '.....gg.....', '.....gg.....', '..g..gg.....', '..gg.gg.....', '...gggg.....', '....gg......', '............'] },
+  belegt: { p: { b: '#c08a4a', c: '#e8c890', r: '#b84a3a', k: '#7a4a24' }, m: ['............', '............', '..bbbbbbbb..', '.bccccccccb.', '.rrrrrrrrrr.', '.rrbrrrrbrr.', '.bccccccccb.', '.kbbbbbbbbk.', '..kkkkkkkk..', '............', '............', '............'] },
+  salzfisch: { p: { g: '#9aa4a8', w: '#e8ecee', d: '#5a6468' }, m: ['............', '............', '.........d..', '..wggggggdd.', '.wgwgwgwgggd', 'wggggggggggd', '.gwgwgwgggd.', '..gggggggdd.', '.........d..', '............', '............', '............'] },
+  sauerkraut: { p: { t: '#8a5a34', d: '#5a3a1e', k: '#e8e0a0', y: '#c8c070' }, m: ['............', '............', '...kyk.ky...', '..kykykyky..', '.tttttttttt.', '.tdttttttdt.', '..tttttttt..', '...dttttd...', '....dddd....', '............', '............', '............'] },
+  kohl: { p: { g: '#5a9a3a', h: '#8ac860', d: '#3a6a28' }, m: ['............', '....gggg....', '..gghhhhgg..', '.ghhghhghhg.', '.ghghhhhghg.', 'gghhhghhhhgg', 'ghhghhhghhdg', '.ghhhhghhhg.', '.dghhhhhhgd.', '..ddggggdd..', '....dddd....', '............'] },
+  fass: { p: { b: '#8a5a30', h: '#5a3a1e', r: '#4a4a50' }, m: ['............', '...hhhhhh...', '..bbbbbbbb..', '.rrrrrrrrrr.', '.bhbbhbbhbb.', 'bbhbbhbbhbbb', 'bbhbbhbbhbbb', '.bhbbhbbhbb.', '.rrrrrrrrrr.', '..bbbbbbbb..', '...hhhhhh...', '............'] },
+  krautfass: { p: { b: '#8a5a30', h: '#5a3a1e', r: '#4a4a50', k: '#e8e0a0' }, m: ['...kkkkkk...', '..kkkkkkkk..', '..bbbbbbbb..', '.rrrrrrrrrr.', '.bhbbhbbhbb.', 'bbhbbhbbhbbb', 'bbhbbhbbhbbb', '.bhbbhbbhbb.', '.rrrrrrrrrr.', '..bbbbbbbb..', '...hhhhhh...', '............'] },
+  salz: { p: { s: '#c8b890', d: '#8a7a58', w: '#f8f8f0' }, m: ['............', '.....dd.....', '....dssd....', '....sdds....', '...ssssss...', '..ssssssss..', '..sswwwwss..', '..swwwwwws..', '..ssssssss..', '...dddddd...', '............', '............'] },
+  sack: { p: { s: '#c8b088', d: '#8a7050', k: '#5a4630' }, m: ['............', '....kkkk....', '.....dd.....', '....ssss....', '...ssssss...', '..ssssssss..', '..sssdssss..', '..ssssssds..', '..ssssssss..', '...dddddd...', '............', '............'] },
+  stein: { p: { g: '#a0846a', h: '#c8aa8a', d: '#6a5444' }, m: ['............', '............', '.....ggg....', '...gghhgg...', '..ghhgggggd.', '.ghgggggggd.', '.ggggggggdd.', '.dgggggggdd.', '..ddddddd...', '............', '............', '............'] },
+  traube: { p: { v: '#6a2a7a', h: '#9a5aaa', g: '#4a8a2a', s: '#5a3a1a' }, m: ['.....s......', '.....sgg....', '...vvvvgg...', '..vhvvhvv...', '..vvvvvvv...', '...vhvvhv...', '...vvvvvv...', '....vhvv....', '....vvvv....', '.....vv.....', '............', '............'] },
+  schuh: { p: { b: '#6a4428', h: '#9a6a40', k: '#3a2414' }, m: ['............', '............', '............', '...bbb......', '...bhb......', '...bbbb.....', '..bbhbbbb...', '.bbbbbbbbbb.', '.bhhhhhhhhb.', '.kkkkkkkkkk.', '............', '............'] },
+  haus: { p: { r: '#b84a2a', w: '#e8dcc0', b: '#6a4428', k: '#3a2414' }, m: ['............', '.....rr.....', '....rrrr....', '...rrrrrr...', '..rrrrrrrr..', '.rrrrrrrrrr.', '..wwwwwwww..', '..wkwwwwkw..', '..wwwbbwww..', '..wwwbbwww..', '..wwwbbwww..', '............'] },
   hand: { p: { s: '#e3b48e', d: '#b8865e' }, m: ['............', '....s.s.....', '...ssssss...', '..sssssss...', '..ssssssss..', '..sssssssd..', '..ssssssd...', '...sssssd...', '...sssss....', '....sss.....', '....sss.....', '............'] },
   messer: { p: { s: '#8a9096', w: '#e0e6ea', k: '#3a3a3a', b: '#7a4a24' }, m: ['............', '..........s.', '.........ss.', '........sws.', '.......sws..', '......sws...', '.....sws....', '....kss.....', '...bbk......', '..bbb.......', '.bbb........', '.bb.........'] },
   schluessel: { p: { y: '#d8a830', d: '#8a6a1a' }, m: ['............', '...yyyy.....', '..yd..dy....', '..y....y....', '..yd..dy....', '...yyyy.....', '....yd......', '....yd......', '....yyyy....', '....yd......', '....yyy.....', '............'] },
@@ -15945,6 +16002,9 @@ function gegenstaende() {                        // was in der Tasche ist: Essen
   if (AUFTRAG.stufe === 3) l.push({ ikon: 'brief', name: 'Brief des Marktmanns', text: 'Er will sich freikaufen. Für den Pfarrer.' });
   if (AUFTRAG.scheite) l.push({ ikon: 'scheit', n: AUFTRAG.scheite, name: 'Scheite', text: 'Am Hackklotz der Bäckerei gespalten. Sechs sind ein Bündel – Konrad zahlt 2 Heller.' });   // 11.10.: Vorräte
   if (AUFTRAG.wolle) l.push({ ikon: 'wolle', n: AUFTRAG.wolle, name: 'Wolle', text: 'Vom Weber. In die Hand nehmen, dann wird am eigenen Spinnrad Garn daraus. Klick: in die Hand.', tun: function () { handSetzen('wolle'); } });
+  if (AUFTRAG.kohl) l.push({ ikon: 'kohl', n: AUFTRAG.kohl, name: 'Kohlkopf', text: 'Vom Markt. Vier davon, ein Fass und Salz ergeben Sauerkraut (Bauen).' });
+  if (AUFTRAG.kraut && AUFTRAG.kraut.length) l.push({ ikon: 'krautfass', n: AUFTRAG.kraut.length, name: 'Sauerkraut gärt', text: 'Noch ' + Math.max(1, Math.min.apply(null, AUFTRAG.kraut) - holzTagNr()) + ' Tag(e). Dann ist es durch.' });
+  if (AUFTRAG.krautfass) l.push({ ikon: 'krautfass', n: AUFTRAG.krautfass, name: 'Sauerkrautfass', text: 'Durchgegoren. Klick: anbrechen (10 Schüsseln). Oder in die Hand und beim Wirt Rechtsklick: 18 Heller.', tun: krautAnbrechen });
   if (AUFTRAG.haken && !AUFTRAG.angel) l.push({ ikon: 'haken', name: 'Haken', text: 'Vom Schmied, aus einem Nagel gebogen. Für die Angel (Inventar → Bauen).' });
   if (AUFTRAG.garn) l.push({ ikon: 'garn', n: AUFTRAG.garn, name: 'Garn', text: 'Selbst gesponnen. Der Weber zahlt 3 Heller die Spule.' });
   if (AUFTRAG.beil) l.push({ ikon: 'beil', name: 'Gutes Beil', text: 'Vom Schmied. In der Hand: drei Schläge je Scheit statt sechs. Klick: in die Hand.', tun: function () { handSetzen('beil'); } });
@@ -15986,13 +16046,15 @@ function inventarMalen(W, H) {
   }
   if (!dinge.length) dunkel('Leer. In den Gassen liegt manches …', x0 + 186, y0 + 168);
   var rz = REZEPTE.filter(function (r) { return r.zeigen(); });
-  if (rz.length) { var r0 = rz[0], ry = y0 + 166, alle = r0.teile.every(function (t) { return t[3](); }); dunkel('BAUEN', x0 + 186, ry - 3);
-    r0.teile.forEach(function (t, i) { var x = x0 + 186 + i * 38, hat = !!t[3](), ub = IMAUS.x >= x && IMAUS.x < x + 27 && IMAUS.y >= ry && IMAUS.y < ry + 27; kachel(x, ry, 27, ub); var ik = IKON[t[0]] || IKON.brief; pixelbild(ik.m, ik.p, x + 2, ry + 2, 2, !hat);
-      if (!hat) { hud.strokeStyle = '#c03030'; hud.lineWidth = 2; hud.strokeRect(x + 1, ry + 1, 25, 25); hud.lineWidth = 1; } mcText(i < 2 ? '+' : '=', x + 32, ry + 17, '#3f3f3f', 10, 'center');
-      IREG.push({ x: x, y: ry, w: 27, h: 27, name: t[1] + (hat ? ' ✓' : ' – fehlt noch'), text: hat ? 'Hast du.' : t[2] }); });
-    var xe = x0 + 186 + 3 * 38, ue = IMAUS.x >= xe && IMAUS.x < xe + 27 && IMAUS.y >= ry && IMAUS.y < ry + 27; kachel(xe, ry, 27, ue && alle); if (alle) { hud.strokeStyle = Math.floor(P.t * 3) % 2 ? '#3fd03f' : '#a0ffa0'; hud.lineWidth = 2; hud.strokeRect(xe + 1, ry + 1, 25, 25); hud.lineWidth = 1; }
-    pixelbild(IKON[r0.id].m, IKON[r0.id].p, xe + 2, ry + 2, 2, !alle); dunkel(alle ? 'KLICK: BINDEN!' : 'ES FEHLT NOCH WAS', xe + 32, ry + 17);
-    IREG.push({ x: xe, y: ry, w: 27, h: 27, name: r0.name, text: alle ? 'Alles da. Klick: binden – dann liegt sie in deiner Hand.' : 'Haselrute + Garn + Haken. Fahr über die roten Felder: dort steht, wo es das gibt.', tun: alle ? function () { r0.tun(); } : null }); }
+  if (rz.length) { REZ_SEITE = (REZ_SEITE + rz.length) % rz.length; var r0 = rz[REZ_SEITE], ry = y0 + 166, alle = rezeptAlle(r0); dunkel('BAUEN' + (rz.length > 1 ? '  ' + (REZ_SEITE + 1) + '/' + rz.length + ' · ' + r0.name.toUpperCase() : ''), x0 + 186, ry - 3);
+    if (rz.length > 1) [['◀', -1, x0 + 352], ['▶', 1, x0 + 372]].forEach(function (b) { var ub = IMAUS.x >= b[2] && IMAUS.x < b[2] + 16 && IMAUS.y >= ry - 13 && IMAUS.y < ry - 1; kachel(b[2], ry - 13, 16, ub); mcText(b[0], b[2] + 8, ry - 3, '#3f3f3f', 9, 'center'); IREG.push({ x: b[2], y: ry - 13, w: 16, h: 12, name: b[1] < 0 ? 'Voriges Rezept' : 'Nächstes Rezept', text: 'Klick: blättern.', tun: function () { REZ_SEITE += b[1]; } }); });
+    r0.teile.forEach(function (t, i) { var x = x0 + 186 + i * 38, hat = !!t.hat(), ub = IMAUS.x >= x && IMAUS.x < x + 27 && IMAUS.y >= ry && IMAUS.y < ry + 27; kachel(x, ry, 27, ub); var ik = IKON[t.ik] || IKON.brief; pixelbild(ik.m, ik.p, x + 2, ry + 2, 2, !hat);
+      if (!hat) { hud.strokeStyle = '#c03030'; hud.lineWidth = 2; hud.strokeRect(x + 1, ry + 1, 25, 25); hud.lineWidth = 1; } if (t.zahl) mcText(t.zahl(), x + 25, ry + 25, '#fff', 7, 'right'); else if (t.bleibt) mcText('↺', x + 25, ry + 25, '#3f3f3f', 8, 'right');
+      mcText(i < r0.teile.length - 1 ? '+' : '=', x + 32, ry + 17, '#3f3f3f', 10, 'center');
+      IREG.push({ x: x, y: ry, w: 27, h: 27, name: t.name + (hat ? ' ✓' : ' – fehlt noch'), text: hat ? (t.bleibt ? 'Hast du – es bleibt dir.' : 'Hast du.') : t.wo }); });
+    var xe = x0 + 186 + r0.teile.length * 38, ue = IMAUS.x >= xe && IMAUS.x < xe + 27 && IMAUS.y >= ry && IMAUS.y < ry + 27; kachel(xe, ry, 27, ue && alle); if (alle) { hud.strokeStyle = Math.floor(P.t * 3) % 2 ? '#3fd03f' : '#a0ffa0'; hud.lineWidth = 2; hud.strokeRect(xe + 1, ry + 1, 25, 25); hud.lineWidth = 1; }
+    pixelbild(IKON[r0.id].m, IKON[r0.id].p, xe + 2, ry + 2, 2, !alle); if (r0.n > 1) mcText(String(r0.n), xe + 25, ry + 25, '#fff', 8, 'right'); dunkel(alle ? 'KLICK: MACHEN!' : 'ES FEHLT NOCH WAS', xe + 32, ry + 17);
+    IREG.push({ x: xe, y: ry, w: 27, h: 27, name: r0.name, text: alle ? 'Alles da. Klick: machen.' : 'Fahr über die roten Felder: dort steht, wo es das gibt.', tun: alle ? function () { rezeptMachen(r0); } : null }); }
   dunkel('MAUS: ZEIGEN · KLICK: BENUTZEN / IN DIE HAND / ANZIEHEN / BAUEN · I: ZU', x0 + 10, y0 + bh - 9);
   // Tooltip wie in Minecraft
   var tip = null; IREG.forEach(function (r) { if (IMAUS.x >= r.x && IMAUS.x < r.x + r.w && IMAUS.y >= r.y && IMAUS.y < r.y + r.h) tip = r; });
@@ -16004,7 +16066,7 @@ function keulen(x, y, n) { var voll = (100 - AUFTRAG.hunger) / 10; for (var i = 
 function schnellleiste(W, H) {                   // 12.10.: wie Minecraft – bis zu 9 Plätze, Mausrad/1–9 wählt, die Wahl liegt in der Hand; daneben die Börse, darüber Hunger
   var l = leisteDinge(), wahl = handWahl(), gr = 22, x0 = Math.round(W / 2 - (l.length + 1) * (gr + 2) / 2), y0 = H - 36;
   l.forEach(function (g, i) { var x = x0 + i * (gr + 2), an = g === wahl; hud.fillStyle = an ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.5)'; hud.fillRect(x, y0, gr, gr); hud.strokeStyle = an ? '#fff' : 'rgba(255,255,255,.35)'; hud.lineWidth = an ? 2 : 1; hud.strokeRect(x + (an ? 0 : 0.5), y0 + (an ? 0 : 0.5), gr - (an ? 0 : 1), gr - (an ? 0 : 1)); hud.lineWidth = 1;
-    if (IKON[g]) pixelbild(IKON[g].m, IKON[g].p, x + 5, y0 + 5, 1); mcText(String(i + 1), x + 2, y0 + 8, 'rgba(255,255,255,.6)', 7); var n = SPIELER.essen[g] ? AUFTRAG[g] : g === 'wolle' ? AUFTRAG.wolle : 0; if (n > 1 || SPIELER.essen[g]) mcText(String(n), x + gr - 2, y0 + gr - 2, '#fff', 8, 'right'); });
+    if (IKON[g]) pixelbild(IKON[g].m, IKON[g].p, x + 5, y0 + 5, 1); mcText(String(i + 1), x + 2, y0 + 8, 'rgba(255,255,255,.6)', 7); var n = SPIELER.essen[g] ? AUFTRAG[g] : g === 'wolle' || g === 'krautfass' ? AUFTRAG[g] : 0; if (n > 1 || SPIELER.essen[g]) mcText(String(n), x + gr - 2, y0 + gr - 2, '#fff', 8, 'right'); });
   var xh = x0 + l.length * (gr + 2); hud.fillStyle = 'rgba(0,0,0,.5)'; hud.fillRect(xh, y0, gr + 18, gr); pixelbild(IKON.heller.m, IKON.heller.p, xh + 3, y0 + 5, 1); mcText(String(AUFTRAG.heller), xh + gr + 14, y0 + 15, '#fff', 8, 'right');
   keulen(x0, y0 - 14, 10);
   if (HAND.zeigBis > P.t) { hud.globalAlpha = Math.min(1, (HAND.zeigBis - P.t) * 2); mcText(handName(wahl), W / 2, y0 - 20, '#fff', 9, 'center'); hud.globalAlpha = 1; }
@@ -16055,37 +16117,55 @@ function umbrechen(t, n) { var w = t.split(' '), z = [], a = ''; w.forEach(funct
 // weißes Kreuz (blinkt) = was dir gerade fehlt (Angel: Messerschmied → Haselstrauch → Weberei/Garn → Schmied/Haken). Gelb bleibt die Aufgabe.
 // Wichtige Zeichen (gelb, weiß) bleiben am Kartenrand stehen, wenn sie außerhalb liegen. M: klein → groß → aus.
 var KZ = { t: -9, liste: [] };
+// 12.10. abends (Andreas: „ich finde die Leute so schwer … nur grüne Quadrate und blaue Punkte … Fass für den Böttcher, Brot für den Bäcker, 1-2-3-4 für die Quests“):
+// jedes Zeichen ist ein Bildchen im farbigen Ring – grün = Arbeit, blau = kaufen/essen; offene Aufgaben als gelbe Nummern (dieselben Nummern im Questbuch).
+// Arbeit und Aufgaben bleiben am Kartenrand stehen, wenn sie außerhalb liegen (vorher sah es aus, als wären die Jobs verschwunden).
+function questOrte() {                              // [{titel, x, y}] in fester Reihenfolge; die Nummer ist der Platz in dieser Liste
+  var o = [], A = AUFTRAG, q = function (t, p) { if (p && isFinite(p[0]) && isFinite(p[1])) o.push({ titel: t, x: p[0], y: p[1] }); }; if (EPOCHE !== 1400) return o;
+  var az = auftragZiel(); if (az) q(A.einf && A.einf < 9 ? 'Jörg' : 'Der Brief des Schiffers', [az.x, az.y]);
+  var nz = naechstesZiel(); if (nz && typeof nz[2] === 'function') q('Lebensweg', nz[2]());
+  if (A.einf >= 9 && !A.angel) { var f = null, sz = function (art) { return BERUFSSZENEN.filter(function (b) { return b.art === art; })[0]; };
+    if (!A.messer) { var ms = TAGESLEUTE.filter(function (l) { return /MESSERSCHMIED/.test(l.name || '') && l.werkbank; })[0]; if (ms) f = [ms.werkbank.x, ms.werkbank.y]; }
+    else if (!A.rute) { var hs = ANGEL.hasel.length ? klangNaechster(ANGEL.hasel) : null; f = hs ? [hs.x, hs.y] : FAEHRE ? [FAEHRE.a[0], FAEHRE.a[1]] : null; }
+    else if (!(A.garn > 0)) { var wb = sz('weber'); if (wb) f = [wb.x, wb.y]; }
+    else if (!A.haken) { var sm = sz('schmied'); if (sm) f = [sm.x, sm.y]; }
+    q('Eine eigene Angel', f); }
+  var zz = zehntZiel(); if (zz) q('Der Zehnt', [zz.x, zz.y]);
+  var sg = schmuggelZiel(); if (sg) q('Pfeffer für die Burg', [sg.x, sg.y]);
+  if (A.brief === 1 && BRIEFZIEL) q('Der versiegelte Brief', [BRIEFZIEL.x, BRIEFZIEL.y]);
+  return o; }
+function questNr(titel) { var l = questOrte(); for (var i = 0; i < l.length; i++) if (l[i].titel === titel) return i + 1; return 0; }
+var KARTE_LADEN = [[/BÖTTCHER/, 'fass'], [/KRÄMER/, 'salz'], [/MESSERSCHMIED/, 'messer']];
 function kartenZeichen() {
   if (P.t - KZ.t < 1) return KZ.liste; KZ.t = P.t; var o = [], A = AUFTRAG; KZ.liste = o; if (EPOCHE !== 1400) return o;
-  var z = function (x, y, art) { o.push({ x: x, y: y, art: art }); }, szene = function (art) { return BERUFSSZENEN.filter(function (q) { return q.art === art; })[0]; };
-  if (HOLZ.platz) z(HOLZ.platz.klotz[0], HOLZ.platz.klotz[1], 'arbeit');
-  if (STEIN.platz) z(STEIN.platz.hp[0], STEIN.platz.hp[1], 'arbeit');
-  if (KAI.platz) z(KAI.platz.steg[0], KAI.platz.steg[1], 'arbeit');
-  if (WEINBERG) z(WEINBERG.x, WEINBERG.y, 'arbeit');
-  var lm = typeof lehrMeister === 'function' ? lehrMeister() : null; if (lm && lm.werkbank) z(lm.werkbank.x, lm.werkbank.y, 'arbeit');
-  BEGEHBAR.forEach(function (h) { if (h.zweck === 'baecker' || h.zweck === 'metzger' || h.zweck === 'wirt' || h.zweck === 'gasthaus') z(h.tuer ? h.tuer.mitte[0] : h.cx, h.tuer ? h.tuer.mitte[1] : h.cy, 'essen'); });
-  if (STAND) z(STAND.x, STAND.y, 'essen'); if (GARKUECHE) z(GARKUECHE.x, GARKUECHE.y, 'essen');
-  if (A.einf >= 9 && !A.angel) { var f = null;
-    if (!A.messer) { var ms = TAGESLEUTE.filter(function (l) { return /MESSERSCHMIED/.test(l.name || '') && l.werkbank; })[0]; if (ms) f = [ms.werkbank.x, ms.werkbank.y]; }
-    else if (!A.rute) { var hs = ANGEL.hasel.length ? klangNaechster(ANGEL.hasel) : null; if (hs) f = [hs.x, hs.y]; else if (FAEHRE) f = [FAEHRE.a[0], FAEHRE.a[1]]; }
-    else if (!(A.garn > 0)) { var wb = szene('weber'); if (wb) f = [wb.x, wb.y]; }
-    else if (!A.haken) { var sm = szene('schmied'); if (sm) f = [sm.x, sm.y]; }
-    if (f) z(f[0], f[1], 'fehlt'); }
+  var z = function (x, y, art, ik) { o.push({ x: x, y: y, art: art, ik: ik }); }, szene = function (art) { return BERUFSSZENEN.filter(function (q) { return q.art === art; })[0]; };
+  if (HOLZ.platz) z(HOLZ.platz.klotz[0], HOLZ.platz.klotz[1], 'arbeit', 'beil');
+  if (STEIN.platz) z(STEIN.platz.hp[0], STEIN.platz.hp[1], 'arbeit', 'stein');
+  if (KAI.platz) z(KAI.platz.steg[0], KAI.platz.steg[1], 'arbeit', 'sack');
+  if (WEINBERG) z(WEINBERG.x, WEINBERG.y, 'arbeit', 'traube');
+  var lm = typeof lehrMeister === 'function' ? lehrMeister() : null; if (lm && lm.werkbank && A.kleid >= 2) z(lm.werkbank.x, lm.werkbank.y, 'arbeit', 'schuh');
+  var wirte = []; BEGEHBAR.forEach(function (h) { var ik = h.zweck === 'baecker' ? 'brot' : h.zweck === 'metzger' ? 'fleisch' : null, tx = h.tuer ? h.tuer.mitte[0] : h.cx, ty = h.tuer ? h.tuer.mitte[1] : h.cy; if (ik) z(tx, ty, 'kauf', ik); else if (h.zweck === 'wirt' || h.zweck === 'gasthaus') wirte.push({ x: tx, y: ty, d: Math.hypot(tx - P.x, ty - P.y) }); });
+  wirte.sort(function (a, b) { return a.d - b.d; }).slice(0, 3).forEach(function (w) { z(w.x, w.y, 'kauf', 'wein'); });   // nur die drei nächsten Wirtshäuser – sonst ist die Karte voller Krüge
+  if (STAND) z(STAND.x, STAND.y, 'kauf', 'kohl'); if (GARKUECHE) z(GARKUECHE.x, GARKUECHE.y, 'kauf', 'sauerkraut');
+  var sm = szene('schmied'); if (sm) z(sm.x, sm.y, 'kauf', 'hufeisen'); var wb = szene('weber'); if (wb) z(wb.x, wb.y, 'kauf', 'wolle');
+  TAGESLEUTE.forEach(function (l) { if (!l.werkbank) return; for (var i = 0; i < KARTE_LADEN.length; i++) if (KARTE_LADEN[i][0].test(l.name || '')) { z(l.werkbank.x, l.werkbank.y, 'kauf', KARTE_LADEN[i][1]); return; } });
+  var kh = kammerHaus(); if (kh) z(kh.cx, kh.cy, 'heim', 'schluessel'); if (ONKEL && !kammerGemietet()) z(ONKEL.haus.cx, ONKEL.haus.cy, 'heim', 'haus');
+  questOrte().forEach(function (q, i) { o.push({ x: q.x, y: q.y, art: 'quest', nr: i + 1 }); });
   return o;
 }
 function karteMalen(W, H) {
-  var gross = KARTE === 2, gr = gross ? Math.min(W - 40, (H || 240) - 40) : 124, gx = gross ? Math.round((W - gr) / 2) : W - 134, gy = gross ? 20 : 22, m = gross ? 700 : 260, sk = gr / m;
+  var gross = KARTE === 2, gr = gross ? Math.min(W - 40, (H || 240) - 40) : 124, gx = gross ? Math.round((W - gr) / 2) : W - 134, gy = gross ? 20 : 22, m = gross ? 480 : 260, sk = gr / m;
   hud.save(); hud.fillStyle = '#000'; hud.fillRect(gx - 2, gy - 2, gr + 4, gr + 4); hud.beginPath(); hud.rect(gx, gy, gr, gr); hud.clip();
   hud.drawImage(bodenBildHud, bu(P.x - m / 2), bv(P.y + m / 2), m * B.px, m * B.px, gx, gy, gr, gr);
   hud.fillStyle = 'rgba(70,52,40,.85)';
   HAEUSER.forEach(function (h) { if (Math.abs(h.cx - P.x) > m * 0.6 || Math.abs(h.cy - P.y) > m * 0.6) return; hud.beginPath(); h.pts.forEach(function (q, i) { var x = gx + gr / 2 + (q[0] - P.x) * sk, y = gy + gr / 2 - (q[1] - P.y) * sk; i ? hud.lineTo(x, y) : hud.moveTo(x, y); }); hud.fill(); });
-  var blink = Math.floor(P.t * 2.5) % 2 === 0, gross_ = gross;
-  kartenZeichen().forEach(function (q) { var x = gx + gr / 2 + (q.x - P.x) * sk, y = gy + gr / 2 - (q.y - P.y) * sk, aussen = x < gx + 3 || x > gx + gr - 3 || y < gy + 3 || y > gy + gr - 3;
-    if (aussen && q.art !== 'fehlt') return; x = Math.max(gx + 4, Math.min(gx + gr - 4, x)); y = Math.max(gy + 4, Math.min(gy + gr - 4, y)); var r = gross_ ? 3 : 2;
-    if (q.art === 'arbeit') { hud.fillStyle = '#123'; hud.fillRect(x - r - 1, y - r - 1, 2 * r + 3, 2 * r + 3); hud.fillStyle = '#4fd14a'; hud.fillRect(x - r, y - r, 2 * r + 1, 2 * r + 1); }
-    else if (q.art === 'essen') { hud.fillStyle = '#123'; hud.beginPath(); hud.arc(x + 0.5, y + 0.5, r + 1.5, 0, 6.3); hud.fill(); hud.fillStyle = '#5ab4ff'; hud.beginPath(); hud.arc(x + 0.5, y + 0.5, r + 0.5, 0, 6.3); hud.fill(); }
-    else { if (blink) r += 1.5; hud.strokeStyle = '#000'; hud.lineWidth = 3; hud.beginPath(); hud.moveTo(x - r - 2, y - r - 2); hud.lineTo(x + r + 2, y + r + 2); hud.moveTo(x + r + 2, y - r - 2); hud.lineTo(x - r - 2, y + r + 2); hud.stroke(); hud.strokeStyle = '#fff'; hud.lineWidth = 1.5; hud.stroke(); } });
-  var zk = auftragZiel(); if (zk) { var zx = gx + gr / 2 + (zk.x - P.x) * sk, zy = gy + gr / 2 - (zk.y - P.y) * sk; zx = Math.max(gx + 3, Math.min(gx + gr - 3, zx)); zy = Math.max(gy + 3, Math.min(gy + gr - 3, zy)); hud.fillStyle = '#ffd75e'; hud.fillRect(zx - 2, zy - 2, 5, 5); }
+  var RING = { arbeit: '#3fbf3a', kauf: '#4a9ae8', heim: '#c89a5a', quest: '#ffd75e' }, sc = gross ? 1 : 0.75, liste = kartenZeichen().slice().sort(function (a, b) { return (a.art === 'quest') - (b.art === 'quest'); });
+  liste.forEach(function (q) { var x = gx + gr / 2 + (q.x - P.x) * sk, y = gy + gr / 2 - (q.y - P.y) * sk, rd = gross ? 8 : 6, aussen = x < gx + rd || x > gx + gr - rd || y < gy + rd || y > gy + gr - rd;
+    if (aussen && q.art !== 'quest' && q.art !== 'arbeit') return; x = Math.max(gx + rd, Math.min(gx + gr - rd, x)); y = Math.max(gy + rd, Math.min(gy + gr - rd, y)); hud.globalAlpha = aussen && q.art === 'arbeit' ? 0.6 : 1;
+    hud.fillStyle = '#1a1410'; hud.beginPath(); hud.arc(x, y, rd + 1.5, 0, 6.3); hud.fill(); hud.fillStyle = RING[q.art] || '#fff'; hud.beginPath(); hud.arc(x, y, rd + 0.5, 0, 6.3); hud.fill();
+    if (q.art === 'quest') { hud.fillStyle = '#3a2a10'; hud.font = 'bold ' + (gross ? 11 : 9) + 'px monospace'; hud.textAlign = 'center'; hud.textBaseline = 'middle'; hud.fillText(String(q.nr), x, y + 0.5); hud.textBaseline = 'alphabetic'; }
+    else { hud.fillStyle = '#f4ecd8'; hud.beginPath(); hud.arc(x, y, rd - 1, 0, 6.3); hud.fill(); var ik = IKON[q.ik]; if (ik) pixelbild(ik.m, ik.p, x - 6 * sc, y - 6 * sc, sc); } hud.globalAlpha = 1; });
+  if (gross) { var ly = gy + gr - 12; hud.fillStyle = 'rgba(20,14,10,.75)'; hud.fillRect(gx, ly - 4, gr, 16); [['#3fbf3a', 'ARBEIT'], ['#4a9ae8', 'KAUFEN'], ['#c89a5a', 'ZUHAUSE'], ['#ffd75e', 'AUFGABE']].forEach(function (e, i) { var lx = gx + 8 + i * gr / 4; hud.fillStyle = e[0]; hud.beginPath(); hud.arc(lx, ly + 4, 4, 0, 6.3); hud.fill(); mcText(e[1], lx + 7, ly + 7, '#fff', 7); }); }
   var cx = gx + gr / 2, cy = gy + gr / 2, fx = Math.sin(P.blick), fy = -Math.cos(P.blick);
   hud.fillStyle = '#ff3b3b'; hud.beginPath(); hud.moveTo(cx + fx * 6, cy + fy * 6); hud.lineTo(cx - fy * 4 - fx * 4, cy + fx * 4 - fy * 4); hud.lineTo(cx + fy * 4 - fx * 4, cy - fx * 4 - fy * 4); hud.fill();
   hud.restore();
