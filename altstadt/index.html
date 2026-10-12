@@ -10357,12 +10357,15 @@ function haselAufstellen() { if (!window.Sammeln || !Sammeln.haselstrauch || !FA
 function haselNah() { for (var i = 0; i < ANGEL.hasel.length; i++) if (Math.hypot(P.x - ANGEL.hasel[i].x, P.y - ANGEL.hasel[i].y) < 2.2) return ANGEL.hasel[i]; return null; }
 function haselSchneiden() { if (EPOCHE !== 1400 || !haselNah()) return false;
   if (AUFTRAG.angel || AUFTRAG.rute) { melden('DU HAST SCHON EINE RUTE', 2); return true; }
-  if (AUFTRAG.messer && !handIst('messer')) { handFehlt('messer', 'DANN RECHTSKLICK AM STRAUCH'); return true; }
+  if (AUFTRAG.messer && !handIst('messer')) handSetzen('messer');
   if (!AUFTRAG.messer) { melden('EIN HASELSTRAUCH · OHNE MESSER KRIEGST DU KEINE RUTE AB – DER MESSERSCHMIED HAT WELCHE (5 HELLER)', 4); return true; }
-  kling('messer_schnitt', 0.4); ANGEL.schneidenBis = P.t + 2; var hn = haselNah(); if (hn) P.blick = Math.atan2(hn.x - P.x, hn.y - P.y); AUFTRAG.rute = 1; speichern(); melden('DU SCHNEIDEST EINE LANGE, GERADE HASELRUTE · JETZT FEHLEN ' + angelFehlt(), 5); angelBinden(); return true; }
+  kling('messer_schnitt', 0.4); ANGEL.schneidenBis = P.t + 2; var hn = haselNah(); if (hn) P.blick = Math.atan2(hn.x - P.x, hn.y - P.y); AUFTRAG.rute = 1; speichern(); melden('DU SCHNEIDEST EINE LANGE, GERADE HASELRUTE · JETZT FEHLEN ' + angelFehlt(), 5); if (rezeptBereit()) melden('DU SCHNEIDEST EINE HASELRUTE · ALLES BEISAMMEN – I: INVENTAR → ANGEL BINDEN', 5); return true; }
 function angelFehlt() { var f = []; if (!AUFTRAG.rute) f.push('EINE HASELRUTE'); if (!(AUFTRAG.garn > 0)) f.push('GARN FÜR DIE SCHNUR'); if (!AUFTRAG.haken) f.push('EIN HAKEN (SCHMIED)'); return f.join(' UND ') || 'NICHTS'; }
 function angelBinden() { if (AUFTRAG.angel || !AUFTRAG.rute || !AUFTRAG.haken || !(AUFTRAG.garn > 0)) return false; AUFTRAG.garn--; AUFTRAG.rute = 0; AUFTRAG.haken = 0; AUFTRAG.angel = 1; speichern();
-  melden('DU BINDEST DIR EINE ANGEL: RUTE, SCHNUR, HAKEN · AM WASSER: RECHTSKLICK WIRFT AUS', 7); return true; }
+  HAND.wahl = 'angel'; HAND.zeigBis = P.t + 3; kling('messer_schnitt', 0.3); melden('DU BINDEST DIR EINE ANGEL: RUTE, SCHNUR, HAKEN · SIE IST JETZT IN DEINER HAND (UNTEN IN DER LEISTE) · AM WASSER: RECHTSKLICK WIRFT AUS', 8); return true; }
+// Bauen wie in Minecraft (12.10.): im Inventar steht das Rezept mit Bildern; was fehlt, ist grau und sagt, wo es das gibt. Sind alle Teile da: Klick bindet.
+var REZEPTE = [{ id: 'angel', name: 'Angel', teile: [['rute', 'Haselrute', 'Am Haselstrauch an der Lände schneiden – das Messer gibt es beim Messerschmied.', function () { return AUFTRAG.rute; }], ['garn', 'Garn', 'In der Weberei ein Rest für 1 Heller (oder selbst spinnen).', function () { return AUFTRAG.garn > 0; }], ['haken', 'Haken', 'Beim Schmied, 1 Heller.', function () { return AUFTRAG.haken; }]], zeigen: function () { return EPOCHE === 1400 && AUFTRAG.einf >= 9 && !AUFTRAG.angel; }, tun: angelBinden }];
+function rezeptBereit() { return REZEPTE.some(function (r) { return r.zeigen() && r.teile.every(function (t) { return t[3](); }); }); }
 function schmiedHaken() { if (EPOCHE !== 1400 || AUFTRAG.angel || AUFTRAG.haken || !AUFTRAG.rute) return false; var b = BERUFSSZENEN.filter(function (q) { return q.art === 'schmied'; })[0]; if (!b || Math.hypot(P.x - b.x, P.y - b.y) > 3) return false;
   if (AUFTRAG.heller < 1) { melden('DER GESELLE: „EIN ANGELHAKEN? EIN HELLER.“ · DU HAST KEINEN', 3); return true; }
   AUFTRAG.heller -= 1; AUFTRAG.haken = 1; speichern(); melden('DER GESELLE BIEGT DIR EINEN HAKEN AUS EINEM NAGEL · −1 HELLER · JETZT FEHLEN ' + angelFehlt(), 5); angelBinden(); return true; }
@@ -10381,14 +10384,14 @@ function angelHandhaben() { if (EPOCHE !== 1400 || !AUFTRAG.angel || P.drinnen |
   if (ANGEL.aktiv) { if (ANGEL.phase === 'biss') { var f = fischZiehen(), F = FISCHE[f]; AUFTRAG.fisch = (AUFTRAG.fisch || 0) + F[2]; if (F[2]) { AUFTRAG.fischGesamt = (AUFTRAG.fischGesamt || 0) + 1; tatMerken('angeln', P.x, P.y); } if (SPIELER) AUFTRAG.hunger = Math.min(100, AUFTRAG.hunger + 0.3); speichern();
       angelEinholen(); if (ANGEL.codex) angelFangZeigen(f); if (F[2]) kling('fisch_zappeln', 0.4); else kling('platsch_klein', 0.3); melden(F[0] + ' ' + F[1] + (F[2] ? ' · FISCH IN DIE HAND (TASTE ' + (handTaste('fisch') || leisteDinge().length) + '), RECHTSKLICK ISST (' + AUFTRAG.fisch + ')' : ''), 7); return true; }
     angelEinholen('DU HOLST DIE SCHNUR EIN'); var se = kling('schnur_einholen', 0.15); if (se) setTimeout(se.stop, 900); return true; }
-  if (haendeVoll()) return false; var wp = wurfPunkt(); if (!wp) return false; if (!handIst('angel')) { if (handWahl() === 'hand') { handFehlt('angel'); return true; } return false; }
+  if (haendeVoll()) return false; var wp = wurfPunkt(); if (!wp) return false; if (!handIst('angel')) handSetzen('angel');   // 12.10. (Andreas: „ich verstehe das nicht“): am Wasser nimmt man die Angel von selbst
   if (sonnenstand(himmelsZeit()).hoehe < -6) { melden('ZU DUNKEL – DEN SCHWIMMER SIEHST DU NICHT MEHR', 3); return true; }
   if (!AUFTRAG.fischErlaubt) { AUFTRAG.rede = { wer: { x: P.x, y: P.y, name: 'DER FISCHER VON DER LÄNDE' }, name: 'DER FISCHER VON DER LÄNDE', i: 0, zeilen: ['He, Junge! Der Main gehört dem Grafen, und fischen darf eigentlich nur die Zunft.', 'Mit einer Rute vom Ufer, für den eigenen Topf … na gut, da drück ich ein Auge zu.', 'Aber keine Netze. Und nicht an meinem Steg! Petri Heil.'],
       danach: function () { AUFTRAG.fischErlaubt = 1; speichern(); } }; return true; }
   angelTeile(); ANGEL.aktiv = true; ANGEL.phase = 'warten'; ANGEL.x = wp[0]; ANGEL.y = wp[1]; ANGEL.ort = [P.x, P.y]; ANGEL.biss = P.t + 4 + Math.random() * 14; P.blick = Math.atan2(wp[0] - P.x, wp[1] - P.y); ANGEL.wurfBis = P.t + 1; ANGEL.zeigeBis = 0; kling('angel_wurf', 0.35); setTimeout(function () { if (ANGEL.aktiv) klang('platsch_klein', wp[0], wp[1], 0.35, 6); }, 650);
   melden('AUSGEWORFEN · WARTEN … TAUCHT DER SCHWIMMER WEG: SOFORT RECHTSKLICK', 4); return true; }
-function angelnWeiter(dt) { if (EPOCHE !== 1400) return; if (!ANGEL.haselVersucht && FAEHRE && window.Sammeln) haselAufstellen(); if (ANGEL.zeigeBis > P.t && (P.tempo > 0.5 || AUFTRAG.rede)) ANGEL.zeigeBis = 0; if (!AUFTRAG.angel && !ANGEL.aktiv) return;
-  if (!ANGEL.aktiv) { if (P.t > (AUFTRAG.meldungBis || 0) && !AUFTRAG.rede && !P.drinnen && Math.floor(P.t * 4) % 4 === 0 && wurfPunkt()) melden(handIst('angel') ? 'RECHTSKLICK: ANGEL AUSWERFEN' : 'HIER KANNST DU ANGELN · ANGEL IN DIE HAND: MAUSRAD ODER TASTE ' + handTaste('angel'), 0.5); return; }
+function angelnWeiter(dt) { if (EPOCHE !== 1400) return; if (!ANGEL.haselVersucht && FAEHRE && window.Sammeln) haselAufstellen(); if (ANGEL.zeigeBis > P.t && (P.tempo > 0.5 || AUFTRAG.rede)) ANGEL.zeigeBis = 0; if (rezeptBereit() && !AUFTRAG.rede && !INVENTAR && P.t > (AUFTRAG.meldungBis || 0) && Math.floor(P.t / 3) % 4 === 0) melden('ALLES FÜR DIE ANGEL BEISAMMEN · I DRÜCKEN → UNTER „BAUEN“ DIE ANGEL BINDEN', 0.5);   // 12.10. (Andreas: „die müssten wir craften?“) if (!AUFTRAG.angel && !ANGEL.aktiv) return;
+  if (!ANGEL.aktiv) { if (P.t > (AUFTRAG.meldungBis || 0) && !AUFTRAG.rede && !P.drinnen && Math.floor(P.t * 4) % 4 === 0 && wurfPunkt()) melden('RECHTSKLICK: ANGEL AUSWERFEN', 0.5); return; }
   if (Math.hypot(P.x - ANGEL.ort[0], P.y - ANGEL.ort[1]) > 1.2 || AUFTRAG.rede || P.drinnen) { angelEinholen('DU HOLST DIE SCHNUR EIN'); return; }
   var tief = 0; if (ANGEL.phase === 'warten' && P.t > ANGEL.biss) { ANGEL.phase = 'biss'; ANGEL.bissBis = P.t + 1.2; if (KL.an) klang('platsch_fisch', ANGEL.x, ANGEL.y, 0.45, 8); melden('ES BEISST! JETZT RECHTSKLICK!', 1.2); }
   if (ANGEL.phase === 'biss') { tief = 0.12 + Math.sin(P.t * 30) * 0.04; if (P.t > ANGEL.bissBis) { ANGEL.phase = 'warten'; ANGEL.biss = P.t + 3 + Math.random() * 10; melden('ZU SPÄT – DER FISCH IST WEG. WARTEN …', 2.5); } }
@@ -10458,8 +10461,8 @@ function holzWeiter(dt) {
   if (PUPPE) { if (!PUPPE.__beil && window.Moebel) { var bb = new THREE.Group(), bm = Moebel.beil(); bm.rotation.x = -Math.PI / 2; bb.add(bm); bb.visible = false; PUPPE.gelenke.handR.add(bb); PUPPE.__beil = bb; } if (PUPPE.__beil) PUPPE.__beil.visible = !GG && HOLZ.hackenBis > P.t - 0.3; }   // mit Codex' Beil (grindGeraete) nicht doppelt
   if (!holzNah()) return;
   var halten = maus.links || taste.q, voll = haendeVoll(); if (voll) { if (P.t > (AUFTRAG.meldungBis || 0)) melden('DU HAST ' + voll + ' IN DEN HÄNDEN · ERST ABLEGEN (RECHTSKLICK)', 0.4); return; }
-  if (halten && P.t >= HOLZ.naechster && !AUFTRAG.rede && !INVENTAR) { holzSchlag(); HOLZ.naechster = P.t + 0.55; }
-  else if (!halten && P.t > (AUFTRAG.meldungBis || 0)) { var bdl = Math.floor((AUFTRAG.scheite || 0) / HOLZ_BUENDEL); melden('LINKE MAUS HALTEN (ODER Q): HOLZ HACKEN · ' + (AUFTRAG.beil && handIst('beil') ? 'GUTES BEIL' : AUFTRAG.beil ? 'ALTES BEIL – DEIN GUTES: TASTE ' + handTaste('beil') : 'ALTES BEIL') + (bdl ? ' · ' + bdl + ' BÜNDEL FÜR KONRAD' : ''), 0.4); }
+  if (halten && P.t >= HOLZ.naechster && !AUFTRAG.rede && !INVENTAR) { if (AUFTRAG.beil && !handIst('beil')) handSetzen('beil'); holzSchlag(); HOLZ.naechster = P.t + 0.55; }
+  else if (!halten && P.t > (AUFTRAG.meldungBis || 0)) { var bdl = Math.floor((AUFTRAG.scheite || 0) / HOLZ_BUENDEL); melden('LINKE MAUS HALTEN (ODER Q): HOLZ HACKEN · ' + (AUFTRAG.beil ? 'GUTES BEIL' : 'ALTES BEIL') + (bdl ? ' · ' + bdl + ' BÜNDEL FÜR KONRAD' : ''), 0.4); }
 }
 function schmiedBeil() {                         // Rechtsklick beim Schmiedegesellen: ein gutes Beil
   if (EPOCHE !== 1400 || AUFTRAG.beil) return false; var b = BERUFSSZENEN.filter(function (q) { return q.art === 'schmied'; })[0]; if (!b || Math.hypot(P.x - b.x, P.y - b.y) > 3) return false;
@@ -10629,7 +10632,7 @@ function spinnWeiter(dt) {
   var halten = maus.links || taste.q;
   if (halten && !AUFTRAG.rede && !INVENTAR && P.t >= SPINN.naechster) {
     if (!(AUFTRAG.wolle > 0)) { melden('KEINE WOLLE MEHR – DIE GIBT ES BEIM WEBER', 2); SPINN.naechster = P.t + 1; return; }
-    if (!handIst('wolle')) { handFehlt('wolle'); SPINN.naechster = P.t + 1.5; return; }
+    if (!handIst('wolle')) handSetzen('wolle');
     P.x = e.st.x - Math.sin(e.st.d) * 0.38; P.y = e.st.y + Math.cos(e.st.d) * 0.38; P.bodenZ = undefined; P.blick = Math.PI - e.st.d; SPINN.bis = P.t + 0.6; HOLZ.zeigeBis = P.t + 2; SPINN.naechster = P.t + 0.5; SPINN.dreh++; spinnTon(); fx('fasern', e.st.x, e.st.y, (P.z - AUGE) + 0.75, { boden: P.z - AUGE });   // auf den Schemel hinter dem Rad (Codex: Rad 0,38 m vor der Figur)
     if (SPINN.dreh >= SPINN_DREHUNGEN) { SPINN.dreh = 0; AUFTRAG.wolle--; AUFTRAG.garn = (AUFTRAG.garn || 0) + 1; tagNotiz('garn', 1); speichern(); melden('EINE SPULE GARN (' + AUFTRAG.garn + ') · DER WEBER ZAHLT ' + GARN_LOHN + ' HELLER', 3); }
     else if (P.t > (AUFTRAG.meldungBis || 0) - 0.1) melden('SPINNEN … ' + SPINN.dreh + ' / ' + SPINN_DREHUNGEN + ' · WOLLE ' + AUFTRAG.wolle + ' · GARN ' + (AUFTRAG.garn || 0), 0.6);
@@ -15913,6 +15916,8 @@ var IKON = {
   fleisch: { p: { k: '#4a1a10', p: '#c8504a', h: '#f08a80', w: '#f0ead8' }, m: ['............', '......kkk...', '.....kpppk..', '....kpphppk.', '...kpppppppk', '...kppppppk.', '..kwkppppk..', '.kwwkkkkk...', 'kwwk........', 'kwk.........', '.k..........', '............'] },
   wein: { p: { k: '#2a1a10', m: '#8a5a3a', h: '#c08a5a', d: '#5a3a24', w: '#6a1a2a' }, m: ['............', '...kkkk.....', '...kwwk.....', '..kkkkkk....', '.kmmmmmmk.k.', '.kmhmmmmkkk.', '.kmhmmmmk.k.', '.kmmmmmmkk..', '.kmmmmmmk...', '.kddddddk...', '..kkkkkk....', '............'] },
   angel: { p: { b: '#8a6a3a', s: '#e8e0d0', r: '#c8302a' }, m: ['..........b.', '.........b.s', '........b..s', '.......b...s', '......b....s', '.....b.....s', '....b......s', '...b.......r', '..b.........', '.b..........', 'b...........', '............'] },
+  rute: { p: { b: '#8a6a3a', g: '#5a8a3a' }, m: ['..........bg', '.........b..', '........b...', '.......b....', '......b.....', '.....b......', '....b.......', '...b........', '..b.........', '.b..........', 'b...........', '............'] },
+  haken: { p: { g: '#8a9096', w: '#d0d6da' }, m: ['............', '.....gw.....', '.....gg.....', '.....gg.....', '.....gg.....', '.....gg.....', '.....gg.....', '..g..gg.....', '..gg.gg.....', '...gggg.....', '....gg......', '............'] },
   hand: { p: { s: '#e3b48e', d: '#b8865e' }, m: ['............', '....s.s.....', '...ssssss...', '..sssssss...', '..ssssssss..', '..sssssssd..', '..ssssssd...', '...sssssd...', '...sssss....', '....sss.....', '....sss.....', '............'] },
   messer: { p: { s: '#8a9096', w: '#e0e6ea', k: '#3a3a3a', b: '#7a4a24' }, m: ['............', '..........s.', '.........ss.', '........sws.', '.......sws..', '......sws...', '.....sws....', '....kss.....', '...bbk......', '..bbb.......', '.bbb........', '.bb.........'] },
   schluessel: { p: { y: '#d8a830', d: '#8a6a1a' }, m: ['............', '...yyyy.....', '..yd..dy....', '..y....y....', '..yd..dy....', '...yyyy.....', '....yd......', '....yd......', '....yyyy....', '....yd......', '....yyy.....', '............'] },
@@ -15935,11 +15940,12 @@ function gegenstaende() {                        // was in der Tasche ist: Essen
   for (var g in SPIELER.essen) if (AUFTRAG[g]) (function (g) { var e = SPIELER.essen[g]; l.push({ ikon: g, n: AUFTRAG[g], name: e.name, text: 'Macht satt (' + e.satt + '). Klick: essen · oder in die Hand nehmen und Rechtsklick.', tun: function () { essen(g); } }); })(g);
   if (AUFTRAG.messer) l.push({ ikon: 'messer', name: 'Messer', text: 'Schneidet Haselruten und alles andere. Klick: in die Hand.', tun: function () { handSetzen('messer'); } });
   if (AUFTRAG.angel) l.push({ ikon: 'angel', name: 'Angel', text: 'Haselrute, Garn und Haken – selbst gebunden. Klick: in die Hand, am Ufer Rechtsklick.', tun: function () { handSetzen('angel'); } });
-  else if (AUFTRAG.rute) l.push({ ikon: 'angel', name: 'Haselrute', text: 'Noch ohne Schnur. Es fehlen: ' + angelFehlt().toLowerCase() + '.' });
+  else if (AUFTRAG.rute) l.push({ ikon: 'rute', name: 'Haselrute', text: 'Noch ohne Schnur. Es fehlen: ' + angelFehlt().toLowerCase() + '.' });
   if (AUFTRAG.stufe === 1) l.push({ ikon: 'brief', name: 'Brief des Schiffers', text: 'Versiegelt. Für den Pfarrer an der Stiftskirche.' });
   if (AUFTRAG.stufe === 3) l.push({ ikon: 'brief', name: 'Brief des Marktmanns', text: 'Er will sich freikaufen. Für den Pfarrer.' });
   if (AUFTRAG.scheite) l.push({ ikon: 'scheit', n: AUFTRAG.scheite, name: 'Scheite', text: 'Am Hackklotz der Bäckerei gespalten. Sechs sind ein Bündel – Konrad zahlt 2 Heller.' });   // 11.10.: Vorräte
   if (AUFTRAG.wolle) l.push({ ikon: 'wolle', n: AUFTRAG.wolle, name: 'Wolle', text: 'Vom Weber. In die Hand nehmen, dann wird am eigenen Spinnrad Garn daraus. Klick: in die Hand.', tun: function () { handSetzen('wolle'); } });
+  if (AUFTRAG.haken && !AUFTRAG.angel) l.push({ ikon: 'haken', name: 'Haken', text: 'Vom Schmied, aus einem Nagel gebogen. Für die Angel (Inventar → Bauen).' });
   if (AUFTRAG.garn) l.push({ ikon: 'garn', n: AUFTRAG.garn, name: 'Garn', text: 'Selbst gesponnen. Der Weber zahlt 3 Heller die Spule.' });
   if (AUFTRAG.beil) l.push({ ikon: 'beil', name: 'Gutes Beil', text: 'Vom Schmied. In der Hand: drei Schläge je Scheit statt sechs. Klick: in die Hand.', tun: function () { handSetzen('beil'); } });
   wwIkonen(); if (AUFTRAG.pelzkragen) l.push({ ikon: IKON.ww_pelzkragen ? 'ww_pelzkragen' : 'kleid', name: 'Pelzkragen', text: 'Vom Kürschner. Warm, und jeder sieht: der hat es zu etwas gebracht.' }); if (AUFTRAG.pelzmuetze) l.push({ ikon: IKON.ww_pelzkragen ? 'ww_pelzkragen' : 'kleid', name: 'Pelzmütze', text: 'Vom Kürschner. Der Winter kann kommen.' });
@@ -15979,7 +15985,15 @@ function inventarMalen(W, H) {
     if (d) { var ik = IKON[d.ikon] || IKON.brief; pixelbild(ik.m, ik.p, x + 2, y + 2, 2); if (d.n > 1) mcText(String(d.n), x + 25, y + 25, '#ffffff', 8, 'right'); IREG.push({ x: x, y: y, w: 27, h: 27, name: d.name, text: d.text, tun: d.tun }); }
   }
   if (!dinge.length) dunkel('Leer. In den Gassen liegt manches …', x0 + 186, y0 + 168);
-  dunkel('MAUS: ZEIGEN · KLICK: ESSEN / ANZIEHEN · I: ZU', x0 + 10, y0 + bh - 9);
+  var rz = REZEPTE.filter(function (r) { return r.zeigen(); });
+  if (rz.length) { var r0 = rz[0], ry = y0 + 166, alle = r0.teile.every(function (t) { return t[3](); }); dunkel('BAUEN', x0 + 186, ry - 3);
+    r0.teile.forEach(function (t, i) { var x = x0 + 186 + i * 38, hat = !!t[3](), ub = IMAUS.x >= x && IMAUS.x < x + 27 && IMAUS.y >= ry && IMAUS.y < ry + 27; kachel(x, ry, 27, ub); var ik = IKON[t[0]] || IKON.brief; pixelbild(ik.m, ik.p, x + 2, ry + 2, 2, !hat);
+      if (!hat) { hud.strokeStyle = '#c03030'; hud.lineWidth = 2; hud.strokeRect(x + 1, ry + 1, 25, 25); hud.lineWidth = 1; } mcText(i < 2 ? '+' : '=', x + 32, ry + 17, '#3f3f3f', 10, 'center');
+      IREG.push({ x: x, y: ry, w: 27, h: 27, name: t[1] + (hat ? ' ✓' : ' – fehlt noch'), text: hat ? 'Hast du.' : t[2] }); });
+    var xe = x0 + 186 + 3 * 38, ue = IMAUS.x >= xe && IMAUS.x < xe + 27 && IMAUS.y >= ry && IMAUS.y < ry + 27; kachel(xe, ry, 27, ue && alle); if (alle) { hud.strokeStyle = Math.floor(P.t * 3) % 2 ? '#3fd03f' : '#a0ffa0'; hud.lineWidth = 2; hud.strokeRect(xe + 1, ry + 1, 25, 25); hud.lineWidth = 1; }
+    pixelbild(IKON[r0.id].m, IKON[r0.id].p, xe + 2, ry + 2, 2, !alle); dunkel(alle ? 'KLICK: BINDEN!' : 'ES FEHLT NOCH WAS', xe + 32, ry + 17);
+    IREG.push({ x: xe, y: ry, w: 27, h: 27, name: r0.name, text: alle ? 'Alles da. Klick: binden – dann liegt sie in deiner Hand.' : 'Haselrute + Garn + Haken. Fahr über die roten Felder: dort steht, wo es das gibt.', tun: alle ? function () { r0.tun(); } : null }); }
+  dunkel('MAUS: ZEIGEN · KLICK: BENUTZEN / IN DIE HAND / ANZIEHEN / BAUEN · I: ZU', x0 + 10, y0 + bh - 9);
   // Tooltip wie in Minecraft
   var tip = null; IREG.forEach(function (r) { if (IMAUS.x >= r.x && IMAUS.x < r.x + r.w && IMAUS.y >= r.y && IMAUS.y < r.y + r.h) tip = r; });
   if (tip) { var zl = umbrechen(tip.text || '', 34), tw = Math.max(tip.name.length, Math.max.apply(null, zl.map(function (z) { return z.length; }).concat([0]))) * 5 + 12, th = 14 + zl.length * 9, tx = Math.min(W - tw - 4, IMAUS.x + 10), ty = Math.max(4, Math.min(H - th - 4, IMAUS.y - 8));
