@@ -24,7 +24,7 @@ canvas.bild{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);im
 <canvas id="hud" class="bild"></canvas>
 <div id="startschirm" hidden><div>
   <h1>WERTHEIM ZU FUSS</h1>
-  <p class="unter">Eine Stadt am Main, um das Jahr 1400. Ein Überfall auf der Straße hat dir alles genommen – nur ein Name ist dir geblieben: Jörg, Steinmetzmeister in Wertheim. Du bist fremd hier. Und du willst dazugehören.</p>
+  <p class="unter">Eine Stadt am Main, um das Jahr 1400. Ein Überfall auf der Straße hat dir alles genommen – ein Fuhrmann hat dich aufgelesen und bringt dich nach Wertheim. Du bist fremd hier. Und du willst dazugehören.</p>
   <div class="weise">
     <b>W A S D</b><span>gehen · mit <i>Shift</i> rennen</span>
     <b>Maus</b><span>umsehen (einmal ins Bild klicken)</span>
@@ -10394,7 +10394,7 @@ function rumtreiberOrte() {                       // 11.10.: Arbeitsplätze und 
   if (WEINBERG) mit(WEINBERG.x, WEINBERG.y, 'Weinberg', 'Trauben lesen · Martin zahlt');
   BERUFSSZENEN.forEach(function (b) { if (b.art === 'schmied') mit(b.x, b.y, 'Schmiede', 'gutes Beil'); if (b.art === 'weber') mit(b.x, b.y, 'Weberei', 'Wolle kaufen · Garn verkaufen'); });
   var k = kammerHaus(); if (k) mit(k.cx, k.cy, kammerGemietet() ? 'Deine Kammer' : 'Kammer frei', '6 Heller die Woche');
-  if (ONKEL) mit(ONKEL.haus.cx, ONKEL.haus.cy, 'Onkel Jörg', 'dein Strohsack');
+  if (ONKEL) mit(ONKEL.haus.cx, ONKEL.haus.cy, 'Jörg, der Steinmetz', 'dein Strohsack');
   var lm = typeof lehrMeister === 'function' ? lehrMeister() : null; if (lm && lm.werkbank) mit(lm.werkbank.x, lm.werkbank.y, 'Meister Matthes', AUFTRAG.lehre ? 'dein Lehrherr' : 'nimmt Lehrlinge (im Wollrock)');   // 11.10.: der Lebensweg auf der Karte
   var lh = typeof lehrHaus === 'function' && AUFTRAG.lehre && AUFTRAG.lehre < 3 ? lehrHaus() : null; if (lh) mit(lh.cx, lh.cy, 'Schusterei', AUFTRAG.lehre === 1 ? 'dein Lehrplatz' : 'deine Werkbank · 3 Heller das Paar');
   if (AUFTRAG.lehre >= 2 && !AUFTRAG.buergerrecht) { var vg = LEUTE.concat(TAGESLEUTE).filter(function (q) { return /BURGVOGT/.test(q.name || ''); })[0]; if (vg) mit(vg.x, vg.y, 'Burgvogt', 'Bürgerrecht · 40 Heller'); }
@@ -12278,7 +12278,7 @@ var STARTSCHIRM = !/[?&](intro=0|probe=1)/.test(Q) && !(function () { try { retu
   addEventListener('keydown', function (e) { if (STARTSCHIRM && e.key === 'Enter') los(1400); }); })();
 addEventListener('keydown', function (e) { var k = e.key.toLowerCase(); if (STARTSCHIRM) return; if (e.metaKey || e.ctrlKey) return; taste[k] = true; if (e.key.indexOf('Arrow') === 0 || e.key === ' ') e.preventDefault(); if (k === 'm') KARTE = !KARTE; if (k === 'o') rumtreiberOeffnen(); if (k === 'n') stadtbuchOeffnen(); if (k === 'y') { WEGWEISER.an = !WEGWEISER.an; try { localStorage.setItem('wzf_wegweiser', WEGWEISER.an ? 'an' : 'aus'); } catch (e2) {} melden(WEGWEISER.an ? 'WEGWEISER AN (Y)' : 'WEGWEISER AUS (Y)', 2); } if (k === 't' || k === ',' || k === '.' || k === ';' || k === ':') uhrTaste(k);   // 11.10.: vorher lief uhrGesprungen() bei JEDEM Tastendruck (fehlende Klammern)
   if (k === 'i') { inventarAuf(!INVENTAR); QUESTBUCH = false; } if (k === 'tab') { e.preventDefault(); if (EPOCHE === 1400) { QUESTBUCH = !QUESTBUCH; if (QUESTBUCH && INVENTAR) inventarAuf(false); } } if (k === 'escape') QUESTBUCH = false; if (SPIELER && EPOCHE === 1400) for (var eg in SPIELER.essen) if (SPIELER.essen[eg].taste === k) essen(eg);   // 1–4: essen wie aus der Schnellleiste
-  if (k === 'g' && AUFTRAG.wahl) wahlTreffen('nachlass'); if (AUFTRAG.hundWahl && !AUFTRAG.rede) { if (k === 'g') hundWahlTreffen('vergeben'); if (k === 'r') hundWahlTreffen('rache'); } if (k === 'h') himmelEcht(!HIMMEL_ECHT); if (k === 'l') tonAnAus(); if (k === 'k') { STERNBILDER_AN = !STERNBILDER_AN; melden(STERNBILDER_AN ? 'STERNBILDER AN' : 'STERNBILDER AUS', 2); }
+  if (k === 'g' && AUFTRAG.karrenWahl) karrenWahlTreffen('schlafen'); else if (k === 'g' && AUFTRAG.wahl) wahlTreffen('nachlass'); if (AUFTRAG.hundWahl && !AUFTRAG.rede) { if (k === 'g') hundWahlTreffen('vergeben'); if (k === 'r') hundWahlTreffen('rache'); } if (k === 'h') himmelEcht(!HIMMEL_ECHT); if (k === 'l') tonAnAus(); if (k === 'k') { STERNBILDER_AN = !STERNBILDER_AN; melden(STERNBILDER_AN ? 'STERNBILDER AN' : 'STERNBILDER AUS', 2); }
   if (k === 'f') { FACKEL.an = !FACKEL.an; melden(FACKEL.an ? 'DU ZÜNDEST DEINE FACKEL AN' : 'FACKEL AUS', 2); }
   if (k === 'j') STADTBUCH = !STADTBUCH; if (k === 'x' && STADTBUCH && STADT) { STADT.unglueck('missernte'); lieferungenRechnen(); stadtSpeichern(); melden('HAGEL! DAS KORN IST VERDORBEN.', 4); }
   if (k === 'u') zeitmaschine(); if (k === 'v') ANSICHT = ANSICHT === 'ich' ? 'figur' : 'ich'; if (k === ' ') springenJetzt(); if (k === 'e') { if (!reden() && !strohsack() && !kammerSchlafen() && !grabHohl() && !kircheSitzen() && !hundAnfassen() && !sammeln() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } if (k === 'b' && BF) zumBergfried('tuer', true); if (k === 'p') { scharf = !scharf; groesse(); try { localStorage.setItem('wzf_scharf', scharf ? '1' : '0'); } catch (e2) {} melden(scharf ? 'SCHARF' : 'PIXEL-LOOK', 1.5); } if (k === 'z') { EPOCHE = EPOCHE === 1400 ? 2026 : 1400; if (window.__mittel) window.__mittel.visible = EPOCHE === 1400; if (window.__heute) window.__heute.visible = EPOCHE !== 1400; if (window.__aussen) window.__aussen.visible = EPOCHE !== 1400; } });
@@ -12309,6 +12309,7 @@ function zumBergfried(wo, drehen) {             // Sprungmarken: B-Taste und ?be
 }
 function naechsteePerson() { var best = null, bd = 2.8; if (EPOCHE !== 1400) return null; LEUTE.forEach(function (l) { if (istVersteckt(l)) return; var d = Math.hypot(P.x - l.x, P.y - l.y); if (d < bd) { bd = d; best = l; } }); return best; }
 function reden() {                             // E: Gespräch beginnen oder weiterblättern – true = es wurde geredet
+  if (AUFTRAG.karrenWahl) { karrenWahlTreffen('selbst'); return true; }
   if (AUFTRAG.wahl) { wahlTreffen('voll'); return true; }
   if (AUFTRAG.hundWahl && !AUFTRAG.rede && (!naechsteePerson() || (HUND && HUND.tot && Math.hypot(P.x - HUND.x, P.y - HUND.y) < 2.5))) { hundWahlTreffen('klage'); return true; }   // steht jemand da, redet man mit ihm – die Wahl wartet
   if (P.versteckt) { versteckRaus(); return true; }
@@ -12323,12 +12324,12 @@ function reden() {                             // E: Gespräch beginnen oder wei
   var l = naechsteePerson(); if (!l) return false;
   var st = Math.min(AUFTRAG.stufe, 4), zeilen = l.art === 'wache' ? TEXTE.wache[0] : TEXTE[l.art] ? TEXTE[l.art][Math.min(st, TEXTE[l.art].length - 1)] : [], danach = null;   // Handwerker sprechen aus dem Stadtleben (unten)
   if (l.rolle && !TEXTE[l.art] && ['buerger', 'haecker', 'magd', 'tageloehner', 'kind', 'nachtwaechter', 'bauer_korn', 'bauer_sau', 'muellerknecht', 'reisender', 'stadtfrau', 'trunkenbold', 'alte', 'zehntknecht', 'burgmann', 'burgmagd'].indexOf(l.art) >= 0) zeilen = l.art === 'trunkenbold' && l.ort === 'wirtshaus' ? ['Hicks! Noch einen Krug, Wirt! Der Fremde da zahlt!', 'Weißt du, wer ich bin? Ich war mal … hicks … Schöffe. Fast.'] : tagesSatz(l);
-  if (l.onkel) { var oh = new Date(himmelsZeit()).getHours(); zeilen = oh >= 19 || oh < 5 ? ['Da bist du ja. Dein Strohsack liegt unter der Treppe – leg dich hin, morgen ist früh Arbeit.'] : ['Na, Neffe? Unter meiner Treppe darfst du schlafen. Ein Bett musst du dir schon selbst verdienen.', AUFTRAG.heller < 10 ? 'Am Main suchen sie Männer für die Treidelleine. Und an der Mauer, wo ich die Steine haue, brauchen sie immer Steinschlepper – sag, du kommst vom Jörg.' : 'Du hast ja schon ein paar Heller. Spar sie – eine Kammer kostet.']; }
-  if (l.onkel && l.ort === 'wirtshaus' && P.drinnen && (P.drinnen.zweck === 'wirt' || P.drinnen.zweck === 'gasthaus') && AUFTRAG.einf >= 9 && AUFTRAG.joergRunde !== heute()) { zeilen = ['Setz dich, Neffe! Die Runde geht auf mich – ein Schoppen Tauberwein, ein Steinmetzmeister trinkt nicht allein.', 'Auf die Mauer, die noch steht, wenn wir längst im Grab liegen.']; danach = function () { AUFTRAG.joergRunde = heute(); AUFTRAG.hunger = Math.max(0, AUFTRAG.hunger - 10); speichern(); melden('JÖRG ZAHLT DIE RUNDE · EIN SCHOPPEN TAUBERWEIN · SATTER', 4); }; }   // 11.10. (Andreas: „wenn einer eine Runde zahlt, dann Jörg“)   // Runde nur, wenn ihr wirklich zusammen im Wirtshaus sitzt
-  if (l.bruder) zeilen = AUFTRAG.einf && AUFTRAG.einf < 9 ? ['Du bist der Junge, den der Fuhrmann gebracht hat? Geh zu Jörg, meinem Bruder – er wohnt am Markt.'] : ['Du bist also Jörgs Neffe. Ich bin Axel, sein Bruder – wir haben beide bei unserem Vater den Stein gelernt.', 'Jörg ist Meister an der Mauer, ich hab die Werkstatt. Wenn du kräftig bist: Steine schleppen bringt ehrliches Geld.'];   // 11.10. Andreas' echter Onkel und dessen Bruder
+  if (l.onkel) { var oh = new Date(himmelsZeit()).getHours(); zeilen = oh >= 19 || oh < 5 ? ['Da bist du ja. Dein Strohsack liegt unter der Treppe – leg dich hin, morgen ist früh Arbeit.'] : ['Na, Junge? Unter meiner Treppe darfst du schlafen. Ein Bett musst du dir schon selbst verdienen.', AUFTRAG.heller < 10 ? 'Am Main suchen sie Männer für die Treidelleine. Und an der Mauer, wo ich die Steine haue, brauchen sie immer Steinschlepper – sag, du kommst vom Jörg.' : 'Du hast ja schon ein paar Heller. Spar sie – eine Kammer kostet.']; }
+  if (l.onkel && l.ort === 'wirtshaus' && P.drinnen && (P.drinnen.zweck === 'wirt' || P.drinnen.zweck === 'gasthaus') && AUFTRAG.einf >= 9 && AUFTRAG.joergRunde !== heute()) { zeilen = ['Setz dich, Junge! Die Runde geht auf mich – ein Schoppen Tauberwein, ein Steinmetzmeister trinkt nicht allein.', 'Auf die Mauer, die noch steht, wenn wir längst im Grab liegen.']; danach = function () { AUFTRAG.joergRunde = heute(); AUFTRAG.hunger = Math.max(0, AUFTRAG.hunger - 10); speichern(); melden('JÖRG ZAHLT DIE RUNDE · EIN SCHOPPEN TAUBERWEIN · SATTER', 4); }; }   // 11.10. (Andreas: „wenn einer eine Runde zahlt, dann Jörg“)   // Runde nur, wenn ihr wirklich zusammen im Wirtshaus sitzt
+  if (l.bruder) zeilen = AUFTRAG.einf && AUFTRAG.einf < 9 ? ['Du bist der Junge, den der Fuhrmann gebracht hat? Geh zu Jörg, meinem Bruder – er wohnt am Markt.'] : ['Du bist also der Junge, den Jörg aufgenommen hat. Ich bin Axel, sein Bruder – wir haben beide bei unserem Vater den Stein gelernt.', 'Jörg ist Meister an der Mauer, ich hab die Werkstatt. Wenn du kräftig bist: Steine schleppen bringt ehrliches Geld.'];   // 11.10. Andreas' echter Onkel und dessen Bruder
   var mAng = moebelAngebot(l); if (mAng) zeilen = mAng;
   var kv = kramVorwurf(l); if (kv) zeilen = kv;   // 11.10.: wer dir etwas nachträgt, redet zuerst davon   // 11.10.: Meister an der Werkbank machen dir Möbel
-  if (l.onkel && AUFTRAG.einf === 1) { zeilen = ['Wer bist du denn? … Der Junge meiner Schwester? Herrgott – und sie? … Nein. Sag nichts.', 'Komm. Du siehst aus, als fällst du gleich um. Mein Haus ist hier am Markt, die Tür ist offen. Unter der Treppe liegt ein Strohsack – leg dich hin. Morgen reden wir.'];
+  if (l.onkel && AUFTRAG.einf === 1) { zeilen = ['Wer bist du denn? … Der Fuhrmann schickt dich? Der alte Hund. Na – wo einer Platz hat, hat auch ein zweiter Platz.', 'Komm. Du siehst aus, als fällst du gleich um. Mein Haus ist hier am Markt, die Tür ist offen. Unter der Treppe liegt ein Strohsack – leg dich hin. Morgen reden wir.'];
     if (l.ort === 'wirtshaus') zeilen.push('Ich trink noch meinen Krug aus, dann komm ich nach.');
     danach = function () { AUFTRAG.einf = 2; speichern(); melden('LEG DICH AUF DEN STROHSACK UNTER DER TREPPE', 5); }; }
   if (l.art === 'steuermann') { var hh = new Date(himmelsZeit()).getHours(), da = SCHIFFE.filter(function (q) { return !q.ab && q.treidler && q.gehalten && q.warte > 0; })[0], kommt = SCHIFFE.filter(function (q) { return !q.ab && q.treidler && q.halt && !q.gehalten; })[0];
@@ -12624,9 +12625,27 @@ var KARREN_TEMPO = { stadt: 2.5, land: 9 };
 function karrenHandhaben() { if (EPOCHE !== 1400 || !(AUFTRAG.zehnt > 0) || !SPIELERKARREN || P.drinnen || REITEN.auf) return false;
   if (P.aufKarren) { if (P.tempo > 0.6) return true; var fx = Math.sin(P.blick), fy = Math.cos(P.blick), ok = null; [[1.3, 0], [-1.3, 0]].some(function (o) { var x = P.x + fy * o[0], y = P.y - fx * o[0]; if (frei(x, y) && !hausInnen(x, y)) { ok = [x, y]; return true; } return false; });
     if (!ok) { melden('HIER IST KEIN PLATZ ZUM ABSTEIGEN', 2); return true; } P.aufKarren = false; P.x = ok[0]; P.y = ok[1]; P.bodenZ = undefined; melden('ABGESTIEGEN · RECHTSKLICK: WIEDER AUF DEN KARREN', 3); return true; }
-  P.aufKarren = true; P.bodenZ = undefined; melden('AUF DEM KUTSCHBOCK · W FAHREN · VOR DER STADT GEHT ES FLOTT · RECHTSKLICK IM STAND: ABSTEIGEN', 6); return true; }
+  P.aufKarren = true; P.bodenZ = undefined; AUFTRAG.karrenWahl = true; return true; }   // erst fragen: selbst fahren oder schlafen
+// 12.10. Andreas: „wir können die Fahrt verschlafen, der Ochse kennt den Weg“ – E: selbst fahren (wie bisher), G: einschlafen, aufwachen kurz vor dem Ziel.
+// Die verschlafene Zeit: Ochsenschritt ≈ 1 m/s (ANNAHME), höchstens 1,5 Stunden.
+function karrenWahlTreffen(art) { AUFTRAG.karrenWahl = false;
+  if (art === 'selbst') { melden('AUF DEM KUTSCHBOCK · W FAHREN · VOR DER STADT GEHT ES FLOTT · RECHTSKLICK IM STAND: ABSTEIGEN', 6); return; }
+  var z = zehntZiel(); if (!z) return; var weg = null; try { weg = routeBauen({ x: P.x, y: P.y }, [z.x, z.y]); } catch (e) { weg = null; } if (!weg || weg.length < 2) weg = [[P.x, P.y], [z.x, z.y]];
+  var lang = 0; for (var i = 1; i < weg.length; i++) lang += Math.hypot(weg[i][0] - weg[i - 1][0], weg[i][1] - weg[i - 1][1]);
+  var vor = AUFTRAG.zehnt === 1 ? 45 : 30; if (lang < vor + 40) { melden('DAS LOHNT SICH NICHT MEHR – FAHR DAS STÜCK SELBST', 3); return; }
+  var rest = vor, px = z.x, py = z.y, dx = 0, dy = 1;   // vom Ziel rückwärts den Weg entlang
+  for (var j = weg.length - 1; j > 0; j--) { var a = weg[j - 1], b = weg[j], s_ = Math.hypot(b[0] - a[0], b[1] - a[1]); if (s_ < 1e-3) continue; dx = (b[0] - a[0]) / s_; dy = (b[1] - a[1]) / s_; if (s_ >= rest) { px = b[0] - dx * rest; py = b[1] - dy * rest; break; } rest -= s_; px = a[0]; py = a[1]; }
+  var ok = null; for (var r = 0; r < 12 && !ok; r += 1.5) for (var w = 0; w < 8; w++) { var x = px + Math.cos(w * 0.785) * r, y = py + Math.sin(w * 0.785) * r; if (frei(x, y) && !hausInnen(x, y) && !(typeof imGarten === 'function' && imGarten(x, y))) { ok = [x, y]; break; } }
+  if (!ok) { melden('DER OCHSE WILL NICHT – FAHR SELBST', 3); return; }
+  var stunden = Math.min(1.5, lang / 3600);
+  melden('DU LEHNST DICH AN DIE SÄCKE … DER OCHSE KENNT DEN WEG', 3); abblenden(true); KARRENSCHLAF = true;
+  setTimeout(function () { P.x = ok[0]; P.y = ok[1]; P.bodenZ = undefined; P.blick = Math.atan2(z.x - P.x, z.y - P.y); P.tempo = 0; SPIELERKARREN.letzt = null;
+    UHR.t += stunden * 3600e3; HUNGERUHR = UHR.t; AUSDAUER = 100; nachSprung(); speichern(); abblenden(false); KARRENSCHLAF = false;
+    melden('DU WACHST AUF · ' + (AUFTRAG.zehnt === 1 ? 'SACHSENHAUSEN IST GLEICH DA' : 'DIE BURG IST GLEICH DA') + ' · ' + Math.round(stunden * 60) + ' MINUTEN GESCHLAFEN', 6); }, 1200); }
+var KARRENSCHLAF = false;
 function zehntWeiter(dt) {
   if (P.aufKarren && !(AUFTRAG.zehnt > 0)) P.aufKarren = false;   // Fahrt zu Ende: absteigen
+  if (AUFTRAG.karrenWahl && !KARRENSCHLAF && (!P.aufKarren || taste.w || taste.s || taste.arrowup || taste.arrowdown)) karrenWahlTreffen('selbst');   // losgefahren oder abgestiegen: dann eben selbst
   if (AUFTRAG.wahl && Math.hypot(P.x - AUFTRAG.wahl.wer.x, P.y - AUFTRAG.wahl.wer.y) > 6) AUFTRAG.wahl = null;   // weggegangen: keine Entscheidung
   var an = EPOCHE === 1400 && AUFTRAG.zehnt > 0;
   if (an && !SPIELERKARREN) SPIELERKARREN = karrenBauen('sack');
@@ -13651,7 +13670,7 @@ function familienWeiter(dt) {                    // Töchter vor dem Haus: nur i
   var na = FAM_TOECHTER.filter(function (t) { return t.aktiv && Math.hypot(P.x - t.f.platz[0], P.y - t.f.platz[1]) < 2.4; })[0]; if (na && !AUFTRAG.rede && P.t > (AUFTRAG.meldungBis || 0)) melden('KLICK: MIT ' + na.f.tochter.name + ' ' + na.f.name + ' REDEN', 0.4); }
 // ---- Der eigene Hausstand (11.10., Andreas: „wir spielen theoretisch über Generationen“; Bausteine: Codex Auftrag 17 – Säugling, Wiege, wiegen) ----
 // Nach der Hochzeit zieht die Frau in deine Kammer, sobald du eine hast. Vier Spieltage nach der Hochzeit kommt das erste Kind (ERFUNDEN, Spieltempo statt neun Monate).
-// Der erste Sohn heißt nach dem Onkel: Jörg. Die erste Tochter nach der Mutter der Frau (ANNAHME: einfache Namensliste). Tagsüber steht sie bei der Wiege und wiegt das Kind, nachts sitzt sie am Bett.
+// Der erste Sohn heißt nach Jörg, der dich aufgenommen hat (12.10.: kein Onkel mehr). Die erste Tochter nach der Mutter der Frau (ANNAHME: einfache Namensliste). Tagsüber steht sie bei der Wiege und wiegt das Kind, nachts sitzt sie am Bett.
 var HAUSSTAND = null;
 // ---- Spielleute und Reigen (11.10., Codex Auftrag 18: Schalmei, Trommel, Fiedel, Dudelsack, tanzen) ----
 // Sonntags nach der Messe (10:30–13 Uhr) spielen drei Spielleute auf dem Marktplatz, vier Leute tanzen einen Reigen. BELEGT als Brauch: Spielleute, Reigen. Zeit und Ort ANNAHME.
@@ -13698,11 +13717,11 @@ function hausstandWeiter(dt) { var k = kammerWelt(), da = EPOCHE === 1400 && AUF
   if (H.baby && kind) { if (imArm && H.frau.grindKontakte) { var c = H.frau.grindKontakte(); if (c && c.arm) { if (H.baby.parent !== H.frau.gruppe) H.frau.gruppe.add(H.baby); var am = H.baby.getObjectByName('arm'); H.baby.position.fromArray(c.arm); if (c.werkzeugWinkel) H.baby.rotation.fromArray(c.werkzeugWinkel); if (am) H.baby.position.sub(am.position.clone().applyEuler(H.baby.rotation)); } }
     else if (H.wiege) { var kp = H.wiege.getObjectByName('kind'); if (kp && H.baby.parent !== kp) { kp.add(H.baby); H.baby.position.set(0, 0, 0); H.baby.rotation.set(0, 0, 0); } if (H.wiege.setze) try { H.wiege.setze(Math.sin(H.t * 1.6) * 0.12); } catch (e) {} } }
   if (kind && AUFTRAG.kindGemeldet !== AUFTRAG.kind.tag && P.drinnen === k) { AUFTRAG.kindGemeldet = AUFTRAG.kind.tag; speichern(); var kn = AUFTRAG.kind.name.charAt(0) + AUFTRAG.kind.name.slice(1).toLowerCase();
-    GRUSS = { wer: (AUFTRAG.frau || 'DEINE FRAU'), text: AUFTRAG.kind.art === 'sohn' ? 'Da bist du endlich! Schau – ein Junge. Ich dachte, wir nennen ihn ' + kn + ', nach deinem Onkel.' : 'Da bist du endlich! Schau – ein Mädchen. ' + kn + ' soll sie heißen.', bis: P.t + 7 };
+    GRUSS = { wer: (AUFTRAG.frau || 'DEINE FRAU'), text: AUFTRAG.kind.art === 'sohn' ? 'Da bist du endlich! Schau – ein Junge. Ich dachte, wir nennen ihn ' + kn + ', nach dem alten Jörg, der dich aufgenommen hat.' : 'Da bist du endlich! Schau – ein Mädchen. ' + kn + ' soll sie heißen.', bis: P.t + 7 };
     melden('EIN KIND IST GEBOREN: ' + AUFTRAG.kind.name + ' ' + (AUFTRAG.nachname || ''), 7); } }
 function hausstandReden() { var H = HAUSSTAND, k = kammerWelt(); if (!H || !H.g.visible || !k || P.drinnen !== k || AUFTRAG.rede) return false; var fp = H.frau.gruppe.position; if (Math.hypot(P.x - fp.x, P.y + fp.z) > 2.4) return false;
   var fn = hausstandName(), kind = AUFTRAG.kind, kn = kind ? kind.name.charAt(0) + kind.name.slice(1).toLowerCase() : '', h = stunde(), z;
-  if (kind) z = [['Pst – ' + kn + ' schläft gerade.', 'Bring heute Abend Brot mit, ja?'], [kn + ' hat heute zum ersten Mal gelacht. Über die Katze vom Nachbarn.', 'Dein Onkel war da. Er sagt, ' + kn + ' hat deine Nase.'], ['Wenn ' + kn + ' groß ist, lernt ' + (kind.art === 'sohn' ? 'er' : 'sie') + ' ein Handwerk. Wie du.', 'Geh nur, ich hab hier alles.']][Math.floor(hash(heute() * 1.3 + Math.floor(P.t / 30)) * 3)];
+  if (kind) z = [['Pst – ' + kn + ' schläft gerade.', 'Bring heute Abend Brot mit, ja?'], [kn + ' hat heute zum ersten Mal gelacht. Über die Katze vom Nachbarn.', 'Jörg war da. Er sagt, ' + kn + ' hat deine Nase.'], ['Wenn ' + kn + ' groß ist, lernt ' + (kind.art === 'sohn' ? 'er' : 'sie') + ' ein Handwerk. Wie du.', 'Geh nur, ich hab hier alles.']][Math.floor(hash(heute() * 1.3 + Math.floor(P.t / 30)) * 3)];
   else z = h >= 21 || h < 6 ? ['Komm ins Bett, es ist spät.'] : [['Schön, dass du da bist, Mann.', 'Die Kammer ist eng, aber sie ist unser.'], ['Ich hab die Wäsche am Main gewaschen. Die Weiber dort reden über dich – nur Gutes, keine Sorge.'], ['(' + fn + ' lächelt.) Ich glaube, wir werden bald zu dritt sein.']][Math.min(2, Math.max(0, heute() - (AUFTRAG.hochzeitTag || heute())))];
   AUFTRAG.rede = { wer: { x: fp.x, y: -fp.z }, name: (AUFTRAG.frau || '') + ' ' + (AUFTRAG.nachname || '') + ' · DEINE FRAU', zeilen: z, i: 0 }; return true; }
 function familieReden() {                         // mit einer Tochter vor dem Haus reden – werben, fünf Tage lang
@@ -13913,15 +13932,15 @@ function einfStarten() {
 }
 function einfZiel() {
   if (EPOCHE !== 1400 || !AUFTRAG.einf || AUFTRAG.einf >= 9) return null;
-  if (AUFTRAG.einf === 1) return ONKEL ? { x: ONKEL.l.x, y: ONKEL.l.y, text: 'AUFTRAG: FINDE DEINEN ONKEL JÖRG · ER WOHNT AM MARKT' } : null;
+  if (AUFTRAG.einf === 1) return ONKEL ? { x: ONKEL.l.x, y: ONKEL.l.y, text: 'AUFTRAG: FINDE JÖRG, DEN STEINMETZMEISTER · ER WOHNT AM MARKT' } : null;
   if (AUFTRAG.einf === 2) return ONKEL ? { x: ONKEL.schlaf[0], y: ONKEL.schlaf[1], text: 'AUFTRAG: LEG DICH AUF DEN STROHSACK UNTER DER TREPPE (E)' } : null;
-  return { text: 'DER ONKEL WILL WAS VON DIR – E' };
+  return { text: 'JÖRG WILL WAS VON DIR – E' };
 }
 function einfWeiter(dt) {
   var F = EINF.fuhrmann, K = EINF.karren; if (!F && !K) return;
   if (F && !F.geht && EINF.redeAb && P.t > EINF.redeAb && !STARTSCHIRM && !AUFTRAG.rede) { EINF.redeAb = 0;   // er redet von selbst los
-    AUFTRAG.rede = { wer: F, name: F.name, zeilen: ['So, Junge – da ist Wertheim. Hier setz ich dich ab.', 'Als ich dich am Weg gefunden hab, zwischen dem umgestürzten Wagen … von den anderen hat keiner überlebt. Du hast einen Schutzengel gehabt.', 'Du hast im Fieber immer einen Namen gesagt: Jörg, Steinmetzmeister in Wertheim. Dein Onkel, sagst du. Er wohnt am Markt – frag dich durch.', 'Gott befohlen, Junge. Und halt den Kopf hoch.'], i: 0,
-      danach: function () { F.geht = true; melden('FINDE DEINEN ONKEL JÖRG · ER WOHNT AM MARKT', 5); } }; }
+    AUFTRAG.rede = { wer: F, name: F.name, zeilen: ['So, Junge – da ist Wertheim. Hier setz ich dich ab.', 'Als ich dich am Weg gefunden hab, zwischen dem umgestürzten Wagen … von den anderen hat keiner überlebt. Du hast einen Schutzengel gehabt.', 'Du hast keinen mehr, hm? Hör zu: Mein Freund Jörg, der Steinmetzmeister, hat ein Herz und nimmt solche wie dich auf. Er wohnt am Markt – frag dich durch.', 'Gott befohlen, Junge. Und halt den Kopf hoch.'], i: 0,
+      danach: function () { F.geht = true; melden('FINDE JÖRG, DEN STEINMETZMEISTER · ER WOHNT AM MARKT', 5); } }; }
   var los = F && F.geht, v = 1.1 * dt;
   if (F) { if (los) { F.x += EINF.raus[0] * v; F.y += EINF.raus[1] * v; F.richtung = Math.atan2(EINF.raus[0], EINF.raus[1]); } else if (Math.hypot(P.x - F.x, P.y - F.y) < 6) F.richtung = Math.atan2(P.x - F.x, P.y - F.y);
     F.puppe.bewegen(los ? 'gehen' : 'stehen', Math.min(0.05, dt), los ? 1.1 : 0); var fv = V(F.x, F.y, bodenHoehe(F.x, F.y)); F.puppe.gruppe.position.set(fv[0], fv[1], fv[2]); F.puppe.gruppe.rotation.y = Math.PI - F.richtung; }   // Figuren: π − Richtung (wie die Stadtleute)
@@ -13946,7 +13965,7 @@ function onkelEinrichten() {
   var kand = TAGESLEUTE.filter(function (l) { return l.rolle === 'buerger' && l.heimHaus && l.heimHaus.begehbar && l.heimHaus.zweck === 'wohnen' && l.heimHaus.tuer && ortFreiVorTuer(l.heimHaus) && !hausInnen(l.heimHaus.tuer.mitte[0] - l.heimHaus.tuer.innen[0] * 1.5, l.heimHaus.tuer.mitte[1] - l.heimHaus.tuer.innen[1] * 1.5); })   // 11.10.: die Tür muss auf die Gasse gehen, nicht ins Nachbarhaus
     .sort(function (a, b) { return (a.werkbank ? 1 : 0) - (b.werkbank ? 1 : 0) || Math.hypot(a.heimHaus.cx - WELT.start[0], a.heimHaus.cy - WELT.start[1]) - Math.hypot(b.heimHaus.cx - WELT.start[0], b.heimHaus.cy - WELT.start[1]); });   // ohne eigene Werkbank: er arbeitet an der Mauer
   if (!kand.length) return; var o = kand[0], h = o.heimHaus, t = h.tuer, P2 = h.pts, z0 = h.b + 0.05;
-  o.name = 'JÖRG, DER STEINMETZMEISTER · DEIN ONKEL'; o.onkel = true;
+  o.name = 'JÖRG, DER STEINMETZMEISTER'; o.onkel = true;
   var sm = TAGESLEUTE.filter(function (q) { return q !== o && /, DER STEINMETZ/.test(q.name || ''); })[0]; if (sm) { sm.name = 'AXEL, DER STEINMETZ · JÖRGS BRUDER'; sm.bruder = true; }   // Andreas: „sein Bruder, der andere Steinmetz, Axel“
   [[/^VEIT, DER TUCHHÄNDLER/, 'TORE, TUCHHÄNDLER AUS GENUA']].forEach(function (q) {   // Andreas' Freunde (und Michael, mit dem er noch ein Hühnchen zu rupfen hat)
     TAGESLEUTE.concat(LEUTE).forEach(function (l) { if (q[0].test(l.name || '')) { l.name = q[1]; if (l.stand) l.stand.name = q[1]; } }); });
@@ -13967,13 +13986,13 @@ function onkelWeiter() {
   if (AUFTRAG.einf && AUFTRAG.einf < 9 && ONKEL.haus.codexTueren) ONKEL.haus.codexTueren.forEach(function (q) { if (q.haus && q.t.offen < 0.5) q.t.oeffnen(); });   // „die Tür ist offen“ – dann auch wirklich (11.10., Andreas stand davor)
   var d = Math.hypot(P.x - ONKEL.schlaf[0], P.y - ONKEL.schlaf[1]);
   if (d < 1.7 && !ONKEL.hinweis && AUFTRAG.einf !== 3 && !AUFTRAG.rede) { ONKEL.hinweis = true; melden('RECHTSKLICK: SCHLAFEN – DEIN STROHSACK', 3); } else if (d > 3) ONKEL.hinweis = false;
-  if (!AUFTRAG.onkelGezeigt && P.t > 4 && !STARTSCHIRM) { AUFTRAG.onkelGezeigt = true; speichern(); melden('DEIN ONKEL JÖRG WOHNT AM MARKT · DORT SCHLÄFST DU', 7); } }
+  if (!AUFTRAG.onkelGezeigt && P.t > 4 && !STARTSCHIRM) { AUFTRAG.onkelGezeigt = true; speichern(); melden('JÖRG, DER STEINMETZ, WOHNT AM MARKT · DORT SCHLÄFST DU', 7); } }
 function strohsack() {                           // E am Strohsack: abends schlafen bis zum Morgen
   if (!ONKEL || EPOCHE !== 1400 || Math.hypot(P.x - ONKEL.schlaf[0], P.y - ONKEL.schlaf[1]) > 1.7) return false;
   var d = new Date(himmelsZeit()), hh = d.getHours() + d.getMinutes() / 60;
-  if (hh >= 5 && hh < 19 && AUFTRAG.einf !== 2) { melden('AM HELLEN TAG LEGT SICH KEINER HIN – DER ONKEL WÜRDE SCHIMPFEN', 3); return true; }
+  if (hh >= 5 && hh < 19 && AUFTRAG.einf !== 2) { melden('AM HELLEN TAG LEGT SICH KEINER HIN – JÖRG WÜRDE SCHIMPFEN', 3); return true; }
   var bis = hh >= 6 ? 30 - hh : 6 - hh, ersteNacht = AUFTRAG.einf === 2; abblenden(true);   // bis zum nächsten Morgen um 6 (die erste Nacht: man fällt einfach um)
-  setTimeout(function () { UHR.t += bis * 3600e3; HUNGERUHR = UHR.t; if (SPIELER) AUFTRAG.hunger = Math.min(100, AUFTRAG.hunger + 12); AUSDAUER = 100; speichern(); abblenden(false); if (ersteNacht) { kammerHaus(); einfWecken(); return; } melden(kammerGemietet() ? 'AUSGESCHLAFEN · DER RÜCKEN TUT WEH – DEINE KAMMER WARTET' : 'AUSGESCHLAFEN · DER RÜCKEN TUT WEH · DER ONKEL: „IN DER NÄHE IST EINE KAMMER FREI – 6 HELLER DIE WOCHE“', 6); kammerHaus(); tagesbilanz(); }, 1300);
+  setTimeout(function () { UHR.t += bis * 3600e3; HUNGERUHR = UHR.t; if (SPIELER) AUFTRAG.hunger = Math.min(100, AUFTRAG.hunger + 12); AUSDAUER = 100; speichern(); abblenden(false); if (ersteNacht) { kammerHaus(); einfWecken(); return; } melden(kammerGemietet() ? 'AUSGESCHLAFEN · DER RÜCKEN TUT WEH – DEINE KAMMER WARTET' : 'AUSGESCHLAFEN · DER RÜCKEN TUT WEH · JÖRG: „IN DER NÄHE IST EINE KAMMER FREI – 6 HELLER DIE WOCHE“', 6); kammerHaus(); tagesbilanz(); }, 1300);
   return true; }
 
 // ---- Einkaufen sichtbar (09.10., Andreas: „lass uns der Simulation zusehen“) ----
@@ -15078,11 +15097,12 @@ function hudMalen() {
     text(zeile, 6, 26, zeile.length > 92 ? 6 : zeile.length > 72 ? 7 : 8, AUFTRAG.stufe >= 4 ? '#9fe39f' : '#f2ecdc', 'left');   // lange Zeilen kleiner – sonst laufen sie ins Datum
     var zl = lebenszielText(); if (zl) text(zl, 6, 37, zl.length > 95 ? 5.5 : 6.5, '#e8c878', 'left');   // 11.10.: das nächste eigene Ziel – wofür man gerade arbeitet
     if (SPIELER && !INVENTAR && !AUFTRAG.rede) { schnellleiste(W, H); var kd = SPIELER.kleidung[AUFTRAG.kleid]; text((AUFTRAG.nachname ? AUFTRAG.nachname + ' · ' : '') + kd.stand + (AUFTRAG.lehre === 3 ? ' · SCHUSTERMEISTER' + (AUFTRAG.ladenVorrat ? ' · ' + AUFTRAG.ladenVorrat + ' PAAR IM LADEN' : '') : AUFTRAG.lehre === 2 ? ' · SCHUSTERGESELLE' + (AUFTRAG.buergerrecht ? ' · BÜRGER' : '') : AUFTRAG.lehre ? ' · SCHUSTERLEHRLING (' + Math.min(AUFTRAG.lehrePaare || 0, LEHRE_PAARE) + '/' + LEHRE_PAARE + ' PAAR)' : '') + (AUFTRAG.hunger >= SPIELER.hunger.schwach_ab ? ' · SCHWACH VOR HUNGER' : AUFTRAG.hunger >= SPIELER.hunger.hungrig_ab ? ' · HUNGRIG' : '') + ' · I: INVENTAR', 6, H - 22, 8, AUFTRAG.hunger >= SPIELER.hunger.hungrig_ab ? '#ffcf7a' : '#f2ecdc', 'left'); }
-    var nah = naechsteePerson(), scn = schatzNah(); if (scn && !AUFTRAG.rede) text('RECHTSKLICK: AUFHEBEN', W / 2, H - 56, 9, '#ffd75e'); else if (nah && !AUFTRAG.rede && !AUFTRAG.wahl) text('KLICK: MIT ' + dativ(nah.name) + ' REDEN', W / 2, H - 56, 9, '#ffd75e');
+    var nah = naechsteePerson(), scn = schatzNah(); if (scn && !AUFTRAG.rede) text('RECHTSKLICK: AUFHEBEN', W / 2, H - 56, 9, '#ffd75e'); else if (nah && !AUFTRAG.rede && !AUFTRAG.wahl && !AUFTRAG.karrenWahl) text('KLICK: MIT ' + dativ(nah.name) + ' REDEN', W / 2, H - 56, 9, '#ffd75e');
     if (AUSDAUER < 99.5) { var ab = Math.round(AUSDAUER / 100 * 60); hud.fillStyle = 'rgba(0,0,0,.5)'; hud.fillRect(W / 2 - 31, H - 76, 62, 5); hud.fillStyle = AUSDAUER < 25 ? '#e0603a' : '#e8d070'; hud.fillRect(W / 2 - 30, H - 75, ab, 3); }   // Ausdauer beim Klettern
     if (!AUFTRAG.rede && !P.versteckt && versteckNah() && (JAGD || AUFTRAG.schmuggel === 1)) text('RECHTSKLICK: IM HEU VERSTECKEN', W / 2, H - 44, 8, '#e8d27a');
     if (P.versteckt) { hud.fillStyle = 'rgba(150,120,40,.35)'; for (var hy = 0; hy < H; hy += 6) hud.fillRect(0, hy, W, 2); text('DU LIEGST IM HEU · E ODER LAUFEN = RAUS', W / 2, H - 44, 8, '#f2e2a0'); }
     if (AUFTRAG.hundWahl && !AUFTRAG.rede) text('DEIN HUND IST TOT · E: VOR SCHULTHEISS UND SCHÖFFEN KLAGEN   ·   G: VERGEBEN   ·   R: RACHE', W / 2, H - 56, 9, '#ffd75e');
+    if (AUFTRAG.karrenWahl && !AUFTRAG.rede) text('E: SELBST FAHREN   ·   G: EINSCHLAFEN – DER OCHSE KENNT DEN WEG', W / 2, H - 56, 9, '#ffd75e');
     if (AUFTRAG.wahl && !AUFTRAG.rede) { text('E: ALLES EINTREIBEN (' + AUFTRAG.wahl.voll + ' MALTER)   ·   G: NACHLASSEN (' + AUFTRAG.wahl.halb + ' MALTER)', W / 2, H - 56, 9, '#ffd75e'); }
     if (AUFTRAG.rede) {                            // Gesprächskasten unten
       var r = AUFTRAG.rede, satz = String(r.zeilen[r.i] || ''), ini = /^[A-Za-zÄÖÜäöü]/.test(satz) ? satz.charAt(0).toUpperCase() : null;   // 11.10. (Andreas: „schnörkelige Schrift … wie Disney“): Initial wie in einer Handschrift
@@ -15120,10 +15140,10 @@ var INVENTAR = false;
 var QUESTBUCH = false;
 function questListe() {
   var A = AUFTRAG, j = [], weg = [], neben = [], hs = ''; try { hs = localStorage.getItem(SPEICHER + '_hund') || ''; } catch (e) {}
-  if (A.einf && A.einf < 9) j.push(['Finde deinen Onkel Jörg, den Steinmetzmeister. Er wohnt am Markt – frag die Leute nach ihm.', 'Leg dich auf den Strohsack unter der Treppe beim Onkel (E).', 'Der Onkel will etwas von dir – rede mit ihm (E).'][Math.min(2, A.einf - 1)]);
+  if (A.einf && A.einf < 9) j.push(['Finde Jörg, den Steinmetzmeister – der Fuhrmann sagt, er nimmt dich auf. Er wohnt am Markt, frag die Leute nach ihm.', 'Leg dich auf den Strohsack unter Jörgs Treppe (E).', 'Jörg will etwas von dir – rede mit ihm (E).'][Math.min(2, A.einf - 1)]);
   var dq = new Date(himmelsZeit()), hq = dq.getHours() + dq.getMinutes() / 60; if (dq.getDay() === 0 && hq >= 6 && hq < 13) j.push(hq < 10.5 ? 'Heute ist Sonntag: Messe in der Stiftskirche bis halb elf – die ganze Stadt ist dort.' : 'Heute ist Sonntag: Spielleute und Reigen auf dem Marktplatz bis ein Uhr.');   // 12.10.
   var nz = naechstesZiel(); if (nz) j.push(nz[0].charAt(0).toUpperCase() + nz[0].slice(1) + (nz[1] ? ' – ' + nz[1] + ' Heller (du hast ' + A.heller + ')' : ''));
-  weg.push([A.einf >= 9, 'Beim Onkel Jörg angekommen']); weg.push([!!(A.holzErklaert || A.scheite || A.beil), 'Erstes Geld: Holz hacken für Konrad']); weg.push([kammerGemietet(), 'Eine eigene Kammer']);
+  weg.push([A.einf >= 9, 'Bei Jörg, dem Steinmetz, untergekommen']); weg.push([!!(A.holzErklaert || A.scheite || A.beil), 'Erstes Geld: Holz hacken für Konrad']); weg.push([kammerGemietet(), 'Eine eigene Kammer']);
   weg.push([A.kleid >= 2, 'Ein Wollrock – jetzt nimmt dich ein Meister']); weg.push([A.lehre >= 1, 'Lehrling bei Meister Matthes']); weg.push([A.lehre >= 2, 'Geselle (Gesellenstück)']);
   weg.push([!!A.buergerrecht, 'Bürger der Stadt Wertheim']); weg.push([A.lehre >= 3, 'Meister mit eigenem Laden']); weg.push([!!A.verheiratet, A.verheiratet ? 'Verheiratet mit ' + (A.frau || '').charAt(0) + (A.frau || '').slice(1).toLowerCase() + (A.nachname ? ' · du heißt jetzt ' + A.nachname : '') : 'Eine Frau, ein Name, eine Familie']);
   if (A.stufe > 0 && A.stufe < 4) neben.push(['Der Brief des Schiffers', A.stufe === 1 ? 'Zum Pfarrer an der Stiftskirche bringen' : A.stufe === 3 ? 'Den Brief des Marktmanns zum Pfarrer' : 'Zurück zum Schiffer Kilian']); else if (A.stufe >= 4) neben.push(['Der Brief des Schiffers', '✓ erledigt']);

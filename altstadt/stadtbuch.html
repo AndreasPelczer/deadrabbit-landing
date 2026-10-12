@@ -171,7 +171,7 @@ ol.weg small { color: var(--blass); font-style: italic; }
     el('weg').innerHTML = weg.map(function (w, i) { return '<li class="' + (w[1] ? 'fertig' : i === jetzt ? 'jetzt' : '') + '">' + esc(w[0]) + (w[2] ? ' <small>' + esc(w[2]) + '</small>' : '') + '</li>'; }).join('');
   }
   function stammbaum(s) { var z = el('stamm'); if (!z || !s) return; function p(t, k) { return '<span class="p ' + (k || '') + '">' + esc(t) + '</span>'; } function nm(n) { return n ? n.charAt(0) + n.slice(1).toLowerCase() : ''; }
-    var h = '<div class="reihe">' + p('Deine Mutter, Jörgs Schwester †', 'tot') + p('Jörg, Steinmetzmeister · dein Onkel') + p('Axel, sein Bruder') + '</div><div class="strich">│</div>';
+    var h = '<div class="reihe">' + p('Aufgenommen von Jörg, dem Steinmetzmeister', 'offen') + '</div><div class="strich">┊</div>';   // 12.10. Andreas: kein Onkel, keine tote Schwester – die Familie baust du selbst auf
     var du = 'Du' + (s.nachname ? ' ' + nm(s.nachname) : ' – noch ohne Nachnamen');
     if (s.frau) h += '<div class="reihe">' + p(du, 'ich') + '<span>⚭</span>' + p(nm(s.frau) + (s.schwiegervater ? ', Tochter von ' + s.schwiegervater.split(',')[0].charAt(0) + s.schwiegervater.split(',')[0].slice(1).toLowerCase() : '')) + '</div>';
     else h += '<div class="reihe">' + p(du, 'ich') + (s.geplant ? '<span>⚭</span>' + p(nm(s.geplant) + ' – Hochzeit am Sonntag', 'offen') : '') + '</div>';
