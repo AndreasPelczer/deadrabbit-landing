@@ -15725,7 +15725,7 @@ function blLaden() { BL.geladen = true; var j = null; try { j = JSON.parse(local
   BL.ops = j.ops || []; BL.fahnen = j.fahnen || []; BL.ops.forEach(blAnwenden); if (BL.ops.length) blNetz(); BL.fahnen.forEach(blFahneBauen); }
 function blNeuAufbauen() { BL.grid.clear(); BL.n = 0; BL.ops.forEach(blAnwenden); blNetz(); }
 function blUmschalten() { if (EPOCHE !== 1400 && !BL.an) { melden('DER BAULEITER ARBEITET UM 1400', 2); return; } BL.an = !BL.an; if (BL.ring) BL.ring.visible = BL.an;
-  melden(BL.an ? 'BAULEITER AN · LINKS AUFTRAGEN · RECHTS ABTRAGEN · E EBNEN · N FAHNE · RAD KREIS · X ZURÜCK · L LISTE · Ü AUS' : 'BAULEITER AUS · ' + BL.ops.length + ' ÄNDERUNGEN, ' + BL.fahnen.length + ' FAHNEN GESPEICHERT', 5); }
+  melden(BL.an ? 'BAULEITER AN · DIE ZEIT STEHT STILL · LINKS AUFTRAGEN · RECHTS ABTRAGEN · E EBNEN · N FAHNE · RAD KREIS · X ZURÜCK · L LISTE · Ü AUS' : 'BAULEITER AUS · ' + BL.ops.length + ' ÄNDERUNGEN, ' + BL.fahnen.length + ' FAHNEN GESPEICHERT', 5); }
 function blZiel() {                               // wohin du schaust: vom Auge den Blick entlang, bis der Boden getroffen ist (höchstens 60 m)
   var dir = new THREE.Vector3(); kamera.getWorldDirection(dir); var o = kamera.position;
   for (var t = 0.5; t < 60; t += 0.25) { var x = o.x + dir.x * t, y = -(o.z + dir.z * t), z = o.y + dir.y * t; if (z <= bodenHoehe(x, y)) return [x, y]; } return [P.x + Math.sin(P.blick) * 5, P.y + Math.cos(P.blick) * 5]; }   // geradeaus geschaut: 5 m vor dir
@@ -17000,7 +17000,7 @@ function mauerUnter(x, y, fuss) {                 // steht man auf einer (OSM-)M
 }
 function schritt(dt) {
   if (UHR.letzt !== undefined && Math.abs(UHR.t - UHR.letzt) > 10 * 60e3) nachSprung();   // 11.10.: ein Sprung von irgendwoher (Schlaf, Arbeit, Zehnt)
-  P.t += dt; UHR.t += dt * 1000 * (UHR.raffer ? 360 : ECHTZEIT || EPOCHE !== 1400 ? 1 : SPIELTEMPO); UHR.letzt = UHR.t; stadtWeiter();
+  P.t += dt; if (!BL.an) UHR.t += dt * 1000 * (UHR.raffer ? 360 : ECHTZEIT || EPOCHE !== 1400 ? 1 : SPIELTEMPO); UHR.letzt = UHR.t; stadtWeiter();   // 13.10. (Andreas): im Bauleiter-Modus stehen Tag und Spielzeit still
   if (TREIDEL) { treidelWeiter(dt); maus.dx = maus.dy = 0; return; }   // Szene Schiffsziehen: die Leine führt, nicht die Tasten
   var vor = (INVENTAR || P.sitzen) ? 0 : (taste.arrowup || taste.w ? 1 : 0) - (taste.arrowdown || taste.s ? 1 : 0), seit = (INVENTAR || P.sitzen) ? 0 : (taste.d ? 1 : 0) - (taste.a ? 1 : 0), dreh = (taste.arrowright ? 1 : 0) - (taste.arrowleft ? 1 : 0);
   if (finger.links) { vor -= Math.max(-1, Math.min(1, (finger.links.y - finger.links.y0) / 30)); seit += Math.max(-1, Math.min(1, (finger.links.x - finger.links.x0) / 30)); }
@@ -17245,7 +17245,7 @@ function questListe() {
   return { jetzt: j, weg: weg, neben: neben };
 }
 function bauleiterMalen(W, H) {                   // Tastentafel rechts, solange der Bauleiter an ist
-  var z = [['BAULEITER', ''], ['LINKSKLICK', 'AUFTRAGEN'], ['RECHTSKLICK', 'ABTRAGEN'], ['E', 'EBNEN (DEINE HÖHE)'], ['MAUSRAD', 'KREIS ' + BL.r.toFixed(1) + ' M'], ['N', 'FAHNE + NOTIZ'], ['X', 'ZURÜCK'], ['L', 'LISTE SPEICHERN'], ['Ü', 'AUS'], ['', BL.ops.length + ' ÄNDERUNGEN · ' + BL.fahnen.length + ' FAHNEN']];
+  var z = [['BAULEITER · ZEIT STEHT', ''], ['LINKSKLICK', 'AUFTRAGEN'], ['RECHTSKLICK', 'ABTRAGEN'], ['E', 'EBNEN (DEINE HÖHE)'], ['MAUSRAD', 'KREIS ' + BL.r.toFixed(1) + ' M'], ['N', 'FAHNE + NOTIZ'], ['X', 'ZURÜCK'], ['L', 'LISTE SPEICHERN'], ['Ü', 'AUS'], ['', BL.ops.length + ' ÄNDERUNGEN · ' + BL.fahnen.length + ' FAHNEN']];
   var bw = 150, x0 = W - bw - 8, y0 = 48, zh = 10, bh = z.length * zh + 10; hud.fillStyle = 'rgba(20,14,8,.72)'; hud.fillRect(x0, y0, bw, bh); hud.fillStyle = '#ffd040'; hud.fillRect(x0, y0, bw, 2);
   z.forEach(function (q, i) { var y = y0 + 12 + i * zh; hud.textBaseline = 'alphabetic'; hud.textAlign = 'left';
     if (i === 0) { hud.font = 'bold 9px monospace'; hud.fillStyle = '#ffd040'; hud.fillText(q[0], x0 + 6, y); return; }
@@ -17552,7 +17552,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = '689f7b46', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = '6691decc', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
