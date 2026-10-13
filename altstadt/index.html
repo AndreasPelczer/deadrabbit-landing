@@ -11763,7 +11763,9 @@ var ALTANE = { a: [137.6, 66.5], b: [155.4, 82.8], weg: 14.8, kaempfer: 189.5, r
   MAUERN.forEach(function (m) { if (!m.altane && m.abs === undefined && nahZM(m.a) && nahZM(m.b)) m.zinnen = true; });
   // 13.10. (Andreas: „mach die Mauer unter dem Restaurant auch in Sandstein“, Foto alltagserinnerungen 21): Stützmauer OSM 88289232 – schlicht, ohne Zinnen, Brüstung 1 m über der Terrasse
   var RM = [[152.5, 82.9], [137.4, 108.1]]; function nahRM(q) { return abstandStrecke(q[0], q[1], RM[0][0], RM[0][1], RM[1][0], RM[1][1]) < 0.8; }
-  MAUERN.forEach(function (m) { if (!m.altane && !m.zinnen && m.abs === undefined && nahRM(m.a) && nahRM(m.b)) { m.zinnen = true; m.ohneZinnen = true; } }); })();
+  MAUERN.forEach(function (m) { if (!m.altane && !m.zinnen && m.abs === undefined && nahRM(m.a) && nahRM(m.b)) { m.zinnen = true; m.ohneZinnen = true; } });
+  // 13.10. (Andreas: „mach die Ruinenscheiben in der Burg auch in Sandstein“): alle übrigen Mauern im Burgbereich (bis 85 m um die Mitte) im selben Mauerstein, schlicht, Höhe wie bisher
+  MAUERN.forEach(function (m) { if (m.kern || m.altane || m.zinnen || m.rondell || m.abs !== undefined) return; var mx = (m.a[0] + m.b[0]) / 2, my = (m.a[1] + m.b[1]) / 2; if (Math.hypot(mx - 185, my - 100) < 85) { m.zinnen = true; m.ohneZinnen = true; m.eigeneHoehe = true; } }); })();
 MAUERN.forEach(function (m) { if (KERNBURG && drin(m.a[0], m.a[1], KERNBURG) && drin(m.b[0], m.b[1], KERNBURG)) m.kern = true; });
 var KERNMAUERN = null;
 var BAEUME = WELT.baeume.map(function (b, i) { var r = hash(i * 3.3); return { x: b[0], y: b[1], z: gel(b[0], b[1]), art: wahl(['laub', 'laubgross', 'tanne', 'herbst', 'laubrund', 'birke', 'laubklein'], r), hoehe: 6 + r * 6 }; });
@@ -15732,7 +15734,7 @@ function zinnenMauernBauen() {                    // Zinnenmauer aus rotem Sands
   var mat = RONDELL.mat || new THREE.MeshLambertMaterial({ color: 0xa8705a }), dunkel = new THREE.MeshLambertMaterial({ color: 0x2a1c16 }), pos = [], uv = [], idx = [], merl = [], schar = [], D = 0.45;
   function quad(p0, p1, p2, p3, u0, u1, v0, v1) { var b = pos.length / 3; [p0, p1, p2, p3].forEach(function (p) { pos.push(p[0], p[1], p[2]); }); uv.push(u0, v0, u1, v0, u1, v1, u0, v1); idx.push(b, b + 1, b + 2, b, b + 2, b + 3); }
   MAUERN.forEach(function (m) { if (!m.zinnen) return; var ex = m.b[0] - m.a[0], ey = m.b[1] - m.a[1], L = Math.hypot(ex, ey); if (L < 0.2) return; var nx = ey / L, ny = -ex / L;
-    function k(t) { var x = m.a[0] + ex * t, y = m.a[1] + ey * t, z1 = bodenHoehe(x + nx * 1.4, y + ny * 1.4), z2 = bodenHoehe(x - nx * 1.4, y - ny * 1.4); return { x: x, y: y, unten: Math.min(z1, z2) - 0.8, oben: Math.max(z1, z2) + (m.ohneZinnen ? 1.0 : 1.2), aussen: z1 < z2 ? 1 : -1 }; }
+    function k(t) { var x = m.a[0] + ex * t, y = m.a[1] + ey * t, z1 = bodenHoehe(x + nx * 1.4, y + ny * 1.4), z2 = bodenHoehe(x - nx * 1.4, y - ny * 1.4); return { x: x, y: y, unten: Math.min(z1, z2) - 0.8, oben: Math.max(z1, z2) + (m.eigeneHoehe ? (m.h === 2.6 ? 0.4 : m.h) : m.ohneZinnen ? 1.0 : 1.2), aussen: z1 < z2 ? 1 : -1 }; }
     var ka = k(0), kb = k(1);
     [-1, 1].forEach(function (sd) { var ax = ka.x + nx * D * sd, ay = ka.y + ny * D * sd, bx = kb.x + nx * D * sd, by = kb.y + ny * D * sd;
       var P0 = V(ax, ay, ka.unten), P1 = V(bx, by, kb.unten), P2 = V(bx, by, kb.oben), P3 = V(ax, ay, ka.oben); if (sd > 0) quad(P0, P1, P2, P3, 0, L / 2, ka.unten / 2, kb.oben / 2); else quad(P1, P0, P3, P2, 0, L / 2, kb.unten / 2, ka.oben / 2); });
@@ -17494,7 +17496,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = '3ee50284', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = 'cb2846bb', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
