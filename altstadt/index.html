@@ -12559,7 +12559,23 @@ function burgwegProfil() {
     for (var pass = 0; pass < 60; pass++) { for (var i = 1; i < N - 1; i++) { var ds = pts[i][2] - pts[i - 1][2]; z[i] = Math.max(z[i - 1] - G_ * ds, Math.min(z[i - 1] + G_ * ds, z[i])); }   // die Enden bleiben fest, nur das Innere gibt nach
       for (var i2 = N - 2; i2 >= 1; i2--) { var ds2 = pts[i2 + 1][2] - pts[i2][2]; z[i2] = Math.max(z[i2 + 1] - G_ * ds2, Math.min(z[i2 + 1] + G_ * ds2, z[i2])); } }
     pts.forEach(function (q, i) { bwRein([q[0], q[1], z[i], 2.5, 7, 0]); }); });
-  try { treppenProfil(); } catch (e) { console.warn('Treppen', e); } }
+  try { treppenProfil(); } catch (e) { console.warn('Treppen', e); }
+  try { torAufgangProfil(); } catch (e) { console.warn('Toraufgang', e); } }
+// 13.10. (Andreas, vor Ort: „es steigt schon beim Reingehen an und danach rechts nochmal über lange Treppen, aber nur 15 cm hoch“ + Foto des ebenen Vorburghofs):
+// die Torfahrt durchs Archiv steigt von der Gasse auf ~189 m, dann führt rechts eine breite Stufentreppe (15 cm) in den Vorburghof (~194,5 m, DGM1).
+// Weg und Höhen ANNAHME nach Foto und Gelände – einstellbar hier.
+var TORAUFGANG = { oben: 189.0, treppe: [[164, 131.5], [160, 128.8], [152, 128.4]], stufe: 0.15, breite: 3.6, abschnitte: [[2, 0], [1.2, 5], [1.5, 0], [0, -1]] };   // 13.10. (Andreas' Luftbild): grüner Streifen hinter dem Torhaus · kurze Treppe (5 Stufen) · kleine grüne Fläche · lange Treppe in den großen Hof
+function torAufgangProfil() {
+  var d = DURCHGAENGE && DURCHGAENGE.filter(function (q) { return q.osm === 88289162; })[0]; if (!d) return; var T = TORAUFGANG, a = d.p[0], b = d.p[d.p.length - 1];
+  function roh(x, y) { var z = stadtBoden(x, y); return z === null ? gel(x, y) : z; }
+  var za = roh(a[0] - (b[0] - a[0]) * 0.2, a[1] - (b[1] - a[1]) * 0.2), L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  for (var s_ = -2; s_ <= L + 0.01; s_ += 0.5) { var f = Math.max(0, s_ / L); bwRein([a[0] + (b[0] - a[0]) * s_ / L, a[1] + (b[1] - a[1]) * s_ / L, za + (T.oben - za) * f, 1.8, 2.8, 0]); }
+  var P_ = [b].concat(T.treppe), lang = 0, seg = []; for (var k = 0; k + 1 < P_.length; k++) { var l = Math.hypot(P_[k + 1][0] - P_[k][0], P_[k + 1][1] - P_[k][1]); seg.push([P_[k], P_[k + 1], lang, l]); lang += l; }
+  var ende = P_[P_.length - 1], zE = roh(ende[0], ende[1]), ab = [], s0 = 0, z0 = T.oben;   // Abschnitte entlang des Wegs: [Länge, Stufen] – 0 Stufen = eben, -1 = der Rest bis in den Hof
+  (T.abschnitte || [[0, -1]]).forEach(function (a_) { var len = a_[1] === -1 ? lang - s0 : a_[0], hub = a_[1] === -1 ? zE - z0 : a_[1] * T.stufe; ab.push({ s0: s0, len: len, z0: z0, hub: hub, n: a_[1] === -1 ? Math.max(2, Math.round(hub / T.stufe)) : a_[1] }); s0 += len; z0 += hub; });
+  T.ab = ab; T.lauf = { pts: P_, lang: lang, z0: T.oben, z1: zE, seg: seg }; T.unten = za;
+  function zBei(sl) { for (var i = 0; i < ab.length; i++) { var q = ab[i]; if (sl <= q.s0 + q.len || i === ab.length - 1) return q.z0 + q.hub * Math.max(0, Math.min(1, (sl - q.s0) / (q.len || 1))); } return zE; }
+  seg.forEach(function (sg) { for (var t = 0; t <= sg[3] + 0.01; t += 0.5) { var x = sg[0][0] + (sg[1][0] - sg[0][0]) * t / sg[3], y = sg[0][1] + (sg[1][1] - sg[0][1]) * t / sg[3]; bwRein([x, y, zBei(sg[2] + t), T.breite / 2, T.breite / 2 + 1.5, 0]); } }); }
 function bwRein(q) { var k = Math.floor(q[0] / 8) + ',' + Math.floor(q[1] / 8); (BW_PROFIL.eimer[k] = BW_PROFIL.eimer[k] || []).push(q); }   // [x, y, z, ganz bis, weich bis, 0 Gasse | 1 Treppe]
 // 13.10. (Andreas mit Fotos: „die Treppe verläuft runder … wie Serpentinen“): jede OSM-Treppe steigt gleichmäßig entlang ihres Laufs, auch um die Kehren.
 // Unten beginnt sie auf dem Boden oder auf dem Absatz der Treppe davor (≤ 4,5 m); oben endet sie auf der Gasse – endet sie nicht an einer Gasse,
@@ -12920,13 +12936,14 @@ function torbauBauen() {                        // der Torbau der Burg (Archiv) 
     if (rausX * nx + rausY * ny < 0) { nx = -nx; ny = -ny; }
     var off = Math.min(A.r, B.r) * 0.95, z0 = Math.min(A.z, B.z), fh = ar.h + 6, exA = -ny, eyA = nx, sB = LL * (ux * exA + uy * eyA), s0 = Math.min(0, sB) + (sB > 0 ? A.r : B.r) * 0.75, s1 = Math.max(0, sB) - (sB > 0 ? B.r : A.r) * 0.75;   // lokale X-Achse der Fassade = (−ny, nx), Front (+Z) = nach außen
     var pa = d.p[0], pb = d.p[1], dx = pb[0] - pa[0], dy = pb[1] - pa[1], den = dx * ny - dy * nx, oxp = A.x + nx * off, oyp = A.y + ny * off;   // Schnitt Torweg × Fassadenlinie
-    var tt = Math.abs(nx * dx + ny * dy) > 1e-6 ? ((oxp - pa[0]) * nx + (oyp - pa[1]) * ny) / (nx * dx + ny * dy) : 0.5, gx0 = pa[0] + dx * tt, gy0 = pa[1] + dy * tt, sg = (gx0 - oxp) * exA + (gy0 - oyp) * eyA, gw = Math.max(2.4, (d.b || 3) + 0.4), gh = 3.4;
+    var tt = Math.abs(nx * dx + ny * dy) > 1e-6 ? ((oxp - pa[0]) * nx + (oyp - pa[1]) * ny) / (nx * dx + ny * dy) : 0.5, gx0 = pa[0] + dx * tt, gy0 = pa[1] + dy * tt, sg = (gx0 - oxp) * exA + (gy0 - oyp) * eyA, gw = Math.max(2.4, (d.b || 3) + 0.4), kae = 2.6, gh = kae + gw / 2 - 0.45;   // 13.10. (Andreas: „das Grüne sollte der Durchgang sein“): hoher Rundbogen – Gewände bis 2,6 m, darüber der Halbkreis
     var zg = bodenHoehe(gx0, gy0), fa = new THREE.Group(), v0 = V(oxp, oyp, zg); fa.position.set(v0[0], v0[1], v0[2]); fh += Math.max(0, z0 + 0.5 - zg); fa.rotation.y = Math.atan2(nx, -ny); szene.add(fa);   // Torbogen steht auf dem Boden des Torwegs, nicht auf der tieferen Hauskante
     function teil(a0, a1, y0, y1) { if (a1 - a0 < 0.2 || y1 - y0 < 0.2) return; var m = box(a1 - a0, y1 - y0, 0.5, steinMat(Math.max(1, Math.round((a1 - a0) / 2.2)), Math.max(1, Math.round((y1 - y0) / 1.6))), (a0 + a1) / 2, (y0 + y1) / 2, 0, fa); m.castShadow = m.receiveShadow = true; }
-    var unten = Math.min(-1, z0 - zg - 1); teil(s0, sg - gw / 2, unten, fh); teil(sg + gw / 2, s1, unten, fh); teil(sg - gw / 2, sg + gw / 2, gh + 0.9, fh);
-    box(gw + 0.9, 0.5, 0.65, hell, sg, gh + 0.65, 0, fa); [-1, 1].forEach(function (q) { box(0.45, gh + 0.5, 0.65, hell, sg + q * (gw / 2 + 0.22), (gh + 0.5) / 2 - 0.1, 0, fa); });   // Torgewände
-    var bogen = new THREE.Mesh(new THREE.TorusGeometry(gw / 2, 0.22, 6, 14, Math.PI), hell); bogen.position.set(sg, gh - gw / 2 + 0.45, 0.05); fa.add(bogen);
-    var spieg = new THREE.Mesh(new THREE.CircleGeometry(gw / 2 - 0.15, 14, 0, Math.PI), holzT); spieg.position.set(sg, gh - gw / 2 + 0.45, 0.02); spieg.material.side = THREE.DoubleSide; fa.add(spieg);
+    var unten = Math.min(-1, z0 - zg - 1), sch = kae + gw / 2; teil(s0, sg - gw / 2, unten, fh); teil(sg + gw / 2, s1, unten, fh); teil(sg - gw / 2, sg + gw / 2, sch, fh);
+    var zw = new THREE.Shape(); zw.moveTo(-gw / 2, 0); zw.lineTo(-gw / 2, gw / 2 + 0.02); zw.lineTo(gw / 2, gw / 2 + 0.02); zw.lineTo(gw / 2, 0); zw.absarc(0, 0, gw / 2, 0, Math.PI, false);   // 13.10. (Andreas: „das Rote muss massiv Sandstein werden“): Zwickel zwischen Bogen und Rechteck
+    var zg2 = new THREE.ExtrudeGeometry(zw, { depth: 0.5, bevelEnabled: false, curveSegments: 16 }), zm = new THREE.Mesh(zg2, steinMat(2, 1)); zm.position.set(sg, kae, -0.25); zm.castShadow = zm.receiveShadow = true; fa.add(zm);
+    [-1, 1].forEach(function (q) { box(0.45, kae + 0.1, 0.65, hell, sg + q * (gw / 2 + 0.22), kae / 2 - 0.05, 0, fa); });   // Torgewände bis zum Kämpfer
+    var bogen = new THREE.Mesh(new THREE.TorusGeometry(gw / 2 + 0.2, 0.22, 6, 18, Math.PI), hell); bogen.position.set(sg, kae, 0.05); fa.add(bogen);   // Bogenstein, das Tor steht offen (kein Torspiegel mehr)
     [[sg - gw / 2 - 1.6, 2.2], [sg + gw / 2 + 1.6, 2.2]].forEach(function (q) { var rf = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.1, 6, 14), hell); rf.position.set(q[0], q[1], 0.28); fa.add(rf); var rg = new THREE.Mesh(new THREE.CircleGeometry(0.36, 12), gitter); rg.position.set(q[0], q[1], 0.27); fa.add(rg); });   // Rundfenster
     for (var reihe = 0; reihe < 3; reihe++) for (var sp = -1; sp <= 1; sp++) { var fx_ = sg + sp * Math.min(2.4, (s1 - s0) / 4), fy_ = gh + 2.0 + reihe * 2.7; if (fy_ + 0.8 > fh) continue; var fr2 = new THREE.Group(); box(1.1, 1.5, 0.1, hell, 0, 0, 0, fr2); box(0.86, 1.25, 0.12, reihe ? glas : gitter, 0, 0, 0.02, fr2); box(0.06, 1.25, 0.14, hell, 0, 0, 0.03, fr2); box(0.86, 0.06, 0.14, hell, 0, 0.1, 0.03, fr2); fr2.position.set(fx_, fy_, 0.27); fa.add(fr2); }
     var ziegel = new THREE.MeshLambertMaterial({ color: 0x8a3e2c }), dbr = s1 - s0, dmx = (s0 + s1) / 2;   // Ziegeldach mit Gaube wie auf Andreas' Foto
@@ -12950,9 +12967,10 @@ function torwegeBauen() {                      // Gewölbe und Seitenwände, wo 
         for (var i = 0; i <= 40; i++) { var t = i / 40, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t; if (drin(x, y, h.pts)) { if (t0 === null) t0 = t; t1 = t; } }
         if (t0 === null) return; t0 = Math.max(0, t0 - 0.03); t1 = Math.min(1, t1 + 0.03);
         var mx = a[0] + (b[0] - a[0]) * (t0 + t1) / 2, my = a[1] + (b[1] - a[1]) * (t0 + t1) / 2, lang = L * (t1 - t0), dreh = Math.atan2(b[1] - a[1], b[0] - a[0]), z = Math.min(bodenHoehe(mx, my), h.b);
-        var g = new THREE.Group(), hoch = 3.0;
-        var decke = new THREE.Mesh(new THREE.BoxGeometry(lang, 0.4, d.b + 0.6), dunkel); decke.position.y = hoch + 0.2; g.add(decke);
-        [-1, 1].forEach(function (sd) { var w = new THREE.Mesh(new THREE.BoxGeometry(lang, hoch + 0.4, 0.4), stein); w.position.set(0, hoch / 2, sd * (d.b / 2 + 0.2)); g.add(w); });
+        var g = new THREE.Group(), hoch = Math.max(3.0, d.b > 4.5 ? 2.6 + (d.b + 0.4) / 2 : 3.0);   // 13.10.: unter dem hohen Burgtorbogen liegt die Decke im Scheitel
+        var ha = bodenHoehe(a[0] + (b[0] - a[0]) * t0, a[1] + (b[1] - a[1]) * t0), hb = bodenHoehe(a[0] + (b[0] - a[0]) * t1, a[1] + (b[1] - a[1]) * t1), hub = Math.max(0, hb - ha) > 1 ? hb - ha : 0;   // 13.10.: steigt der Torweg (Burgtor), steigt die Decke mit
+        var decke = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(lang, hub), 0.4, d.b + 0.6), dunkel); decke.position.y = hoch + 0.2 + hub / 2; decke.rotation.z = Math.atan2(hub, lang); g.add(decke);
+        [-1, 1].forEach(function (sd) { var w = new THREE.Mesh(new THREE.BoxGeometry(lang, hoch + 0.4 + hub, 0.4), stein); w.position.set(0, (hoch + hub) / 2, sd * (d.b / 2 + 0.2)); g.add(w); });
         var v = V(mx, my, z); g.position.set(v[0], v[1], v[2]); g.rotation.y = dreh; g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); szene.add(g);
       }); } });
 }
@@ -15650,7 +15668,15 @@ function burgwegBauen() {
     stufen.forEach(function (st, i) { var v = V(st[0], st[1], st[2]); Q4.setFromAxisAngle(Y, Math.PI - st[3]); M4.compose(new THREE.Vector3(v[0], v[1], v[2]), Q4, new THREE.Vector3(st[6], st[5], st[4])); im.setMatrixAt(i, M4); });
     im.castShadow = im.receiveShadow = true; im.name = 'stufen'; szene.add(im); BURGWEG.stufen = im; }
   try { rondellSchmuck(); } catch (e) { console.warn('Rondell', e); }
+  try { torAufgangStufen(); } catch (e) { console.warn('Toraufgang', e); }
   BURGWEG.n = stufen.length; }
+function torAufgangStufen() {                    // die breite 15-cm-Treppe aus Sandstein hinter dem Burgtor
+  var T = TORAUFGANG, l = T.lauf; if (!l) return; var st = [], n = 0;
+  function lage(s_) { for (var k = 0; k < l.seg.length; k++) { var sg = l.seg[k]; if (s_ <= sg[2] + sg[3] || k === l.seg.length - 1) { var f = (s_ - sg[2]) / sg[3]; return [sg[0][0] + (sg[1][0] - sg[0][0]) * f, sg[0][1] + (sg[1][1] - sg[0][1]) * f, Math.atan2(sg[1][0] - sg[0][0], sg[1][1] - sg[0][1])]; } } }
+  (T.ab || []).forEach(function (a_) { if (!a_.n || a_.len < 0.3) return; for (var k = 0; k < a_.n; k++) { var q = lage(a_.s0 + (k + 0.5) / a_.n * a_.len), top = a_.z0 + a_.hub * (k + 1) / a_.n, gr = stadtBoden(q[0], q[1]); gr = gr === null ? top - 1 : Math.min(gr, top - 0.3); st.push([q[0], q[1], top, q[2], a_.len / a_.n + 0.05, top - gr + 0.3]); n++; } });
+  var mat = RONDELL.mat || new THREE.MeshLambertMaterial({ color: 0xa8705a }), geo = new THREE.BoxGeometry(1, 1, 1), im = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xb48068 }), st.length), M4 = new THREE.Matrix4(), Q4 = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0);
+  st.forEach(function (e, i) { var v = V(e[0], e[1], e[2] - e[5] / 2); Q4.setFromAxisAngle(Y, Math.PI - e[3]); M4.compose(new THREE.Vector3(v[0], v[1], v[2]), Q4, new THREE.Vector3(T.breite, e[5], e[4])); im.setMatrixAt(i, M4); });
+  im.castShadow = im.receiveShadow = true; im.name = 'toraufgang'; szene.add(im); T.n = n; }
 function rondellSchmuck() {                       // Bogenfries (Konsolen mit Bögen) unter der Krone und eine Deckplatte – Sandstein wie die Treppe
   var R_ = RONDELL, g = new THREE.Group(), stein = new THREE.MeshLambertMaterial({ color: 0xa8705a }), hell = new THREE.MeshLambertMaterial({ color: 0xc89a80 }), v = V(R_.c[0], R_.c[1], R_.oben);
   g.position.set(v[0], v[1], v[2]); var ra = R_.r + 0.45;
@@ -17365,7 +17391,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = '7d87e4c1', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = 'abc7b1c7', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
