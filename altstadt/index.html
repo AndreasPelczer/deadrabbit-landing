@@ -12587,6 +12587,8 @@ function torAufgangProfil() {
   function roh(x, y) { var z = stadtBoden(x, y); return z === null ? gel(x, y) : z; }
   var za = BURGBRUECKE ? BURGBRUECKE.z1 : roh(a[0] - (b[0] - a[0]) * 0.2, a[1] - (b[1] - a[1]) * 0.2), L = Math.hypot(b[0] - a[0], b[1] - a[1]);   // 13.10.: die Torfahrt beginnt auf der Brücke, nicht im Graben
   for (var s_ = 0.5; s_ <= L + 0.01; s_ += 0.5) { var f = Math.max(0, s_ / L); bwRein([a[0] + (b[0] - a[0]) * s_ / L, a[1] + (b[1] - a[1]) * s_ / L, za + (T.oben - za) * f, 1.8, 2.8, 0]); }
+  var ux_ = (b[0] - a[0]) / L, uy_ = (b[1] - a[1]) / L; T.aus = { x: b[0], y: b[1], ux: ux_, uy: uy_ };   // 13.10. (Andreas: „von hinten und innen suboptimal – ein einfacher Durchgang, am Boden und hinten wenn man rauskommt“): ebener Platz 4 × 4 m an der Ausfahrt
+  for (var pl = -1.5; pl <= 3.01; pl += 0.5) for (var pq = -2.2; pq <= 2.21; pq += 0.55) bwRein([b[0] + ux_ * pl - uy_ * pq, b[1] + uy_ * pl + ux_ * pq, T.oben, 0.6, 1.6, 0]);
   var P_ = [b].concat(T.treppe), lang = 0, seg = []; for (var k = 0; k + 1 < P_.length; k++) { var l = Math.hypot(P_[k + 1][0] - P_[k][0], P_[k + 1][1] - P_[k][1]); seg.push([P_[k], P_[k + 1], lang, l]); lang += l; }
   var ende = P_[P_.length - 1], zE = roh(ende[0], ende[1]), ab = [], s0 = 0, z0 = T.oben;   // Abschnitte entlang des Wegs: [Länge, Stufen] – 0 Stufen = eben, -1 = der Rest bis in den Hof
   (T.abschnitte || [[0, -1]]).forEach(function (a_) { var len = a_[1] === -1 ? lang - s0 : a_[0], hub = a_[1] === -1 ? zE - z0 : a_[1] * T.stufe; ab.push({ s0: s0, len: len, z0: z0, hub: hub, n: a_[1] === -1 ? Math.max(2, Math.round(hub / T.stufe)) : a_[1] }); s0 += len; z0 += hub; });
@@ -13141,7 +13143,7 @@ function weltBauen(bodenBild, kBild, bBild, fBild) {
         var pa0 = pa, pb0 = pb;
         for (var v = 0; v < nf; v++) {
           pa = pa0; pb = pb0;
-          if (torweg && v === 0) continue;               // hier geht der Torweg durchs Haus
+          if (torweg && (v === 0 || (hz.bAlt !== undefined && v === 1))) continue;               // hier geht der Torweg durchs Haus (13.10.: beim angehobenen Archiv zwei Geschosse – Andreas: „min. 2 m“, vorher blieben 1,9 m)
           if (torhaus && v === 0) { var ex_ = b[0] - a[0], ey_ = b[1] - a[1], el_ = Math.hypot(ex_, ey_), nx_ = ey_ / el_, ny_ = -ex_ / el_, sx_ = WELT.start[0] - hz.cx, sy_ = WELT.start[1] - hz.cy, sl_ = Math.hypot(sx_, sy_); if (Math.abs((nx_ * sx_ + ny_ * sy_) / sl_) > 0.5) continue; }
           var rr = hash(hz.nr * 7.3 + k * 3.1 + u * 1.7 + v * 5.9), key;
           if (v === 0 && k === tuerKante && u === Math.floor(nu / 2) && st.tuer.length) key = kkey(st, wahl(st.tuer, rr));
@@ -15695,7 +15697,10 @@ function torAufgangStufen() {                    // die breite 15-cm-Treppe aus 
   (T.ab || []).forEach(function (a_) { if (!a_.n || a_.len < 0.3) return; for (var k = 0; k < a_.n; k++) { var q = lage(a_.s0 + (k + 0.5) / a_.n * a_.len), top = a_.z0 + a_.hub * (k + 1) / a_.n, gr = stadtBoden(q[0], q[1]); gr = gr === null ? top - 1 : Math.min(gr, top - 0.3); st.push([q[0], q[1], top, q[2], a_.len / a_.n + 0.05, top - gr + 0.3]); n++; } });
   var mat = RONDELL.mat || new THREE.MeshLambertMaterial({ color: 0xa8705a }), geo = new THREE.BoxGeometry(1, 1, 1), im = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xb48068 }), st.length), M4 = new THREE.Matrix4(), Q4 = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0);
   st.forEach(function (e, i) { var v = V(e[0], e[1], e[2] - e[5] / 2); Q4.setFromAxisAngle(Y, Math.PI - e[3]); M4.compose(new THREE.Vector3(v[0], v[1], v[2]), Q4, new THREE.Vector3(T.breite, e[5], e[4])); im.setMatrixAt(i, M4); });
-  im.castShadow = im.receiveShadow = true; im.name = 'toraufgang'; szene.add(im); T.n = n; }
+  im.castShadow = im.receiveShadow = true; im.name = 'toraufgang'; szene.add(im); T.n = n;
+  if (T.aus) { var A_ = T.aus, hell = new THREE.MeshLambertMaterial({ color: 0xc08a72 }), qx = -A_.uy, qy = A_.ux, pw = 4.0, ph = 2.8, z0 = T.oben;   // schlichtes Portal an der Rückseite des Torhauses: Gewände + Sturz aus Sandstein
+    [[-1, ph + 0.1, pw / 2 + 0.25], [1, ph + 0.1, pw / 2 + 0.25], [0, 0.5, 0]].forEach(function (q, i) { var bx = i < 2 ? new THREE.BoxGeometry(0.5, ph + 0.1, 0.7) : new THREE.BoxGeometry(pw + 1.0, 0.5, 0.7), m_ = new THREE.Mesh(bx, hell);
+      var off = i < 2 ? q[0] * q[2] : 0, vz = i < 2 ? z0 + (ph + 0.1) / 2 - 0.05 : z0 + ph + 0.25, v_ = V(A_.x + qx * off, A_.y + qy * off, vz); m_.position.set(v_[0], v_[1], v_[2]); m_.rotation.y = Math.atan2(qy, qx); m_.castShadow = m_.receiveShadow = true; szene.add(m_); }); } }
 function rondellSchmuck() {                       // Bogenfries (Konsolen mit Bögen) unter der Krone und eine Deckplatte – Sandstein wie die Treppe
   var R_ = RONDELL, g = new THREE.Group(), stein = new THREE.MeshLambertMaterial({ color: 0xa8705a }), hell = new THREE.MeshLambertMaterial({ color: 0xc89a80 }), v = V(R_.c[0], R_.c[1], R_.oben);
   g.position.set(v[0], v[1], v[2]); var ra = R_.r + 0.45;
@@ -17411,7 +17416,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = '65aeff03', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = 'ba449ab2', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
