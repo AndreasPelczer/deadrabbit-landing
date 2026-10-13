@@ -9969,6 +9969,7 @@ var WMASKE = null;
 function wasser(x, y) { var u = Math.floor(bu(x)), v = Math.floor(bv(y)); if (u < 0 || v < 0 || u >= B.b || v >= B.h) return UH ? umlandWasser(x, y) : true; return WMASKE ? WMASKE[v * B.b + u] === 1 : false; }
 // ---------- Fluss und Brücken (bewusst übertrieben „reguliert“: ebener Wasserspiegel, ausgehobenes Bett, Brücken mit Pfeilern) ----------
 var SPIEGEL = G.wasser - 0.6, BETT = SPIEGEL - 3.5;          // Wasserspiegel, Flussgrund
+var BURGBRUECKE = null;
 var BRUECKEN = (WELT.bruecken || []).map(function (b) {
   var p = b.p, z0 = p[0][2], z1 = p[p.length - 1][2], frei = b.hw === 'footway' || b.hw === 'path' ? 3 : 4.5, L = 0, lang = [0];
   for (var i = 1; i < p.length; i++) { L += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]); lang.push(L); }
@@ -9977,7 +9978,17 @@ var BRUECKEN = (WELT.bruecken || []).map(function (b) {
   if (tauber) { mitte = Math.max(z0, z1) + 1.6; b = Object.assign({}, b, { b: b.b + 4.5 }); }   // samt den beiden Fußwegen              // GEWÜNSCHT (Andreas 07.10.): mittelalterliche Sandstein-Bogenbrücke statt der heutigen Betonbrücke
   return { n: b.n, hw: b.hw, b: b.b, p: p, lang: lang, L: L, z0: Math.max(z0, SPIEGEL + 1.5), z1: Math.max(z1, SPIEGEL + 1.5), mitte: mitte, tauber: tauber, alt: b.n === 'Messbrückle' || b.n === 'Rathausbrücke' };
 });
-BRUECKEN = BRUECKEN.filter(function (b) { var q0 = b.p[0], q1 = b.p[b.p.length - 1]; return !(b.hw === 'footway' && Math.hypot(q0[0] - 147.6, q0[1] - 150.1) < 1.5 && Math.hypot(q1[0] - 155.2, q1[1] - 143.7) < 1.5); });   // 12.10. (Andreas): die schmale graue Brücke vors Burgtor kommt weg, die Rampenmauern laufen bis ans Tor
+BRUECKEN.forEach(function (b) { var q0 = b.p[0], q1 = b.p[b.p.length - 1]; if (!(b.hw === 'footway' && Math.hypot(q0[0] - 147.6, q0[1] - 150.1) < 1.5 && Math.hypot(q1[0] - 155.2, q1[1] - 143.7) < 1.5)) return;
+  // 13.10. (Andreas: „du bist unten im Burggraben – du hast die Brücke abgerissen, das Tor ist oben auf der Brücke“): DGM1: Brückenkopf 190,5–191 m, Graben 184,6–185 m (6 m breit).
+  // Die graue Brücke vom 12.10. lag auf 186 m (Graben) – jetzt Sandstein, Fahrbahn 191 m, so breit, dass sie bis an die Brüstungsmauern reicht. Höhe/Breite ANNAHME nach DGM1.
+  b.z0 = 190.9; b.z1 = 191.2; b.mitte = 191.05; b.b = 5.8; b.alt = true; b.burg = true; BURGBRUECKE = b; });
+function burgBrueckeBogen() {                     // 13.10. (Andreas' Foto): die Burgbrücke ist ein Sandsteinbau mit einem großen Rundbogen – unten im Graben fährt man durch
+  var b = BURGBRUECKE; if (!b) return; var a = b.p[0], e = b.p[b.p.length - 1], L = Math.hypot(e[0] - a[0], e[1] - a[1]), grab = 184.6, oben = Math.min(b.z0, b.z1) - 0.6, r = Math.min(3.6, L / 2 - 0.9), kae = Math.max(grab + 0.4, oben - 0.4 - r);
+  var sh = new THREE.Shape(); sh.moveTo(-L / 2 - 0.4, grab - 1); sh.lineTo(L / 2 + 0.4, grab - 1); sh.lineTo(L / 2 + 0.4, oben); sh.lineTo(-L / 2 - 0.4, oben); sh.lineTo(-L / 2 - 0.4, grab - 1);
+  var loch = new THREE.Path(); loch.moveTo(-r, grab - 0.9); loch.lineTo(-r, kae); loch.absarc(0, kae, r, Math.PI, 0, true); loch.lineTo(r, grab - 0.9); loch.lineTo(-r, grab - 0.9); sh.holes.push(loch);   // das Loch muss ganz im Körper liegen (unten 10 cm Rand unter dem Grabenboden) und andersherum laufen
+  var geo = new THREE.ExtrudeGeometry(sh, { depth: b.b - 0.2, bevelEnabled: false, curveSegments: 18 }), uv = geo.attributes.uv, ps = geo.attributes.position; for (var i = 0; i < uv.count; i++) uv.setXY(i, ps.getX(i) + ps.getZ(i), ps.getY(i));
+  var m = new THREE.Mesh(geo, RONDELL.mat || new THREE.MeshLambertMaterial({ color: 0xa8705a })), mx = (a[0] + e[0]) / 2, my = (a[1] + e[1]) / 2, ux = (e[0] - a[0]) / L, uy = (e[1] - a[1]) / L, v = V(mx - uy * (b.b - 0.2) / 2, my + ux * (b.b - 0.2) / 2, 0);
+  m.position.set(v[0], 0, v[2]); m.rotation.y = Math.atan2(uy, ux); m.castShadow = m.receiveShadow = true; m.name = 'burgbruecke'; szene.add(m); BURGBRUECKE.bogen = { r: r, kae: kae }; }
 function brueckeHoehe(b, t) {                                // Fahrbahn: flacher Bogen zwischen den Ufern (t = 0..1)
   var linear = b.z0 + (b.z1 - b.z0) * t, buckel = Math.max(0, b.mitte - (b.z0 + b.z1) / 2) * Math.sin(Math.PI * t);
   return linear + buckel;
@@ -11709,14 +11720,14 @@ var MAUERN = []; WELT.mauern.forEach(function (m) { for (var i = 0; i < m.p.leng
   var g = [155.2, 143.7], rx = -0.768, ry = 0.640, qx = 0.640, qy = 0.768;   // Tormitte, Richtung nach außen, quer dazu
   [[[149.6, 153.4], 2.7], [[145.7, 148.3], -2.7]].forEach(function (r) {
     var a = r[0], e = [g[0] + qx * r[1] + rx * 0.5, g[1] + qy * r[1] + ry * 0.5], n = 6;
-    for (var i = 0; i < n; i++) { var t0 = i / n, t1 = (i + 1) / n; MAUERN.push({ a: [a[0] + (e[0] - a[0]) * t0, a[1] + (e[1] - a[1]) * t0], b: [a[0] + (e[0] - a[0]) * t1, a[1] + (e[1] - a[1]) * t1], h: 2.2 - 1.7 * (i + 0.5) / n, bruestung: true }); }
+    for (var i = 0; i < n; i++) { var t0 = i / n, t1 = (i + 1) / n; MAUERN.push({ a: [a[0] + (e[0] - a[0]) * t0, a[1] + (e[1] - a[1]) * t0], b: [a[0] + (e[0] - a[0]) * t1, a[1] + (e[1] - a[1]) * t1], h: 2.2 - 1.7 * (i + 0.5) / n, abs: 192.1, bruecke: 191.1, bruestung: true }); }
   });
 })();
 // 13.10. – nach dem Burgtor-Umbau, sonst erkennt der seine Stücke nicht mehr. (Andreas: „der Durchgang beim Soldatenhaus ist zu eng“): gemessen standen die OSM-Mauern beiderseits der Schloßgasse nur 1,3–2 m neben der Mitte
 // (2,3–3,3 m frei). Mauerecken näher als 2,8 m an der Gassenmitte rücken quer nach außen – so bleiben gut 5 m für Karren und Leute.
 (function () { if (!KARRENWEGE || !KARRENWEGE.schloss) return; var L = []; KARRENWEGE.schloss.forEach(function (p) { for (var k = 0; k + 1 < p.length; k++) L.push([p[k], p[k + 1]]); });
   function naechst(q) { var best = null; L.forEach(function (sg) { var a = sg[0], b = sg[1], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / l2)), cx = a[0] + dx * t, cy = a[1] + dy * t, d = Math.hypot(q[0] - cx, q[1] - cy); if (!best || d < best.d) best = { d: d, c: [cx, cy], n: [-dy, dx] }; }); return best; }
-  var n = 0; MAUERN.forEach(function (m) { var na = naechst(m.a), nb = naechst(m.b); if (!na || !nb || na.d > 3.5 || nb.d > 3.5) return;
+  var n = 0; MAUERN.forEach(function (m) { if (m.abs !== undefined) return; var na = naechst(m.a), nb = naechst(m.b); if (!na || !nb || na.d > 3.5 || nb.d > 3.5) return;   // Brüstungen der Burgbrücke (feste Höhe) bleiben, wo sie sind
     [[m.a, na], [m.b, nb]].forEach(function (e) { var q = e[0], k = e[1]; if (k.d >= 2.8) return; var ux = q[0] - k.c[0], uy = q[1] - k.c[1], ul = Math.hypot(ux, uy);
       if (ul < 0.05) { var nl = Math.hypot(k.n[0], k.n[1]) || 1; ux = k.n[0] / nl; uy = k.n[1] / nl; } else { ux /= ul; uy /= ul; } q[0] = k.c[0] + ux * 2.8; q[1] = k.c[1] + uy * 2.8; n++; }); });
   if (n) console.log('Schloßgasse: ' + n + ' Mauerecken nach außen gerückt'); })();
@@ -11834,7 +11845,7 @@ function frei(x, y) {
       if (hoch) continue;
       for (var k = 0; k < o.pts.length; k++) { var a = o.pts[k], b = o.pts[(k + 1) % o.pts.length]; if (abstandStrecke(x, y, a[0], a[1], b[0], b[1]) < R) return false; }
     } else if (EPOCHE === 1400 && o.kern) continue;
-    else if (abstandStrecke(x, y, o.a[0], o.a[1], o.b[0], o.b[1]) < R + 0.45) { if (FUSS_FREI !== null && FUSS_FREI >= mauerOben(o, x, y) - 0.75) continue; return false; }   // kniehoch: drübersteigen; höher: springen
+    else if (abstandStrecke(x, y, o.a[0], o.a[1], o.b[0], o.b[1]) < R + 0.45) { if (FUSS_FREI !== null && FUSS_FREI >= mauerOben(o, x, y) - 0.75) continue; if (o.bruecke && FUSS_FREI !== null && FUSS_FREI < o.bruecke - 2.5) continue; return false; }   // 13.10.: Brüstung der Burgbrücke sperrt nur oben, unten im Graben geht man unter der Brücke durch   // kniehoch: drübersteigen; höher: springen
   }
   return true;
 }
@@ -12564,12 +12575,12 @@ function burgwegProfil() {
 // 13.10. (Andreas, vor Ort: „es steigt schon beim Reingehen an und danach rechts nochmal über lange Treppen, aber nur 15 cm hoch“ + Foto des ebenen Vorburghofs):
 // die Torfahrt durchs Archiv steigt von der Gasse auf ~189 m, dann führt rechts eine breite Stufentreppe (15 cm) in den Vorburghof (~194,5 m, DGM1).
 // Weg und Höhen ANNAHME nach Foto und Gelände – einstellbar hier.
-var TORAUFGANG = { oben: 189.0, treppe: [[164, 131.5], [160, 128.8], [152, 128.4]], stufe: 0.15, breite: 3.6, abschnitte: [[2, 0], [1.2, 5], [1.5, 0], [0, -1]] };   // 13.10. (Andreas' Luftbild): grüner Streifen hinter dem Torhaus · kurze Treppe (5 Stufen) · kleine grüne Fläche · lange Treppe in den großen Hof
+var TORAUFGANG = { oben: 192.0, treppe: [[164, 131.5], [160, 128.8], [152, 128.4]], stufe: 0.15, breite: 3.6, abschnitte: [[2, 0], [1.2, 5], [1.5, 0], [0, -1]] };   // 13.10. (Andreas' Luftbild): grüner Streifen hinter dem Torhaus · kurze Treppe (5 Stufen) · kleine grüne Fläche · lange Treppe in den großen Hof
 function torAufgangProfil() {
   var d = DURCHGAENGE && DURCHGAENGE.filter(function (q) { return q.osm === 88289162; })[0]; if (!d) return; var T = TORAUFGANG, a = d.p[0], b = d.p[d.p.length - 1];
   function roh(x, y) { var z = stadtBoden(x, y); return z === null ? gel(x, y) : z; }
-  var za = roh(a[0] - (b[0] - a[0]) * 0.2, a[1] - (b[1] - a[1]) * 0.2), L = Math.hypot(b[0] - a[0], b[1] - a[1]);
-  for (var s_ = -2; s_ <= L + 0.01; s_ += 0.5) { var f = Math.max(0, s_ / L); bwRein([a[0] + (b[0] - a[0]) * s_ / L, a[1] + (b[1] - a[1]) * s_ / L, za + (T.oben - za) * f, 1.8, 2.8, 0]); }
+  var za = BURGBRUECKE ? BURGBRUECKE.z1 : roh(a[0] - (b[0] - a[0]) * 0.2, a[1] - (b[1] - a[1]) * 0.2), L = Math.hypot(b[0] - a[0], b[1] - a[1]);   // 13.10.: die Torfahrt beginnt auf der Brücke, nicht im Graben
+  for (var s_ = 0.5; s_ <= L + 0.01; s_ += 0.5) { var f = Math.max(0, s_ / L); bwRein([a[0] + (b[0] - a[0]) * s_ / L, a[1] + (b[1] - a[1]) * s_ / L, za + (T.oben - za) * f, 1.8, 2.8, 0]); }
   var P_ = [b].concat(T.treppe), lang = 0, seg = []; for (var k = 0; k + 1 < P_.length; k++) { var l = Math.hypot(P_[k + 1][0] - P_[k][0], P_[k + 1][1] - P_[k][1]); seg.push([P_[k], P_[k + 1], lang, l]); lang += l; }
   var ende = P_[P_.length - 1], zE = roh(ende[0], ende[1]), ab = [], s0 = 0, z0 = T.oben;   // Abschnitte entlang des Wegs: [Länge, Stufen] – 0 Stufen = eben, -1 = der Rest bis in den Hof
   (T.abschnitte || [[0, -1]]).forEach(function (a_) { var len = a_[1] === -1 ? lang - s0 : a_[0], hub = a_[1] === -1 ? zE - z0 : a_[1] * T.stufe; ab.push({ s0: s0, len: len, z0: z0, hub: hub, n: a_[1] === -1 ? Math.max(2, Math.round(hub / T.stufe)) : a_[1] }); s0 += len; z0 += hub; });
@@ -12966,7 +12977,7 @@ function torwegeBauen() {                      // Gewölbe und Seitenwände, wo 
       HAEUSER.forEach(function (h) { if (!h.innen && EPOCHE === 1400) {} var t0 = null, t1 = null;
         for (var i = 0; i <= 40; i++) { var t = i / 40, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t; if (drin(x, y, h.pts)) { if (t0 === null) t0 = t; t1 = t; } }
         if (t0 === null) return; t0 = Math.max(0, t0 - 0.03); t1 = Math.min(1, t1 + 0.03);
-        var mx = a[0] + (b[0] - a[0]) * (t0 + t1) / 2, my = a[1] + (b[1] - a[1]) * (t0 + t1) / 2, lang = L * (t1 - t0), dreh = Math.atan2(b[1] - a[1], b[0] - a[0]), z = Math.min(bodenHoehe(mx, my), h.b);
+        var mx = a[0] + (b[0] - a[0]) * (t0 + t1) / 2, my = a[1] + (b[1] - a[1]) * (t0 + t1) / 2, lang = L * (t1 - t0), dreh = Math.atan2(b[1] - a[1], b[0] - a[0]), z = Math.min(bodenHoehe(mx, my), h.b), zEin = bodenHoehe(a[0] + (b[0] - a[0]) * t0, a[1] + (b[1] - a[1]) * t0); if (zEin > h.b + 1) z = zEin;   // 13.10.: Burgtor – der Torweg liegt auf Brückenhöhe, über der Hauskante
         var g = new THREE.Group(), hoch = Math.max(3.0, d.b > 4.5 ? 2.6 + (d.b + 0.4) / 2 : 3.0);   // 13.10.: unter dem hohen Burgtorbogen liegt die Decke im Scheitel
         var ha = bodenHoehe(a[0] + (b[0] - a[0]) * t0, a[1] + (b[1] - a[1]) * t0), hb = bodenHoehe(a[0] + (b[0] - a[0]) * t1, a[1] + (b[1] - a[1]) * t1), hub = Math.max(0, hb - ha) > 1 ? hb - ha : 0;   // 13.10.: steigt der Torweg (Burgtor), steigt die Decke mit
         var decke = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(lang, hub), 0.4, d.b + 0.6), dunkel); decke.position.y = hoch + 0.2 + hub / 2; decke.rotation.z = Math.atan2(hub, lang); g.add(decke);
@@ -13215,7 +13226,7 @@ function weltBauen(bodenBild, kBild, bBild, fBild) {
     var ex = m.b[0] - m.a[0], ey = m.b[1] - m.a[1], L = Math.hypot(ex, ey) || 1, d = 0.45, nx = ey / L, ny = -ex / L, n = Math.max(1, Math.round(L / 1.5)), stuetz = m.h === 2.6;
     function kante(t) {
       var x = m.a[0] + ex * t, y = m.a[1] + ey * t, z1 = bodenHoehe(x + nx * 1.2, y + ny * 1.2), z2 = bodenHoehe(x - nx * 1.2, y - ny * 1.2);
-      return { x: x, y: y, unten: Math.min(z1, z2) - 0.8, oben: m.abs !== undefined ? m.abs : Math.max(z1, z2) + (stuetz ? 0.4 : m.h) };   // m.abs: feste Oberkante über NN (Rondell, Stützmauer)
+      return { x: x, y: y, unten: m.bruecke ? m.bruecke - 0.6 : Math.min(z1, z2) - 0.8, oben: m.abs !== undefined ? m.abs : Math.max(z1, z2) + (stuetz ? 0.4 : m.h) };   // Brüstung der Burgbrücke: nur von der Fahrbahn bis zur Krone   // m.abs: feste Oberkante über NN (Rondell, Stützmauer)
     }
     var k0 = kante(0);
     for (var u = 1; u <= n; u++) {
@@ -13539,6 +13550,7 @@ function weltBauen(bodenBild, kBild, bBild, fBild) {
     }
     if (b.nurHeute) { var neu = szene.children.slice(vorZahl); neu.forEach(function (o) { szene.remove(o); HEUTE.add(o); }); }
   });
+  try { burgBrueckeBogen(); } catch (e) { console.warn('Burgbrücke', e); }
   HEUTE.visible = EPOCHE !== 1400;
   // Stadtmauer um 1400 (Verlauf ANNAHME, Anker belegt): Mauer mit Wehrgang und Zinnen, Tortürme wo Straßen durchgehen
   var mauerB = new FlickBuendel(5), zinnenListe = [];
@@ -16872,7 +16884,8 @@ function schritt(dt) {
   else if (mx || my) { if (spielerDarf(P.x + mx, P.y + my)) { P.x += mx; P.y += my; } else if (spielerDarf(P.x + mx, P.y)) P.x += mx; else if (spielerDarf(P.x, P.y + my)) P.y += my; else if (FLUT.z !== null && flutSperrt(P.x + mx, P.y + my) && P.t > (FLUT.hinweis || 0)) { FLUT.hinweis = P.t + 3; melden('DAS WASSER IST ZU TIEF · ÜBER DIE HÖHER GELEGENEN GASSEN ODER NACH OBEN', 2.5); } P.schritt += Math.hypot(mx, my); }
   FUSS_FREI = null; pforteWeiter(); doerferWeiter();
   P.tempo = dt > 0 ? Math.hypot(P.x - vorX, P.y - vorY) / dt : 0; P.rennt = !!taste.shift;
-  var bz = aufBruecke(P.x, P.y), boden = bz === null ? bodenHoehe(P.x, P.y) : Math.max(bz, gel(P.x, P.y) - 0.5);
+  var bz = aufBruecke(P.x, P.y); if (bz !== null && BURGBRUECKE && P.z - AUGE < bz - 2.5 && Math.hypot(P.x - 151.4, P.y - 146.9) < 9) bz = null;   // 13.10.: unter der Burgbrücke durch den Graben – wer unten ist, bleibt unten
+  var boden = bz === null ? bodenHoehe(P.x, P.y) : Math.max(bz, gel(P.x, P.y) - 0.5);
   if (aufFaehre(P.x, P.y)) boden = FAEHRE.z + 0.05;
   var bfz = bfBoden(P.x, P.y, P.z - AUGE); if (bfz !== null) boden = bfz;
   if (GANG.drin) { var gzb = gangBoden(P.x, P.y); if (gzb !== null) { boden = gzb; bfz = gzb; } }
@@ -17391,7 +17404,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = 'abc7b1c7', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = '35bad3d0', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
