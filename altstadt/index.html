@@ -12932,6 +12932,20 @@ function kramVorwurf(l) { var w = AUFTRAG.kramWeg; if (!w || !l || !l.heimHaus) 
   return w[o.nr].zeuge === 'besitzer' ? ['Du hast Nerven, mich anzusprechen. Mein ' + n + ' – ich hab dich gesehen.', 'Stell ihn zurück, wo er stand. Dann ist es vergessen. Sonst erfährt es die Wache.'] : ['Mein ' + n + ' ist weg. Die Nachbarn sagen, ein Fremder hat ihn mitgenommen.', 'Du bist doch fremd hier … Wenn er wieder vor meiner Tür steht, frag ich nicht weiter.']; }
 // 12.10. abends (Andreas mit Foto des heutigen Burgtors: „da müssen wir noch nacharbeiten“): Sandstein statt Einheitsbraun, Konsolenkranz, Fenster,
 // flachere Schieferhauben, dazwischen eine Sandsteinfassade mit Fensterreihen, Rundfenstern und hellem Torbogen. Vorbild ist der heutige Bau (teils jünger als 1400 – ANNAHME/SPIELENTSCHEIDUNG, damit man ihn wiedererkennt).
+// 13.10. (Andreas: „es ist Sandstein, der über 1000 Jahre repariert wurde … deine zu groß, die anderen zu klein und grau – eine Mischung“): Wertheimer Mauerstein,
+// 128 px = 4 m: Lagen 19–37 cm hoch, Steine 25–80 cm lang, meist rot/rosa, dazwischen graue, verwitterte und gelbliche Steine, dazu Flickstellen aus kleinen grauen Steinen. Farben ANNAHME nach den Fotos.
+function mauersteinTextur() { if (mauersteinTextur.t) return mauersteinTextur.t; var N = 128, c = document.createElement('canvas'); c.width = c.height = N; var g = c.getContext('2d');
+  var rot = ['#a97060', '#b27a68', '#9e6656', '#b8806e', '#a06a5c', '#ac7464'], grau = ['#958a82', '#8a7e76', '#9c9088'], gelb = ['#b49a80', '#bca286'];
+  g.fillStyle = '#86706a'; g.fillRect(0, 0, N, N); var y = 0, r = 0;   // weiche, helle Fugen
+  while (y < N) { var hh = 9 + Math.floor(hash(r * 3.7 + 1.1) * 9), x = -Math.floor(hash(r * 5.3) * 24);
+    while (x < N) { var ww = 12 + Math.floor(hash(x * 1.9 + r * 7.3) * 24), z = hash(x * 2.3 + r * 4.1), f = z < 0.68 ? rot[Math.floor(hash(x + r * 9.1) * rot.length)] : z < 0.88 ? grau[Math.floor(hash(x * 3 + r) * grau.length)] : gelb[Math.floor(hash(x + r) * gelb.length)];
+      var dy = Math.floor(hash(x * 0.7 + r) * 2) - (hash(x + r * 1.7) < 0.3 ? 1 : 0), h2 = hh - 1 - Math.abs(dy);   // leicht versetzte, ungleich hohe Steine
+      g.fillStyle = f; [0, -N, N].forEach(function (o) { if (x + o + ww > 0 && x + o < N) g.fillRect(x + o + 1, y + 1 + Math.max(0, dy), ww - 1, h2); });
+      for (var fl = 0; fl < 5; fl++) { g.fillStyle = hash(x * 4.1 + r * 2.3 + fl) < 0.5 ? 'rgba(255,235,215,.10)' : 'rgba(60,35,30,.12)'; g.fillRect(x + 2 + Math.floor(hash(x + fl * 9.7 + r) * Math.max(1, ww - 5)), y + 2 + Math.floor(hash(r + fl * 3.3 + x) * Math.max(1, hh - 4)), 2 + Math.floor(hash(fl + x) * 3), 1); }
+      x += ww; } y += hh; r++; }
+  for (var p_ = 0; p_ < 4; p_++) { var px = Math.floor(hash(p_ * 7.7 + 2) * (N - 24)), py = Math.floor(hash(p_ * 3.9 + 5) * (N - 20)), yy = 0;   // Flickstellen: kleinere, graue Steine in unregelmäßigen Lagen
+    while (yy < 16 + Math.floor(hash(p_) * 8)) { var lh = 3 + Math.floor(hash(yy + p_ * 2.2) * 3), xq = 0; while (xq < 18 + Math.floor(hash(yy * 1.3 + p_) * 8)) { var lw = 4 + Math.floor(hash(xq * 1.7 + yy + p_) * 5); g.fillStyle = '#86706a'; g.fillRect(px + xq, py + yy, lw, lh); g.fillStyle = (hash(xq + yy * 3.1 + p_) < 0.7 ? grau : rot)[Math.floor(hash(px + xq * 1.3 + yy) * 3)]; g.fillRect(px + xq + 1, py + yy + 1, lw - 1, lh - 1); xq += lw; } yy += lh; } }
+  var t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestMipmapLinearFilter; t.repeat.set(0.25, 0.25); mauersteinTextur.t = t; return t; }
 function sandsteinTextur() { if (sandsteinTextur.t) return sandsteinTextur.t; var c = document.createElement('canvas'); c.width = c.height = 64; var g = c.getContext('2d'), farben = ['#a4705e', '#b98370', '#8f5c4c', '#c4927c', '#9c6a58', '#ae7864', '#b07a6a', '#94665a', '#c08a76'];
   g.fillStyle = '#b8907a'; g.fillRect(0, 0, 64, 64); var y = 0, r = 0; while (y < 64) { var hh = 4 + Math.floor(hash(r * 3.1) * 6), x = -Math.floor(hash(r * 7.7) * 12); while (x < 64) { var ww = 5 + Math.floor(hash(x * 1.3 + r * 9.1) * 16); g.fillStyle = farben[Math.floor(hash(x * 2.7 + r * 5.3) * farben.length)]; g.fillRect(x + 1, y + 1, ww - 1, hh - 1);
       for (var fl = 0; fl < 3; fl++) { g.fillStyle = hash(x * 4.1 + r * 2.3 + fl) < 0.5 ? 'rgba(255,235,215,.13)' : 'rgba(60,30,20,.13)'; g.fillRect(x + 1 + Math.floor(hash(x + fl * 9.7 + r) * (ww - 3)), y + 1 + Math.floor(hash(r + fl * 3.3 + x) * (hh - 2)), 2, 1); }
@@ -12990,6 +13004,10 @@ function torbauBauen() {                        // der Torbau der Burg (Archiv) 
     g.rotation.y = Math.atan2(ey, ex) + (sd > 0 ? -0.15 : Math.PI + 0.15);   // offen, an die Seitenwände geklappt
     g.traverse(function (o) { if (o.isMesh) o.castShadow = true; }); szene.add(g); });
 }
+function pflasterTextur(ru, rv) {                  // graues Kopfsteinpflaster (32 px = 2 m), wiederholt ru × rv
+  var c = document.createElement('canvas'); c.width = c.height = 32; var g = c.getContext('2d'); g.fillStyle = '#6e6458'; g.fillRect(0, 0, 32, 32);
+  for (var r = 0; r < 4; r++) for (var q = 0; q < 4; q++) { g.fillStyle = ['#9a8e7c', '#8c8070', '#a59884', '#938674'][(r * 3 + q) % 4]; g.fillRect((q * 8 + (r % 2) * 4) % 32 + 1, r * 8 + 1, 6, 6); }
+  var t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.NearestFilter; t.repeat.set(ru || 1, rv || 1); return t; }
 function torwegeBauen() {                      // Gewölbe und Seitenwände, wo ein Torweg durch ein Haus führt
   if (!DURCHGAENGE) return; var stein = new THREE.MeshLambertMaterial({ color: 0x8a5a48 }), dunkel = new THREE.MeshLambertMaterial({ color: 0x4a3a32 });
   DURCHGAENGE.forEach(function (d) { var p = d.p;
@@ -13000,8 +13018,12 @@ function torwegeBauen() {                      // Gewölbe und Seitenwände, wo 
         var mx = a[0] + (b[0] - a[0]) * (t0 + t1) / 2, my = a[1] + (b[1] - a[1]) * (t0 + t1) / 2, lang = L * (t1 - t0), dreh = Math.atan2(b[1] - a[1], b[0] - a[0]), z = Math.min(bodenHoehe(mx, my), h.b), zEin = bodenHoehe(a[0] + (b[0] - a[0]) * t0, a[1] + (b[1] - a[1]) * t0); if (zEin > h.b + 1) z = zEin;   // 13.10.: Burgtor – der Torweg liegt auf Brückenhöhe, über der Hauskante
         var g = new THREE.Group(), hoch = Math.max(3.0, d.b > 4.5 ? 2.6 + (d.b + 0.4) / 2 : 3.0);   // 13.10.: unter dem hohen Burgtorbogen liegt die Decke im Scheitel
         var ha = bodenHoehe(a[0] + (b[0] - a[0]) * t0, a[1] + (b[1] - a[1]) * t0), hb = bodenHoehe(a[0] + (b[0] - a[0]) * t1, a[1] + (b[1] - a[1]) * t1), hub = Math.max(0, hb - ha) > 1 ? hb - ha : 0;   // 13.10.: steigt der Torweg (Burgtor), steigt die Decke mit
-        var decke = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(lang, hub), 0.4, d.b + 0.6), dunkel); decke.position.y = hoch + 0.2 + hub / 2; decke.rotation.z = Math.atan2(hub, lang); g.add(decke);
-        [-1, 1].forEach(function (sd) { var w = new THREE.Mesh(new THREE.BoxGeometry(lang, hoch + 0.4 + hub, 0.4), stein); w.position.set(0, (hoch + hub) / 2, sd * (d.b / 2 + 0.2)); g.add(w); });
+        var burgtor = d.osm === 88289162 && RONDELL.mat, wmat = burgtor ? RONDELL.mat : stein, dmat = burgtor ? RONDELL.mat : dunkel;   // 13.10. (Andreas: „mach die Torfahrt auch in Sandstein und pflastern“)
+        function meterUV(geo) { var uv = geo.attributes.uv, ps = geo.attributes.position, nm = geo.attributes.normal; for (var i = 0; i < uv.count; i++) { var ax = Math.abs(nm.getX(i)), ay = Math.abs(nm.getY(i)); uv.setXY(i, ay > 0.5 ? ps.getX(i) : ax > 0.5 ? ps.getZ(i) : ps.getX(i), ay > 0.5 ? ps.getZ(i) : ps.getY(i)); } return geo; }
+        var decke = new THREE.Mesh(meterUV(new THREE.BoxGeometry(Math.hypot(lang, hub), 0.4, d.b + 0.6)), dmat); decke.position.y = hoch + 0.2 + hub / 2; decke.rotation.z = Math.atan2(hub, lang); g.add(decke);
+        [-1, 1].forEach(function (sd) { var w = new THREE.Mesh(meterUV(new THREE.BoxGeometry(lang, hoch + 0.4 + hub, 0.4)), wmat); w.position.set(0, (hoch + hub) / 2, sd * (d.b / 2 + 0.2)); g.add(w); });
+        if (burgtor) { var bod = new THREE.Mesh(new THREE.PlaneGeometry(Math.hypot(lang, Math.max(0, hb - ha)), d.b), new THREE.MeshLambertMaterial({ map: pflasterTextur(Math.hypot(lang, hb - ha) / 2, d.b / 2), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+          bod.rotation.x = -Math.PI / 2; var bodG = new THREE.Group(); bodG.add(bod); bodG.rotation.z = Math.atan2(hb - ha, lang); bodG.position.y = (ha + hb) / 2 - z + 0.04; g.add(bodG); }   // Pflaster auf dem ansteigenden Torweg
         var v = V(mx, my, z); g.position.set(v[0], v[1], v[2]); g.rotation.y = dreh; g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); szene.add(g);
       }); } });
 }
@@ -13369,10 +13391,11 @@ function weltBauen(bodenBild, kBild, bBild, fBild) {
   var bruchTex = fotoKachel(quaderTex, 'bruch', 2.4);         // Stadtmauer: Bruchstein (Meshy „Mossy Stone Wall“)
   var turmTex = fotoKachel(quaderTex, 'quader', 2);           // Türme, Tore: grobe Quader (Meshy „Stone wall“)
   var uferTex = fotoKachel(quaderTex, 'sandquader', 2);       // Ufermauer, Brücke: roter Sandsteinquader (Meshy „Sandstone Wall“, rot getönt)
-  sandstein.map = fotoKachel(sandTex, 'sandquader', 2); RONDELL.mat = sandstein;   // 13.10.: das Rondell am Kirchplatz bekommt denselben roten Sandsteinquader
+  sandstein.map = fotoKachel(sandTex, 'sandquader', 2); RONDELL.mat = new THREE.MeshLambertMaterial({ map: mauersteinTextur() });   // 13.10.: vorläufig, gleich unten durch die echten Steinfotos ersetzt   // 13.10.: das Rondell am Kirchplatz bekommt denselben roten Sandsteinquader
   var quader = new THREE.MeshLambertMaterial({ map: turmTex }), bruch = new THREE.MeshLambertMaterial({ map: bruchTex });
   // echte Wertheimer Steine (werkzeug/glb/foto_kacheln.py: Spitzer Turm + Burgtor), fünf Flecken-Arten: vier Kacheln, eine davon zweimal mit anderem Ton
-  FLICK = [['echt_turm_a', 0xffffff], ['echt_turm_b', 0xe6dcd2], ['echt_turm_b', 0xf2e6e0], ['echt_turm_a', 0xd8ccc4], ['echt_turm_a', 0xe8d8d0]].map(function (e) { return { map: fotoKachel(bruchTex, e[0], 1.8), ton: e[1] }; });
+  FLICK = [['echt_turm_a', 0xffe2d6], ['echt_turm_b', 0xf0cfc2], ['echt_turm_b', 0xffd8c8], ['echt_turm_a', 0xe6c4b8], ['echt_turm_a', 0xf4d2c4]]   /* 13.10. (Andreas: „die anderen zu klein und grau“): wärmer, röter getönt */.map(function (e) { return { map: fotoKachel(bruchTex, e[0], 1.8), ton: e[1] }; });
+  RONDELL.mat = new THREE.MeshLambertMaterial({ map: fotoKachel(bruchTex, 'echt_turm_b', 2.6), color: 0xffcdb8 });   // 13.10. (Andreas: „deine zu groß und zu wenig grau, die anderen zu klein und grau – eine Mischung“): eigene Bauten mit denselben echten Wertheimer Steinfotos, aber größer (2,6 m statt 1,8) und röter
   bruch.map = FLICK[0].map;
   if (osmB.p.length) szene.add(osmB.mesh(new THREE.MeshLambertMaterial({ map: bruchTex, side: THREE.DoubleSide })));   // OSM-Mauern
   // Mauerkrone (09.10., Andreas: „oben haben die Mauern immer Platten liegen“): einzelne Sandsteinplatten, 0,5–1,3 m lang, mit Fuge, leicht schief und
@@ -17471,7 +17494,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = 'ace1d3ce', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = '3ee50284', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
