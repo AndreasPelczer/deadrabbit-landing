@@ -11760,7 +11760,10 @@ var ALTANE = { a: [137.6, 66.5], b: [155.4, 82.8], weg: 14.8, kaempfer: 189.5, r
   // 13.10. (Andreas, Fotos alltagserinnerungen.de: „die Mauer geht noch weiter, etwas niedriger und anders“): die Ringmauer ums untere Bollwerk (OSM 88289217) als Zinnenmauer aus Sandstein
   var ZM = [[135.0, 62.9], [133.0, 61.2], [117.8, 48.0], [141.8, 18.2], [156.0, 28.0], [164.7, 43.7], [170.6, 45.7], [172.3, 43.8], [174.9, 44.5]];
   function nahZM(q) { for (var k = 0; k + 1 < ZM.length; k++) if (abstandStrecke(q[0], q[1], ZM[k][0], ZM[k][1], ZM[k + 1][0], ZM[k + 1][1]) < 0.8) return true; return false; }
-  MAUERN.forEach(function (m) { if (!m.altane && m.abs === undefined && nahZM(m.a) && nahZM(m.b)) m.zinnen = true; }); })();
+  MAUERN.forEach(function (m) { if (!m.altane && m.abs === undefined && nahZM(m.a) && nahZM(m.b)) m.zinnen = true; });
+  // 13.10. (Andreas: „mach die Mauer unter dem Restaurant auch in Sandstein“, Foto alltagserinnerungen 21): Stützmauer OSM 88289232 – schlicht, ohne Zinnen, Brüstung 1 m über der Terrasse
+  var RM = [[152.5, 82.9], [137.4, 108.1]]; function nahRM(q) { return abstandStrecke(q[0], q[1], RM[0][0], RM[0][1], RM[1][0], RM[1][1]) < 0.8; }
+  MAUERN.forEach(function (m) { if (!m.altane && !m.zinnen && m.abs === undefined && nahRM(m.a) && nahRM(m.b)) { m.zinnen = true; m.ohneZinnen = true; } }); })();
 MAUERN.forEach(function (m) { if (KERNBURG && drin(m.a[0], m.a[1], KERNBURG) && drin(m.b[0], m.b[1], KERNBURG)) m.kern = true; });
 var KERNMAUERN = null;
 var BAEUME = WELT.baeume.map(function (b, i) { var r = hash(i * 3.3); return { x: b[0], y: b[1], z: gel(b[0], b[1]), art: wahl(['laub', 'laubgross', 'tanne', 'herbst', 'laubrund', 'birke', 'laubklein'], r), hoehe: 6 + r * 6 }; });
@@ -12597,7 +12600,7 @@ function torAufgangProfil() {
   var za = BURGBRUECKE ? BURGBRUECKE.z1 : roh(a[0] - (b[0] - a[0]) * 0.2, a[1] - (b[1] - a[1]) * 0.2), L = Math.hypot(b[0] - a[0], b[1] - a[1]);   // 13.10.: die Torfahrt beginnt auf der Brücke, nicht im Graben
   for (var s_ = 0.5; s_ <= L + 0.01; s_ += 0.5) { var f = Math.max(0, s_ / L); bwRein([a[0] + (b[0] - a[0]) * s_ / L, a[1] + (b[1] - a[1]) * s_ / L, za + (T.oben - za) * f, 1.8, 2.8, 0]); }
   var ux_ = (b[0] - a[0]) / L, uy_ = (b[1] - a[1]) / L; T.aus = { x: b[0], y: b[1], ux: ux_, uy: uy_ };   // 13.10. (Andreas: „von hinten und innen suboptimal – ein einfacher Durchgang, am Boden und hinten wenn man rauskommt“): ebener Platz 4 × 4 m an der Ausfahrt
-  for (var pl = -1.5; pl <= 3.01; pl += 0.5) for (var pq = -2.2; pq <= 2.21; pq += 0.55) bwRein([b[0] + ux_ * pl - uy_ * pq, b[1] + uy_ * pl + ux_ * pq, T.oben, 0.6, 1.6, 0]);
+  for (var pl = -1.5; pl <= 4.51; pl += 0.5) for (var pq = -3.5; pq <= 3.51; pq += 0.5) bwRein([b[0] + ux_ * pl - uy_ * pq, b[1] + uy_ * pl + ux_ * pq, T.oben, 0.6, 2.2, 0]);   // 13.10. (Andreas: „den Originalboden einfach weg machen“): ebener Platz 6 × 7 m
   var P_ = [b].concat(T.treppe), lang = 0, seg = []; for (var k = 0; k + 1 < P_.length; k++) { var l = Math.hypot(P_[k + 1][0] - P_[k][0], P_[k + 1][1] - P_[k][1]); seg.push([P_[k], P_[k + 1], lang, l]); lang += l; }
   var ende = P_[P_.length - 1], zE = roh(ende[0], ende[1]), ab = [], s0 = 0, z0 = T.oben;   // Abschnitte entlang des Wegs: [Länge, Stufen] – 0 Stufen = eben, -1 = der Rest bis in den Hof
   (T.abschnitte || [[0, -1]]).forEach(function (a_) { var len = a_[1] === -1 ? lang - s0 : a_[0], hub = a_[1] === -1 ? zE - z0 : a_[1] * T.stufe; ab.push({ s0: s0, len: len, z0: z0, hub: hub, n: a_[1] === -1 ? Math.max(2, Math.round(hub / T.stufe)) : a_[1] }); s0 += len; z0 += hub; });
@@ -15706,12 +15709,12 @@ function zinnenMauernBauen() {                    // Zinnenmauer aus rotem Sands
   var mat = RONDELL.mat || new THREE.MeshLambertMaterial({ color: 0xa8705a }), dunkel = new THREE.MeshLambertMaterial({ color: 0x2a1c16 }), pos = [], uv = [], idx = [], merl = [], schar = [], D = 0.45;
   function quad(p0, p1, p2, p3, u0, u1, v0, v1) { var b = pos.length / 3; [p0, p1, p2, p3].forEach(function (p) { pos.push(p[0], p[1], p[2]); }); uv.push(u0, v0, u1, v0, u1, v1, u0, v1); idx.push(b, b + 1, b + 2, b, b + 2, b + 3); }
   MAUERN.forEach(function (m) { if (!m.zinnen) return; var ex = m.b[0] - m.a[0], ey = m.b[1] - m.a[1], L = Math.hypot(ex, ey); if (L < 0.2) return; var nx = ey / L, ny = -ex / L;
-    function k(t) { var x = m.a[0] + ex * t, y = m.a[1] + ey * t, z1 = bodenHoehe(x + nx * 1.4, y + ny * 1.4), z2 = bodenHoehe(x - nx * 1.4, y - ny * 1.4); return { x: x, y: y, unten: Math.min(z1, z2) - 0.8, oben: Math.max(z1, z2) + 1.2, aussen: z1 < z2 ? 1 : -1 }; }
+    function k(t) { var x = m.a[0] + ex * t, y = m.a[1] + ey * t, z1 = bodenHoehe(x + nx * 1.4, y + ny * 1.4), z2 = bodenHoehe(x - nx * 1.4, y - ny * 1.4); return { x: x, y: y, unten: Math.min(z1, z2) - 0.8, oben: Math.max(z1, z2) + (m.ohneZinnen ? 1.0 : 1.2), aussen: z1 < z2 ? 1 : -1 }; }
     var ka = k(0), kb = k(1);
     [-1, 1].forEach(function (sd) { var ax = ka.x + nx * D * sd, ay = ka.y + ny * D * sd, bx = kb.x + nx * D * sd, by = kb.y + ny * D * sd;
       var P0 = V(ax, ay, ka.unten), P1 = V(bx, by, kb.unten), P2 = V(bx, by, kb.oben), P3 = V(ax, ay, ka.oben); if (sd > 0) quad(P0, P1, P2, P3, 0, L / 2, ka.unten / 2, kb.oben / 2); else quad(P1, P0, P3, P2, 0, L / 2, kb.unten / 2, ka.oben / 2); });
     quad(V(ka.x - nx * D, ka.y - ny * D, ka.oben), V(kb.x - nx * D, kb.y - ny * D, kb.oben), V(kb.x + nx * D, kb.y + ny * D, kb.oben), V(ka.x + nx * D, ka.y + ny * D, ka.oben), 0, L / 2, 0, 0.45);   // Wehrgang-Deckfläche
-    for (var s_ = 0.6; s_ < L - 0.3; s_ += 1.8) { var t = s_ / L, z = ka.oben + (kb.oben - ka.oben) * t, x = m.a[0] + ex * t, y = m.a[1] + ey * t; merl.push([x, y, z, Math.atan2(ey, ex)]);
+    if (!m.ohneZinnen) for (var s_ = 0.6; s_ < L - 0.3; s_ += 1.8) { var t = s_ / L, z = ka.oben + (kb.oben - ka.oben) * t, x = m.a[0] + ex * t, y = m.a[1] + ey * t; merl.push([x, y, z, Math.atan2(ey, ex)]);
       if (Math.round(s_ / 1.8) % 2 === 0) { var au = (ka.aussen + kb.aussen) >= 0 ? 1 : -1; schar.push([x + nx * (D + 0.01) * au, y + ny * (D + 0.01) * au, z - 0.6, Math.atan2(ey, ex)]); } } });
   if (!idx.length) return; var g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
   var mm = new THREE.Mesh(g, mat); mm.material.side = THREE.DoubleSide; mm.castShadow = mm.receiveShadow = true; mm.name = 'zinnenmauer'; szene.add(mm);
@@ -15744,9 +15747,15 @@ function torAufgangStufen() {                    // die breite 15-cm-Treppe aus 
   var mat = RONDELL.mat || new THREE.MeshLambertMaterial({ color: 0xa8705a }), geo = new THREE.BoxGeometry(1, 1, 1), im = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xb48068 }), st.length), M4 = new THREE.Matrix4(), Q4 = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0);
   st.forEach(function (e, i) { var v = V(e[0], e[1], e[2] - e[5] / 2); Q4.setFromAxisAngle(Y, Math.PI - e[3]); M4.compose(new THREE.Vector3(v[0], v[1], v[2]), Q4, new THREE.Vector3(T.breite, e[5], e[4])); im.setMatrixAt(i, M4); });
   im.castShadow = im.receiveShadow = true; im.name = 'toraufgang'; szene.add(im); T.n = n;
-  if (T.aus) { var A_ = T.aus, hell = new THREE.MeshLambertMaterial({ color: 0xc08a72 }), qx = -A_.uy, qy = A_.ux, pw = 4.0, ph = 2.8, z0 = T.oben;   // schlichtes Portal an der Rückseite des Torhauses: Gewände + Sturz aus Sandstein
-    [[-1, ph + 0.1, pw / 2 + 0.25], [1, ph + 0.1, pw / 2 + 0.25], [0, 0.5, 0]].forEach(function (q, i) { var bx = i < 2 ? new THREE.BoxGeometry(0.5, ph + 0.1, 0.7) : new THREE.BoxGeometry(pw + 1.0, 0.5, 0.7), m_ = new THREE.Mesh(bx, hell);
-      var off = i < 2 ? q[0] * q[2] : 0, vz = i < 2 ? z0 + (ph + 0.1) / 2 - 0.05 : z0 + ph + 0.25, v_ = V(A_.x + qx * off, A_.y + qy * off, vz); m_.position.set(v_[0], v_[1], v_[2]); m_.rotation.y = Math.atan2(qy, qx); m_.castShadow = m_.receiveShadow = true; szene.add(m_); }); } }
+  if (T.aus) { var A_ = T.aus, qx = -A_.uy, qy = A_.ux, z0 = T.oben, gw = 5.9, kae = 2.6, br = 10, hoch_ = 7.2, smat = RONDELL.mat || new THREE.MeshLambertMaterial({ color: 0xa8705a });   // 13.10. (Andreas mit Markierung: grün = Rundbogen, rot = alles massiv Sandstein): Innenseite des Torhauses wie die Außenseite
+    var sh = new THREE.Shape(); sh.moveTo(-br / 2, -1.5); sh.lineTo(br / 2, -1.5); sh.lineTo(br / 2, hoch_); sh.lineTo(-br / 2, hoch_); sh.lineTo(-br / 2, -1.5);
+    var lo = new THREE.Path(); lo.moveTo(-gw / 2, -1.2); lo.lineTo(-gw / 2, kae); lo.absarc(0, kae, gw / 2, Math.PI, 0, true); lo.lineTo(gw / 2, -1.2); lo.lineTo(-gw / 2, -1.2); sh.holes.push(lo);
+    var fg = new THREE.ExtrudeGeometry(sh, { depth: 1.2, bevelEnabled: false, curveSegments: 18 }), fu = fg.attributes.uv, fp = fg.attributes.position; for (var fi = 0; fi < fu.count; fi++) fu.setXY(fi, fp.getX(fi) + fp.getZ(fi), fp.getY(fi));
+    var fm = new THREE.Mesh(fg, smat), fv = V(A_.x - A_.ux * 1.0, A_.y - A_.uy * 1.0, z0); fm.position.set(fv[0], fv[1], fv[2]); fm.rotation.y = Math.atan2(qy, qx); fm.castShadow = fm.receiveShadow = true; fm.name = 'torinnen'; szene.add(fm);
+    var bg = new THREE.Mesh(new THREE.TorusGeometry(gw / 2 + 0.2, 0.22, 6, 18, Math.PI), new THREE.MeshLambertMaterial({ color: 0xc08a72 })), bv = V(A_.x + A_.ux * 0.22, A_.y + A_.uy * 0.22, z0 + kae); bg.position.set(bv[0], bv[1], bv[2]); bg.rotation.y = Math.atan2(qy, qx); szene.add(bg);   // heller Bogenstein
+    var pc = document.createElement('canvas'); pc.width = pc.height = 32; var pg = pc.getContext('2d'); pg.fillStyle = '#6e6458'; pg.fillRect(0, 0, 32, 32); for (var r = 0; r < 4; r++) for (var q = 0; q < 4; q++) { pg.fillStyle = ['#9a8e7c', '#8c8070', '#a59884', '#938674'][(r * 3 + q) % 4]; pg.fillRect((q * 8 + (r % 2) * 4) % 32 + 1, r * 8 + 1, 6, 6); }
+    var pt = new THREE.CanvasTexture(pc); pt.wrapS = pt.wrapT = THREE.RepeatWrapping; pt.magFilter = THREE.NearestFilter; pt.repeat.set(3, 3.5);   // Pflaster auf dem Platz
+    var pl_ = new THREE.Mesh(new THREE.PlaneGeometry(7, 6), new THREE.MeshLambertMaterial({ map: pt, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })), pv = V(A_.x + A_.ux * 2.3, A_.y + A_.uy * 2.3, z0 + 0.03); pl_.position.set(pv[0], pv[1], pv[2]); pl_.rotation.x = -Math.PI / 2; pl_.rotation.z = Math.atan2(qy, qx); pl_.receiveShadow = true; szene.add(pl_); } }
 function rondellSchmuck() {                       // Bogenfries (Konsolen mit Bögen) unter der Krone und eine Deckplatte – Sandstein wie die Treppe
   var R_ = RONDELL, g = new THREE.Group(), stein = new THREE.MeshLambertMaterial({ color: 0xa8705a }), hell = new THREE.MeshLambertMaterial({ color: 0xc89a80 }), v = V(R_.c[0], R_.c[1], R_.oben);
   g.position.set(v[0], v[1], v[2]); var ra = R_.r + 0.45;
@@ -17462,7 +17471,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = '1f7d02d0', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = 'ace1d3ce', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
