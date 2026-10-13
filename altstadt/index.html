@@ -11109,7 +11109,7 @@ function aufheben() {                            // Rechtsklick auf ein hingeste
   if (!best) return false; szene.remove(best.o); var i = k.moebel.indexOf(best.kreis); if (i >= 0) k.moebel.splice(i, 1); KAMMER_OBJ.splice(KAMMER_OBJ.indexOf(best), 1);
   KINHALT.stuecke.splice(KINHALT.stuecke.indexOf(best.st), 1); KINHALT.beutel.unshift(best.st.a); kinhaltSpeichern(); kammerBettPruefen(); melden(MOEBEL_KATALOG[best.st.a].n.toUpperCase() + ' AUFGEHOBEN · RECHTSKLICK: WIEDER HINSTELLEN', 3); return true;
 }
-addEventListener('wheel', function (e) { if (KARTE === 2 && !PLATZ) { KARTE_ZOOM = Math.max(0, Math.min(2, KARTE_ZOOM + (e.deltaY < 0 ? 1 : -1))); e.preventDefault(); return; } if (!PLATZ) { if (EPOCHE === 1400 && SPIELER && !INVENTAR && !QUESTBUCH && (document.pointerLockElement === weltCv || 'ontouchstart' in window === false)) { handRad(e.deltaY > 0 ? 1 : -1); e.preventDefault(); } return; } PLATZ.d += (e.deltaY > 0 ? 1 : -1) * Math.PI / 8; e.preventDefault(); }, { passive: false });
+addEventListener('wheel', function (e) { if (BL.an) { BL.r = Math.max(1, Math.min(8, BL.r + (e.deltaY < 0 ? 0.5 : -0.5))); e.preventDefault(); return; } if (KARTE === 2 && !PLATZ) { KARTE_ZOOM = Math.max(0, Math.min(2, KARTE_ZOOM + (e.deltaY < 0 ? 1 : -1))); e.preventDefault(); return; } if (!PLATZ) { if (EPOCHE === 1400 && SPIELER && !INVENTAR && !QUESTBUCH && (document.pointerLockElement === weltCv || 'ontouchstart' in window === false)) { handRad(e.deltaY > 0 ? 1 : -1); e.preventDefault(); } return; } PLATZ.d += (e.deltaY > 0 ? 1 : -1) * Math.PI / 8; e.preventDefault(); }, { passive: false });
 // ---- Spinnen (11.10., Grind 3): Wolle vom Weber → am eigenen Spinnrad in der Kammer → Garn zurück an den Weber ----
 // Ein Kreislauf mit Einsatz: Kammer (6 Heller/Woche) + Spinnrad (9 Heller beim Drechsler) – dafür bringt es mehr als Holz:
 // 12 Umdrehungen (linke Maus halten) = 1 Spule, Wolle 1 Heller, Garn 3 Heller, der Weber nimmt höchstens 6 Spulen am Tag.
@@ -12640,7 +12640,8 @@ function hausPlatz(x, y, z) {
     if (x < o.bb[0] - 4 || x > o.bb[2] + 4 || y < o.bb[1] - 4 || y > o.bb[3] + 4) continue; if (drin(x, y, o.pts)) return z;
     for (var k = 0; k < o.pts.length; k++) { var a = o.pts[k], b = o.pts[(k + 1) % o.pts.length], d = abstandStrecke(x, y, a[0], a[1], b[0], b[1]); if (d < bd) { bd = d; best = o; } } }
   if (!best || Math.abs(z - best.b) > 2.5 || Math.abs(z - best.b) < 0.05) return z; var t = bd <= 1 ? 1 : 1 - (bd - 1) / 3; t = t * t * (3 - 2 * t); return z + (best.b + 0.03 - z) * t; }
-function bodenHoehe(x, y) {                                  // Straße am Haus = Erdgeschoss: keine versunkenen Fenster
+function bodenHoehe(x, y) { var z = bodenHoehe0(x, y); return BL && BL.n ? z + blDelta(x, y) : z; }   // 13.10.: Bauleiter-Änderungen obendrauf
+function bodenHoehe0(x, y) {                                  // Straße am Haus = Erdgeschoss: keine versunkenen Fenster
   if (typeof STIFT !== 'undefined' && STIFT.fertig && x > STIFT.haus.bb[0] && x < STIFT.haus.bb[2] && y > STIFT.haus.bb[1] && y < STIFT.haus.bb[3] && drin(x, y, STIFT.haus.pts)) return STIFT.haus.b + 0.85;   // Kirchenboden eben
   if (STADTBODEN && innerhalbMauer(x, y) && !wasser(x, y)) { var zs = stadtBoden(x, y); if (zs !== null) return hausPlatz(x, y, burgwegHoehe(x, y, zs)); }   // 08.10.: eingeebnete Stadt statt Naht Haus/Höhenmodell
   var h = hausNah(x, y); if (h && !wasser(x, y)) return h.b + 0.03;
@@ -13124,7 +13125,7 @@ function weltBauen(bodenBild, kBild, bBild, fBild) {
   }
   var gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); gg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); gg.setIndex(idx); gg.computeVertexNormals();
   var bodenTex = pixelTextur(bodenBild); bodenTex.minFilter = THREE.LinearMipmapLinearFilter;
-  var boden = new THREE.Mesh(gg, new THREE.MeshLambertMaterial({ map: bodenTex })); boden.receiveShadow = true; szene.add(boden); BODEN_MAT = boden.material; NETZ_AN = true;
+  var boden = new THREE.Mesh(gg, new THREE.MeshLambertMaterial({ map: bodenTex })); boden.receiveShadow = true; szene.add(boden); BODEN_MAT = boden.material; BL.geo = gg; NETZ_AN = true;
   if (UH) umlandBauen(); else {
   // Saum: der Geländerand läuft 1,5 km nach außen weiter (Felder und Wald in einer Farbe), damit man von oben keine Weltkante sieht
   (function () { var sp = [], si = [], W2 = 1500, rand = [];
@@ -13686,7 +13687,7 @@ var STARTSCHIRM = !/[?&](intro=0|probe=1)/.test(Q) && !(function () { try { retu
   ak.addEventListener('click', function () { if (!akScharf) { akScharf = true; ak.textContent = 'Wirklich? Dein Spielstand fängt von vorn an – nochmal klicken'; return; }
     try { sessionStorage.setItem('wzf_gestartet', '1'); } catch (e) {} location.search = '?jahr=1400&auftrag=neu' + (/[?&]probe=1/.test(Q) ? '&probe=1' : ''); });
   addEventListener('keydown', function (e) { if (STARTSCHIRM && e.key === 'Enter') los(1400); }); })();
-addEventListener('keydown', function (e) { var k = e.key.toLowerCase(); if (STARTSCHIRM) return; if (e.metaKey || e.ctrlKey) return; taste[k] = true; if (e.key.indexOf('Arrow') === 0 || e.key === ' ') e.preventDefault(); if (k === 'm') { KARTE = KARTE === 1 || KARTE === true ? 2 : KARTE ? 0 : 1; karteMaus(); } if (KARTE === 2 && (k === '+' || k === '=')) KARTE_ZOOM = Math.min(2, KARTE_ZOOM + 1); if (KARTE === 2 && (k === '-' || k === '_')) KARTE_ZOOM = Math.max(0, KARTE_ZOOM - 1); if (k === 'o') rumtreiberOeffnen(); if (k === 'n') stadtbuchOeffnen(); if (k === 'y') { WEGWEISER.an = !WEGWEISER.an; try { localStorage.setItem('wzf_wegweiser', WEGWEISER.an ? 'an' : 'aus'); } catch (e2) {} melden(WEGWEISER.an ? 'WEGWEISER AN (Y)' : 'WEGWEISER AUS (Y)', 2); } if (k === 't' || k === ',' || k === '.' || k === ';' || k === ':') uhrTaste(k);   // 11.10.: vorher lief uhrGesprungen() bei JEDEM Tastendruck (fehlende Klammern)
+addEventListener('keydown', function (e) { var k = e.key.toLowerCase(); if (STARTSCHIRM) return; if (e.metaKey || e.ctrlKey) return; if (k === 'ü' && !e.repeat) { blUmschalten(); return; } if (BL.an && blTaste(k, e)) return; taste[k] = true; if (e.key.indexOf('Arrow') === 0 || e.key === ' ') e.preventDefault(); if (k === 'm') { KARTE = KARTE === 1 || KARTE === true ? 2 : KARTE ? 0 : 1; karteMaus(); } if (KARTE === 2 && (k === '+' || k === '=')) KARTE_ZOOM = Math.min(2, KARTE_ZOOM + 1); if (KARTE === 2 && (k === '-' || k === '_')) KARTE_ZOOM = Math.max(0, KARTE_ZOOM - 1); if (k === 'o') rumtreiberOeffnen(); if (k === 'n') stadtbuchOeffnen(); if (k === 'y') { WEGWEISER.an = !WEGWEISER.an; try { localStorage.setItem('wzf_wegweiser', WEGWEISER.an ? 'an' : 'aus'); } catch (e2) {} melden(WEGWEISER.an ? 'WEGWEISER AN (Y)' : 'WEGWEISER AUS (Y)', 2); } if (k === 't' || k === ',' || k === '.' || k === ';' || k === ':') uhrTaste(k);   // 11.10.: vorher lief uhrGesprungen() bei JEDEM Tastendruck (fehlende Klammern)
   if (k === 'i') { inventarAuf(!INVENTAR); QUESTBUCH = false; } if (k === 'tab') { e.preventDefault(); if (EPOCHE === 1400) { questbuchAuf(!QUESTBUCH); if (QUESTBUCH && INVENTAR) inventarAuf(false); } } if (k === 'escape' && QUESTBUCH) questbuchAuf(false); if (sprungTaste(k)) { e.preventDefault(); return; } if (SPIELER && EPOCHE === 1400 && /^[1-9]$/.test(k) && !INVENTAR) { var ld = leisteDinge(); if (ld[+k - 1]) handSetzen(ld[+k - 1]); }   // 12.10.: 1–9 wählt, was in die Hand kommt (wie Minecraft); Rechtsklick isst
   if (k === 'g' && AUFTRAG.karrenWahl) karrenWahlTreffen('schlafen'); else if (k === 'g' && AUFTRAG.wahl) wahlTreffen('nachlass'); else if (k === 'g' && AUFTRAG.zehnt > 0 && SPIELERKARREN && EPOCHE === 1400 && !AUFTRAG.rede && !AUFTRAG.hundWahl && !P.drinnen && !REITEN.auf && !KARRENSCHLAF) { P.aufKarren = true; karrenWahlTreffen('schlafen'); }   // 12.10. (Andreas: „ich wurde nicht gefragt“): G geht die ganze Fahrt über
   if (k === 'escape' && PAUSE) pauseWeiter(); else if (k === 'escape' && !document.pointerLockElement && !INVENTAR && performance.now() > PAUSE_RUHE) pauseZeigen(true); if (AUFTRAG.hundWahl && !AUFTRAG.rede) { if (k === 'g') hundWahlTreffen('vergeben'); if (k === 'r') hundWahlTreffen('rache'); } if (k === 'h') himmelEcht(!HIMMEL_ECHT); if (k === 'l') tonAnAus(); if (k === 'k') { STERNBILDER_AN = !STERNBILDER_AN; melden(STERNBILDER_AN ? 'STERNBILDER AN' : 'STERNBILDER AUS', 2); }
@@ -15701,6 +15702,49 @@ function navKarren(i, j) { if (!KARRENWEGE || i < 0 || j < 0 || i >= NAV.b || j 
   if (!NAV.mauer[k]) NAV.mauer[k] = innerhalbMauer(NAV.x0 + i + 0.5, NAV.y0 + j + 0.5) ? 2 : 1; return NAV.mauer[k] === 1; }
 // Sichtbar (13.10., Andreas: „hier muss eine Straße Richtung Burg … Schloßgasse?!“ / „da ist eine Treppe den steilen Berg hoch“):
 // Pflaster auf der Schloßgasse (4 m breit, aufs Gelände gelegt) und Stufen aus rotem Sandstein auf allen OSM-Treppen. Maße ANNAHME, Material wie die Stadt (Mainsandstein).
+// ---------- Bauleiter-Modus (13.10., Andreas: „wenn ich doch durchlaufen könnte und im Spiel markieren, was aufgefüllt, abgetragen oder verändert werden muss … oder ich fülle auf/trage ab“) ----------
+// Ü an/aus. Linksklick trägt Erde auf, Rechtsklick trägt ab (je 25 cm im Kreis, außen weich), E ebnet den Kreis auf die eigene Standhöhe, N steckt eine Fahne mit Notiz,
+// Mausrad = Kreisgröße (1–8 m), X = letzten Schritt zurück, L = Liste als Datei speichern. Alles bleibt im Browser (localStorage) – die Datei bekommt der Spiel-Claude und baut es fest ein.
+var BL = { an: false, r: 2.5, schritt: 0.25, ops: [], fahnen: [], grid: new Map(), n: 0, geo: null, geladen: false, ring: null, ziel: null, fahnenObj: [], hinweisBis: 0 };
+function blDelta(x, y) { var i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j, G = BL.grid; function v(a, b) { return G.get(a * 100000 + b) || 0; }
+  return v(i, j) * (1 - fx) * (1 - fy) + v(i + 1, j) * fx * (1 - fy) + v(i, j + 1) * (1 - fx) * fy + v(i + 1, j + 1) * fx * fy; }
+function blAnwenden(op) { var r = op.r, G = BL.grid; for (var i = Math.floor(op.x - r); i <= Math.ceil(op.x + r); i++) for (var j = Math.floor(op.y - r); j <= Math.ceil(op.y + r); j++) { var d = Math.hypot(i - op.x, j - op.y); if (d > r) continue;
+    var w = d <= r * 0.55 ? 1 : (r - d) / (r * 0.45); w = w * w * (3 - 2 * w); var k = i * 100000 + j, alt = G.get(k) || 0, neu = alt;
+    if (op.art === 'hoch') neu = alt + op.wert * w; else if (op.art === 'tief') neu = alt - op.wert * w; else if (op.art === 'eben') { var jetzt = bodenHoehe0(i, j) + alt; neu = alt + (op.wert - jetzt) * w; }
+    if (Math.abs(neu) < 1e-4) G.delete(k); else G.set(k, neu); } BL.n = G.size; }
+function blNetz(x, y, r) {                        // Bodennetz im Umkreis neu auf die Höhen setzen
+  var geo = BL.geo; if (!geo) return; var ps = geo.attributes.position, alt = NETZ_AN; NETZ_AN = false; NETZMEMO.clear();
+  for (var i = 0; i < ps.count; i++) { var vx = ps.getX(i), vy = -ps.getZ(i); if (r !== undefined && (Math.abs(vx - x) > r + 2.5 || Math.abs(vy - y) > r + 2.5)) continue; ps.setY(i, bodenHoehe(vx, vy)); }
+  NETZ_AN = alt; ps.needsUpdate = true; geo.computeVertexNormals(); }
+function blSpeichern() { try { localStorage.setItem(SPEICHER + '_bauleiter', JSON.stringify({ ops: BL.ops, fahnen: BL.fahnen })); } catch (e) {} }
+function blLaden() { BL.geladen = true; var j = null; try { j = JSON.parse(localStorage.getItem(SPEICHER + '_bauleiter') || 'null'); } catch (e) {} if (!j) return;
+  BL.ops = j.ops || []; BL.fahnen = j.fahnen || []; BL.ops.forEach(blAnwenden); if (BL.ops.length) blNetz(); BL.fahnen.forEach(blFahneBauen); }
+function blNeuAufbauen() { BL.grid.clear(); BL.n = 0; BL.ops.forEach(blAnwenden); blNetz(); }
+function blUmschalten() { if (EPOCHE !== 1400 && !BL.an) { melden('DER BAULEITER ARBEITET UM 1400', 2); return; } BL.an = !BL.an; if (BL.ring) BL.ring.visible = BL.an;
+  melden(BL.an ? 'BAULEITER AN · LINKS AUFTRAGEN · RECHTS ABTRAGEN · E EBNEN · N FAHNE · RAD KREIS · X ZURÜCK · L LISTE · Ü AUS' : 'BAULEITER AUS · ' + BL.ops.length + ' ÄNDERUNGEN, ' + BL.fahnen.length + ' FAHNEN GESPEICHERT', 5); }
+function blZiel() {                               // wohin du schaust: vom Auge den Blick entlang, bis der Boden getroffen ist (höchstens 60 m)
+  var dir = new THREE.Vector3(); kamera.getWorldDirection(dir); var o = kamera.position;
+  for (var t = 0.5; t < 60; t += 0.25) { var x = o.x + dir.x * t, y = -(o.z + dir.z * t), z = o.y + dir.y * t; if (z <= bodenHoehe(x, y)) return [x, y]; } return [P.x + Math.sin(P.blick) * 5, P.y + Math.cos(P.blick) * 5]; }   // geradeaus geschaut: 5 m vor dir
+function blRingBauen() { BL.ring = new THREE.InstancedMesh(new THREE.SphereGeometry(0.12, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffd040, depthTest: false, transparent: true, opacity: 0.9 }), 40); BL.ring.renderOrder = 999; BL.ring.frustumCulled = false; szene.add(BL.ring); }   // gelber Punktkreis, durch alles sichtbar
+function blWeiter() {
+  if (!BL.geladen && BL.geo) blLaden(); if (!BL.an) return; if (!BL.ring) blRingBauen(); BL.ziel = blZiel(); BL.ring.visible = !!BL.ziel; if (!BL.ziel) return;
+  var M4 = new THREE.Matrix4(); for (var i = 0; i < 40; i++) { var w = i / 39 * Math.PI * 2, x = BL.ziel[0] + Math.cos(w) * BL.r, y = BL.ziel[1] + Math.sin(w) * BL.r, v = i === 39 ? V(BL.ziel[0], BL.ziel[1], bodenHoehe(BL.ziel[0], BL.ziel[1]) + 0.15) : V(x, y, bodenHoehe(x, y) + 0.12); M4.makeTranslation(v[0], v[1], v[2]); BL.ring.setMatrixAt(i, M4); } BL.ring.instanceMatrix.needsUpdate = true;   // 39 Punkte im Kreis, einer in der Mitte
+  if (P.t > BL.hinweisBis && P.t > (AUFTRAG.meldungBis || 0)) { BL.hinweisBis = P.t + 0.4; melden('BODEN HIER ' + bodenHoehe(BL.ziel[0], BL.ziel[1]).toFixed(1) + ' M Ü. NN', 0.5); } }
+function blTun(art, wert) { if (!BL.ziel) { melden('SCHAU AUF DEN BODEN', 1.5); return; } var op = { art: art, x: +BL.ziel[0].toFixed(2), y: +BL.ziel[1].toFixed(2), r: BL.r, wert: +wert.toFixed(2) }; blAnwenden(op); BL.ops.push(op); blNetz(op.x, op.y, op.r); blSpeichern(); kling && kling('messer_schnitt', 0.15); }
+function blKlick(knopf) { if (knopf === 0) blTun('hoch', BL.schritt); else if (knopf === 2) blTun('tief', BL.schritt); }
+function blTaste(k, e) {
+  if (k === 'e') { blTun('eben', P.z - AUGE); melden('GEEBNET AUF ' + (P.z - AUGE).toFixed(1) + ' M', 1.5); return true; }
+  if (k === 'x') { if (!BL.ops.length) { melden('NICHTS ZUM ZURÜCKNEHMEN', 1.5); return true; } var op = BL.ops.pop(); blNeuAufbauen(); blSpeichern(); melden('ZURÜCK · NOCH ' + BL.ops.length + ' ÄNDERUNGEN', 1.5); return true; }
+  if (k === 'n') { if (!BL.ziel) return true; if (document.exitPointerLock) document.exitPointerLock(); var txt = window.prompt('Was soll hier hin oder weg?', ''); if (txt) { var f = { x: +BL.ziel[0].toFixed(2), y: +BL.ziel[1].toFixed(2), text: txt.slice(0, 120) }; BL.fahnen.push(f); blFahneBauen(f); blSpeichern(); melden('FAHNE GESTECKT', 2); } return true; }
+  if (k === 'l') { blDatei(); return true; }
+  return false; }
+function blFahneBauen(f) { var g = new THREE.Group(), stab = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.2, 0.06), new THREE.MeshLambertMaterial({ color: 0x5a3e28 })); stab.position.y = 1.1; g.add(stab);
+  var c = document.createElement('canvas'); c.width = 256; c.height = 64; var cg = c.getContext('2d'); cg.fillStyle = '#e8c040'; cg.fillRect(0, 0, 256, 64); cg.fillStyle = '#2a1a10'; cg.font = 'bold 22px sans-serif'; cg.textAlign = 'center'; cg.fillText(f.text.slice(0, 22), 128, 28); if (f.text.length > 22) cg.fillText(f.text.slice(22, 44), 128, 54);
+  var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false })); sp.scale.set(2.4, 0.6, 1); sp.position.y = 2.6; g.add(sp);
+  var v = V(f.x, f.y, bodenHoehe(f.x, f.y)); g.position.set(v[0], v[1], v[2]); szene.add(g); BL.fahnenObj.push(g); }
+function blDatei() { var d = { art: 'wertheim-bauleiter', bau: BAUSTAND, erstellt: new Date().toISOString(), hinweis: 'x Ost, y Nord in Spielkoordinaten (m); art hoch/tief = Meter im Kreis r, eben = Zielhöhe ü. NN', ops: BL.ops, fahnen: BL.fahnen };
+  var blob = new Blob([JSON.stringify(d, null, 1)], { type: 'application/json' }), a = document.createElement('a'), stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+  a.href = URL.createObjectURL(blob); a.download = 'bauleiter-' + stamp + '.json'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000); melden('LISTE GESPEICHERT · ' + BL.ops.length + ' ÄNDERUNGEN, ' + BL.fahnen.length + ' FAHNEN · DATEI IM DOWNLOAD-ORDNER', 5); }
 var BURGWEG = { gebaut: false };
 function burgwegBauen() {
   BURGWEG.gebaut = true; if (!KARRENWEGE || typeof szene === 'undefined') return;
@@ -16598,6 +16642,7 @@ function wegNameWeiter() {                       // betritt man einen benannten 
   if (auf && auf !== WEGNAME.auf && P.t - WEGNAME.zuletzt > 240) { WEGNAME.zuletzt = P.t; melden(auf.name.toUpperCase() + ' · DER ALTE WEG NACH ' + auf.nach.toUpperCase() + ' – DIE TAUBER HINAUF, DANN AM DELLENGRABEN DURCH DEN WALD', 6); }
   WEGNAME.auf = auf; }
 function leuteBewegen(dt) {
+  try { blWeiter(); } catch (e) { schleifeFehler('bauleiter', e); }
   tagesablaufWeiter(dt); if (!BURGWEG.gebaut) try { burgwegBauen(); } catch (e) { schleifeFehler('burgweg', e); } try { erbWeiter(); } catch (e) { schleifeFehler('erbhaus', e); } try { winterWeiter(dt); } catch (e) { schleifeFehler('winter', e); } try { if (window.Winter) maineisWeiter(dt); } catch (e) { schleifeFehler('maineis', e); } if (SCHNEEBAELLE.length) try { schneeballWeiter(dt); } catch (e) { schleifeFehler('schneeball', e); } abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); junkerWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); kindWeiter(dt); generationWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); steinWeiter(dt); kaiWeiter(dt); treppeWeiter(); gsWeiter(); sprungWeiter(); lageWeiter(); flutWeiter(); ereignisWeiter(dt); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
   kamera.updateMatrixWorld(); SICHT.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse); SICHT.kegel.setFromProjectionMatrix(SICHT.m);
   SICHT.takt += dt; var neuPruefen = SICHT.takt > 0.05; if (neuPruefen) SICHT.takt = 0; var tick = Math.floor(P.t * 20);
@@ -16899,7 +16944,7 @@ function handhaben() {
   var vs = versteckNah(); if (vs && (JAGD || AUFTRAG.schmuggel === 1 || !naechsteePerson())) { versteckRein(vs); return true; }
   return reitenHandhaben() || karrenHandhaben() || angelHandhaben() || haselSchneiden() || schmiedHaken() || lehreSchlafen() || leseAbgeben() || kaiAbgeben() || kaiNehmen() || steinAbgeben() || steinNehmen() || kramZurueck() || kramNehmen() || moebelKaufen() || strohsack() || erbHandhaben() || kammerSchlafen() || aufheben() || hinstellenStart() || grabHohl() || schmiedBeil() || weberHandel() || kircheSitzen() || hundAnfassen() || sammeln() || steinAblegen() || handBenutzen();   // 12.10.: der Karren steht oben (Andreas: „sitzen konnte ich nicht“ – Aufheben/Sammeln kamen ihm zuvor)
 }
-weltCv.addEventListener('mousedown', function (e) { if (document.pointerLockElement !== weltCv) return; if (e.button === 0) { if (PLATZ) { hinstellenJetzt(); return; } if (!AUFTRAG.rede && angelLinks()) return; if ((holzNah() || spinnradNah() || (leseStock() >= 0 && leseZeit())) && !AUFTRAG.rede) { maus.links = true; return; } if (!reden() && !handhaben() && !schneeballWerfen() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } else if (e.button === 2) { if (PLATZ) { hinstellenAbbrechen(); melden('ZURÜCK IN DEN BEUTEL', 1.5); return; } if (!handhaben()) { maus.rechts = true; if (!P.klettert) springenJetzt(); } } });
+weltCv.addEventListener('mousedown', function (e) { if (document.pointerLockElement !== weltCv) return; if (BL.an) { blKlick(e.button); return; } if (e.button === 0) { if (PLATZ) { hinstellenJetzt(); return; } if (!AUFTRAG.rede && angelLinks()) return; if ((holzNah() || spinnradNah() || (leseStock() >= 0 && leseZeit())) && !AUFTRAG.rede) { maus.links = true; return; } if (!reden() && !handhaben() && !schneeballWerfen() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } else if (e.button === 2) { if (PLATZ) { hinstellenAbbrechen(); melden('ZURÜCK IN DEN BEUTEL', 1.5); return; } if (!handhaben()) { maus.rechts = true; if (!P.klettert) springenJetzt(); } } });
 addEventListener('mouseup', function (e) { if (e.button === 2) maus.rechts = false; if (e.button === 0) maus.links = false; });
 weltCv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 function fingerRechnen(e) {
@@ -17153,9 +17198,10 @@ function hudMalen() {
       var sx = (vk.x + 1) / 2 * W, sy = (1 - vk.y) / 2 * H; if (l.jagd) text('!', sx, sy, 14, '#ff4a3a'); else { hud.globalAlpha = 0.4 + l.verdacht * 0.6; text('?', sx, sy, 8 + Math.round(l.verdacht * 6), l.verdacht > 0.6 ? '#ff9a3a' : '#ffe07a'); hud.globalAlpha = 1; } }); }
   if (STADTBUCH && STADT) stadtbuchMalen(W, H);
   if (INVENTAR && SPIELER && EPOCHE === 1400) inventarMalen(W, H); else if (QUESTBUCH && EPOCHE === 1400) questbuchMalen(W, H);
+  if (BL.an) bauleiterMalen(W, H);   // 13.10. (Andreas: „die Tasten musst du sichtbar machen im Baumodus“)
   if (KARTE && bodenBildHud) karteMalen(W, H);
   if (false && P.t < 6 && !/[?&]intro=0/.test(Q)) {   // AUS: ersetzt durch den Startschirm (09.10.) hud.globalAlpha = Math.max(0, Math.min(1, 6 - P.t)); hud.fillStyle = 'rgba(0,0,0,.55)'; hud.fillRect(70, 190, 340, 52);
-    text('WERTHEIM ZU FUSS', W / 2, 207, 13, '#ffd75e'); text('PFEILE/WASD · SHIFT RENNEN · KLICK = MAUS · M KARTE · P SCHARF · Z 1400 · T UHR · U ZEIT · B BERGFRIED · V ANSICHT · E REDEN · TAB QUESTBUCH · I INVENTAR · J STADTBUCH · LEERTASTE SPRINGEN (AN DER WAND HALTEN = KLETTERN) · MAUS LINKS = E · MAUS RECHTS = BENUTZEN/KLETTERN · MAUSRAD ODER 1–9 = WAS IN DER HAND IST · C DUCKEN · L TON · H ECHTER HIMMEL · F FACKEL · K STERNBILDER', W / 2, 222, 8, '#ddd'); text('HANDY: LINKS LAUFEN · RECHTS UMSCHAUEN', W / 2, 234, 8, '#ddd'); hud.globalAlpha = 1; }
+    text('WERTHEIM ZU FUSS', W / 2, 207, 13, '#ffd75e'); text('PFEILE/WASD · SHIFT RENNEN · KLICK = MAUS · M KARTE · P SCHARF · Z 1400 · T UHR · U ZEIT · B BERGFRIED · V ANSICHT · E REDEN · TAB QUESTBUCH · I INVENTAR · J STADTBUCH · LEERTASTE SPRINGEN (AN DER WAND HALTEN = KLETTERN) · MAUS LINKS = E · MAUS RECHTS = BENUTZEN/KLETTERN · MAUSRAD ODER 1–9 = WAS IN DER HAND IST · C DUCKEN · L TON · H ECHTER HIMMEL · F FACKEL · K STERNBILDER · Ü BAULEITER (BODEN AUFTRAGEN/ABTRAGEN, FAHNEN)', W / 2, 222, 8, '#ddd'); text('HANDY: LINKS LAUFEN · RECHTS UMSCHAUEN', W / 2, 234, 8, '#ddd'); hud.globalAlpha = 1; }
   if (finger.links) { hud.strokeStyle = 'rgba(255,255,255,.35)'; hud.beginPath(); hud.arc(finger.links.x0, finger.links.y0, 26, 0, 7); hud.stroke(); hud.beginPath(); hud.arc(finger.links.x, finger.links.y, 8, 0, 7); hud.stroke(); }
 }
 // ---- Inventar (Andreas 08.10.: „Börse, das tägliche Brot, ein Messer, ein Beutel für Geheimnisse und Schätze – wir sind ganz unten und wollen nach oben“) ----
@@ -17194,6 +17240,12 @@ function questListe() {
   var geh = (A.beutel || []).filter(function (b) { return SPIELER && SPIELER.geheimnisse.some(function (g) { return g.id === b.id; }); }).length; if (geh) neben.push(['Geheimnisse der Stadt', geh + ' gehört']);
   return { jetzt: j, weg: weg, neben: neben };
 }
+function bauleiterMalen(W, H) {                   // Tastentafel rechts, solange der Bauleiter an ist
+  var z = [['BAULEITER', ''], ['LINKSKLICK', 'AUFTRAGEN'], ['RECHTSKLICK', 'ABTRAGEN'], ['E', 'EBNEN (DEINE HÖHE)'], ['MAUSRAD', 'KREIS ' + BL.r.toFixed(1) + ' M'], ['N', 'FAHNE + NOTIZ'], ['X', 'ZURÜCK'], ['L', 'LISTE SPEICHERN'], ['Ü', 'AUS'], ['', BL.ops.length + ' ÄNDERUNGEN · ' + BL.fahnen.length + ' FAHNEN']];
+  var bw = 150, x0 = W - bw - 8, y0 = 48, zh = 10, bh = z.length * zh + 10; hud.fillStyle = 'rgba(20,14,8,.72)'; hud.fillRect(x0, y0, bw, bh); hud.fillStyle = '#ffd040'; hud.fillRect(x0, y0, bw, 2);
+  z.forEach(function (q, i) { var y = y0 + 12 + i * zh; hud.textBaseline = 'alphabetic'; hud.textAlign = 'left';
+    if (i === 0) { hud.font = 'bold 9px monospace'; hud.fillStyle = '#ffd040'; hud.fillText(q[0], x0 + 6, y); return; }
+    hud.font = 'bold 8px monospace'; hud.fillStyle = '#ffe9a8'; hud.fillText(q[0], x0 + 6, y); hud.font = '8px monospace'; hud.fillStyle = i === z.length - 1 ? '#c8b890' : '#f4ead8'; hud.fillText(q[1], x0 + (q[0] ? 68 : 6), y); }); }
 function questbuchMalen(W, H) { var Q = questListe(), x0 = 40, y0 = 14, bw = 400, bh = 244;
   hud.fillStyle = 'rgba(0,0,0,.45)'; hud.fillRect(0, 0, W, H); hud.fillStyle = '#e8d9b0'; hud.fillRect(x0, y0, bw, bh); hud.fillStyle = '#5a3a20'; hud.fillRect(x0, y0, bw, 2); hud.fillRect(x0, y0 + bh - 2, bw, 2); hud.fillRect(x0, y0, 2, bh); hud.fillRect(x0 + bw - 2, y0, 2, bh); hud.fillRect(x0 + bw / 2, y0 + 6, 1, bh - 12);
   function t(s, x, y, f, b) { hud.font = (b ? 'bold ' : '') + '8px monospace'; hud.textAlign = 'left'; hud.textBaseline = 'alphabetic'; hud.fillStyle = f || '#3a2a1a'; hud.fillText(s, x, y); }
@@ -17496,7 +17548,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = 'cb2846bb', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = '6e1d3a3d', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
