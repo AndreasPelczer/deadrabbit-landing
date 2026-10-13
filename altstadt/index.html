@@ -12640,7 +12640,11 @@ function hausPlatz(x, y, z) {
     if (x < o.bb[0] - 4 || x > o.bb[2] + 4 || y < o.bb[1] - 4 || y > o.bb[3] + 4) continue; if (drin(x, y, o.pts)) return z;
     for (var k = 0; k < o.pts.length; k++) { var a = o.pts[k], b = o.pts[(k + 1) % o.pts.length], d = abstandStrecke(x, y, a[0], a[1], b[0], b[1]); if (d < bd) { bd = d; best = o; } } }
   if (!best || Math.abs(z - best.b) > 2.5 || Math.abs(z - best.b) < 0.05) return z; var t = bd <= 1 ? 1 : 1 - (bd - 1) / 3; t = t * t * (3 - 2 * t); return z + (best.b + 0.03 - z) * t; }
-function bodenHoehe(x, y) { var z = bodenHoehe0(x, y); return BL && BL.n ? z + blDelta(x, y) : z; }   // 13.10.: Bauleiter-Änderungen obendrauf
+function bodenHoehe(x, y) { var z = bodenHoehe0(x, y); if (!(BL && BL.n)) return z; var d = blDelta(x, y); if (d < 0 && NETZ_AN) { var lf = laufflaeche(x, y); if (lf !== null) return Math.max(z + d, lf); } return z + d; }   // 13.10.: Bauleiter-Änderungen obendrauf – abgetragen wird nur Erde: wo etwas Gebautes liegt, trägt es die Füße
+function laufflaeche(x, y) {                      // 13.10. (Andreas: „sobald Boden unter der Treppe ist, sollte die Treppe das zu Belaufende sein, oder Holz, Stein …“): Höhe von Treppe, Platz oder Pflastergasse an dieser Stelle, sonst null
+  if (!BW_PROFIL) return null; var bx = Math.floor(x / 8), by = Math.floor(y / 8), best = null, bd = 1e9;
+  for (var i = -1; i <= 1; i++) for (var j = -1; j <= 1; j++) { var L = BW_PROFIL.eimer[(bx + i) + ',' + (by + j)]; if (!L) continue; for (var k = 0; k < L.length; k++) { var q = L[k], d = Math.hypot(q[0] - x, q[1] - y); if (d <= q[3] && d < bd) { bd = d; best = q[2]; } } }
+  return best; }
 function bodenHoehe0(x, y) {                                  // Straße am Haus = Erdgeschoss: keine versunkenen Fenster
   if (typeof STIFT !== 'undefined' && STIFT.fertig && x > STIFT.haus.bb[0] && x < STIFT.haus.bb[2] && y > STIFT.haus.bb[1] && y < STIFT.haus.bb[3] && drin(x, y, STIFT.haus.pts)) return STIFT.haus.b + 0.85;   // Kirchenboden eben
   if (STADTBODEN && innerhalbMauer(x, y) && !wasser(x, y)) { var zs = stadtBoden(x, y); if (zs !== null) return hausPlatz(x, y, burgwegHoehe(x, y, zs)); }   // 08.10.: eingeebnete Stadt statt Naht Haus/Höhenmodell
@@ -17548,7 +17552,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = '6e1d3a3d', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = '689f7b46', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
