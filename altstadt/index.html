@@ -13167,7 +13167,7 @@ function weltBauen(bodenBild, kBild, bBild, fBild) {
   // Stützmauer (OSM retaining_wall, h 2,6): Oberkante 0,4 m über dem höheren Boden. Sonst: Höhe über dem höheren Boden.
   var osmB = new FlickBuendel(5), osmLaenge = 0;
   var kernB = new FlickBuendel(5);
-  MAUERN.forEach(function (m) { var B_ = m.kern ? kernB : osmB;
+  MAUERN.forEach(function (m) { if (m.rondell) return; var B_ = m.kern ? kernB : osmB;   // das Rondell baut rondellSchmuck rund
     var ex = m.b[0] - m.a[0], ey = m.b[1] - m.a[1], L = Math.hypot(ex, ey) || 1, d = 0.45, nx = ey / L, ny = -ex / L, n = Math.max(1, Math.round(L / 1.5)), stuetz = m.h === 2.6;
     function kante(t) {
       var x = m.a[0] + ex * t, y = m.a[1] + ey * t, z1 = bodenHoehe(x + nx * 1.2, y + ny * 1.2), z2 = bodenHoehe(x - nx * 1.2, y - ny * 1.2);
@@ -13293,7 +13293,7 @@ function weltBauen(bodenBild, kBild, bBild, fBild) {
   var bruchTex = fotoKachel(quaderTex, 'bruch', 2.4);         // Stadtmauer: Bruchstein (Meshy „Mossy Stone Wall“)
   var turmTex = fotoKachel(quaderTex, 'quader', 2);           // Türme, Tore: grobe Quader (Meshy „Stone wall“)
   var uferTex = fotoKachel(quaderTex, 'sandquader', 2);       // Ufermauer, Brücke: roter Sandsteinquader (Meshy „Sandstone Wall“, rot getönt)
-  sandstein.map = fotoKachel(sandTex, 'sandquader', 2);
+  sandstein.map = fotoKachel(sandTex, 'sandquader', 2); RONDELL.mat = sandstein;   // 13.10.: das Rondell am Kirchplatz bekommt denselben roten Sandsteinquader
   var quader = new THREE.MeshLambertMaterial({ map: turmTex }), bruch = new THREE.MeshLambertMaterial({ map: bruchTex });
   // echte Wertheimer Steine (werkzeug/glb/foto_kacheln.py: Spitzer Turm + Burgtor), fünf Flecken-Arten: vier Kacheln, eine davon zweimal mit anderem Ton
   FLICK = [['echt_turm_a', 0xffffff], ['echt_turm_b', 0xe6dcd2], ['echt_turm_b', 0xf2e6e0], ['echt_turm_a', 0xd8ccc4], ['echt_turm_a', 0xe8d8d0]].map(function (e) { return { map: fotoKachel(bruchTex, e[0], 1.8), ton: e[1] }; });
@@ -13302,7 +13302,7 @@ function weltBauen(bodenBild, kBild, bBild, fBild) {
   // Mauerkrone (09.10., Andreas: „oben haben die Mauern immer Platten liegen“): einzelne Sandsteinplatten, 0,5–1,3 m lang, mit Fuge, leicht schief und
   // ungleich hoch, etwas überstehend, drei Farbtöne – über Jahrhunderte einzeln ersetzt. Nur auf den OSM-Mauern (Stadtmauer hat Zinnen und Wehrgang, Ufer hat eigene Deckel)
   var kroneB = [new Buendel(), new Buendel(), new Buendel()], plattenZahl = 0;
-  MAUERN.forEach(function (m, mi) { if (m.kern) return;
+  MAUERN.forEach(function (m, mi) { if (m.kern || m.rondell) return;
     var ex = m.b[0] - m.a[0], ey = m.b[1] - m.a[1], L = Math.hypot(ex, ey); if (L < 0.8) return;
     var ux = ex / L, uy = ey / L, nx = uy, ny = -ux, stuetz = m.h === 2.6, w = 0.45 + 0.07;
     function oben(t) { var x = m.a[0] + ux * t, y = m.a[1] + uy * t; if (m.abs !== undefined) return m.abs; return Math.max(bodenHoehe(x + nx * 1.2, y + ny * 1.2), bodenHoehe(x - nx * 1.2, y - ny * 1.2)) + (stuetz ? 0.4 : m.h); }
@@ -15623,7 +15623,11 @@ function burgwegBauen() {
 function rondellSchmuck() {                       // Bogenfries (Konsolen mit Bögen) unter der Krone und eine Deckplatte – Sandstein wie die Treppe
   var R_ = RONDELL, g = new THREE.Group(), stein = new THREE.MeshLambertMaterial({ color: 0xa8705a }), hell = new THREE.MeshLambertMaterial({ color: 0xc89a80 }), v = V(R_.c[0], R_.c[1], R_.oben);
   g.position.set(v[0], v[1], v[2]); var ra = R_.r + 0.45;
-  var kranz = new THREE.Mesh(new THREE.CylinderGeometry(ra + 0.25, ra + 0.25, 0.7, 28, 1, true), stein); kranz.material.side = THREE.DoubleSide; kranz.position.y = -0.55; g.add(kranz);
+  var tief = 1e9; for (var a = 0; a < 16; a++) { var w0 = a / 16 * Math.PI * 2; tief = Math.min(tief, bodenHoehe(R_.c[0] + Math.cos(w0) * (ra + 0.3), R_.c[1] + Math.sin(w0) * (ra + 0.3))); }
+  var hoch = R_.oben - 0.85 - (tief - 0.8), zyl = new THREE.CylinderGeometry(ra, ra, hoch, 32, 1, false), uv = zyl.attributes.uv;   // Körper aus rotem Sandsteinquader, UV in Metern wie die Ufermauer
+  for (var ui = 0; ui < uv.count; ui++) uv.setXY(ui, uv.getX(ui) * 2 * Math.PI * ra, uv.getY(ui) * hoch);
+  var koerper = new THREE.Mesh(zyl, R_.mat || new THREE.MeshLambertMaterial({ color: 0xa8705a })); koerper.position.y = -0.85 - hoch / 2; g.add(koerper);
+  var kranz = new THREE.Mesh(new THREE.CylinderGeometry(ra + 0.25, ra + 0.25, 0.7, 28, 1, true), stein.clone()); kranz.material.side = THREE.DoubleSide; kranz.position.y = -0.55; g.add(kranz);
   var deckel = new THREE.Mesh(new THREE.CylinderGeometry(ra + 0.3, ra + 0.3, 0.2, 28), hell); deckel.position.y = -0.1; g.add(deckel);
   for (var i = 0; i < 14; i++) { var w = i / 14 * Math.PI * 2, kons = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.55, 0.35), hell); kons.position.set(Math.cos(w) * (ra + 0.1), -1.15, -Math.sin(w) * (ra + 0.1)); kons.rotation.y = w; g.add(kons);
     var bogen = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.07, 4, 8, Math.PI), hell), wm = w + Math.PI / 14; bogen.position.set(Math.cos(wm) * (ra + 0.2), -1.1, -Math.sin(wm) * (ra + 0.2)); bogen.rotation.y = wm + Math.PI / 2; g.add(bogen); }
@@ -17323,7 +17327,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = '84c9facd', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = 'c61d6fb3', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
