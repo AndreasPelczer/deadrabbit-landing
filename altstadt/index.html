@@ -11756,7 +11756,11 @@ if (BURGBRUECKE) HAEUSER.forEach(function (h) { if (h.n === 'Archiv') { h.bAlt =
 // Ihre Mauerstücke sperren weiter, gezeichnet wird die Altane als ein Bau (altaneBauen). Maße ANNAHME nach Foto und DGM1.
 var ALTANE = { a: [137.6, 66.5], b: [155.4, 82.8], weg: 14.8, kaempfer: 189.5, r: 1.6, oben: 193.6, dick: 2.2 };
 (function () { var A = ALTANE.a, B = ALTANE.b, L = Math.hypot(B[0] - A[0], B[1] - A[1]), ux = (B[0] - A[0]) / L, uy = (B[1] - A[1]) / L; ALTANE.L = L; ALTANE.u = [ux, uy];
-  MAUERN.forEach(function (m) { if (m.abs !== undefined) return; var ok = [m.a, m.b].every(function (q) { var dx = q[0] - A[0], dy = q[1] - A[1], s_ = dx * ux + dy * uy, d = Math.abs(-dx * uy + dy * ux); return s_ > -1.5 && s_ < L + 1.5 && d < 2.6; }); if (ok) m.altane = true; }); })();
+  MAUERN.forEach(function (m) { if (m.abs !== undefined) return; var ok = [m.a, m.b].every(function (q) { var dx = q[0] - A[0], dy = q[1] - A[1], s_ = dx * ux + dy * uy, d = Math.abs(-dx * uy + dy * ux); return s_ > -1.5 && s_ < L + 1.5 && d < 2.6; }); if (ok) m.altane = true; });
+  // 13.10. (Andreas, Fotos alltagserinnerungen.de: „die Mauer geht noch weiter, etwas niedriger und anders“): die Ringmauer ums untere Bollwerk (OSM 88289217) als Zinnenmauer aus Sandstein
+  var ZM = [[135.0, 62.9], [133.0, 61.2], [117.8, 48.0], [141.8, 18.2], [156.0, 28.0], [164.7, 43.7], [170.6, 45.7], [172.3, 43.8], [174.9, 44.5]];
+  function nahZM(q) { for (var k = 0; k + 1 < ZM.length; k++) if (abstandStrecke(q[0], q[1], ZM[k][0], ZM[k][1], ZM[k + 1][0], ZM[k + 1][1]) < 0.8) return true; return false; }
+  MAUERN.forEach(function (m) { if (!m.altane && m.abs === undefined && nahZM(m.a) && nahZM(m.b)) m.zinnen = true; }); })();
 MAUERN.forEach(function (m) { if (KERNBURG && drin(m.a[0], m.a[1], KERNBURG) && drin(m.b[0], m.b[1], KERNBURG)) m.kern = true; });
 var KERNMAUERN = null;
 var BAEUME = WELT.baeume.map(function (b, i) { var r = hash(i * 3.3); return { x: b[0], y: b[1], z: gel(b[0], b[1]), art: wahl(['laub', 'laubgross', 'tanne', 'herbst', 'laubrund', 'birke', 'laubklein'], r), hoehe: 6 + r * 6 }; });
@@ -13236,7 +13240,7 @@ function weltBauen(bodenBild, kBild, bBild, fBild) {
   // Stützmauer (OSM retaining_wall, h 2,6): Oberkante 0,4 m über dem höheren Boden. Sonst: Höhe über dem höheren Boden.
   var osmB = new FlickBuendel(5), osmLaenge = 0;
   var kernB = new FlickBuendel(5);
-  MAUERN.forEach(function (m) { if (m.rondell || m.altane) return; var B_ = m.kern ? kernB : osmB;   // das Rondell baut rondellSchmuck rund
+  MAUERN.forEach(function (m) { if (m.rondell || m.altane || m.zinnen) return; var B_ = m.kern ? kernB : osmB;   // das Rondell baut rondellSchmuck rund
     var ex = m.b[0] - m.a[0], ey = m.b[1] - m.a[1], L = Math.hypot(ex, ey) || 1, d = 0.45, nx = ey / L, ny = -ex / L, n = Math.max(1, Math.round(L / 1.5)), stuetz = m.h === 2.6;
     function kante(t) {
       var x = m.a[0] + ex * t, y = m.a[1] + ey * t, z1 = bodenHoehe(x + nx * 1.2, y + ny * 1.2), z2 = bodenHoehe(x - nx * 1.2, y - ny * 1.2);
@@ -13371,7 +13375,7 @@ function weltBauen(bodenBild, kBild, bBild, fBild) {
   // Mauerkrone (09.10., Andreas: „oben haben die Mauern immer Platten liegen“): einzelne Sandsteinplatten, 0,5–1,3 m lang, mit Fuge, leicht schief und
   // ungleich hoch, etwas überstehend, drei Farbtöne – über Jahrhunderte einzeln ersetzt. Nur auf den OSM-Mauern (Stadtmauer hat Zinnen und Wehrgang, Ufer hat eigene Deckel)
   var kroneB = [new Buendel(), new Buendel(), new Buendel()], plattenZahl = 0;
-  MAUERN.forEach(function (m, mi) { if (m.kern || m.rondell || m.altane) return;
+  MAUERN.forEach(function (m, mi) { if (m.kern || m.rondell || m.altane || m.zinnen) return;
     var ex = m.b[0] - m.a[0], ey = m.b[1] - m.a[1], L = Math.hypot(ex, ey); if (L < 0.8) return;
     var ux = ex / L, uy = ey / L, nx = uy, ny = -ux, stuetz = m.h === 2.6, w = 0.45 + 0.07;
     function oben(t) { var x = m.a[0] + ux * t, y = m.a[1] + uy * t; if (m.abs !== undefined) return m.abs; return Math.max(bodenHoehe(x + nx * 1.2, y + ny * 1.2), bodenHoehe(x - nx * 1.2, y - ny * 1.2)) + (stuetz ? 0.4 : m.h); }
@@ -15696,7 +15700,24 @@ function burgwegBauen() {
   try { rondellSchmuck(); } catch (e) { console.warn('Rondell', e); }
   try { torAufgangStufen(); } catch (e) { console.warn('Toraufgang', e); }
   try { altaneBauen(); } catch (e) { console.warn('Altane', e); }
+  try { zinnenMauernBauen(); } catch (e) { console.warn('Zinnenmauer', e); }
   BURGWEG.n = stufen.length; }
+function zinnenMauernBauen() {                    // Zinnenmauer aus rotem Sandstein: Brustwehr 1,2 m über dem höheren Boden, Zinnen 0,9 m, kleine Schießscharten zur tieferen Seite
+  var mat = RONDELL.mat || new THREE.MeshLambertMaterial({ color: 0xa8705a }), dunkel = new THREE.MeshLambertMaterial({ color: 0x2a1c16 }), pos = [], uv = [], idx = [], merl = [], schar = [], D = 0.45;
+  function quad(p0, p1, p2, p3, u0, u1, v0, v1) { var b = pos.length / 3; [p0, p1, p2, p3].forEach(function (p) { pos.push(p[0], p[1], p[2]); }); uv.push(u0, v0, u1, v0, u1, v1, u0, v1); idx.push(b, b + 1, b + 2, b, b + 2, b + 3); }
+  MAUERN.forEach(function (m) { if (!m.zinnen) return; var ex = m.b[0] - m.a[0], ey = m.b[1] - m.a[1], L = Math.hypot(ex, ey); if (L < 0.2) return; var nx = ey / L, ny = -ex / L;
+    function k(t) { var x = m.a[0] + ex * t, y = m.a[1] + ey * t, z1 = bodenHoehe(x + nx * 1.4, y + ny * 1.4), z2 = bodenHoehe(x - nx * 1.4, y - ny * 1.4); return { x: x, y: y, unten: Math.min(z1, z2) - 0.8, oben: Math.max(z1, z2) + 1.2, aussen: z1 < z2 ? 1 : -1 }; }
+    var ka = k(0), kb = k(1);
+    [-1, 1].forEach(function (sd) { var ax = ka.x + nx * D * sd, ay = ka.y + ny * D * sd, bx = kb.x + nx * D * sd, by = kb.y + ny * D * sd;
+      var P0 = V(ax, ay, ka.unten), P1 = V(bx, by, kb.unten), P2 = V(bx, by, kb.oben), P3 = V(ax, ay, ka.oben); if (sd > 0) quad(P0, P1, P2, P3, 0, L / 2, ka.unten / 2, kb.oben / 2); else quad(P1, P0, P3, P2, 0, L / 2, kb.unten / 2, ka.oben / 2); });
+    quad(V(ka.x - nx * D, ka.y - ny * D, ka.oben), V(kb.x - nx * D, kb.y - ny * D, kb.oben), V(kb.x + nx * D, kb.y + ny * D, kb.oben), V(ka.x + nx * D, ka.y + ny * D, ka.oben), 0, L / 2, 0, 0.45);   // Wehrgang-Deckfläche
+    for (var s_ = 0.6; s_ < L - 0.3; s_ += 1.8) { var t = s_ / L, z = ka.oben + (kb.oben - ka.oben) * t, x = m.a[0] + ex * t, y = m.a[1] + ey * t; merl.push([x, y, z, Math.atan2(ey, ex)]);
+      if (Math.round(s_ / 1.8) % 2 === 0) { var au = (ka.aussen + kb.aussen) >= 0 ? 1 : -1; schar.push([x + nx * (D + 0.01) * au, y + ny * (D + 0.01) * au, z - 0.6, Math.atan2(ey, ex)]); } } });
+  if (!idx.length) return; var g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+  var mm = new THREE.Mesh(g, mat); mm.material.side = THREE.DoubleSide; mm.castShadow = mm.receiveShadow = true; mm.name = 'zinnenmauer'; szene.add(mm);
+  var M4 = new THREE.Matrix4(), Q4 = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0), im = new THREE.InstancedMesh(new THREE.BoxGeometry(1.0, 0.9, 0.9), new THREE.MeshLambertMaterial({ color: 0xa8705a }), merl.length);
+  merl.forEach(function (q, i) { var v = V(q[0], q[1], q[2] + 0.45); Q4.setFromAxisAngle(Y, q[3]); M4.compose(new THREE.Vector3(v[0], v[1], v[2]), Q4, new THREE.Vector3(1, 1, 1)); im.setMatrixAt(i, M4); }); im.castShadow = true; szene.add(im);   // Zinnen
+  var is = new THREE.InstancedMesh(new THREE.BoxGeometry(0.22, 0.32, 0.04), dunkel, Math.max(1, schar.length)); schar.forEach(function (q, i) { var v = V(q[0], q[1], q[2]); Q4.setFromAxisAngle(Y, q[3]); M4.compose(new THREE.Vector3(v[0], v[1], v[2]), Q4, new THREE.Vector3(1, 1, 1)); is.setMatrixAt(i, M4); }); is.count = schar.length; szene.add(is); }
 function altaneBauen() {                          // die Altane: Bogenmauer aus rotem Sandstein, Bögen gleich hoch, einer offen für den Burgweg, oben ein Maßwerkband auf Konsolen
   var T = ALTANE, A = T.a, L = T.L, ux = T.u[0], uy = T.u[1], nx = -uy, ny = ux, mat = RONDELL.mat || new THREE.MeshLambertMaterial({ color: 0xa8705a });   // n zeigt zur Talseite (dort kommt der Weg her)
   function gr(s_) { var x = A[0] + ux * s_, y = A[1] + uy * s_; return bodenHoehe(x + nx * 1.6, y + ny * 1.6); }
@@ -17441,7 +17462,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = '655a108f', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = '1f7d02d0', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
