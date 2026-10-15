@@ -11038,7 +11038,7 @@ function moebelKaufen() {
   if (MOEBEL_KATALOG[a.art].werkzeug) { AUFTRAG[a.art] = 1; speichern(); melden('GEKAUFT: ' + MOEBEL_KATALOG[a.art].n.toUpperCase() + ' · −' + a.preis + ' HELLER · JETZT DREI STEINE AUF EINMAL', 5); return true; }
   if (a.art === 'ww_messer') { AUFTRAG.messer = 1; speichern(); muenzTon(); melden('GEKAUFT: EIN MESSER · −' + a.preis + ' HELLER · DAMIT SCHNEIDEST DU HASELRUTEN, BROT UND FISCH', 5); return true; }   // 12.10.: vorher landete es nur als Ware im Beutel
   KINHALT.beutel.push(a.art); kinhaltSpeichern(); speichern();
-  melden('GEKAUFT: ' + MOEBEL_KATALOG[a.art].n.toUpperCase() + ' · −' + a.preis + ' HELLER · ' + (kammerGemietet() ? 'STELL ES IN DEINE KAMMER' : 'ERST BRAUCHST DU EINE KAMMER'), 5); return true;
+  melden('GEKAUFT: ' + MOEBEL_KATALOG[a.art].n.toUpperCase() + ' · −' + a.preis + ' HELLER · ' + (kammerGemietet() ? 'IN DER KAMMER: TASTE R ZUM EINRICHTEN' : 'ERST BRAUCHST DU EINE KAMMER'), 5); return true;
 }
 function kammerWelt() { var k = kammerHaus(); return k && k.zweck === 'kammer' ? k : null; }
 function moebelBauen(st) {                       // ein hingestelltes Stück wirklich aufstellen (beim Laden und beim Hinstellen)
@@ -11067,16 +11067,17 @@ function hinstellenStart() {
 }
 function hinstellenWeiter() {
   var k = kammerWelt(); if (!k) return; var sichtbar = EPOCHE === 1400; KAMMER_OBJ.forEach(function (e) { e.o.visible = sichtbar; }); kammerLichtWeiter();
-  if (!PLATZ) { var ziel = P.drinnen === k && !AUFTRAG.rede && !INVENTAR ? aufhebenZiel() : null; zielMarkieren(ziel);
-    if (ziel && P.t > (AUFTRAG.meldungBis || 0) - 0.05 && (!AUFTRAG.meldung || /^(RECHTSKLICK|DU SIEHST)/.test(AUFTRAG.meldung) || P.t > AUFTRAG.meldungBis)) melden('DU SIEHST: ' + MOEBEL_KATALOG[ziel.st.a].n.toUpperCase() + ' · RECHTSKLICK: AUFHEBEN' + (ziel.st.a === 'reibstein' ? ' (MIT FARBE: MALEN)' : ''), 0.3);
-    else if (!ziel && kammerGemietet() && P.drinnen === k && KINHALT.beutel.length && P.t > (AUFTRAG.meldungBis || 0) && !AUFTRAG.rede) melden('RECHTSKLICK: ' + MOEBEL_KATALOG[KINHALT.beutel[0]].n.toUpperCase() + ' HINSTELLEN' + (KINHALT.beutel.length > 1 ? ' (' + KINHALT.beutel.length + ' IM BEUTEL)' : ''), 0.4); return; }
+  einrichtenWeiter();
+  if (!PLATZ) { var ziel = EIN.an && P.drinnen === k && !AUFTRAG.rede && !INVENTAR ? aufhebenZiel() : null; zielMarkieren(ziel);
+    if (ziel && P.t > (AUFTRAG.meldungBis || 0) - 0.05 && (!AUFTRAG.meldung || /^(RECHTSKLICK|DU SIEHST|LINKSKLICK)/.test(AUFTRAG.meldung) || P.t > AUFTRAG.meldungBis)) melden('DU SIEHST: ' + MOEBEL_KATALOG[ziel.st.a].n.toUpperCase() + ' · LINKSKLICK: NEHMEN', 0.3);
+    else if (!EIN.an && kammerGemietet() && P.drinnen === k && KINHALT.beutel.length && P.t > (AUFTRAG.meldungBis || 0) && !AUFTRAG.rede) melden('TASTE R: EINRICHTEN (' + KINHALT.beutel.length + ' IM BEUTEL)', 0.4); return; }
   zielMarkieren(null); if (P.drinnen !== k) { hinstellenAbbrechen(); return; }
   var m = MOEBEL_KATALOG[PLATZ.art], x = P.x + Math.sin(P.blick) * (1.2 + m.r), y = P.y + Math.cos(P.blick) * (1.2 + m.r); x = Math.round(x * 4) / 4; y = Math.round(y * 4) / 4;   // im Viertelmeter-Raster
   PLATZ.h = 0; var wo = m.lage === 'wand' ? schmuckAnWand(k, m) : m.lage === 'tisch' ? schmuckAufTisch(x, y) : null;
   if (wo) { x = wo.x; y = wo.y; PLATZ.h = wo.h; if (wo.d !== undefined) PLATZ.d = wo.d; }
   PLATZ.x = x; PLATZ.y = y; PLATZ.gut = wo && wo.gut !== undefined ? wo.gut : m.lage === 'wand' ? false : platzGueltig(x, y, m.r); var v = V(x, y, k.b + 0.05 + PLATZ.h); PLATZ.g.position.set(v[0], v[1], v[2]); PLATZ.g.rotation.y = PLATZ.d;
   PLATZ.g.traverse(function (q) { if (q.isMesh) q.material = PLATZ.gut ? PLATZ.gruen : PLATZ.rot; });
-  if (P.t > (AUFTRAG.meldungBis || 0) - 0.05) melden((PLATZ.gut ? 'LINKSKLICK: HINSTELLEN' : 'HIER PASST ES NICHT') + ' · MAUSRAD: DREHEN · RECHTSKLICK: ZURÜCK IN DEN BEUTEL', 0.3);
+  if (P.t > (AUFTRAG.meldungBis || 0) - 0.05) melden(EIN.an ? (PLATZ.gut ? MOEBEL_KATALOG[PLATZ.art].n.toUpperCase() + ' · LINKSKLICK: ABSTELLEN' : 'HIER PASST ES NICHT – ' + (MOEBEL_KATALOG[PLATZ.art].lage === 'wand' ? 'SCHAU AUF EIN FREIES STÜCK WAND' : 'SCHAU AUF EINEN FREIEN PLATZ')) : (PLATZ.gut ? 'LINKSKLICK: HINSTELLEN' : 'HIER PASST ES NICHT') + ' · MAUSRAD: DREHEN · RECHTSKLICK: ZURÜCK IN DEN BEUTEL', 0.3);   /* 15.10.: im Einrichtungsmodus kurz, die Tafel zeigt die Tasten */
 }
 function schmuckAnWand(k, m) {                 // wohin man schaut: die erste Wand vor einem (bis 3 m), Rücken bündig an die Wand, auf Hängehöhe
   var fx = Math.sin(P.blick), fy = Math.cos(P.blick), P2 = k.pts, N = P2.length;
@@ -11128,12 +11129,39 @@ var ZIELSTUECK = { e: null, alt: [] };
 function zielMarkieren(e) {
   if (ZIELSTUECK.e === e) return; ZIELSTUECK.alt.forEach(function (q) { if (q.m.emissive) q.m.emissive.setHex(q.h); }); ZIELSTUECK.alt = []; ZIELSTUECK.e = e; if (!e) return;
   e.o.traverse(function (q) { if (!q.isMesh) return; (Array.isArray(q.material) ? q.material : [q.material]).forEach(function (m) { if (m && m.emissive) { ZIELSTUECK.alt.push({ m: m, h: m.emissive.getHex() }); m.emissive.setHex(0x4a3410); } }); }); }
-function aufheben() {                            // Rechtsklick auf ein hingestelltes Stück: zurück in den Beutel
+// ---- Einrichten (15.10., Andreas: „es ist noch verwirrender, ich komme immer auf Rosette malen … brauchen wir den Inneneinrichtungsmodus?“) ----
+// Taste R in der eigenen Kammer. Solange der Modus an ist, macht die Maus NUR Einrichten: Kreuz auf ein Stück + Linksklick = in die Hand,
+// Linksklick = abstellen, Mausrad = drehen (leere Hand: Stück im Beutel wählen), Rechtsklick = zurück in den Beutel. Keine Türen, kein Bett,
+// kein Malbrett, kein Reiben dazwischen. Außerhalb des Modus hebt kein Klick mehr Möbel auf.
+var EIN = { an: false, wahl: 0 };
+function einrichtenUmschalten() {
+  var k = kammerWelt();
+  if (!EIN.an && (EPOCHE !== 1400 || !k || !kammerGemietet() || P.drinnen !== k)) { melden('EINRICHTEN GEHT IN DEINER KAMMER · DORT TASTE R', 3); return; }
+  EIN.an = !EIN.an; EIN.wahl = 0; if (!EIN.an) { if (PLATZ) hinstellenAbbrechen(); zielMarkieren(null); }
+  melden(EIN.an ? 'EINRICHTEN · KREUZ AUF EIN STÜCK, LINKSKLICK: NEHMEN · R: FERTIG' : 'FERTIG EINGERICHTET', 3); }
+function einrichtenWeiter() { if (EIN.an && (EPOCHE !== 1400 || P.drinnen !== kammerWelt())) { EIN.an = false; if (PLATZ) hinstellenAbbrechen(); zielMarkieren(null); } }
+function einLinks() {
+  if (PLATZ) { hinstellenJetzt(); return; }
+  if (aufhebenZiel()) { if (aufheben()) hinstellenStart(); return; }   // das Stück unter dem Kreuz kommt direkt in die Hand
+  if (KINHALT.beutel.length) { var i = Math.min(EIN.wahl, KINHALT.beutel.length - 1), a = KINHALT.beutel.splice(i, 1)[0]; KINHALT.beutel.unshift(a); EIN.wahl = 0; kinhaltSpeichern(); hinstellenStart(); return; }
+  melden('DER BEUTEL IST LEER · KREUZ AUF EIN STÜCK UND LINKSKLICK: NEHMEN', 2); }
+function einRechts() { if (PLATZ) { hinstellenAbbrechen(); melden('ZURÜCK IN DEN BEUTEL', 1.5); } }
+function einrichtenMalen(W, H) {                 // Tafel rechts wie beim Bauleiter
+  var z = [['EINRICHTEN', '']];
+  if (PLATZ) z.push(['IN DER HAND', MOEBEL_KATALOG[PLATZ.art].n.toUpperCase()], ['LINKSKLICK', 'ABSTELLEN'], ['MAUSRAD', 'DREHEN'], ['RECHTSKLICK', 'IN DEN BEUTEL']);
+  else z.push(['KREUZ+LINKS', 'STÜCK NEHMEN'], ['LINKSKLICK', KINHALT.beutel.length ? 'AUS DEM BEUTEL' : '–'], ['MAUSRAD', 'IM BEUTEL WÄHLEN']);
+  z.push(['R', 'FERTIG']); z.push(['', 'IM BEUTEL: ' + KINHALT.beutel.length]);
+  KINHALT.beutel.slice(0, 9).forEach(function (a, i) { z.push([!PLATZ && i === Math.min(EIN.wahl, KINHALT.beutel.length - 1) ? '▶' : '', (MOEBEL_KATALOG[a] ? MOEBEL_KATALOG[a].n : a).toUpperCase()]); });
+  var bw = 160, x0 = W - bw - 8, y0 = 62, zh = 10, bh = z.length * zh + 10; hud.fillStyle = 'rgba(20,14,8,.75)';   /* unter der Meldungszeile */ hud.fillRect(x0, y0, bw, bh); hud.fillStyle = '#ffd040'; hud.fillRect(x0, y0, bw, 2);
+  z.forEach(function (q, i) { var y = y0 + 12 + i * zh; hud.textBaseline = 'alphabetic'; hud.textAlign = 'left';
+    if (i === 0) { hud.font = 'bold 9px monospace'; hud.fillStyle = '#ffd040'; hud.fillText(q[0], x0 + 6, y); return; }
+    hud.font = 'bold 8px monospace'; hud.fillStyle = '#ffe9a8'; hud.fillText(q[0], x0 + 6, y); hud.font = '8px monospace'; hud.fillStyle = '#f4ead8'; hud.fillText(q[1], x0 + (q[0] && q[0] !== '▶' ? 74 : 18), y); }); }
+function aufheben() {                            // Linksklick im Einrichtungsmodus auf ein hingestelltes Stück: in die Hand (über den Beutel)
   var k = kammerWelt(), best = aufhebenZiel();
   if (!best) return false; zielMarkieren(null); szene.remove(best.o); var i = k.moebel.indexOf(best.kreis); if (i >= 0) k.moebel.splice(i, 1); KAMMER_OBJ.splice(KAMMER_OBJ.indexOf(best), 1);
-  KINHALT.stuecke.splice(KINHALT.stuecke.indexOf(best.st), 1); KINHALT.beutel.unshift(best.st.a); if (best.st.a === 'rosette' && best.st.bild) { farb().rosetten.unshift(best.st.bild); farbSpeichern(); } kinhaltSpeichern(); kammerBettPruefen(); melden(MOEBEL_KATALOG[best.st.a].n.toUpperCase() + ' AUFGEHOBEN · RECHTSKLICK: WIEDER HINSTELLEN', 3); return true;
+  KINHALT.stuecke.splice(KINHALT.stuecke.indexOf(best.st), 1); KINHALT.beutel.unshift(best.st.a); if (best.st.a === 'rosette' && best.st.bild) { farb().rosetten.unshift(best.st.bild); farbSpeichern(); } kinhaltSpeichern(); kammerBettPruefen(); melden(MOEBEL_KATALOG[best.st.a].n.toUpperCase() + ' IN DER HAND', 2); return true;
 }
-addEventListener('wheel', function (e) { if (BL.an) { BL.r = Math.max(1, Math.min(8, BL.r + (e.deltaY < 0 ? 0.5 : -0.5))); e.preventDefault(); return; } if (KARTE === 2 && !PLATZ) { KARTE_ZOOM = Math.max(0, Math.min(2, KARTE_ZOOM + (e.deltaY < 0 ? 1 : -1))); e.preventDefault(); return; } if (!PLATZ) { if (EPOCHE === 1400 && SPIELER && !INVENTAR && !QUESTBUCH && (document.pointerLockElement === weltCv || 'ontouchstart' in window === false)) { handRad(e.deltaY > 0 ? 1 : -1); e.preventDefault(); } return; } PLATZ.d += (e.deltaY > 0 ? 1 : -1) * Math.PI / 8; e.preventDefault(); }, { passive: false });
+addEventListener('wheel', function (e) { if (EIN.an && !PLATZ) { var nb = KINHALT.beutel.length; if (nb) EIN.wahl = (Math.min(EIN.wahl, nb - 1) + (e.deltaY > 0 ? 1 : nb - 1)) % nb; e.preventDefault(); return; } if (BL.an) { BL.r = Math.max(1, Math.min(8, BL.r + (e.deltaY < 0 ? 0.5 : -0.5))); e.preventDefault(); return; } if (KARTE === 2 && !PLATZ) { KARTE_ZOOM = Math.max(0, Math.min(2, KARTE_ZOOM + (e.deltaY < 0 ? 1 : -1))); e.preventDefault(); return; } if (!PLATZ) { if (EPOCHE === 1400 && SPIELER && !INVENTAR && !QUESTBUCH && (document.pointerLockElement === weltCv || 'ontouchstart' in window === false)) { handRad(e.deltaY > 0 ? 1 : -1); e.preventDefault(); } return; } PLATZ.d += (e.deltaY > 0 ? 1 : -1) * Math.PI / 8; e.preventDefault(); }, { passive: false });
 // ---- Spinnen (11.10., Grind 3): Wolle vom Weber → am eigenen Spinnrad in der Kammer → Garn zurück an den Weber ----
 // Ein Kreislauf mit Einsatz: Kammer (6 Heller/Woche) + Spinnrad (9 Heller beim Drechsler) – dafür bringt es mehr als Holz:
 // 12 Umdrehungen (linke Maus halten) = 1 Spule, Wolle 1 Heller, Garn 3 Heller, der Weber nimmt höchstens 6 Spulen am Tag.
@@ -11209,7 +11237,7 @@ function reibTon() { if (!TON.an || !TON.ctx || !TON.haupt) return; var c = TON.
 function reibenWeiter(dt) {
   var e = reibsteinNah(); KAMMER_OBJ.forEach(function (q) { if (q.st.a !== 'reibstein') return; var l = q.o.getObjectByName('laeufer'); if (l) { var an = REIB.bis > P.t && q === e; l.position.x = an ? Math.sin(P.t * 9) * 0.07 : 0; l.position.z = an ? Math.cos(P.t * 9) * 0.05 : 0; }
     var hf = q.o.getObjectByName('haeufchen'); if (hf) { var w = reibWas(); hf.visible = !!w; if (w) hf.material.color.set(PIGMENTE[w][1]); } });
-  if (!e || MALBRETT) return; var F = farb(), halten = maus.links || taste.q;
+  if (!e || MALBRETT || EIN.an) return; var F = farb(), halten = maus.links || taste.q;
   if (halten && !AUFTRAG.rede && !INVENTAR && P.t >= REIB.naechster) {
     var id = reibWas(); REIB.naechster = P.t + 0.45;
     if (!id) { melden('KEIN FARBSTOFF · RÖTEL UND KALK GIBT ES BEI MEISTER HANS, OCKER BEI MARTIN, GRÜNERDE UND BLAU BEIM KRÄMER', 3); REIB.naechster = P.t + 1.5; return; }
@@ -11223,7 +11251,7 @@ function reibenWeiter(dt) {
     melden((w ? 'LINKE MAUS HALTEN: ' + PIGMENTE[w][0].toUpperCase() + ' REIBEN' : 'REIBSTEIN · KEIN FARBSTOFF') + (tp ? ' · RECHTSKLICK: MALEN (' + tp + ' TÖPFCHEN)' : ''), 0.4); }
 }
 function reibsteinRechts() {                     // Rechtsklick am Reibstein: das Malbrett, wenn es Farbe gibt (sonst darf man ihn aufheben)
-  if (!reibsteinNah() || PLATZ) return false; var zz = aufhebenZiel(); if (zz && zz.st.a !== 'reibstein') return false; var F = farb(), t = Object.keys(F.toepfe).filter(function (k) { return F.toepfe[k] > 0; }); if (!t.length) return false;
+  if (!reibsteinNah() || PLATZ || EIN.an) return false; var zz = aufhebenZiel(); if (!zz || zz.st.a !== 'reibstein') return false;   /* 15.10.: nur, wenn das Kreuz auf dem Reibstein liegt */ var F = farb(), t = Object.keys(F.toepfe).filter(function (k) { return F.toepfe[k] > 0; }); if (!t.length) return false;
   malbrettOeffnen(); return true; }
 function malbrettOeffnen() {
   if (MALBRETT) return; var f = document.createElement('iframe'); f.src = 'malbrett.html'; f.title = 'Malbrett';
@@ -13819,7 +13847,7 @@ var STARTSCHIRM = !/[?&](intro=0|probe=1)/.test(Q) && !(function () { try { retu
   ak.addEventListener('click', function () { if (!akScharf) { akScharf = true; ak.textContent = 'Wirklich? Dein Spielstand fängt von vorn an – nochmal klicken'; return; }
     try { sessionStorage.setItem('wzf_gestartet', '1'); } catch (e) {} location.search = '?jahr=1400&auftrag=neu' + (/[?&]probe=1/.test(Q) ? '&probe=1' : '') + (/[?&]stand=meister/.test(Q) ? '&stand=meister' : ''); });
   addEventListener('keydown', function (e) { if (STARTSCHIRM && e.key === 'Enter') los(1400); }); })();
-addEventListener('keydown', function (e) { var k = e.key.toLowerCase(); if (STARTSCHIRM) return; if (e.metaKey || e.ctrlKey) return; if (k === 'ü' && !e.repeat) { blUmschalten(); return; } if (BL.an && blTaste(k, e)) return; taste[k] = true; if (e.key.indexOf('Arrow') === 0 || e.key === ' ') e.preventDefault(); if (k === 'm') { KARTE = KARTE === 1 || KARTE === true ? 2 : KARTE ? 0 : 1; karteMaus(); } if (KARTE === 2 && (k === '+' || k === '=')) KARTE_ZOOM = Math.min(2, KARTE_ZOOM + 1); if (KARTE === 2 && (k === '-' || k === '_')) KARTE_ZOOM = Math.max(0, KARTE_ZOOM - 1); if (k === 'o') rumtreiberOeffnen(); if (k === 'n') stadtbuchOeffnen(); if (k === 'y') { WEGWEISER.an = !WEGWEISER.an; try { localStorage.setItem('wzf_wegweiser', WEGWEISER.an ? 'an' : 'aus'); } catch (e2) {} melden(WEGWEISER.an ? 'WEGWEISER AN (Y)' : 'WEGWEISER AUS (Y)', 2); } if (k === 't' || k === ',' || k === '.' || k === ';' || k === ':') uhrTaste(k);   // 11.10.: vorher lief uhrGesprungen() bei JEDEM Tastendruck (fehlende Klammern)
+addEventListener('keydown', function (e) { var k = e.key.toLowerCase(); if (STARTSCHIRM) return; if (e.metaKey || e.ctrlKey) return; if (k === 'ü' && !e.repeat) { blUmschalten(); return; } if (k === 'r' && !e.repeat && !AUFTRAG.hundWahl && EPOCHE === 1400) { einrichtenUmschalten(); return; } if (BL.an && blTaste(k, e)) return; taste[k] = true; if (e.key.indexOf('Arrow') === 0 || e.key === ' ') e.preventDefault(); if (k === 'm') { KARTE = KARTE === 1 || KARTE === true ? 2 : KARTE ? 0 : 1; karteMaus(); } if (KARTE === 2 && (k === '+' || k === '=')) KARTE_ZOOM = Math.min(2, KARTE_ZOOM + 1); if (KARTE === 2 && (k === '-' || k === '_')) KARTE_ZOOM = Math.max(0, KARTE_ZOOM - 1); if (k === 'o') rumtreiberOeffnen(); if (k === 'n') stadtbuchOeffnen(); if (k === 'y') { WEGWEISER.an = !WEGWEISER.an; try { localStorage.setItem('wzf_wegweiser', WEGWEISER.an ? 'an' : 'aus'); } catch (e2) {} melden(WEGWEISER.an ? 'WEGWEISER AN (Y)' : 'WEGWEISER AUS (Y)', 2); } if (k === 't' || k === ',' || k === '.' || k === ';' || k === ':') uhrTaste(k);   // 11.10.: vorher lief uhrGesprungen() bei JEDEM Tastendruck (fehlende Klammern)
   if (k === 'i') { inventarAuf(!INVENTAR); QUESTBUCH = false; } if (k === 'tab') { e.preventDefault(); if (EPOCHE === 1400) { questbuchAuf(!QUESTBUCH); if (QUESTBUCH && INVENTAR) inventarAuf(false); } } if (k === 'escape' && QUESTBUCH) questbuchAuf(false); if (sprungTaste(k)) { e.preventDefault(); return; } if (SPIELER && EPOCHE === 1400 && /^[1-9]$/.test(k) && !INVENTAR) { var ld = leisteDinge(); if (ld[+k - 1]) handSetzen(ld[+k - 1]); }   // 12.10.: 1–9 wählt, was in die Hand kommt (wie Minecraft); Rechtsklick isst
   if (k === 'g' && AUFTRAG.karrenWahl) karrenWahlTreffen('schlafen'); else if (k === 'g' && AUFTRAG.wahl) wahlTreffen('nachlass'); else if (k === 'g' && AUFTRAG.zehnt > 0 && SPIELERKARREN && EPOCHE === 1400 && !AUFTRAG.rede && !AUFTRAG.hundWahl && !P.drinnen && !REITEN.auf && !KARRENSCHLAF) { P.aufKarren = true; karrenWahlTreffen('schlafen'); }   // 12.10. (Andreas: „ich wurde nicht gefragt“): G geht die ganze Fahrt über
   if (k === 'escape' && PAUSE) pauseWeiter(); else if (k === 'escape' && !document.pointerLockElement && !INVENTAR && performance.now() > PAUSE_RUHE) pauseZeigen(true); if (AUFTRAG.hundWahl && !AUFTRAG.rede) { if (k === 'g') hundWahlTreffen('vergeben'); if (k === 'r') hundWahlTreffen('rache'); } if (k === 'h') himmelEcht(!HIMMEL_ECHT); if (k === 'l') tonAnAus(); if (k === 'k') { STERNBILDER_AN = !STERNBILDER_AN; melden(STERNBILDER_AN ? 'STERNBILDER AN' : 'STERNBILDER AUS', 2); }
@@ -17072,12 +17100,11 @@ function handhaben() {
   if (ereignisHandhaben()) return true;
   if (wirtAnkauf()) return true;
   if (essenKaufen()) return true;
-  var zs = aufhebenZiel(); if (zs) { var hz = new Date(himmelsZeit()).getHours(); if (!(zs.st.a === 'bett' && (hz >= 19 || hz < 5))) return reibsteinRechts() || aufheben(); }   // 15.10.: zielt man auf ein Stück, gewinnt das Stück (vorher kam „Kammer schlafen“ zuerst, das Bett steht in einer vollen Kammer immer in Reichweite) – nur abends schläft man auf dem Bett
   var sc = schatzNah(); if (sc) { sc.weg = true; sc.m.visible = false; inBeutel(sc.d); return true; }
   var vs = versteckNah(); if (vs && (JAGD || AUFTRAG.schmuggel === 1 || !naechsteePerson())) { versteckRein(vs); return true; }
-  return reitenHandhaben() || karrenHandhaben() || angelHandhaben() || haselSchneiden() || schmiedHaken() || lehreSchlafen() || leseAbgeben() || kaiAbgeben() || kaiNehmen() || steinAbgeben() || steinNehmen() || kramZurueck() || kramNehmen() || moebelKaufen() || strohsack() || erbHandhaben() || kammerSchlafen() || reibsteinRechts() || aufheben() || hinstellenStart() || grabHohl() || schmiedBeil() || weberHandel() || kircheSitzen() || hundAnfassen() || sammeln() || steinAblegen() || handBenutzen();   // 12.10.: der Karren steht oben (Andreas: „sitzen konnte ich nicht“ – Aufheben/Sammeln kamen ihm zuvor)
+  return reitenHandhaben() || karrenHandhaben() || angelHandhaben() || haselSchneiden() || schmiedHaken() || lehreSchlafen() || leseAbgeben() || kaiAbgeben() || kaiNehmen() || steinAbgeben() || steinNehmen() || kramZurueck() || kramNehmen() || moebelKaufen() || strohsack() || erbHandhaben() || reibsteinRechts() || kammerSchlafen() || grabHohl() || schmiedBeil() || weberHandel() || kircheSitzen() || hundAnfassen() || sammeln() || steinAblegen() || handBenutzen();   // 12.10.: der Karren steht oben (Andreas: „sitzen konnte ich nicht“ – Aufheben/Sammeln kamen ihm zuvor)
 }
-weltCv.addEventListener('mousedown', function (e) { if (document.pointerLockElement !== weltCv) return; if (BL.an) { blKlick(e.button); return; } if (e.button === 0) { if (PLATZ) { hinstellenJetzt(); return; } if (!AUFTRAG.rede && angelLinks()) return; if ((holzNah() || spinnradNah() || reibsteinNah() || (leseStock() >= 0 && leseZeit())) && !AUFTRAG.rede) { maus.links = true; return; } if (!reden() && !handhaben() && !schneeballWerfen() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } else if (e.button === 2) { if (PLATZ) { hinstellenAbbrechen(); melden('ZURÜCK IN DEN BEUTEL', 1.5); return; } if (!handhaben()) { maus.rechts = true; if (!P.klettert) springenJetzt(); } } });
+weltCv.addEventListener('mousedown', function (e) { if (document.pointerLockElement !== weltCv) return; if (BL.an) { blKlick(e.button); return; } if (EIN.an) { if (e.button === 0) einLinks(); else if (e.button === 2) einRechts(); return; } if (e.button === 0) { if (PLATZ) { hinstellenJetzt(); return; } if (!AUFTRAG.rede && angelLinks()) return; if ((holzNah() || spinnradNah() || reibsteinNah() || (leseStock() >= 0 && leseZeit())) && !AUFTRAG.rede) { maus.links = true; return; } if (!reden() && !handhaben() && !schneeballWerfen() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } else if (e.button === 2) { if (PLATZ) { hinstellenAbbrechen(); melden('ZURÜCK IN DEN BEUTEL', 1.5); return; } if (!handhaben()) { maus.rechts = true; if (!P.klettert) springenJetzt(); } } });
 addEventListener('mouseup', function (e) { if (e.button === 2) maus.rechts = false; if (e.button === 0) maus.links = false; });
 weltCv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 function fingerRechnen(e) {
@@ -17339,7 +17366,7 @@ function hudMalen() {
       var sx = (vk.x + 1) / 2 * W, sy = (1 - vk.y) / 2 * H; if (l.jagd) text('!', sx, sy, 14, '#ff4a3a'); else { hud.globalAlpha = 0.4 + l.verdacht * 0.6; text('?', sx, sy, 8 + Math.round(l.verdacht * 6), l.verdacht > 0.6 ? '#ff9a3a' : '#ffe07a'); hud.globalAlpha = 1; } }); }
   if (STADTBUCH && STADT) stadtbuchMalen(W, H);
   if (INVENTAR && SPIELER && EPOCHE === 1400) inventarMalen(W, H); else if (QUESTBUCH && EPOCHE === 1400) questbuchMalen(W, H);
-  if (BL.an) bauleiterMalen(W, H);   // 13.10. (Andreas: „die Tasten musst du sichtbar machen im Baumodus“)
+  if (BL.an) bauleiterMalen(W, H); if (EIN.an) einrichtenMalen(W, H);   // 13.10. (Andreas: „die Tasten musst du sichtbar machen im Baumodus“)
   if (KARTE && bodenBildHud) karteMalen(W, H);
   if (false && P.t < 6 && !/[?&]intro=0/.test(Q)) {   // AUS: ersetzt durch den Startschirm (09.10.) hud.globalAlpha = Math.max(0, Math.min(1, 6 - P.t)); hud.fillStyle = 'rgba(0,0,0,.55)'; hud.fillRect(70, 190, 340, 52);
     text('WERTHEIM ZU FUSS', W / 2, 207, 13, '#ffd75e'); text('PFEILE/WASD · SHIFT RENNEN · KLICK = MAUS · M KARTE · P SCHARF · Z 1400 · T UHR · U ZEIT · B BERGFRIED · V ANSICHT · E REDEN · TAB QUESTBUCH · I INVENTAR · J STADTBUCH · LEERTASTE SPRINGEN (AN DER WAND HALTEN = KLETTERN) · MAUS LINKS = E · MAUS RECHTS = BENUTZEN/KLETTERN · MAUSRAD ODER 1–9 = WAS IN DER HAND IST · C DUCKEN · L TON · H ECHTER HIMMEL · F FACKEL · K STERNBILDER · Ü BAULEITER (BODEN AUFTRAGEN/ABTRAGEN, FAHNEN)', W / 2, 222, 8, '#ddd'); text('HANDY: LINKS LAUFEN · RECHTS UMSCHAUEN', W / 2, 234, 8, '#ddd'); hud.globalAlpha = 1; }
@@ -17475,7 +17502,7 @@ function gegenstaende() {                        // was in der Tasche ist: Essen
   wwIkonen(); if (AUFTRAG.pelzkragen) l.push({ ikon: IKON.ww_pelzkragen ? 'ww_pelzkragen' : 'kleid', name: 'Pelzkragen', text: 'Vom Kürschner. Warm, und jeder sieht: der hat es zu etwas gebracht.' }); if (AUFTRAG.pelzmuetze) l.push({ ikon: IKON.ww_pelzkragen ? 'ww_pelzkragen' : 'kleid', name: 'Pelzmütze', text: 'Vom Kürschner. Der Winter kann kommen.' });
   if (AUFTRAG.karren) l.push({ ikon: 'karren', name: 'Handkarren', text: 'Vom Wagner. Drei Steine auf einmal zur Mauer, und es rollt leichter.' });
   farbGegenstaende(l);
-  wwIkonen(); KINHALT.beutel.forEach(function (a) { var m = MOEBEL_KATALOG[a]; if (m) l.push({ ikon: IKON[a] ? a : 'moebel', name: m.n, text: 'Gekauft, noch nicht aufgestellt. In deiner Kammer: Rechtsklick.' }); });
+  wwIkonen(); KINHALT.beutel.forEach(function (a) { var m = MOEBEL_KATALOG[a]; if (m) l.push({ ikon: IKON[a] ? a : 'moebel', name: m.n, text: 'Gekauft, noch nicht aufgestellt. In deiner Kammer: Taste R (Einrichten).' }); });
   (AUFTRAG.beutel || []).forEach(function (b) { var geh = SPIELER.geheimnisse.some(function (g) { return g.id === b.id; }); l.push({ ikon: IKON[b.id] ? b.id : geh ? 'geheimnis' : 'brief', name: b.name, text: b.text }); });
   return l;
 }
@@ -17690,7 +17717,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = 'ce6d540f', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = 'e590b819', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
