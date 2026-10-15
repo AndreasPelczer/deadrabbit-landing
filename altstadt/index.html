@@ -10985,6 +10985,13 @@ var MOEBEL_KATALOG = {
   strohmatte: { n: 'Strohmatte', artikel: 'eine', preis: 1, r: 0.6, lage: 'matte', bau: function () { return Moebel.strohmatte(); } },
   teppich: { n: 'Teppich', artikel: 'einen', preis: 14, r: 0.72, lage: 'matte', bau: function () { return Moebel.teppich({ farbe: 0x7a3a2a }); } },   // teuer: im einfachen Haus selten (Codex: KAMMERSCHMUCK.md)
   waschschuessel: { n: 'Waschschüssel', artikel: 'eine', preis: 4, r: 0.32, bau: function () { return Moebel.waschschuessel(); } } };
+// 15.10. Farben: Reibstein (Steinmetz), Rosette (selbst gemalt, kein Händler), Farbstoffe und Eier beim Krämer (gehen nicht in den Beutel). Preise ERFUNDEN.
+MOEBEL_KATALOG.reibstein = { n: 'Reibstein', artikel: 'einen', preis: 6, r: 0.38, bau: function () { return reibsteinBau(); } };
+MOEBEL_KATALOG.rosette = { n: 'Rosette', artikel: 'eine', preis: 0, r: 0.32, lage: 'wand', hoehe: 1.25, bau: function (st) { return rosetteBau(st); } };
+MOEBEL_KATALOG.f_ei = { n: 'Eier', preis: 1, r: 0.1, farbKauf: 'ei', satz: 'Frische Eier, zwei für einen Heller. Ohne Eigelb hält keine Farbe.' };
+MOEBEL_KATALOG.f_gruenerde = { n: 'Grünerde', preis: 3, r: 0.1, farbKauf: 'gruenerde', satz: 'Grünerde, ein Säckchen für drei Heller. Ein stilles Grün.' };
+MOEBEL_KATALOG.f_ocker = { n: 'Ocker', preis: 2, r: 0.1, farbKauf: 'ocker', satz: 'Ocker, gelbe Erde – zwei Heller. Martin im Weinberg gibt dir welche, wenn du ihm hilfst.' };
+MOEBEL_KATALOG.f_blau = { n: 'Blau', preis: 30, r: 0.1, farbKauf: 'blau', satz: 'Azurit. Dreißig Heller – kommt von weit her, über den Main. Teurer als jede andere Farbe.' };
 var MOEBEL_VERKAUF = { ZIMMERMANN: ['schemel', 'bank', 'tisch', 'truhe', 'bett', 'regal', 'kleiderhaken'], WAGNER: ['karren', 'schemel', 'bank', 'truhe'], DRECHSLER: ['schemel', 'spinnrad', 'regal', 'kruzifix', 'bild'], 'BÖTTCHER': ['fass'], KORBMACHER: ['korb', 'strohmatte'], HAFNER: ['toepfe', 'waschschuessel'],
   'KRÄMER': ['talglicht'], SCHLOSSER: ['kerzenleuchter', 'kleiderhaken'], BADER: ['waschschuessel'], WEBER: ['wandbehang', 'teppich'], LEINEWEBER: ['wandbehang', 'teppich'], TUCHSCHERER: ['teppich'], 'FÄRBER': ['wandbehang'] };
 // ---- Werkstattware (11.10., Andreas: „Ich dachte, jeder Handwerker und Laden kann verkaufen“; Formen: Codex Auftrag 15) ----
@@ -10996,6 +11003,7 @@ function wwBau(n) { var g = new THREE.Group(), w = Werkstattware.ware(n, { saat:
 Object.keys(WW_WARE).forEach(function (n) { var e = WW_WARE[n]; MOEBEL_KATALOG['ww_' + n] = { n: e[0], artikel: e[1], preis: e[2], r: e[3], lage: e[4] === 'boden' ? undefined : 'tisch', ware: n, bau: function () { return wwBau(n); } }; });
 [['SATTLER', 'zaumzeug'], ['SCHMIED', 'beschlag'], ['SCHLOSSER', 'beschlag'], ['MESSERSCHMIED', 'messer'], ['BÖTTCHER', 'eimer'], ['SEILER', 'seil'], ['DRECHSLER', 'schuessel'], ['WAGNER', 'rad'], ['KÜRSCHNER', 'pelzkragen'],
  ['KRÄMER', 'salz'], ['KRÄMER', 'kerzen'], ['KERZENZIEHER', 'kerzen'], ['GLASER', 'butzenscheibe'], ['GLASBLÄSER', 'butzenscheibe'], ['FÄRBER', 'tuch'], ['ZIMMERMANN', 'sparren'], ['STEINMETZ', 'schwelle']].forEach(function (z) { (MOEBEL_VERKAUF[z[0]] = MOEBEL_VERKAUF[z[0]] || []).unshift('ww_' + z[1]); });   // die eigene Ware zuerst
+(MOEBEL_VERKAUF.STEINMETZ = MOEBEL_VERKAUF.STEINMETZ || []).push('reibstein'); MOEBEL_VERKAUF['KRÄMER'] = ['f_ei', 'f_gruenerde', 'f_ocker', 'f_blau'].concat(MOEBEL_VERKAUF['KRÄMER'] || []);   // 15.10. Farben
 // Pelzkragen und Pelzmütze (Codex Auftrag 16, kleidung.js) kauft man beim Kürschner zum TRAGEN: sie sitzen über jeder Kleidungsstufe. Preise ERFUNDEN.
 MOEBEL_KATALOG.pelzkragen_tragen = { n: 'Pelzkragen', artikel: 'einen', preis: 25, r: 0.2, ware: 'pelzkragen', tragen: 'pelzkragen', bau: function () { return wwBau('pelzkragen'); } };
 MOEBEL_KATALOG.pelzmuetze_tragen = { n: 'Pelzmütze', artikel: 'eine', preis: 12, r: 0.2, ware: 'pelzkragen', tragen: 'pelzmuetze', bau: function () { return wwBau('pelzkragen'); } };
@@ -11019,14 +11027,14 @@ function moebelAngebot(l) {
   var L = verkaeuferListe(l); if (!L || EPOCHE !== 1400) return null; l.angebotNr = ((l.angebotNr === undefined ? -1 : l.angebotNr) + 1) % L.length;
   var art = L[l.angebotNr]; if (art === 'karren' && AUFTRAG.karren) { l.angebotNr = (l.angebotNr + 1) % L.length; art = L[l.angebotNr]; }
   var m = MOEBEL_KATALOG[art]; AUFTRAG.angebot = { l: l, art: art, preis: m.preis, bis: P.t + 25 };
-  var satz = m.ware ? 'Ich hab ' + m.artikel + ' ' + m.n + ' da, frisch aus der Werkstatt – ' + m.preis + ' Heller.' : art === 'karren' ? 'Ein Handkarren, frisch beschlagen – 15 Heller. Damit schaffst du drei Steine auf einmal zur Mauer.' : 'Ich mach dir ' + (m.artikel ? m.artikel + ' ' + m.n : art === 'toepfe' ? 'ein paar Töpfe' : art === 'fass' ? 'ein Fass' : art === 'korb' ? 'einen Korb' : (art === 'truhe' || art === 'bank' ? 'eine ' : art === 'bett' || art === 'regal' || art === 'spinnrad' ? 'ein ' : 'einen ') + m.n) + ' – ' + m.preis + ' Heller.';
+  var satz = m.satz ? m.satz : m.ware ? 'Ich hab ' + m.artikel + ' ' + m.n + ' da, frisch aus der Werkstatt – ' + m.preis + ' Heller.' : art === 'karren' ? 'Ein Handkarren, frisch beschlagen – 15 Heller. Damit schaffst du drei Steine auf einmal zur Mauer.' : 'Ich mach dir ' + (m.artikel ? m.artikel + ' ' + m.n : art === 'toepfe' ? 'ein paar Töpfe' : art === 'fass' ? 'ein Fass' : art === 'korb' ? 'einen Korb' : (art === 'truhe' || art === 'bank' ? 'eine ' : art === 'bett' || art === 'regal' || art === 'spinnrad' ? 'ein ' : 'einen ') + m.n) + ' – ' + m.preis + ' Heller.';
   return [satz, L.length > 1 ? 'Rechtsklick, wenn du willst. Frag nochmal, dann zeig ich dir was anderes.' : 'Rechtsklick, wenn du willst.'];
 }
 function moebelKaufen() {
   var a = AUFTRAG.angebot; if (!a || a.bis < P.t || Math.hypot(P.x - a.l.x, P.y - a.l.y) > 3.5) return false;
   if (AUFTRAG.heller < a.preis) { melden(MOEBEL_KATALOG[a.art].n.toUpperCase() + ': ' + a.preis + ' HELLER – DU HAST ' + AUFTRAG.heller, 3); return true; }
   if (MOEBEL_KATALOG[a.art].tragen && AUFTRAG[MOEBEL_KATALOG[a.art].tragen]) { melden('DU TRÄGST SCHON ' + (a.art === 'pelzkragen_tragen' ? 'EINEN PELZKRAGEN' : 'EINE PELZMÜTZE'), 3); AUFTRAG.angebot = null; return true; }
-  AUFTRAG.heller -= a.preis; AUFTRAG.angebot = null; if (MOEBEL_KATALOG[a.art].tragen) { AUFTRAG[MOEBEL_KATALOG[a.art].tragen] = 1; speichern(); spielerAnziehen(kleidSchema()); muenzTon && muenzTon(); melden('GEKAUFT UND ANGEZOGEN: ' + MOEBEL_KATALOG[a.art].n.toUpperCase() + ' · −' + a.preis + ' HELLER', 5); return true; }
+  AUFTRAG.heller -= a.preis; AUFTRAG.angebot = null; if (MOEBEL_KATALOG[a.art].farbKauf) { farbKaufen(a.art); return true; } if (MOEBEL_KATALOG[a.art].tragen) { AUFTRAG[MOEBEL_KATALOG[a.art].tragen] = 1; speichern(); spielerAnziehen(kleidSchema()); muenzTon && muenzTon(); melden('GEKAUFT UND ANGEZOGEN: ' + MOEBEL_KATALOG[a.art].n.toUpperCase() + ' · −' + a.preis + ' HELLER', 5); return true; }
   if (MOEBEL_KATALOG[a.art].werkzeug) { AUFTRAG[a.art] = 1; speichern(); melden('GEKAUFT: ' + MOEBEL_KATALOG[a.art].n.toUpperCase() + ' · −' + a.preis + ' HELLER · JETZT DREI STEINE AUF EINMAL', 5); return true; }
   if (a.art === 'ww_messer') { AUFTRAG.messer = 1; speichern(); muenzTon(); melden('GEKAUFT: EIN MESSER · −' + a.preis + ' HELLER · DAMIT SCHNEIDEST DU HASELRUTEN, BROT UND FISCH', 5); return true; }   // 12.10.: vorher landete es nur als Ware im Beutel
   KINHALT.beutel.push(a.art); kinhaltSpeichern(); speichern();
@@ -11034,7 +11042,7 @@ function moebelKaufen() {
 }
 function kammerWelt() { var k = kammerHaus(); return k && k.zweck === 'kammer' ? k : null; }
 function moebelBauen(st) {                       // ein hingestelltes Stück wirklich aufstellen (beim Laden und beim Hinstellen)
-  var k = kammerWelt(), m = MOEBEL_KATALOG[st.a]; if (!k || !m) return null; var o; try { o = m.bau(); } catch (e) { return null; }
+  var k = kammerWelt(), m = MOEBEL_KATALOG[st.a]; if (!k || !m) return null; var o; try { o = m.bau(st); } catch (e) { return null; }
   var v = V(st.x, st.y, k.b + 0.05 + (st.h || 0)); o.position.set(v[0], v[1], v[2]); o.rotation.y = st.d; o.traverse(function (q) { if (q.isMesh) { q.castShadow = !m.lage || m.lage === 'tisch'; q.receiveShadow = true; } }); szene.add(o);
   var kreis = [st.x, st.y, m.r], sperrt = !m.lage || (m.lage === 'tisch' && !st.h); if (sperrt) k.moebel.push(kreis);   // Wandstücke, Matten und was auf dem Tisch steht, sperren nicht
   phongMachen(o); var e = { st: st, o: o, kreis: kreis }; if (m.licht) e.lichtPunkt = o.getObjectByName('licht'); KAMMER_OBJ.push(e); kammerBettPruefen(); return e;
@@ -11100,14 +11108,14 @@ function kammerLichtWeiter() {                   // nachts brennen Talglicht und
 function hinstellenAbbrechen() { if (!PLATZ) return; szene.remove(PLATZ.g); PLATZ = null; }
 function hinstellenJetzt() {
   if (!PLATZ || !PLATZ.gut) { if (PLATZ) melden('HIER PASST ES NICHT', 1.5); return !!PLATZ; }
-  var st = { a: PLATZ.art, x: PLATZ.x, y: PLATZ.y, d: PLATZ.d }; if (PLATZ.h) st.h = PLATZ.h; KINHALT.beutel.shift(); KINHALT.stuecke.push(st); kinhaltSpeichern(); hinstellenAbbrechen(); moebelBauen(st);
+  var st = { a: PLATZ.art, x: PLATZ.x, y: PLATZ.y, d: PLATZ.d }; if (PLATZ.h) st.h = PLATZ.h; if (st.a === 'rosette') { st.bild = farb().rosetten.shift(); farbSpeichern(); } KINHALT.beutel.shift(); KINHALT.stuecke.push(st); kinhaltSpeichern(); hinstellenAbbrechen(); moebelBauen(st);
   melden(MOEBEL_KATALOG[st.a].n.toUpperCase() + ' STEHT · DEINE KAMMER WIRD WOHNLICH', 3); return true;
 }
 function aufheben() {                            // Rechtsklick auf ein hingestelltes Stück: zurück in den Beutel
   var k = kammerWelt(); if (!k || P.drinnen !== k || PLATZ) return false; var fx = Math.sin(P.blick), fy = Math.cos(P.blick), best = null, bd = 1e9;
   KAMMER_OBJ.forEach(function (e) { var dx = e.st.x - P.x, dy = e.st.y - P.y, d = Math.hypot(dx, dy), quer = Math.abs(dx * fy - dy * fx); if (d < 2.2 && dx * fx + dy * fy > 0 && quer < e.kreis[2] + 0.15 && d < bd) { bd = d; best = e; } });   // nur, worauf man wirklich zielt
   if (!best) return false; szene.remove(best.o); var i = k.moebel.indexOf(best.kreis); if (i >= 0) k.moebel.splice(i, 1); KAMMER_OBJ.splice(KAMMER_OBJ.indexOf(best), 1);
-  KINHALT.stuecke.splice(KINHALT.stuecke.indexOf(best.st), 1); KINHALT.beutel.unshift(best.st.a); kinhaltSpeichern(); kammerBettPruefen(); melden(MOEBEL_KATALOG[best.st.a].n.toUpperCase() + ' AUFGEHOBEN · RECHTSKLICK: WIEDER HINSTELLEN', 3); return true;
+  KINHALT.stuecke.splice(KINHALT.stuecke.indexOf(best.st), 1); KINHALT.beutel.unshift(best.st.a); if (best.st.a === 'rosette' && best.st.bild) { farb().rosetten.unshift(best.st.bild); farbSpeichern(); } kinhaltSpeichern(); kammerBettPruefen(); melden(MOEBEL_KATALOG[best.st.a].n.toUpperCase() + ' AUFGEHOBEN · RECHTSKLICK: WIEDER HINSTELLEN', 3); return true;
 }
 addEventListener('wheel', function (e) { if (BL.an) { BL.r = Math.max(1, Math.min(8, BL.r + (e.deltaY < 0 ? 0.5 : -0.5))); e.preventDefault(); return; } if (KARTE === 2 && !PLATZ) { KARTE_ZOOM = Math.max(0, Math.min(2, KARTE_ZOOM + (e.deltaY < 0 ? 1 : -1))); e.preventDefault(); return; } if (!PLATZ) { if (EPOCHE === 1400 && SPIELER && !INVENTAR && !QUESTBUCH && (document.pointerLockElement === weltCv || 'ontouchstart' in window === false)) { handRad(e.deltaY > 0 ? 1 : -1); e.preventDefault(); } return; } PLATZ.d += (e.deltaY > 0 ? 1 : -1) * Math.PI / 8; e.preventDefault(); }, { passive: false });
 // ---- Spinnen (11.10., Grind 3): Wolle vom Weber → am eigenen Spinnrad in der Kammer → Garn zurück an den Weber ----
@@ -11144,6 +11152,99 @@ function weberHandel() {                         // Rechtsklick in der Weberei: 
   if (AUFTRAG.heller < WOLLE_PREIS) { melden('EIN BUND WOLLE KOSTET ' + WOLLE_PREIS + ' HELLER', 3); return true; }
   if (SPINN.kaufBis < P.t) { SPINN.kaufBis = P.t + 8; melden('DER WEBER: „WOLLE ZUM SPINNEN? EIN BUND, ' + WOLLE_PREIS + ' HELLER. JEDER RECHTSKLICK EIN BUND.“', 5); return true; }
   AUFTRAG.heller -= WOLLE_PREIS; AUFTRAG.wolle = (AUFTRAG.wolle || 0) + 1; SPINN.kaufBis = P.t + 8; speichern(); melden('EIN BUND WOLLE (' + AUFTRAG.wolle + ') · −' + WOLLE_PREIS + ' HELLER' + (kammerGemietet() ? '' : ' · ZUM SPINNEN BRAUCHST DU EINE KAMMER UND EIN SPINNRAD'), 3); return true;
+}
+// ---- Farben machen und malen (15.10., Andreas: „unser Mittelalter ist bunt … die Farben können wir uns selbst herstellen“) ----
+// Rohstoffe: Rötel und Kalk bei Meister Hans an der Mauer (Fund beim Steineabgeben), Ocker und Rebkohle von Martin (je Korb bei der Lese),
+// Grünerde, teures Blau und Eier beim Krämer. Am eigenen REIBSTEIN in der Kammer (beim Steinmetz, 6 Heller): linke Maus halten = reiben,
+// 10 Striche + 1 Ei als Bindemittel = 1 Töpfchen Farbe. Rechtsklick am Reibstein = Malbrett (spiel/malbrett.html, Technik aus dem
+// „Mandala con Cuore“): eine Rosette ausmalen, ein Töpfchen reicht für 15 Felder, fertig → sie hängt als Bild an der Wand.
+// BEKANNT aus der Malerei des Mittelalters: Erdfarben (Rötel, Ocker, Grünerde), Rebschwarz aus verkohlten Reben, Kalkweiß, teures Blau (Azurit),
+// Eitempera, Reibstein mit Läufer. ERFUNDEN: wo man es in Wertheim bekommt, Preise, Mengen. PRÜFEN: ob es um 1400 in Wertheim Maler bzw. eine Malerzunft gab.
+var PIGMENTE = {
+  roetel: ['Rötel', '#a0442c', 'Rotes Bröckchen aus dem Mainsandstein, von Meister Hans. Am Reibstein wird Farbe daraus.'],
+  ocker: ['Ocker', '#c8962e', 'Gelbe Erde aus dem Weinberg, von Martin. Am Reibstein wird Farbe daraus.'],
+  rebschwarz: ['Rebschwarz', '#2e2a26', 'Verkohlter Rebschnitt vom Feuer im Weinberg. Gerieben ein tiefes Schwarz.'],
+  kalk: ['Kalkweiß', '#f2eee4', 'Gelöschter Kalk von Meister Hans – eigentlich für den Mörtel.'],
+  gruenerde: ['Grünerde', '#7a8a5a', 'Vom Krämer. Ein stilles, graues Grün.'],
+  blau: ['Blau', '#2f5a9e', 'Azurit vom Krämer – so teuer, dass man jedes Feld zweimal überlegt.'] };
+var FARB = null, FARB_STRICHE = 10, FARB_JE_TOPF = 15, REIB = { strich: 0, naechster: 0, bis: 0 }, MALBRETT = null;
+function farb() { if (FARB) return FARB; FARB = { roh: {}, toepfe: {}, eier: 0, rosetten: [], wahl: null };   // erst beim ersten Gebrauch laden (SPEICHER steht weiter unten)
+  if (!/[?&]auftrag=neu/.test(Q)) try { var j = JSON.parse(localStorage.getItem(SPEICHER + '_farben') || 'null'); if (j && j.roh) FARB = j; } catch (e) {} return FARB; }
+function farbSpeichern() { try { localStorage.setItem(SPEICHER + '_farben', JSON.stringify(farb())); } catch (e) {} }
+function farbIkonen() { Object.keys(PIGMENTE).forEach(function (id) { var c = PIGMENTE[id][1];
+  IKON['roh_' + id] = { p: { k: '#3a2410', f: c, h: 'rgba(255,255,255,.35)' }, m: ['............', '............', '............', '.....kk.....', '...kkffkk...', '..kfhffffk..', '.kffffffffk.', '.kfffffhffk.', '..kffffffk..', '...kkkkkk...', '............', '............'] };
+  IKON['topf_' + id] = { p: { k: '#3a2410', t: '#8a6a44', d: '#6b4e30', f: c }, m: ['............', '............', '..kkkkkkkk..', '.kffffffffk.', '.kffffffffk.', '..kttttttk..', '..kttttttk..', '..kddddddk..', '..kttttttk..', '...kkkkkk...', '............', '............'] }; });
+  IKON.ei = { p: { k: '#8a7a5a', w: '#f6efe0', h: '#ffffff' }, m: ['............', '.....kk.....', '....kwwk....', '...kwhwwk...', '...kwhwwk...', '..kwwwwwwk..', '..kwwwwwwk..', '..kwwwwwwk..', '...kwwwwk...', '....kkkk....', '............', '............'] };
+  IKON.rosette = { p: { k: '#4a2e16', r: '#a0442c', o: '#c8962e', g: '#7a8a5a', w: '#f2eee4' }, m: ['............', '....kkkk....', '..kkrwwrkk..', '.krowwwwork.', '.kwwgoogwwk.', 'krwgowwogwrk', 'krwgowwogwrk', '.kwwgoogwwk.', '.krowwwwork.', '..kkrwwrkk..', '....kkkk....', '............'] };
+  IKON.reibstein = { p: { k: '#3a2410', s: '#9a7a6a', h: '#c0a090', b: '#7a4a24' }, m: ['............', '............', '.....kk.....', '....khhk....', '.kkkkkkkkkk.', '.ksssssssssk', '.kkkkkkkkkk.', '..kbbbbbbk..', '..kbbbbbbk..', '..kkkkkkkk..', '............', '............'] }; }
+function farbRohDazu(id, n, wer) { var F = farb(); F.roh[id] = (F.roh[id] || 0) + (n || 1); farbSpeichern(); return wer + ' · +' + (n || 1) + ' ' + PIGMENTE[id][0].toUpperCase(); }
+function farbFundStein(n) {                      // beim Steineabgeben: ab und zu ein Bröckchen Rötel, eine Handvoll Kalk
+  var t = []; for (var i = 0; i < n; i++) { if (Math.random() < 0.3) t.push('roetel'); if (Math.random() < 0.2) t.push('kalk'); } if (!t.length) return;
+  var F = farb(); t.forEach(function (id) { F.roh[id] = (F.roh[id] || 0) + 1; }); farbSpeichern();
+  melden(t.indexOf('roetel') >= 0 && !F.roetelErklaert ? (F.roetelErklaert = 1, farbSpeichern(), 'MEISTER HANS: „DAS ROTE BRÖCKCHEN? NIMM ES MIT – RÖTEL. GERIEBEN WIRD FARBE DRAUS.“') : 'MEISTER HANS GIBT DIR ' + ['roetel', 'kalk'].filter(function (id) { return t.indexOf(id) >= 0; }).map(function (id) { var n = t.filter(function (x) { return x === id; }).length; return (n > 1 ? n + '× ' : '') + PIGMENTE[id][0].toUpperCase(); }).join(' UND '), 4); }
+function farbFundLese() { var F = farb(); F.roh.ocker = (F.roh.ocker || 0) + 1; F.roh.rebschwarz = (F.roh.rebschwarz || 0) + 1; farbSpeichern();
+  melden(F.leseErklaert ? 'MARTIN LEGT OCKER UND REBKOHLE DAZU' : (F.leseErklaert = 1, farbSpeichern(), 'MARTIN: „HIER, GELBE ERDE AUS DEM WEINBERG UND KOHLE VOM REBSCHNITT – DAMIT KANNST DU MALEN.“'), 5); }
+function farbKaufen(art) { var F = farb(), id = MOEBEL_KATALOG[art].farbKauf; if (id === 'ei') F.eier = (F.eier || 0) + 2; else F.roh[id] = (F.roh[id] || 0) + 1; farbSpeichern(); speichern(); muenzTon();
+  melden('GEKAUFT: ' + (id === 'ei' ? 'ZWEI EIER' : PIGMENTE[id][0].toUpperCase()) + ' · −' + MOEBEL_KATALOG[art].preis + ' HELLER' + (id === 'ei' ? ' · DAS BINDEMITTEL FÜR DIE FARBE' : ' · AM REIBSTEIN WIRD FARBE DRAUS'), 5); }
+function reibsteinNah() { if (EPOCHE !== 1400 || !kammerGemietet() || P.drinnen !== kammerWelt()) return null; var b = null, bd = 1.5; KAMMER_OBJ.forEach(function (e) { if (e.st.a !== 'reibstein') return; var d = Math.hypot(e.st.x - P.x, e.st.y - P.y); if (d < bd) { bd = d; b = e; } }); return b; }
+function reibWas() { var F = farb(); if (F.wahl && F.roh[F.wahl] > 0) return F.wahl; var ids = Object.keys(PIGMENTE); for (var i = 0; i < ids.length; i++) if (F.roh[ids[i]] > 0) return ids[i]; return null; }
+function reibTon() { if (!TON.an || !TON.ctx || !TON.haupt) return; var c = TON.ctx, t = c.currentTime, o = c.createOscillator(), g = c.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(48, t); o.frequency.linearRampToValueAtTime(62, t + 0.3);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.38); o.connect(g); g.connect(TON.haupt); o.start(t); o.stop(t + 0.4); }   // Stein auf Stein
+function reibenWeiter(dt) {
+  var e = reibsteinNah(); KAMMER_OBJ.forEach(function (q) { if (q.st.a !== 'reibstein') return; var l = q.o.getObjectByName('laeufer'); if (l) { var an = REIB.bis > P.t && q === e; l.position.x = an ? Math.sin(P.t * 9) * 0.07 : 0; l.position.z = an ? Math.cos(P.t * 9) * 0.05 : 0; }
+    var hf = q.o.getObjectByName('haeufchen'); if (hf) { var w = reibWas(); hf.visible = !!w; if (w) hf.material.color.set(PIGMENTE[w][1]); } });
+  if (!e || MALBRETT) return; var F = farb(), halten = maus.links || taste.q;
+  if (halten && !AUFTRAG.rede && !INVENTAR && P.t >= REIB.naechster) {
+    var id = reibWas(); REIB.naechster = P.t + 0.45;
+    if (!id) { melden('KEIN FARBSTOFF · RÖTEL UND KALK GIBT ES BEI MEISTER HANS, OCKER BEI MARTIN, GRÜNERDE UND BLAU BEIM KRÄMER', 3); REIB.naechster = P.t + 1.5; return; }
+    if (!(F.eier > 0)) { melden('OHNE EI HÄLT DIE FARBE NICHT · EIER GIBT ES BEIM KRÄMER', 3); REIB.naechster = P.t + 1.5; return; }
+    P.blick = Math.atan2(e.st.x - P.x, e.st.y - P.y); REIB.bis = P.t + 0.6; HOLZ.zeigeBis = P.t + 2; REIB.strich++; reibTon();
+    if (REIB.strich >= FARB_STRICHE) { REIB.strich = 0; F.roh[id]--; F.eier--; F.toepfe[id] = (F.toepfe[id] || 0) + 1; farbSpeichern(); tagNotiz('farbe', 1);
+      melden('EIN TÖPFCHEN ' + PIGMENTE[id][0].toUpperCase() + ' (' + F.toepfe[id] + ') · RECHTSKLICK AM REIBSTEIN: MALEN', 4); }
+    else if (P.t > (AUFTRAG.meldungBis || 0) - 0.1) melden('REIBEN: ' + PIGMENTE[id][0].toUpperCase() + ' · ' + REIB.strich + ' / ' + FARB_STRICHE + ' · EIER ' + (F.eier || 0), 0.6);
+  } else if (!halten && P.t > (AUFTRAG.meldungBis || 0)) {
+    var w = reibWas(), tp = Object.keys(F.toepfe).reduce(function (s, k) { return s + (F.toepfe[k] || 0); }, 0);
+    melden((w ? 'LINKE MAUS HALTEN: ' + PIGMENTE[w][0].toUpperCase() + ' REIBEN' : 'REIBSTEIN · KEIN FARBSTOFF') + (tp ? ' · RECHTSKLICK: MALEN (' + tp + ' TÖPFCHEN)' : ''), 0.4); }
+}
+function reibsteinRechts() {                     // Rechtsklick am Reibstein: das Malbrett, wenn es Farbe gibt (sonst darf man ihn aufheben)
+  if (!reibsteinNah() || PLATZ) return false; var F = farb(), t = Object.keys(F.toepfe).filter(function (k) { return F.toepfe[k] > 0; }); if (!t.length) return false;
+  malbrettOeffnen(); return true; }
+function malbrettOeffnen() {
+  if (MALBRETT) return; var f = document.createElement('iframe'); f.src = 'malbrett.html'; f.title = 'Malbrett';
+  f.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;z-index:9999;background:#1c130b'; document.body.appendChild(f); MALBRETT = f;
+  PAUSE_RUHE = performance.now() + 1e9; if (document.exitPointerLock && document.pointerLockElement) document.exitPointerLock(); tastenLoslassen(); maus.links = false;
+}
+function malbrettZu(text) { if (!MALBRETT) return; MALBRETT.remove(); MALBRETT = null; PAUSE_RUHE = performance.now() + 1500; melden((text ? text + ' · ' : '') + 'KLICK INS BILD – DANN GEHT ES WEITER', 5); }
+addEventListener('message', function (ev) {
+  var d = ev.data; if (!MALBRETT || !d || ev.source !== MALBRETT.contentWindow) return; var F = farb();
+  if (d.wzf === 'malbrett_bereit') MALBRETT.contentWindow.postMessage({ wzf: 'malbrett', jeTopf: FARB_JE_TOPF, toepfe: Object.keys(PIGMENTE).filter(function (k) { return F.toepfe[k] > 0; }).map(function (k) { return { id: k, name: PIGMENTE[k][0], hex: PIGMENTE[k][1], n: F.toepfe[k] }; }) }, '*');
+  else if (d.wzf === 'malbrett_zu') malbrettZu('DAS MALBRETT IST WEGGELEGT');
+  else if (d.wzf === 'rosette' && /^data:image\/jpeg;base64,/.test(d.bild || '')) {
+    var id = 'r' + Date.now(); try { localStorage.setItem(SPEICHER + '_rosette_' + id, d.bild); } catch (e) { malbrettZu('KEIN PLATZ MEHR IM SPEICHER'); return; }
+    Object.keys(d.toepfe || {}).forEach(function (k) { if (F.toepfe[k]) F.toepfe[k] = Math.max(0, F.toepfe[k] - d.toepfe[k]); });
+    F.rosetten.push(id); F.gemalt = (F.gemalt || 0) + 1; farbSpeichern(); KINHALT.beutel.push('rosette'); kinhaltSpeichern(); tagNotiz('rosette', 1);
+    malbrettZu('DEINE ROSETTE IST FERTIG (' + d.felder + ' FELDER) · RECHTSKLICK: AN DIE WAND HÄNGEN');
+  }
+});
+function rosetteBau(st) {                        // runde Holzscheibe mit dem gemalten Bild (Ursprung unten mittig, Rücken an der Wand wie der Meisterbrief)
+  var g = new THREE.Group(), id = st && st.bild ? st.bild : farb().rosetten[0], holz = new THREE.MeshLambertMaterial({ color: 0x6b4a2a }), R = 0.28;
+  var scheibe = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.025, R + 0.025, 0.025, 32), holz); scheibe.rotation.x = Math.PI / 2; scheibe.position.set(0, R + 0.03, 0.0125); g.add(scheibe);
+  var mat = new THREE.MeshLambertMaterial({ color: 0xffffff }), bildFl = new THREE.Mesh(new THREE.CircleGeometry(R, 48), mat); bildFl.name = 'bild'; bildFl.position.set(0, R + 0.03, 0.027); g.add(bildFl);
+  var url = null; try { url = id && localStorage.getItem(SPEICHER + '_rosette_' + id); } catch (e) {}
+  if (url) new THREE.TextureLoader().load(url, function (t) { var bf = g.getObjectByName('bild'); if (bf) { bf.material.map = t; bf.material.needsUpdate = true; } });   // phongMachen hat das Material inzwischen ersetzt – darum am Teil selbst setzen
+  g.userData.rueckseiteZ = 0; g.userData.anWand = true; return g; }
+function reibsteinBau() {                        // Holzklotz, Steinplatte, Läufer, ein Häufchen Farbstoff
+  var g = new THREE.Group(), holz = new THREE.MeshLambertMaterial({ color: 0x6b4426 }), stein = new THREE.MeshLambertMaterial({ color: 0x9a7a6a });
+  var klotz = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.62, 0.42), holz); klotz.position.y = 0.31; g.add(klotz);
+  var platte = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.06, 0.38), stein); platte.position.y = 0.65; g.add(platte);
+  var lg = new THREE.Group(); lg.name = 'laeufer'; var lf = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, 0.12, 12), stein); lf.position.y = 0.74; lg.add(lf); g.add(lg);
+  var hf = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.03, 10), new THREE.MeshLambertMaterial({ color: 0xa0442c })); hf.name = 'haeufchen'; hf.position.set(0.14, 0.695, 0.1); g.add(hf);
+  return g; }
+function farbGegenstaende(l) {                   // für die Tasche
+  var F = farb(); farbIkonen();
+  Object.keys(PIGMENTE).forEach(function (id) { if (F.roh[id] > 0) l.push({ ikon: 'roh_' + id, n: F.roh[id], name: PIGMENTE[id][0], text: PIGMENTE[id][2] + ' Klick: als Nächstes reiben.', tun: function () { F.wahl = id; farbSpeichern(); melden(PIGMENTE[id][0].toUpperCase() + ' LIEGT BEREIT AM REIBSTEIN', 2); } }); });
+  if (F.eier > 0) l.push({ ikon: 'ei', n: F.eier, name: 'Eier', text: 'Vom Krämer. Das Eigelb bindet die Farbe – ein Ei je Töpfchen.' });
+  Object.keys(PIGMENTE).forEach(function (id) { if (F.toepfe[id] > 0) l.push({ ikon: 'topf_' + id, n: F.toepfe[id], name: PIGMENTE[id][0] + ' (Töpfchen)', text: 'Fertig gerieben. Reicht für ' + FARB_JE_TOPF + ' Felder. Rechtsklick am Reibstein: malen.' }); });
 }
 // ---- Das nächste Ziel (11.10., Grind: „das Ziel setzt man sich selbst“) – eine Leiter, die zeigt, wofür man arbeitet ----
 // Immer nur EIN Ziel, das nächste nicht erreichte; Fortschritt in Hellern. Die Reihenfolge ist ein Vorschlag, nichts ist Pflicht.
@@ -11239,7 +11340,7 @@ function steinAbgeben() { var S = STEIN.platz; if (!S || !STEIN.traegt || Math.h
   var lohn = Math.floor(AUFTRAG.steinRest / 2); AUFTRAG.steinRest %= 2; AUFTRAG.heller += lohn; tagNotiz('steine', n); tagNotiz('heller', lohn); if (SPIELER) AUFTRAG.hunger = Math.min(100, AUFTRAG.hunger + 0.6 * n);
   if (AUFTRAG.steineGesamt >= STEIN_MAX) { AUFTRAG.ruf = (AUFTRAG.ruf || 0) + 1; melden('DIE LÜCKE IN DER MAUER IST GESCHLOSSEN · MEISTER HANS SCHÜTTELT DIR DIE HAND · RUF +1', 6); }
   else melden((n > 1 ? n + ' STEINE · ' : 'STEIN ') + AUFTRAG.steineGesamt + ' VON ' + STEIN_MAX + ' IN DER MAUER' + (lohn ? ' · +' + lohn + ' HELLER' : ' · DER NÄCHSTE BRINGT EINEN HELLER'), 2.5);
-  steinFlickZeigen(); speichern(); return true; }
+  steinFlickZeigen(); speichern(); if (AUFTRAG.steineGesamt < STEIN_MAX) farbFundStein(n); return true; }
 function steinWeiter(dt) {
   var S = STEIN.platz; if (!S) return; S.hans.gruppe.visible = EPOCHE === 1400; S.flick.parent.visible = EPOCHE === 1400; S.tragStein.visible = STEIN.traegt > 0 && !AUFTRAG.karren;
   if (S.karren) { S.karren.visible = STEIN.traegt > 0 && !!AUFTRAG.karren; var ki = 0; S.karren.children.forEach(function (q) { if (q.name === 'karrenstein') q.visible = ki++ < STEIN.traegt; }); }
@@ -11310,7 +11411,7 @@ function leseAbgeben() {
   var heute = holzTagNr(); if (AUFTRAG.leseTag !== heute) { AUFTRAG.leseTag = heute; AUFTRAG.leseHeute = 0; }
   if ((AUFTRAG.leseHeute || 0) >= LESE_TAGESMAX) { melden('MARTIN: „GENUG FÜR HEUTE, DIE KELTER IST VOLL. MORGEN WIEDER.“', 4); return true; }
   LESE.traegt = false; tatMerken('lese', P.x, P.y); AUFTRAG.leseHeute = (AUFTRAG.leseHeute || 0) + 1; AUFTRAG.heller += LESE_LOHN; tagNotiz('koerbe', 1); tagNotiz('heller', LESE_LOHN); if (SPIELER) AUFTRAG.hunger = Math.min(100, AUFTRAG.hunger + 1); if (PUPPE && PUPPE.oben === 'tragen') PUPPE.oben = null; speichern();
-  melden('MARTIN SCHÜTTET DEINEN KORB IN DIE BÜTTE · +' + LESE_LOHN + ' HELLER (' + AUFTRAG.leseHeute + '/' + LESE_TAGESMAX + ' HEUTE)', 4); return true;
+  melden('MARTIN SCHÜTTET DEINEN KORB IN DIE BÜTTE · +' + LESE_LOHN + ' HELLER (' + AUFTRAG.leseHeute + '/' + LESE_TAGESMAX + ' HEUTE)', 4); farbFundLese(); return true;
 }
 // ---- Tage überspringen (12.10., Andreas: „wenn ein Tag gut läuft, Tage, Wochen, Monate überspringen … bis etwas passiert, das meine Handlung erfordert … damit wir die Generationen einbauen können“) ----
 // Stufe 1: der gestrige Tag wird zum Tagwerk (was man wirklich verdient hat). Nur nach einem GUTEN Tag: verdient, satt genug, eigener Schlafplatz.
@@ -11922,6 +12023,12 @@ function mondstand(ms) {
 }
 var ANSICHT = /[?&]ich=1/.test(Q) ? 'ich' : 'figur';           // V: Figur von hinten / Ich-Sicht
 var FACKEL = { an: false, licht: null, stab: null };
+// 15.10.: Die Kirchenwände sind riesige Dreiecke – Lambert rechnet Licht nur an den Ecken, die Fackel dazwischen kommt nicht an.
+// Einmal, sobald man nachts mit Fackel in die Nähe kommt, rechnet der Außenbau je Bildpunkt (Phong) – nur dieses eine Gebäude.
+var KIRCHE_PHONG = false;
+function kircheAussenPhong() { var sk = HAEUSER.filter(function (h) { return h.n === 'Stiftskirche'; })[0]; if (!sk) { KIRCHE_PHONG = true; return; }
+  if (Math.hypot(P.x - sk.cx, P.y - sk.cy) > 70 || sonnenstand(himmelsZeit()).hoehe > 2) return;
+  var g = szene.getObjectByName('Stiftskirche'); if (g) phongMachen(g); KIRCHE_PHONG = true; }
 // Türen und Läden (08.10., Andreas: „Türen, Fenster, die auf und zu gehen“): tagsüber offen, nachts zu; das Wirtshaus bis zur Sperrstunde
 var LAEDEN = null;
 function stunde() { var d = new Date(himmelsZeit()); return d.getHours() + d.getMinutes() / 60; }
@@ -12047,7 +12154,7 @@ if (/[?&]probe=1/.test(location.search) && /[?&]meister=1/.test(location.search)
   AUFTRAG.einf = 9; AUFTRAG.kleid = Math.max(AUFTRAG.kleid || 0, 3); AUFTRAG.lehre = 3; AUFTRAG.lehrePaare = Math.max(AUFTRAG.lehrePaare || 0, 24); AUFTRAG.buergerrecht = 1; AUFTRAG.ladenVorrat = 6; AUFTRAG.heller = Math.max(AUFTRAG.heller || 0, 30); AUFTRAG.meisterTest = true; }
 (function () { var neu = /[?&]auftrag=neu/.test(Q), da = null; try { da = localStorage.getItem(SPEICHER); } catch (e) {}
   if (neu || !da) AUFTRAG.einf = 1; else if (!AUFTRAG.einf) AUFTRAG.einf = 9;
-  if (neu) try { ['_kammer', '_kammerinhalt', '_gang', '_gruft', '_hund', '_erbhaus'].forEach(function (k) { localStorage.removeItem(SPEICHER + k); }); } catch (e) {}   // ein neues Leben: keine alte Kammer, kein bekanntes Geheimnis
+  if (neu) try { ['_kammer', '_kammerinhalt', '_gang', '_gruft', '_hund', '_erbhaus', '_farben'].forEach(function (k) { localStorage.removeItem(SPEICHER + k); }); Object.keys(localStorage).forEach(function (k) { if (k.indexOf(SPEICHER + '_rosette_') === 0) localStorage.removeItem(k); }); } catch (e) {}   // ein neues Leben: keine alte Kammer, kein bekanntes Geheimnis
   if (neu && history.replaceState) history.replaceState(null, '', location.pathname + location.search.replace(/[?&]auftrag=neu/, '').replace(/^&/, '?') + location.hash); })();   // ein Neuladen fängt nicht nochmal von vorn an
 function speichern() { try { var o = ({ stufe: AUFTRAG.stufe, einf: AUFTRAG.einf || 0, joergRunde: AUFTRAG.joergRunde || 0, onkelLehrTipp: AUFTRAG.onkelLehrTipp || 0, imke: AUFTRAG.imke || 0, imkeTag: AUFTRAG.imkeTag || 0, tammo: AUFTRAG.tammo || 0, verheiratet: AUFTRAG.verheiratet || 0, nachname: AUFTRAG.nachname || '', frau: AUFTRAG.frau || '', werben: AUFTRAG.werben || {}, kramWeg: AUFTRAG.kramWeg || {}, dieb: AUFTRAG.dieb || 0, pelzkragen: AUFTRAG.pelzkragen || 0, pelzmuetze: AUFTRAG.pelzmuetze || 0, hochzeitTag: AUFTRAG.hochzeitTag || 0, hochzeitPlan: AUFTRAG.hochzeitPlan || null, kind: AUFTRAG.kind || null, kindGemeldet: AUFTRAG.kindGemeldet || 0, lehre: AUFTRAG.lehre || 0, buergerrecht: AUFTRAG.buergerrecht || 0, ladenVorrat: AUFTRAG.ladenVorrat || 0, ladenLetzt: AUFTRAG.ladenLetzt || 0, ladenVerkauft: AUFTRAG.ladenVerkauft || 0, lehrePaare: AUFTRAG.lehrePaare || 0, lehreGang: AUFTRAG.lehreGang || 0, lehreSchlaege: AUFTRAG.lehreSchlaege || 0, lehreTag: AUFTRAG.lehreTag || 0, lehreHeute: AUFTRAG.lehreHeute || 0, lehreStueck: AUFTRAG.lehreStueck || 0, scheite: AUFTRAG.scheite || 0, beil: AUFTRAG.beil || 0, holzErklaert: AUFTRAG.holzErklaert || 0, wolle: AUFTRAG.wolle || 0, garn: AUFTRAG.garn || 0, garnHeute: AUFTRAG.garnHeute || 0, garnTag: AUFTRAG.garnTag || 0, steineGesamt: AUFTRAG.steineGesamt || 0, steineHeute: AUFTRAG.steineHeute || 0, steineTag: AUFTRAG.steineTag || 0, steinRest: AUFTRAG.steinRest || 0, karren: AUFTRAG.karren || 0, leseHeute: AUFTRAG.leseHeute || 0, leseTag: AUFTRAG.leseTag || 0, holzHeute: AUFTRAG.holzHeute || 0, holzTag: AUFTRAG.holzTag || 0, heller: AUFTRAG.heller, aepfel: AUFTRAG.aepfel, brot: AUFTRAG.brot, fleisch: AUFTRAG.fleisch, wein: AUFTRAG.wein, messer: AUFTRAG.messer, kleid: AUFTRAG.kleid, hunger: Math.round(AUFTRAG.hunger), beutel: AUFTRAG.beutel, garderobe: AUFTRAG.garderobe, zehnt: AUFTRAG.zehnt || 0, zehntFahrten: AUFTRAG.zehntFahrten || 0, amt: AUFTRAG.amt || 0, tour: AUFTRAG.tour || {}, ruf: AUFTRAG.ruf || 0, schmuggel: AUFTRAG.schmuggel || 0, schmuggelTag: AUFTRAG.schmuggelTag || 0, schmuggelZahl: AUFTRAG.schmuggelZahl || 0, brief: AUFTRAG.brief || 0, briefTag: AUFTRAG.briefTag || 0, briefZahl: AUFTRAG.briefZahl || 0 });
   Object.keys(AUFTRAG).forEach(function (k) { if (k in o || spielstandFluechtig(k)) return; var w = AUFTRAG[k]; if (w === undefined || typeof w === 'function') return; if (w && typeof w === 'object') { try { JSON.stringify(w); } catch (e) { return; } } o[k] = w; });   // auch Felder, die (noch) in keiner Liste stehen
@@ -13635,7 +13742,7 @@ function weltBauen(bodenBild, kBild, bBild, fBild) {
     if (offenEnde) kappe(offenEnde.x, offenEnde.y, offenEnde.ox, offenEnde.oy, offenEnde.zu, offenEnde.zo);
   });
   var MITTEL = new THREE.Group(); MITTEL.userData.keinSchnee = true;   // Winter: kein Schnee in den Stuben
-  BEGEHBAR.forEach(function (h) { if (h.zweck === 'kirche') { kircheInnenBauen(h, MITTEL, false); if (window.__heute) kircheInnenBauen(h, window.__heute, true); return; } var n0 = MITTEL.children.length; innenraum(h, MITTEL); tuerBlattBauen(h, MITTEL); tuerStufe(h, MITTEL); h.__innenTeile = MITTEL.children.slice(n0); if (h.zweck === 'kammer') { h.__innenTeile.forEach(phongMachen); h.__phong = true; } });
+  BEGEHBAR.forEach(function (h) { if (h.zweck === 'kirche') { var k0 = MITTEL.children.length, k1 = window.__heute ? window.__heute.children.length : 0; kircheInnenBauen(h, MITTEL, false); h.__innenTeile = MITTEL.children.slice(k0); if (window.__heute) { kircheInnenBauen(h, window.__heute, true); h.__innenTeile = h.__innenTeile.concat(window.__heute.children.slice(k1)); } return; }   /* 15.10. (Andreas: „die Stiftskirche reflektiert meine Fackel nicht“): die Kirche meldete ihre Innenteile nie an, darum wurde sie beim Betreten nicht auf Phong umgestellt */ var n0 = MITTEL.children.length; innenraum(h, MITTEL); tuerBlattBauen(h, MITTEL); tuerStufe(h, MITTEL); h.__innenTeile = MITTEL.children.slice(n0); if (h.zweck === 'kammer') { h.__innenTeile.forEach(phongMachen); h.__phong = true; } });
   hausschilderBauen(MITTEL);   // Innenräume nur um 1400
   if (FA && wand1400.p.length) { var faTex = new THREE.CanvasTexture(FA.bild); faTex.magFilter = faTex.minFilter = THREE.NearestFilter; faTex.generateMipmaps = false; var faNacht = new THREE.CanvasTexture(FA.nacht); faNacht.magFilter = faNacht.minFilter = THREE.NearestFilter; faNacht.generateMipmaps = false; var faMat = new THREE.MeshPhongMaterial({ map: faTex, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: faNacht, emissiveIntensity: 0, specular: 0x080808, shininess: 4 }); window.__faMat = faMat;   // 11.10.: Phong statt Lambert – Fackel und Torfeuer leuchten die Hauswände an (Lambert rechnet nur an den Ecken der großen Wandflächen)
     if (FA.bildZu) { var tz = function (c) { var t = new THREE.CanvasTexture(c); t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; return t; }; LAEDEN = { auf: faTex, aufN: faNacht, zu: tz(FA.bildZu), zuN: tz(FA.nachtZu), mat: faMat, istZu: false }; } MITTEL.add(wand1400.mesh(faMat)); }
@@ -16647,7 +16754,7 @@ function wegNameWeiter() {                       // betritt man einen benannten 
   WEGNAME.auf = auf; }
 function leuteBewegen(dt) {
   try { blWeiter(); } catch (e) { schleifeFehler('bauleiter', e); }
-  tagesablaufWeiter(dt); if (!BURGWEG.gebaut) try { burgwegBauen(); } catch (e) { schleifeFehler('burgweg', e); } try { erbWeiter(); } catch (e) { schleifeFehler('erbhaus', e); } try { winterWeiter(dt); } catch (e) { schleifeFehler('winter', e); } try { if (window.Winter) maineisWeiter(dt); } catch (e) { schleifeFehler('maineis', e); } if (SCHNEEBAELLE.length) try { schneeballWeiter(dt); } catch (e) { schleifeFehler('schneeball', e); } abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); junkerWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); kindWeiter(dt); generationWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); steinWeiter(dt); kaiWeiter(dt); treppeWeiter(); gsWeiter(); sprungWeiter(); lageWeiter(); flutWeiter(); ereignisWeiter(dt); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
+  tagesablaufWeiter(dt); if (!BURGWEG.gebaut) try { burgwegBauen(); } catch (e) { schleifeFehler('burgweg', e); } try { erbWeiter(); } catch (e) { schleifeFehler('erbhaus', e); } try { winterWeiter(dt); } catch (e) { schleifeFehler('winter', e); } try { if (window.Winter) maineisWeiter(dt); } catch (e) { schleifeFehler('maineis', e); } if (SCHNEEBAELLE.length) try { schneeballWeiter(dt); } catch (e) { schleifeFehler('schneeball', e); } abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); junkerWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); kindWeiter(dt); generationWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); try { reibenWeiter(dt); } catch (e) { schleifeFehler('farben', e); } steinWeiter(dt); kaiWeiter(dt); treppeWeiter(); gsWeiter(); sprungWeiter(); lageWeiter(); flutWeiter(); ereignisWeiter(dt); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
   kamera.updateMatrixWorld(); SICHT.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse); SICHT.kegel.setFromProjectionMatrix(SICHT.m);
   SICHT.takt += dt; var neuPruefen = SICHT.takt > 0.05; if (neuPruefen) SICHT.takt = 0; var tick = Math.floor(P.t * 20);
   SICHT.stat.voll = 0; SICHT.stat.einfach = 0;
@@ -16946,9 +17053,9 @@ function handhaben() {
   if (essenKaufen()) return true;
   var sc = schatzNah(); if (sc) { sc.weg = true; sc.m.visible = false; inBeutel(sc.d); return true; }
   var vs = versteckNah(); if (vs && (JAGD || AUFTRAG.schmuggel === 1 || !naechsteePerson())) { versteckRein(vs); return true; }
-  return reitenHandhaben() || karrenHandhaben() || angelHandhaben() || haselSchneiden() || schmiedHaken() || lehreSchlafen() || leseAbgeben() || kaiAbgeben() || kaiNehmen() || steinAbgeben() || steinNehmen() || kramZurueck() || kramNehmen() || moebelKaufen() || strohsack() || erbHandhaben() || kammerSchlafen() || aufheben() || hinstellenStart() || grabHohl() || schmiedBeil() || weberHandel() || kircheSitzen() || hundAnfassen() || sammeln() || steinAblegen() || handBenutzen();   // 12.10.: der Karren steht oben (Andreas: „sitzen konnte ich nicht“ – Aufheben/Sammeln kamen ihm zuvor)
+  return reitenHandhaben() || karrenHandhaben() || angelHandhaben() || haselSchneiden() || schmiedHaken() || lehreSchlafen() || leseAbgeben() || kaiAbgeben() || kaiNehmen() || steinAbgeben() || steinNehmen() || kramZurueck() || kramNehmen() || moebelKaufen() || strohsack() || erbHandhaben() || kammerSchlafen() || reibsteinRechts() || aufheben() || hinstellenStart() || grabHohl() || schmiedBeil() || weberHandel() || kircheSitzen() || hundAnfassen() || sammeln() || steinAblegen() || handBenutzen();   // 12.10.: der Karren steht oben (Andreas: „sitzen konnte ich nicht“ – Aufheben/Sammeln kamen ihm zuvor)
 }
-weltCv.addEventListener('mousedown', function (e) { if (document.pointerLockElement !== weltCv) return; if (BL.an) { blKlick(e.button); return; } if (e.button === 0) { if (PLATZ) { hinstellenJetzt(); return; } if (!AUFTRAG.rede && angelLinks()) return; if ((holzNah() || spinnradNah() || (leseStock() >= 0 && leseZeit())) && !AUFTRAG.rede) { maus.links = true; return; } if (!reden() && !handhaben() && !schneeballWerfen() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } else if (e.button === 2) { if (PLATZ) { hinstellenAbbrechen(); melden('ZURÜCK IN DEN BEUTEL', 1.5); return; } if (!handhaben()) { maus.rechts = true; if (!P.klettert) springenJetzt(); } } });
+weltCv.addEventListener('mousedown', function (e) { if (document.pointerLockElement !== weltCv) return; if (BL.an) { blKlick(e.button); return; } if (e.button === 0) { if (PLATZ) { hinstellenJetzt(); return; } if (!AUFTRAG.rede && angelLinks()) return; if ((holzNah() || spinnradNah() || reibsteinNah() || (leseStock() >= 0 && leseZeit())) && !AUFTRAG.rede) { maus.links = true; return; } if (!reden() && !handhaben() && !schneeballWerfen() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } else if (e.button === 2) { if (PLATZ) { hinstellenAbbrechen(); melden('ZURÜCK IN DEN BEUTEL', 1.5); return; } if (!handhaben()) { maus.rechts = true; if (!P.klettert) springenJetzt(); } } });
 addEventListener('mouseup', function (e) { if (e.button === 2) maus.rechts = false; if (e.button === 0) maus.links = false; });
 weltCv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 function fingerRechnen(e) {
@@ -17110,6 +17217,7 @@ function zeichnen() {
   if (!window.__laterne) { window.__laterne = new THREE.PointLight(0xffc27a, 0, 7, 1.6); szene.add(window.__laterne); }
   var lv = V(P.x, P.y, (P.z - AUGE) + 2.0); window.__laterne.position.set(lv[0], lv[1], lv[2]); window.__laterne.intensity = drinnen || GANG.drin ? (drinnen && (drinnen.zweck === 'kammer' || drinnen.__phong) ? 0.12 : 0.9) : 0;   // in der Kammer (Phong) wirkt sie viel stärker – dort leuchten die eigenen Lichter
   if (drinnen && !drinnen.__phong) { drinnen.__phong = true; (drinnen.__innenTeile || []).forEach(phongMachen); if (drinnen.codex && drinnen.codex.haus) phongMachen(drinnen.codex.haus.gruppe); }   // 11.10. (Andreas: „die Fackel wirkt im Gebäude nicht“): das betretene Haus rechnet Licht je Bildpunkt
+  if (!drinnen && FACKEL.an && !KIRCHE_PHONG && EPOCHE === 1400) kircheAussenPhong();   // 15.10.: draußen nachts mit Fackel: auch die Außenwände der Kirche rechnen Licht je Bildpunkt
   fackelWeiter(drinnen);
   if (mitFigur) {                               // Kamera schräg hinter der Figur; rückt näher, wenn hinten eine Wand ist
     var kb = P.blick + (HOLZ.zeigeBis > P.t ? 1.05 : 0), fx = Math.sin(kb), fy = Math.cos(kb), weg = KAM3.weg;   // am Hackklotz schräg von der Seite – sonst verdeckt die Figur den Klotz
@@ -17337,6 +17445,7 @@ function gegenstaende() {                        // was in der Tasche ist: Essen
   if (AUFTRAG.beil) l.push({ ikon: 'beil', name: 'Gutes Beil', text: 'Vom Schmied. In der Hand: drei Schläge je Scheit statt sechs. Klick: in die Hand.', tun: function () { handSetzen('beil'); } });
   wwIkonen(); if (AUFTRAG.pelzkragen) l.push({ ikon: IKON.ww_pelzkragen ? 'ww_pelzkragen' : 'kleid', name: 'Pelzkragen', text: 'Vom Kürschner. Warm, und jeder sieht: der hat es zu etwas gebracht.' }); if (AUFTRAG.pelzmuetze) l.push({ ikon: IKON.ww_pelzkragen ? 'ww_pelzkragen' : 'kleid', name: 'Pelzmütze', text: 'Vom Kürschner. Der Winter kann kommen.' });
   if (AUFTRAG.karren) l.push({ ikon: 'karren', name: 'Handkarren', text: 'Vom Wagner. Drei Steine auf einmal zur Mauer, und es rollt leichter.' });
+  farbGegenstaende(l);
   wwIkonen(); KINHALT.beutel.forEach(function (a) { var m = MOEBEL_KATALOG[a]; if (m) l.push({ ikon: IKON[a] ? a : 'moebel', name: m.n, text: 'Gekauft, noch nicht aufgestellt. In deiner Kammer: Rechtsklick.' }); });
   (AUFTRAG.beutel || []).forEach(function (b) { var geh = SPIELER.geheimnisse.some(function (g) { return g.id === b.id; }); l.push({ ikon: IKON[b.id] ? b.id : geh ? 'geheimnis' : 'brief', name: b.name, text: b.text }); });
   return l;
@@ -17552,7 +17661,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = '6691decc', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = '55d84cb3', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
