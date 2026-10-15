@@ -11307,7 +11307,7 @@ function zh() { if (ZH) return ZH; ZH = null; if (!/[?&]auftrag=neu/.test(Q)) tr
 function zhSpeichern() { try { localStorage.setItem(SPEICHER + '_zuhause', JSON.stringify(zh())); } catch (e) {} }
 function fertStufe(id) { var n = zh().fert[id] || 0, s = FERTIGKEIT[id][2], st = 0; for (var i = 0; i < s.length; i++) if (n >= s[i]) st = i; return st; }
 function fertText(id) { var n = zh().fert[id] || 0, st = fertStufe(id), s = FERTIGKEIT[id][2]; return STUFEN[st] + (st < 3 ? ' (' + n + '/' + s[st + 1] + ')' : ' (' + n + ')'); }
-function fertDazu(id, n) { var Z = zh(), vor = fertStufe(id); Z.fert[id] = (Z.fert[id] || 0) + (n || 1); var nach = fertStufe(id); zhSpeichern(); FERT_ZEIGEN = { id: id, bis: P.t + 5 };
+function fertDazu(id, n) { var Z = zh(), vor = fertStufe(id); Z.fert[id] = (Z.fert[id] || 0) + (n || 1); var nach = fertStufe(id); zhSpeichern(); FERT_ZEIGEN = { id: id, bis: P.t + 5 }; try { kindLerntMit(id); } catch (e) {}
   if (nach > vor) { AUFTRAG.ruf = (AUFTRAG.ruf || 0) + (nach === 3 ? 2 : 0); speichern(); muenzTon && muenzTon();
     setTimeout(function () { melden(FERTIGKEIT[id][0] + ': ' + (nach === 3 ? 'DU BIST MEISTER! DIE LEUTE SPRECHEN DAVON · RUF +2' : 'JETZT ' + STUFEN[nach]), 6); }, 2500); } }
 function zuhauseDa() { return EPOCHE === 1400 && AUFTRAG.verheiratet && AUFTRAG.frau && HAUSSTAND && HAUSSTAND.g.visible && P.drinnen === kammerWelt(); }
@@ -11325,7 +11325,7 @@ function zuhauseGespraech() {                   // nach jedem Gespräch mit der 
   AUFTRAG.rede.zeilen = z; if (plus) setTimeout(function () { melden(AUFTRAG.frau + ' · ZUNEIGUNG ' + Z.ehe + ' (+' + plus + ') · ' + eheText(Z.ehe), 4); }, 400); }
 function zuhauseSchlafen() { if (!AUFTRAG.verheiratet || !AUFTRAG.frau || !HAUSSTAND) return ''; var Z = zh(); Z.ehe = Math.min(100, Z.ehe + 3); zhSpeichern(); return ' · ' + hausstandName().toUpperCase() + ' SCHLÄFT NEBEN DIR'; }
 function zuhauseWeiter() {                       // einmal je neuem Spieltag: Abwesenheit, Klatsch und Lob am Brunnen
-  if (EPOCHE !== 1400 || !AUFTRAG.verheiratet || !AUFTRAG.frau) return; var Z = zh(), heute = holzTagNr(); if (Z.tag === heute) return; Z.tag = heute;
+  if (EPOCHE !== 1400 || !AUFTRAG.verheiratet || !AUFTRAG.frau) return; var Z = zh(), heute = holzTagNr(); if (Z.tag === heute) return; Z.tag = heute; try { kindTagPruefen(); } catch (e) {}
   if (heute - (Z.redeTag || heute) >= 2) Z.ehe = Math.max(0, Z.ehe - 5);
   if (Z.ehe < 25 && heute - (Z.klatschTag || -99) >= 3) { Z.klatschTag = heute; AUFTRAG.ruf = Math.max(0, (AUFTRAG.ruf || 0) - 1); speichern(); setTimeout(function () { melden('AM BRUNNEN ERZÄHLT ' + AUFTRAG.frau + ', DASS DU NIE ZUHAUSE BIST · RUF −1 · GEH HEIM UND REDE MIT IHR', 7); }, 3000); }
   else if (Z.ehe >= 80 && heute - (Z.lobTag || -99) >= 7) { Z.lobTag = heute; AUFTRAG.ruf = (AUFTRAG.ruf || 0) + 1; speichern(); setTimeout(function () { melden('AM BRUNNEN LOBT ' + AUFTRAG.frau + ' IHREN MANN · RUF +1', 6); }, 3000); }
@@ -11334,6 +11334,8 @@ function balken(x, y, w, anteil, farbe) { hud.fillStyle = 'rgba(0,0,0,.55)'; hud
 function zuhauseMalen(W, H) {                    // links unter Auftrag/Ziel: Zuneigung zuhause, Fortschritt beim Arbeiten
   var y = 96, Z = zh();   /* unter der Meldungszeile, links */
   if (zuhauseDa()) { text(AUFTRAG.frau + ' ♥ ' + eheText(Z.ehe), 6, y, 8, '#ffb0b0', 'left'); balken(6, y + 3, 110, Z.ehe / 100, '#e0607a'); y += 16; }
+  if (kindDa()) { var Kk = kz(); text(kindName().toUpperCase() + ' ★ ' + kindWertTextT(Kk.wert), 6, y, 8, '#b0d8ff', 'left'); balken(6, y + 3, 110, Kk.wert / 100, '#5aa0e0'); y += 16; }
+  if (AUFTRAG.kind && Z.kind && Z.kind.haft) { text(kindName().toUpperCase() + ' IST BEI DER WACHE AM MARKT!', 6, y, 8, '#ff9a7a', 'left'); y += 12; }
   if (FERT_ZEIGEN.id && FERT_ZEIGEN.bis > P.t) { var id = FERT_ZEIGEN.id, n = Z.fert[id] || 0, st = fertStufe(id), s = FERTIGKEIT[id][2], a = st < 3 ? (n - s[st]) / (s[st + 1] - s[st]) : 1;
     text(FERTIGKEIT[id][0] + ' · ' + fertText(id), 6, y, 8, '#ffe9a8', 'left'); balken(6, y + 3, 110, a, '#ffd040'); } }
 // Webrahmen (Möbel, beim Zimmermann oder Drechsler): Garn → Tuch. Linke Maus halten am Rahmen, 16 Schüsse und 3 Spulen Garn = 1 Tuch.
@@ -11359,6 +11361,76 @@ function webenWeiter(dt) {
   } else if (!halten && P.t > (AUFTRAG.meldungBis || 0)) melden('LINKE MAUS HALTEN (ODER Q): WEBEN · ' + WEB_GARN + ' GARN JE TUCH · DU HAST ' + (AUFTRAG.garn || 0), 0.4); }
 function tuchVerkaufen() { var Z = zh(); if (!(Z.tuch > 0)) return false; var n = Z.tuch; Z.tuch = 0; zhSpeichern(); AUFTRAG.heller += n * TUCH_LOHN; tagNotiz('heller', n * TUCH_LOHN); speichern(); muenzTon();
   melden('DER WEBER BEFÜHLT DEIN TUCH · „SAUBER GESCHLAGEN.“ · ' + n + ' TUCH · +' + n * TUCH_LOHN + ' HELLER', 5); return true; }
+// ---- Erziehung (15.10., Andreas: „mit dem Kind spielen und später dem Kind Sachen beibringen macht den Spross weniger anfällig für Jugendsünden,
+// die wir dann für ihn ausbaden müssten, oder ihn vor der Wache retten … wenn wir uns wenig oder nicht kümmern, wird es ein schlimmer Junge und versaut den Ruf – wie in echt“) ----
+// KIND-BALKEN (0–100, in SPEICHER_zuhause.kind): bis 6 Jahre Klick aufs Kind = spielen (+8, einmal am Tag, es rennt um dich herum),
+// ab 7 Klick = reden (+5), und wer zuhause malt/spinnt/webt, während das Kind dabei ist, bringt es ihm bei (+2, eigene Fertigkeit wächst mit).
+// Drei Tage ohne Zuwendung: −4 je Tag. AB 10 JAHREN Jugendsünden, umso häufiger, je niedriger der Balken (Äpfel, Fenster, Prügelei – du zahlst und
+// verlierst Ruf); unter 35 kann die WACHE ES ERWISCHEN: es steht mit einem Wächter am Markt, Rechtsklick beim Wächter = Strafe zahlen (10 Heller)
+// oder bürgen (ab Ruf 5, kostet Ruf 2). Holt man es bis zum nächsten Morgen nicht, bleibt es eine Nacht im Turm: Ruf −2, Balken −10.
+// Ab 75 gute Taten (hilft dem Nachbarn, Ruf +1; bringt einen Heller heim). BEIM GENERATIONSWECHSEL erbt das Kind, was es gelernt hat, und seinen Ruf.
+// Alles ERFUNDEN (Spielregeln); Jugendstreiche und Bürgschaft durch den Vater: plausibler Alltag (ANNAHME).
+function kz() { var Z = zh(); if (!Z.kind) Z.kind = { wert: 60, tag: holzTagNr(), fert: {}, suenden: 0, taten: 0 }; Z.kind.fert = Z.kind.fert || {}; return Z.kind; }
+function kindDa() { var H = HAUSSTAND; return !!(H && H.kindP && H.kindP.gruppe.visible && AUFTRAG.kind && kindAlter() >= 1 && P.drinnen === kammerWelt()); }
+function kindWertText(w) { return w >= 75 ? 'EIN GUTER JUNGE' : w >= 55 ? 'BRAV' : w >= 35 ? 'WILD' : w >= 20 ? 'FRECH' : 'MACHT ÄRGER'; }
+function kindWertTextT(w) { var t = kindWertText(w); return AUFTRAG.kind && AUFTRAG.kind.art === 'tochter' ? t.replace('EIN GUTER JUNGE', 'EIN GUTES MÄDCHEN') : t; }
+function kindZuwendung(plus, grund) { var K = kz(); K.wert = Math.max(0, Math.min(100, K.wert + plus)); K.tag = holzTagNr(); zhSpeichern(); if (grund) melden(kindName().toUpperCase() + ' ★ ' + K.wert + ' (+' + plus + ') · ' + grund, 3); }
+function kindReden() {                           // Klick aufs Kind: spielen (bis 6) oder reden (ab 7)
+  var H = HAUSSTAND; if (!kindDa() || AUFTRAG.rede || EIN.an) return false; var kp = H.kindP.gruppe.getWorldPosition(new THREE.Vector3()); if (Math.hypot(P.x - kp.x, P.y + kp.z) > 2.2) return false;
+  var K = kz(), a = kindAlter(), heute = holzTagNr(), kn = kindName(), er = AUFTRAG.kind.art === 'sohn' ? 'er' : 'sie', neu = K.spielTag !== heute;
+  if (a < 7) { H.kindSpielBis = P.t + 9; if (neu) { K.spielTag = heute; kindZuwendung(8); }
+    AUFTRAG.rede = { wer: { x: kp.x, y: -kp.z }, name: kn.toUpperCase() + ' · ' + Math.floor(a) + ' JAHRE', zeilen: [['Fang mich! Fang mich doch!', '(' + kn + ' quietscht und rennt um dich herum.)'], ['Noch mal! Noch mal!', '(Du jagst ' + kn + ' einmal ums Bett. Imke lacht.)'], ['Papa, guck, ich kann hüpfen!', '(' + kn + ' hüpft auf einem Bein, fällt um und lacht.)']][heute % 3], i: 0 }; return true; }
+  if (neu) { K.spielTag = heute; kindZuwendung(5); }
+  var z = K.wert < 35 ? ['Lass mich doch! Die anderen dürfen auch bis zum Abend draußen bleiben.', '(' + kn + ' schaut weg. Mit dir reden will ' + er + ' gerade nicht.)']
+    : a >= 10 ? [['Darf ich morgen mit in die Werkstatt?', 'Ich will das auch lernen, was du machst.'], ['Der Sohn vom Schmied hat gesagt, wir sind arm. Stimmt das?', '(Ihr redet lange. Am Ende nickt ' + kn + '.)'], ['Ich hab heute Holz für Mutter gehackt. Ganz allein!']][heute % 3]
+    : [['Wieso ist der Main so groß?', 'Und wo fließt er hin?'], ['Zeigst du mir, wie man malt?', '(Setz dich an den Reibstein oder den Webrahmen – dann schaut ' + kn + ' zu und lernt mit.)'], ['Imke sagt, du warst früher ganz arm. Wie arm?']][heute % 3];
+  AUFTRAG.rede = { wer: { x: kp.x, y: -kp.z }, name: kn.toUpperCase() + ' · ' + Math.floor(a) + ' JAHRE', zeilen: z, i: 0 }; return true; }
+function kindLerntMit(id) {                      // aus fertDazu: arbeitet man zuhause und das Kind (ab 7) ist dabei, lernt es mit
+  if (!kindDa() || kindAlter() < 7) return; var K = kz(); K.fert[id] = (K.fert[id] || 0) + 1; var heute = holzTagNr(); if (K.lehrTag !== heute) { K.lehrTag = heute; kindZuwendung(2); } else { K.tag = heute; zhSpeichern(); }
+  setTimeout(function () { melden(kindName().toUpperCase() + ' SCHAUT DIR ZU UND LERNT MIT · ' + FERTIGKEIT[id][0] + ' ' + K.fert[id], 3); }, 1200); }
+var KIND_SUENDEN = [['aepfel', 3, 1, 'hat beim Marktmann Äpfel geklaut. Du zahlst den Schaden.'], ['fenster', 6, 1, 'hat beim Bader ein Fenster eingeworfen. Du zahlst die Butzenscheibe.'], ['pruegel', 0, 1, 'hat sich in der Gasse mit dem Sohn vom Gerber geprügelt. Die Leute reden.'], ['huehner', 2, 0, 'hat die Hühner der Nachbarin aufgescheucht. Du entschuldigst dich und zahlst für die Eier.']];
+function kindSuende() {                          // eine Jugendsünde: [Text] (zahlen + Ruf) – oder die Wache
+  var K = kz(), kn = kindName(); K.suenden = (K.suenden || 0) + 1;
+  if (K.wert < 35 && !K.haft && Math.random() < 0.45) { K.haft = { tag: holzTagNr() }; zhSpeichern(); haftZeigen(); return ['Die Stadtwache hat ' + kn + ' erwischt – beim Klettern über die Mauer am Kirchhof.', 'Ein Wächter hält ' + kn + ' am Markt fest. Geh hin: zahlen oder für ' + (AUFTRAG.kind.art === 'sohn' ? 'ihn' : 'sie') + ' bürgen. Sonst kommt ' + kn + ' über Nacht in den Turm.']; }
+  var s = KIND_SUENDEN[Math.floor(Math.random() * KIND_SUENDEN.length)], k = Math.min(AUFTRAG.heller, s[1]); AUFTRAG.heller -= k; AUFTRAG.ruf = Math.max(0, (AUFTRAG.ruf || 0) - s[2]); speichern(); zhSpeichern();
+  return [kn + ' ' + s[3] + (k ? ' −' + k + ' Heller.' : '') + (s[2] ? ' Ruf −' + s[2] + '.' : ''), K.wert < 35 ? 'Wenn du dich nicht mehr kümmerst, wird es schlimmer.' : 'Ein Lausbub eben. Aber kümmer dich.']; }
+function kindGuteTat() { var K = kz(), kn = kindName(); K.taten = (K.taten || 0) + 1; zhSpeichern();
+  if (Math.random() < 0.5) { AUFTRAG.ruf = (AUFTRAG.ruf || 0) + 1; speichern(); return [kn + ' hat der alten Witwe das Wasser vom Brunnen getragen, ohne dass es jemand verlangt hat.', 'Am Markt sagen die Leute: „Der Pelzer hat ein gutes Kind.“ Ruf +1.'.replace('Pelzer', (AUFTRAG.nachname || 'Pelzer').charAt(0) + (AUFTRAG.nachname || 'pelzer').slice(1).toLowerCase())]; }
+  AUFTRAG.heller += 2; speichern(); return [kn + ' kommt mit zwei Hellern heim: beim Fischer Netze getragen. „Für Mutter.“']; }
+function kindTagPruefen() {                      // einmal je Spieltag aus zuhauseWeiter: Abnahme, Sünden, gute Taten, die Nacht im Turm
+  if (!AUFTRAG.kind || kindAlter() < 1) return; var K = kz(), heute = holzTagNr();
+  if (heute - (K.tag || heute) >= 3) K.wert = Math.max(0, K.wert - 4);
+  if (K.haft && heute > K.haft.tag) { K.haft = null; K.wert = Math.max(0, K.wert - 10); AUFTRAG.ruf = Math.max(0, (AUFTRAG.ruf || 0) - 2); speichern(); haftZeigen();
+    setTimeout(function () { melden(kindName().toUpperCase() + ' HAT DIE NACHT IM TURM VERBRACHT · RUF −2 · DIE GANZE STADT REDET', 7); }, 2500); zhSpeichern(); return; }
+  if (kindAlter() >= 10 && !K.haft) { var r = Math.random();
+    if (r < Math.max(0, 60 - K.wert) / 600) { var t = kindSuende(); setTimeout(function () { AUFTRAG.rede = { wer: { x: P.x, y: P.y }, name: 'ÄRGER MIT ' + kindName().toUpperCase(), zeilen: t, i: 0 }; }, 2500); }
+    else if (r > 1 - Math.max(0, K.wert - 70) / 700) { var g = kindGuteTat(); setTimeout(function () { melden(g.join(' ').toUpperCase(), 7); }, 2500); } }
+  zhSpeichern(); }
+// Die Wache am Markt mit dem Kind (nur solange K.haft)
+var HAFT = null;
+function haftZeigen() { var K = kz(); if (!K.haft) { if (HAFT) { szene.remove(HAFT.g); HAFT = null; } return; } if (HAFT || !STAND || !window.Gliederpuppe) return;
+  var g = new THREE.Group(), w = Gliederpuppe.bauen({ groesse: 1.82, schema: 'gewand', einfach: true }), k = Gliederpuppe.bauen({ alter: Math.min(16, kindAlter()), schema: 'gewand', einfach: true });
+  if (window.Kleidung) { try { Kleidung.anziehen(w, Kleidung.satz('wache')); } catch (e) {} try { if (Kleidung.kinderkittel) Kleidung.kinderkittel(k); } catch (e) {} }
+  var p = null; for (var rr = 4; rr < 12 && !p; rr += 0.5) for (var a = 0; a < 6.28; a += 0.4) { var x = STAND.x + Math.cos(a) * rr, y = STAND.y + Math.sin(a) * rr; if (frei(x, y) && frei(x + 0.8, y) && !hausInnen(x, y)) { p = [x, y]; break; } }
+  if (!p) p = [STAND.x + 5, STAND.y]; var v = V(p[0], p[1], bodenHoehe(p[0], p[1])), vk = V(p[0] + 0.7, p[1], bodenHoehe(p[0] + 0.7, p[1]));
+  w.gruppe.position.set(v[0], v[1], v[2]); k.gruppe.position.set(vk[0], vk[1], vk[2]); g.add(w.gruppe); g.add(k.gruppe); szene.add(g); HAFT = { g: g, w: w, k: k, x: p[0], y: p[1] }; }
+function haftWeiter(dt) { if (!HAFT) { if (EPOCHE === 1400 && zh().kind && zh().kind.haft) haftZeigen(); return; } HAFT.g.visible = EPOCHE === 1400; var d = Math.hypot(P.x - HAFT.x, P.y - HAFT.y);
+  var bl = Math.atan2(P.x - HAFT.x, P.y - HAFT.y); HAFT.w.gruppe.rotation.y = Math.PI - (d < 10 ? bl : 0); HAFT.k.gruppe.rotation.y = Math.PI - (d < 10 ? bl : 0) + 0.4;
+  if (d < 40) { HAFT.w.bewegen(lehrePoseDa('drohen') && Math.floor(P.t / 4) % 2 ? 'drohen' : 'stehen', Math.min(0.05, dt), 0); HAFT.k.bewegen('stehen', Math.min(0.05, dt), 0); }
+  if (d < 3 && P.t > (AUFTRAG.meldungBis || 0) && !AUFTRAG.rede) melden('RECHTSKLICK: ' + kindName().toUpperCase() + ' AUSLÖSEN (10 HELLER)' + ((AUFTRAG.ruf || 0) >= 5 ? ' · ODER E: BÜRGEN (RUF −2)' : ''), 0.4); }
+function haftHandhaben(buergen) { if (!HAFT || Math.hypot(P.x - HAFT.x, P.y - HAFT.y) > 3) return false; var K = kz(), kn = kindName();
+  if (buergen) { if ((AUFTRAG.ruf || 0) < 5) { melden('DER WÄCHTER: „BÜRGEN? DICH KENNT HIER KEINER GUT GENUG.“', 4); return true; } AUFTRAG.ruf -= 2; }
+  else { if (AUFTRAG.heller < 10) { melden('DER WÄCHTER: „ZEHN HELLER, ODER ' + kn.toUpperCase() + ' SCHLÄFT HEUTE IM TURM.“ · DU HAST ' + AUFTRAG.heller, 4); return true; } AUFTRAG.heller -= 10; muenzTon(); }
+  K.haft = null; K.wert = Math.min(100, K.wert + 3); K.tag = holzTagNr(); zhSpeichern(); speichern(); haftZeigen();
+  AUFTRAG.rede = { wer: { x: P.x, y: P.y }, name: 'DER WÄCHTER', zeilen: [buergen ? '„Gut. Dein Wort gilt. Aber das nächste Mal …“' : '„Zehn Heller. Und pass besser auf ' + (AUFTRAG.kind.art === 'sohn' ? 'deinen Sohn' : 'deine Tochter') + ' auf.“', '(' + kn + ' geht mit gesenktem Kopf neben dir her. Zuhause wartet Imke.)'], i: 0 }; return true; }
+function kindErbe() {                            // beim Generationswechsel: Gelerntes und Ruf gehen auf das Kind über
+  var Z = zh(), K = Z.kind; if (!K) return null; var t = [];
+  var neu = {}; Object.keys(K.fert || {}).forEach(function (id) { if (FERTIGKEIT[id]) neu[id] = K.fert[id]; }); Z.fert = neu; if (Object.keys(neu).length) t.push('Was du beim Vater gelernt hast, kannst du: ' + Object.keys(K.fert).map(function (id) { return FERTIGKEIT[id][0].toLowerCase() + ' (' + fertText(id).toLowerCase() + ')'; }).join(', ') + '.');
+  else t.push('Beim Vater hast du kein Handwerk im Haus gelernt – du fängst bei null an.');
+  if (K.wert >= 70) { AUFTRAG.ruf = Math.max(5, Math.round((AUFTRAG.ruf || 0) * 0.6)) + 2; t.push('Man kennt dich als guten Sohn eines guten Hauses. Ruf ' + AUFTRAG.ruf + '.'); }
+  else if (K.wert < 35) { AUFTRAG.ruf = Math.max(0, Math.round((AUFTRAG.ruf || 0) * 0.3) - 3); t.push('Die Wachen kennen dich noch von früher. „Ach, der ' + (AUFTRAG.nachname || '').charAt(0) + (AUFTRAG.nachname || '').slice(1).toLowerCase() + '-Junge …“ Ruf ' + AUFTRAG.ruf + '.'); }
+  else { AUFTRAG.ruf = Math.round((AUFTRAG.ruf || 0) * 0.5); t.push('Ein Name wie jeder andere – den Ruf musst du dir selbst verdienen. Ruf ' + AUFTRAG.ruf + '.'); }
+  Z.kind = null; Z.ehe = 50; zhSpeichern(); speichern(); return t; }
 // ---- Das nächste Ziel (11.10., Grind: „das Ziel setzt man sich selbst“) – eine Leiter, die zeigt, wofür man arbeitet ----
 // Immer nur EIN Ziel, das nächste nicht erreichte; Fortschritt in Hellern. Die Reihenfolge ist ein Vorschlag, nichts ist Pflicht.
 function naechstesZiel() {                     // [Text, Preis] oder null
@@ -11554,6 +11626,8 @@ var SPRUNG_EREIGNISSE = [
   { id: 'hunger', p: 0.003, wenn: function () { var m = new Date(himmelsZeit()).getMonth(); return !AUFTRAG.lage && (m <= 5 || m >= 9); }, tun: function () { lageStarten('hunger', 40); return ['Hagel hat das Korn verdorben. Das Brot wird teuer, die Bäcker backen weniger.', 'Jetzt zählt, was du selbst fängst, sammelst und eingemacht hast. Der Wirt zahlt für Salzfisch das Doppelte.']; } },
   { id: 'brand', p: 0.004, wenn: function () { return !AUFTRAG.brand && LAENDE_LEBEN && LAENDE_LEBEN.huetten && LAENDE_LEBEN.huetten.length; }, tun: function () { AUFTRAG.brand = { i: Math.floor(Math.random() * LAENDE_LEBEN.huetten.length), von: holzTagNr(), hilfe: 0 }; return ['In der Nacht hat es an der Lände gebrannt – eine Fischerhütte ist bis auf die Balken abgebrannt. Zum Glück ist niemand verletzt.', 'Der Zimmermann baut sie wieder auf. Wer beim Schuttwegräumen hilft, bekommt einen Heller – und es geht schneller.']; } },
   { id: 'opa', p: 0.0012, wenn: function () { var O = AUFTRAG.opa; return O && O.alter + (holzTagNr() - O.tag) / 365 > 62; }, tun: function () { var O = AUFTRAG.opa, kp = KIRCHE ? [KIRCHE[0] + 6 + (AUFTRAG.graeber || []).length * 1.4, KIRCHE[1] - 5] : [P.x, P.y]; (AUFTRAG.graeber = AUFTRAG.graeber || []).push({ x: kp[0], y: kp[1], name: O.name }); AUFTRAG.opa = null; return [(O.name ? 'Der alte ' + O.name : 'Dein Vater, der einst als Fremder in die Stadt kam,') + ' ist in der Nacht friedlich eingeschlafen, auf seiner Bank in der Sonne hatte er noch gelacht.', 'Bei der Stiftskirche steht jetzt ein schlichtes Holzkreuz mit Blumen. Die ganze Gasse ist gekommen.']; } },
+  { id: 'jugend', p: 1, wenn: function () { return AUFTRAG.kind && kindAlter() >= 10 && !kz().haft && Math.random() < Math.max(0, 60 - kz().wert) / 600; }, tun: function () { return kindSuende(); } },   // 15.10. Erziehung
+  { id: 'kindgut', p: 1, weiter: true, wenn: function () { return AUFTRAG.kind && kindAlter() >= 10 && Math.random() < Math.max(0, kz().wert - 70) / 700; }, tun: function () { return kindGuteTat(); } },
   { id: 'jakob', p: 0.02, wenn: function () { return AUFTRAG.schmuggelZahl > 0; }, tun: function () { return ['Jakob, der Einäugige, lässt ausrichten: es gibt wieder etwas zu tragen. Nachts, in der Kneipe.']; } }];
 function sprungMachen(tage) { var T = SPRUNG.tagwerk; SPRUNG.offen = false; if (!T) return; var L = { tage: 0, lohn: 0, essen: 0, vorrat: 0, miete: 0 }, h0 = AUFTRAG.heller, halt = null, notiz = [];
   abblenden(true);
@@ -13922,7 +13996,7 @@ addEventListener('keydown', function (e) { var k = e.key.toLowerCase(); if (STAR
   if (k === 'escape' && PAUSE) pauseWeiter(); else if (k === 'escape' && !document.pointerLockElement && !INVENTAR && performance.now() > PAUSE_RUHE) pauseZeigen(true); if (AUFTRAG.hundWahl && !AUFTRAG.rede) { if (k === 'g') hundWahlTreffen('vergeben'); if (k === 'r') hundWahlTreffen('rache'); } if (k === 'h') himmelEcht(!HIMMEL_ECHT); if (k === 'l') tonAnAus(); if (k === 'k') { STERNBILDER_AN = !STERNBILDER_AN; melden(STERNBILDER_AN ? 'STERNBILDER AN' : 'STERNBILDER AUS', 2); }
   if (k === 'f') { FACKEL.an = !FACKEL.an; melden(FACKEL.an ? 'DU ZÜNDEST DEINE FACKEL AN' : 'FACKEL AUS', 2); }
   if (k === 'j') STADTBUCH = !STADTBUCH; if (k === 'x' && STADTBUCH && STADT) { STADT.unglueck('missernte'); lieferungenRechnen(); stadtSpeichern(); melden('HAGEL! DAS KORN IST VERDORBEN.', 4); }
-  if (k === 'u') zeitmaschine(); if (k === 'v') ANSICHT = ANSICHT === 'ich' ? 'figur' : 'ich'; if (k === ' ' && !e.repeat) { if (!flugTaste() && !FLUG.an) springenJetzt(); } if (k === 'e') { if (!reden() && !strohsack() && !erbHandhaben() && !kammerSchlafen() && !grabHohl() && !kircheSitzen() && !hundAnfassen() && !sammeln() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } if (k === 'b' && BF) zumBergfried('tuer', true); if (k === 'p') { scharf = !scharf; groesse(); try { localStorage.setItem('wzf_scharf', scharf ? '1' : '0'); } catch (e2) {} melden(scharf ? 'SCHARF' : 'PIXEL-LOOK', 1.5); } if (k === 'z') { EPOCHE = EPOCHE === 1400 ? 2026 : 1400; if (window.__mittel) window.__mittel.visible = EPOCHE === 1400; if (window.__heute) window.__heute.visible = EPOCHE !== 1400; if (window.__aussen) window.__aussen.visible = EPOCHE !== 1400; } });
+  if (k === 'u') zeitmaschine(); if (k === 'v') ANSICHT = ANSICHT === 'ich' ? 'figur' : 'ich'; if (k === ' ' && !e.repeat) { if (!flugTaste() && !FLUG.an) springenJetzt(); } if (k === 'e' && haftHandhaben(true)) return; if (k === 'e') { if (!reden() && !strohsack() && !erbHandhaben() && !kammerSchlafen() && !grabHohl() && !kircheSitzen() && !hundAnfassen() && !sammeln() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } if (k === 'b' && BF) zumBergfried('tuer', true); if (k === 'p') { scharf = !scharf; groesse(); try { localStorage.setItem('wzf_scharf', scharf ? '1' : '0'); } catch (e2) {} melden(scharf ? 'SCHARF' : 'PIXEL-LOOK', 1.5); } if (k === 'z') { EPOCHE = EPOCHE === 1400 ? 2026 : 1400; if (window.__mittel) window.__mittel.visible = EPOCHE === 1400; if (window.__heute) window.__heute.visible = EPOCHE !== 1400; if (window.__aussen) window.__aussen.visible = EPOCHE !== 1400; } });
 addEventListener('keyup', function (e) { taste[e.key.toLowerCase()] = false; if (e.key === 'Meta') tastenLoslassen(); });
 // 11.10. (Andreas: „die Steuerung beginnt zu spinnen … als wären Achsen vertauscht“): hängende Tasten. Das Spiel lässt eine Taste erst
 // beim keyup los – der kommt aber nie, wenn das Fenster währenddessen den Fokus verliert (Cmd+Tab, Mitteilung, das Kartenfenster mit O)
@@ -13958,6 +14032,7 @@ function reden() {                             // E: Gespräch beginnen oder wei
   if (wildwerkerReden()) return true;
   if (junkerReden()) return true;
   if (hochzeitReden()) return true;
+  if (kindReden()) return true;   // 15.10. Erziehung
   if (hausstandReden()) return true;
   if (familieReden()) return true;
   var r = AUFTRAG.rede;
@@ -15601,6 +15676,10 @@ function hausstandReden() { var H = HAUSSTAND, k = kammerWelt(); if (!H || !H.g.
   if (kind) z = [['Pst – ' + kn + ' schläft gerade.', 'Bring heute Abend Brot mit, ja?'], [kn + ' hat heute zum ersten Mal gelacht. Über die Katze vom Nachbarn.', 'Jörg war da. Er sagt, ' + kn + ' hat deine Nase.'], ['Wenn ' + kn + ' groß ist, lernt ' + (kind.art === 'sohn' ? 'er' : 'sie') + ' ein Handwerk. Wie du.', 'Geh nur, ich hab hier alles.']][Math.floor(hash(heute() * 1.3 + Math.floor(P.t / 30)) * 3)];
   else z = h >= 21 || h < 6 ? ['Komm ins Bett, es ist spät.'] : [['Schön, dass du da bist, Mann.', 'Die Kammer ist eng, aber sie ist unser.'], ['Ich hab die Wäsche am Main gewaschen. Die Weiber dort reden über dich – nur Gutes, keine Sorge.'], ['(' + fn + ' lächelt.) Ich glaube, wir werden bald zu dritt sein.']][Math.min(2, Math.max(0, heute() - (AUFTRAG.hochzeitTag || heute())))];
   AUFTRAG.rede = { wer: { x: fp.x, y: -fp.z }, name: (AUFTRAG.frau || AUFTRAG.mutter || '') + ' ' + (AUFTRAG.nachname || '') + (AUFTRAG.verheiratet ? ' · DEINE FRAU' : ' · DEINE MUTTER'), zeilen: z, i: 0 }; return true; }
+var kindWeiterOhneSpiel = kindWeiter; kindWeiter = function (dt) { kindWeiterOhneSpiel(dt); var H = HAUSSTAND; if (!H || !H.kindP || !H.kindP.gruppe.visible || !(H.kindSpielBis > P.t)) return;   // 15.10.: beim Spielen rennt das Kind um dich herum
+  var w = P.t * 2.2, kx = P.x + Math.cos(w) * 1.3, ky = P.y + Math.sin(w) * 1.3, v = V(kx, ky, P.z - AUGE); H.kindP.gruppe.position.set(v[0], v[1], v[2]); H.kindP.gruppe.rotation.y = Math.PI - (w + Math.PI / 2);
+  H.kindP.bewegen(lehrePoseDa('fangen') ? 'fangen' : 'rennen', Math.min(0.05, dt), 1.4); };
+var generationWechselOhneErbe = generationWechsel; generationWechsel = function () { var t = AUFTRAG.kind && kindAlter() >= 16 ? kindErbe() : null; generationWechselOhneErbe(); if (t) setTimeout(function () { if (AUFTRAG.rede) AUFTRAG.rede.zeilen = AUFTRAG.rede.zeilen.concat(t); }, 1500); };   // 15.10. Erziehung: das Kind erbt Gelerntes und Ruf
 var hausstandRedenOhneZuhause = hausstandReden; hausstandReden = function () { var r = hausstandRedenOhneZuhause.apply(this, arguments); if (r) zuhauseGespraech(); return r; };   // 15.10. Zuhause: Zuneigung, Abendessen
 function familieReden() {                         // mit einer Tochter vor dem Haus reden – werben, fünf Tage lang
   if (AUFTRAG.rede) return false; var t = FAM_TOECHTER.filter(function (q) { return q.aktiv && Math.hypot(P.x - q.f.platz[0], P.y - q.f.platz[1]) < 2.4; })[0]; if (!t) return false;
@@ -16873,7 +16952,7 @@ function wegNameWeiter() {                       // betritt man einen benannten 
   WEGNAME.auf = auf; }
 function leuteBewegen(dt) {
   try { blWeiter(); } catch (e) { schleifeFehler('bauleiter', e); }
-  tagesablaufWeiter(dt); if (!BURGWEG.gebaut) try { burgwegBauen(); } catch (e) { schleifeFehler('burgweg', e); } try { erbWeiter(); } catch (e) { schleifeFehler('erbhaus', e); } try { winterWeiter(dt); } catch (e) { schleifeFehler('winter', e); } try { if (window.Winter) maineisWeiter(dt); } catch (e) { schleifeFehler('maineis', e); } if (SCHNEEBAELLE.length) try { schneeballWeiter(dt); } catch (e) { schleifeFehler('schneeball', e); } abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); junkerWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); kindWeiter(dt); generationWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); try { reibenWeiter(dt); } catch (e) { schleifeFehler('farben', e); } try { webenWeiter(dt); zuhauseWeiter(); } catch (e) { schleifeFehler('zuhause', e); } steinWeiter(dt); kaiWeiter(dt); treppeWeiter(); gsWeiter(); sprungWeiter(); lageWeiter(); flutWeiter(); ereignisWeiter(dt); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
+  tagesablaufWeiter(dt); if (!BURGWEG.gebaut) try { burgwegBauen(); } catch (e) { schleifeFehler('burgweg', e); } try { erbWeiter(); } catch (e) { schleifeFehler('erbhaus', e); } try { winterWeiter(dt); } catch (e) { schleifeFehler('winter', e); } try { if (window.Winter) maineisWeiter(dt); } catch (e) { schleifeFehler('maineis', e); } if (SCHNEEBAELLE.length) try { schneeballWeiter(dt); } catch (e) { schleifeFehler('schneeball', e); } abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); junkerWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); kindWeiter(dt); generationWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); try { reibenWeiter(dt); } catch (e) { schleifeFehler('farben', e); } try { webenWeiter(dt); zuhauseWeiter(); haftWeiter(dt); } catch (e) { schleifeFehler('zuhause', e); } steinWeiter(dt); kaiWeiter(dt); treppeWeiter(); gsWeiter(); sprungWeiter(); lageWeiter(); flutWeiter(); ereignisWeiter(dt); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
   kamera.updateMatrixWorld(); SICHT.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse); SICHT.kegel.setFromProjectionMatrix(SICHT.m);
   SICHT.takt += dt; var neuPruefen = SICHT.takt > 0.05; if (neuPruefen) SICHT.takt = 0; var tick = Math.floor(P.t * 20);
   SICHT.stat.voll = 0; SICHT.stat.einfach = 0;
@@ -17170,6 +17249,7 @@ function handhaben() {
   if (ereignisHandhaben()) return true;
   if (wirtAnkauf()) return true;
   if (essenKaufen()) return true;
+  if (haftHandhaben(false)) return true;   // 15.10.: das Kind bei der Wache auslösen
   var sc = schatzNah(); if (sc) { sc.weg = true; sc.m.visible = false; inBeutel(sc.d); return true; }
   var vs = versteckNah(); if (vs && (JAGD || AUFTRAG.schmuggel === 1 || !naechsteePerson())) { versteckRein(vs); return true; }
   return reitenHandhaben() || karrenHandhaben() || angelHandhaben() || haselSchneiden() || schmiedHaken() || lehreSchlafen() || leseAbgeben() || kaiAbgeben() || kaiNehmen() || steinAbgeben() || steinNehmen() || kramZurueck() || kramNehmen() || moebelKaufen() || strohsack() || erbHandhaben() || reibsteinRechts() || kammerSchlafen() || grabHohl() || schmiedBeil() || weberHandel() || kircheSitzen() || hundAnfassen() || sammeln() || steinAblegen() || handBenutzen();   // 12.10.: der Karren steht oben (Andreas: „sitzen konnte ich nicht“ – Aufheben/Sammeln kamen ihm zuvor)
@@ -17477,7 +17557,9 @@ function questListe() {
   if (REITEN.pferd && A.einf >= 9 && !REITEN.auf) neben.push(['Ein Pferd', UHR.t < REITEN.bis ? 'Dein Mietpferd wartet – Rechtsklick zum Aufsitzen' : 'Am Gasthof leiht der Stallknecht ein Pferd: 3 Heller bis zum Abend. W Schritt, SHIFT Trab und Galopp']);
   var geh = (A.beutel || []).filter(function (b) { return SPIELER && SPIELER.geheimnisse.some(function (g) { return g.id === b.id; }); }).length; if (geh) neben.push(['Geheimnisse der Stadt', geh + ' gehört']);
   try { var Zq = zh(); if (A.verheiratet && A.frau) neben.push(['Deine Frau ' + A.frau.charAt(0) + A.frau.slice(1).toLowerCase(), 'Zuneigung ' + Zq.ehe + '/100 · ' + eheText(Zq.ehe).toLowerCase() + ' · reden, abends essen, neben ihr schlafen']);
-    var ft = Object.keys(FERTIGKEIT).filter(function (id) { return Zq.fert[id] > 0; }).map(function (id) { return FERTIGKEIT[id][0].charAt(0) + FERTIGKEIT[id][0].slice(1).toLowerCase() + ': ' + fertText(id).toLowerCase(); }); if (ft.length) neben.push(['Fertigkeiten zuhause', ft.join(' · ')]); } catch (e) {}   // 15.10. Zuhause
+    var ft = Object.keys(FERTIGKEIT).filter(function (id) { return Zq.fert[id] > 0; }).map(function (id) { return FERTIGKEIT[id][0].charAt(0) + FERTIGKEIT[id][0].slice(1).toLowerCase() + ': ' + fertText(id).toLowerCase(); }); if (ft.length) neben.push(['Fertigkeiten zuhause', ft.join(' · ')]);
+    if (A.kind && kindAlter() >= 1) { var Kq = kz(), kf = Object.keys(Kq.fert || {}).filter(function (id) { return Kq.fert[id] > 0; }).map(function (id) { return FERTIGKEIT[id][0].toLowerCase() + ' ' + Kq.fert[id]; });
+      neben.push(['Dein Kind ' + kindName(), Kq.haft ? 'Bei der Wache am Markt! Auslösen (10 Heller) oder bürgen – bis morgen früh' : kindWertTextT(Kq.wert).toLowerCase() + ' (' + Kq.wert + '/100) · ' + (kindAlter() < 7 ? 'spiel mit ' + (A.kind.art === 'sohn' ? 'ihm' : 'ihr') + ' (Klick)' : 'red mit ' + (A.kind.art === 'sohn' ? 'ihm' : 'ihr') + ', arbeite zuhause, dann lernt ' + (A.kind.art === 'sohn' ? 'er' : 'sie') + ' mit') + (kf.length ? ' · kann: ' + kf.join(', ') : '')]); } } catch (e) {}   // 15.10. Zuhause + Erziehung
   return { jetzt: j, weg: weg, neben: neben };
 }
 function bauleiterMalen(W, H) {                   // Tastentafel rechts, solange der Bauleiter an ist
@@ -17789,7 +17871,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = 'cfd7f7bd', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = 'f10673e9', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
