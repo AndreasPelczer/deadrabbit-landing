@@ -68,6 +68,7 @@
   .verlauf pre{white-space:pre-wrap;font:inherit;margin:0}
   .zugang{max-width:520px;margin:60px auto;text-align:center}
   .warten{opacity:.6;pointer-events:none}
+  .reihe.unten{position:sticky;bottom:0;z-index:5;background:var(--creme);margin:0;padding:12px 0;border-top:1px solid var(--linie)}
   .weiter{margin-top:26px;text-align:right}
   @font-face{font-family:'Cormorant Garamond';font-weight:600;src:url(schriften/cormorant-600.woff2) format('woff2')}
   @font-face{font-family:'Lato';font-weight:400;src:url(schriften/lato-400.woff2) format('woff2')}
@@ -176,7 +177,7 @@
 <!-- 3 FAKTEN -->
 <section data-seite="fakten" hidden>
   <h2>Das weißt nur du</h2>
-  <p class="hilfe">Diese Angaben brauchen wir für Kontakt und Bestellung. Die grauen Beispiele sind nur Beispiele – bitte trag ein, was bei dir stimmt. Lücken sind kein Problem, dann fragen wir später nach.</p>
+  <p class="hilfe">Diese Angaben brauchen wir für Kontakt und Bestellung. Die grauen Beispiele sind nur Beispiele – bitte trag ein, was bei dir stimmt. Lücken sind kein Problem, dann fragen wir später nach. Der Knopf „Alles speichern“ läuft unten immer mit – einmal drücken speichert die ganze Seite.</p>
   <form id="faktForm">
     <div class="karte">
       <h3>📬 Kontakt auf der Webseite</h3>
@@ -208,7 +209,7 @@
       <h3>💬 Was du uns sonst noch sagen möchtest</h3>
       <textarea name="frei" placeholder="Wünsche, Ideen, Seiten, die dir gefallen …"></textarea>
     </div>
-    <div class="reihe"><button class="knopf voll" type="submit">Speichern</button><span id="faktMeldung"></span></div>
+    <div class="reihe unten"><button class="knopf voll" type="submit">Alles speichern</button><span id="faktMeldung"></span></div>
     <p class="bisher" id="faktBisher"></p>
   </form>
 </section>
@@ -362,17 +363,25 @@ function vorschlaegeZeigen() {
 
 // ---- Fakten ----
 var FAKT_FELDER = ['telefon', 'social', 'region', 'anfahrt', 'lieferzeit', 'frei'];
-document.getElementById('faktForm').addEventListener('submit', function (ev) { ev.preventDefault();
-  var f = ev.target, d = {};
+var FAKT_ENTWURF = 'cuore_fakt_entwurf';
+function faktDaten(f) { var d = {};
   FAKT_FELDER.forEach(function (n) { d[n] = f.elements[n].value.trim(); });
   d.zahlung = [].slice.call(f.querySelectorAll('input[name=zahlung]:checked')).map(function (x) { return x.value; });
-  var ku = f.querySelector('input[name=kleinunternehmer]:checked'); d.kleinunternehmer = ku ? ku.value : '';
-  senden({ bereich: 'fakt', schluessel: 'angaben', inhalt: JSON.stringify(d) }, document.getElementById('faktMeldung'), f.querySelector('button[type=submit]')).catch(function () {}); });
-function faktenVorbelegen() { var v = letzter('fakt', 'angaben'); if (!v) return; try { var d = JSON.parse(v.inhalt), f = document.getElementById('faktForm');
+  var ku = f.querySelector('input[name=kleinunternehmer]:checked'); d.kleinunternehmer = ku ? ku.value : ''; return d; }
+function faktSetzen(d) { var f = document.getElementById('faktForm');
   FAKT_FELDER.forEach(function (n) { if (d[n] != null) f.elements[n].value = d[n]; });
   f.querySelectorAll('input[name=zahlung]').forEach(function (x) { x.checked = (d.zahlung || []).indexOf(x.value) >= 0; });
-  f.querySelectorAll('input[name=kleinunternehmer]').forEach(function (x) { x.checked = x.value === d.kleinunternehmer; });
-  } catch (e) {} faktBisher(); }
+  f.querySelectorAll('input[name=kleinunternehmer]').forEach(function (x) { x.checked = x.value === d.kleinunternehmer; }); }
+/* Getipptes bleibt im Browser liegen, bis es gespeichert ist – so geht nichts verloren */
+document.getElementById('faktForm').addEventListener('input', function (ev) { try { localStorage.setItem(FAKT_ENTWURF, JSON.stringify(faktDaten(ev.currentTarget))); } catch (e) {} });
+document.getElementById('faktForm').addEventListener('submit', function (ev) { ev.preventDefault();
+  var f = ev.target, d = faktDaten(f);
+  senden({ bereich: 'fakt', schluessel: 'angaben', inhalt: JSON.stringify(d) }, document.getElementById('faktMeldung'), f.querySelector('button[type=submit]'))
+    .then(function () { try { localStorage.removeItem(FAKT_ENTWURF); } catch (e) {} }).catch(function () {}); });
+function faktenVorbelegen() { var v = letzter('fakt', 'angaben');
+  if (v) { try { faktSetzen(JSON.parse(v.inhalt)); } catch (e) {} }
+  try { var lokal = localStorage.getItem(FAKT_ENTWURF); if (lokal) { faktSetzen(JSON.parse(lokal)); melde(document.getElementById('faktMeldung'), false, 'Noch nicht gespeichert – bitte „Alles speichern“ drücken'); } } catch (e) {}
+  faktBisher(); }
 function faktBisher() { var v = letzter('fakt', 'angaben'); document.getElementById('faktBisher').textContent = v ? 'Zuletzt gespeichert am ' + datum(v.zeit) + ' · ' + v.status : ''; }
 
 // ---- Bilder ----
