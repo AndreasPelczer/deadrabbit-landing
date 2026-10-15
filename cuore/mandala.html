@@ -39,8 +39,10 @@
   <h1>Mandala con Cuore</h1>
   <p class="leise" id="hinweis">Atme ein. Tauch den Pinsel in einen Farbtopf – und mal einfach drauflos, Feld für Feld oder mit einem Strich über viele.</p>
   <div class="aussen" id="aussen"><div class="buehne"><canvas id="farbe"></canvas><canvas id="linien"></canvas><div id="flaeche" role="img" aria-label="Mandala zum Ausmalen"></div></div></div>
+  <p class="leise" id="paletteName" style="margin:2px 0 0;font-size:14.5px">Farben: Ambiente con Cuore</p>
   <div class="modus" id="modus"><button type="button" data-m="einzeln" aria-pressed="true">✎ einzeln</button><button type="button" data-m="kreis" aria-pressed="false">✿ im Kreis</button></div>
   <div class="knoepfe">
+    <button class="k" type="button" id="palette">🎨 Andere Farben</button>
     <button class="k" type="button" id="neu">✿ Neues Mandala</button>
     <button class="k" type="button" id="leer">Von vorn</button>
     <button class="k voll" type="button" id="speichern">Als Bild speichern</button>
@@ -49,7 +51,13 @@
 
 <script>
 // Mandala als Linienbild + Farbeimer: Linien werden gezeichnet, jede umschlossene Fläche (auch jede Überschneidung) ist ein Feld.
-var FARBEN = ['#F5BC86', '#D1864E', '#BF8B15', '#829761', '#ACB99C', '#F8DCC0', '#A85A2E', '#FFFDF9'];
+var PALETTEN = [
+  { name: 'Ambiente con Cuore', farben: ['#F5BC86', '#D1864E', '#BF8B15', '#829761', '#ACB99C', '#F8DCC0', '#A85A2E', '#FFFDF9'] },
+  { name: 'Abendrot', farben: ['#F7C59F', '#F29E6D', '#E07A5F', '#C8553D', '#9E3B4A', '#E8A0A8', '#F4D6B8', '#FFFDF9'] },
+  { name: 'Mittelmeer', farben: ['#F6E7CB', '#E9C46A', '#8AB6C1', '#4F8FA3', '#2C6E8A', '#D97B5B', '#D8E8E4', '#FFFDF9'] },
+  { name: 'Salbeigarten', farben: ['#E8EDDF', '#C5D3B5', '#A3B88C', '#829761', '#5E7247', '#D9C7A7', '#B5A27A', '#FFFDF9'] }
+];
+var palette = 0, FARBEN = PALETTEN[0].farben;
 var LINIE = '#9C7A3C', GRUND = [255, 253, 249], S = 1200, M = S / 2, RAND = 575;
 var cFarbe = document.getElementById('farbe'), cLinien = document.getElementById('linien'), flaeche = document.getElementById('flaeche');
 cFarbe.width = cFarbe.height = cLinien.width = cLinien.height = S;
@@ -197,10 +205,18 @@ FARBEN.forEach(function (c, i) {
   var b = document.createElement('button'); b.className = 'topf'; b.type = 'button'; b.innerHTML = topfSvg(c);
   b.style.left = (50 + rad * Math.cos(w)) + '%'; b.style.top = (50 + rad * Math.sin(w)) + '%';
   b.setAttribute('aria-label', 'Farbtopf ' + (i + 1)); b.setAttribute('aria-pressed', String(i === 0));
-  b.onclick = function () { farbe = c; flaeche.style.cursor = pinsel(c); toepfe.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); };
+  b.onclick = function () { farbe = FARBEN[i]; flaeche.style.cursor = pinsel(farbe); toepfe.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); };
   toepfe.push(b); aussen.appendChild(b);
 });
 flaeche.style.cursor = pinsel(farbe);
+// Andere Farben: die Töpfe bekommen neue Farben, schon Gemaltes bleibt wie es ist
+document.getElementById('palette').onclick = function () {
+  palette = (palette + 1) % PALETTEN.length; FARBEN = PALETTEN[palette].farben;
+  toepfe.forEach(function (b, i) { b.innerHTML = topfSvg(FARBEN[i]); });
+  var aktiv = Math.max(0, toepfe.findIndex(function (b) { return b.getAttribute('aria-pressed') === 'true'; }));
+  farbe = FARBEN[aktiv]; flaeche.style.cursor = pinsel(farbe);
+  document.getElementById('paletteName').textContent = 'Farben: ' + PALETTEN[palette].name;
+};
 document.querySelectorAll('#modus button').forEach(function (b) { b.onclick = function () { modus = b.getAttribute('data-m'); document.querySelectorAll('#modus button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); }; });
 document.getElementById('neu').onclick = function () { seed = (seed * 7 + 13) % 100000 + 1; bauen(); };
 document.getElementById('leer').onclick = leeren;
