@@ -10986,6 +10986,7 @@ var MOEBEL_KATALOG = {
   teppich: { n: 'Teppich', artikel: 'einen', preis: 14, r: 0.72, lage: 'matte', bau: function () { return Moebel.teppich({ farbe: 0x7a3a2a }); } },   // teuer: im einfachen Haus selten (Codex: KAMMERSCHMUCK.md)
   waschschuessel: { n: 'Waschschüssel', artikel: 'eine', preis: 4, r: 0.32, bau: function () { return Moebel.waschschuessel(); } } };
 // 15.10. Farben: Reibstein (Steinmetz), Rosette (selbst gemalt, kein Händler), Farbstoffe und Eier beim Krämer (gehen nicht in den Beutel). Preise ERFUNDEN.
+MOEBEL_KATALOG.webrahmen = { n: 'Webrahmen', artikel: 'einen', preis: 12, r: 0.5, bau: function () { return webrahmenBau(); } };   // 15.10. Zuhause: Garn → Tuch
 MOEBEL_KATALOG.reibstein = { n: 'Reibstein', artikel: 'einen', preis: 6, r: 0.38, bau: function () { return reibsteinBau(); } };
 MOEBEL_KATALOG.rosette = { n: 'Rosette', artikel: 'eine', preis: 0, r: 0.32, lage: 'wand', hoehe: 1.25, bau: function (st) { return rosetteBau(st); } };
 MOEBEL_KATALOG.f_ei = { n: 'Eier', preis: 1, r: 0.1, farbKauf: 'ei', satz: 'Frische Eier, zwei für einen Heller. Ohne Eigelb hält keine Farbe.' };
@@ -11003,7 +11004,7 @@ function wwBau(n) { var g = new THREE.Group(), w = Werkstattware.ware(n, { saat:
 Object.keys(WW_WARE).forEach(function (n) { var e = WW_WARE[n]; MOEBEL_KATALOG['ww_' + n] = { n: e[0], artikel: e[1], preis: e[2], r: e[3], lage: e[4] === 'boden' ? undefined : 'tisch', ware: n, bau: function () { return wwBau(n); } }; });
 [['SATTLER', 'zaumzeug'], ['SCHMIED', 'beschlag'], ['SCHLOSSER', 'beschlag'], ['MESSERSCHMIED', 'messer'], ['BÖTTCHER', 'eimer'], ['SEILER', 'seil'], ['DRECHSLER', 'schuessel'], ['WAGNER', 'rad'], ['KÜRSCHNER', 'pelzkragen'],
  ['KRÄMER', 'salz'], ['KRÄMER', 'kerzen'], ['KERZENZIEHER', 'kerzen'], ['GLASER', 'butzenscheibe'], ['GLASBLÄSER', 'butzenscheibe'], ['FÄRBER', 'tuch'], ['ZIMMERMANN', 'sparren'], ['STEINMETZ', 'schwelle']].forEach(function (z) { (MOEBEL_VERKAUF[z[0]] = MOEBEL_VERKAUF[z[0]] || []).unshift('ww_' + z[1]); });   // die eigene Ware zuerst
-(MOEBEL_VERKAUF.STEINMETZ = MOEBEL_VERKAUF.STEINMETZ || []).push('reibstein'); MOEBEL_VERKAUF['KRÄMER'] = ['f_ei', 'f_gruenerde', 'f_ocker', 'f_blau'].concat(MOEBEL_VERKAUF['KRÄMER'] || []);   // 15.10. Farben
+(MOEBEL_VERKAUF.STEINMETZ = MOEBEL_VERKAUF.STEINMETZ || []).push('reibstein'); MOEBEL_VERKAUF.ZIMMERMANN.push('webrahmen'); MOEBEL_VERKAUF.DRECHSLER.push('webrahmen'); MOEBEL_VERKAUF['KRÄMER'] = ['f_ei', 'f_gruenerde', 'f_ocker', 'f_blau'].concat(MOEBEL_VERKAUF['KRÄMER'] || []);   // 15.10. Farben
 // Pelzkragen und Pelzmütze (Codex Auftrag 16, kleidung.js) kauft man beim Kürschner zum TRAGEN: sie sitzen über jeder Kleidungsstufe. Preise ERFUNDEN.
 MOEBEL_KATALOG.pelzkragen_tragen = { n: 'Pelzkragen', artikel: 'einen', preis: 25, r: 0.2, ware: 'pelzkragen', tragen: 'pelzkragen', bau: function () { return wwBau('pelzkragen'); } };
 MOEBEL_KATALOG.pelzmuetze_tragen = { n: 'Pelzmütze', artikel: 'eine', preis: 12, r: 0.2, ware: 'pelzkragen', tragen: 'pelzmuetze', bau: function () { return wwBau('pelzkragen'); } };
@@ -11175,18 +11176,19 @@ function spinnTon() { if (!TON.an || !TON.ctx || !TON.haupt) return; var c = TON
   g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45); o.connect(g); g.connect(TON.haupt); o.start(t); o.stop(t + 0.5); }   // das Rad schnurrt
 function spinnWeiter(dt) {
   var e = spinnradNah(); KAMMER_OBJ.forEach(function (q) { if (q.st.a === 'spinnrad') { var rad = q.o.getObjectByName('spinnrad'); if (rad && SPINN.bis > P.t && q === e) rad.rotation.z -= dt * 7; } });
-  if (!e) return;
+  if (!e || arbeitNaechste() !== 'spinnrad') return;
   var halten = maus.links || taste.q;
   if (halten && !AUFTRAG.rede && !INVENTAR && P.t >= SPINN.naechster) {
     if (!(AUFTRAG.wolle > 0)) { melden('KEINE WOLLE MEHR – DIE GIBT ES BEIM WEBER', 2); SPINN.naechster = P.t + 1; return; }
     if (!handIst('wolle')) handSetzen('wolle');
     P.x = e.st.x - Math.sin(e.st.d) * 0.38; P.y = e.st.y + Math.cos(e.st.d) * 0.38; P.bodenZ = undefined; P.blick = Math.PI - e.st.d; SPINN.bis = P.t + 0.6; HOLZ.zeigeBis = P.t + 2; SPINN.naechster = P.t + 0.5; SPINN.dreh++; spinnTon(); fx('fasern', e.st.x, e.st.y, (P.z - AUGE) + 0.75, { boden: P.z - AUGE });   // auf den Schemel hinter dem Rad (Codex: Rad 0,38 m vor der Figur)
-    if (SPINN.dreh >= SPINN_DREHUNGEN) { SPINN.dreh = 0; AUFTRAG.wolle--; AUFTRAG.garn = (AUFTRAG.garn || 0) + 1; tagNotiz('garn', 1); speichern(); melden('EINE SPULE GARN (' + AUFTRAG.garn + ') · DER WEBER ZAHLT ' + GARN_LOHN + ' HELLER', 3); }
+    if (SPINN.dreh >= SPINN_DREHUNGEN) { SPINN.dreh = 0; AUFTRAG.wolle--; AUFTRAG.garn = (AUFTRAG.garn || 0) + 1; tagNotiz('garn', 1); speichern(); fertDazu('spinnen', 1); melden('EINE SPULE GARN (' + AUFTRAG.garn + ') · DER WEBER ZAHLT ' + GARN_LOHN + ' HELLER', 3); }
     else if (P.t > (AUFTRAG.meldungBis || 0) - 0.1) melden('SPINNEN … ' + SPINN.dreh + ' / ' + SPINN_DREHUNGEN + ' · WOLLE ' + AUFTRAG.wolle + ' · GARN ' + (AUFTRAG.garn || 0), 0.6);
   } else if (!halten && P.t > (AUFTRAG.meldungBis || 0)) melden('LINKE MAUS HALTEN (ODER Q): SPINNEN · WOLLE ' + (AUFTRAG.wolle || 0) + ' · GARN ' + (AUFTRAG.garn || 0), 0.4);
 }
 function weberHandel() {                         // Rechtsklick in der Weberei: Garn verkaufen, sonst Wolle kaufen
   if (EPOCHE !== 1400) return false; var b = BERUFSSZENEN.filter(function (q) { return q.art === 'weber'; })[0]; if (!b || Math.hypot(P.x - b.x, P.y - b.y) > 3.2) return false;
+  if (tuchVerkaufen()) return true;   // 15.10.: selbst gewebte Tücher
   var heute = holzTagNr(); if (AUFTRAG.garnTag !== heute) { AUFTRAG.garnTag = heute; AUFTRAG.garnHeute = 0; }
   if (!AUFTRAG.angel && AUFTRAG.rute && !(AUFTRAG.garn > 0)) { if (AUFTRAG.heller < 1) { melden('DER WEBER: „EIN REST GARN FÜR DIE ANGEL? EIN HELLER.“', 4); return true; }   // 12.10.: Spinnen braucht Kammer + Spinnrad – für die Angel reicht ein Rest
     AUFTRAG.heller -= 1; AUFTRAG.garn = 1; speichern(); melden('DER WEBER GIBT DIR EINEN REST GARN · −1 HELLER · DAS REICHT FÜR EINE SCHNUR', 4); return true; }
@@ -11218,6 +11220,7 @@ function farbSpeichern() { try { localStorage.setItem(SPEICHER + '_farben', JSON
 function farbIkonen() { Object.keys(PIGMENTE).forEach(function (id) { var c = PIGMENTE[id][1];
   IKON['roh_' + id] = { p: { k: '#3a2410', f: c, h: 'rgba(255,255,255,.35)' }, m: ['............', '............', '............', '.....kk.....', '...kkffkk...', '..kfhffffk..', '.kffffffffk.', '.kfffffhffk.', '..kffffffk..', '...kkkkkk...', '............', '............'] };
   IKON['topf_' + id] = { p: { k: '#3a2410', t: '#8a6a44', d: '#6b4e30', f: c }, m: ['............', '............', '..kkkkkkkk..', '.kffffffffk.', '.kffffffffk.', '..kttttttk..', '..kttttttk..', '..kddddddk..', '..kttttttk..', '...kkkkkk...', '............', '............'] }; });
+  IKON.tuch = { p: { k: '#4a2014', r: '#8a3a2a', h: '#b8604a', w: '#e8dcc0' }, m: ['............', '..kkkkkkkk..', '..krhrhrhk..', '..khrhrhrk..', '..krhrhrhk..', '..khrhrhrk..', '..krhrhrhk..', '..khrhrhrk..', '..kkkkkkkk..', '..w.w.w.w...', '............', '............'] };
   IKON.ei = { p: { k: '#8a7a5a', w: '#f6efe0', h: '#ffffff' }, m: ['............', '.....kk.....', '....kwwk....', '...kwhwwk...', '...kwhwwk...', '..kwwwwwwk..', '..kwwwwwwk..', '..kwwwwwwk..', '...kwwwwk...', '....kkkk....', '............', '............'] };
   IKON.rosette = { p: { k: '#4a2e16', r: '#a0442c', o: '#c8962e', g: '#7a8a5a', w: '#f2eee4' }, m: ['............', '....kkkk....', '..kkrwwrkk..', '.krowwwwork.', '.kwwgoogwwk.', 'krwgowwogwrk', 'krwgowwogwrk', '.kwwgoogwwk.', '.krowwwwork.', '..kkrwwrkk..', '....kkkk....', '............'] };
   IKON.reibstein = { p: { k: '#3a2410', s: '#9a7a6a', h: '#c0a090', b: '#7a4a24' }, m: ['............', '............', '.....kk.....', '....khhk....', '.kkkkkkkkkk.', '.ksssssssssk', '.kkkkkkkkkk.', '..kbbbbbbk..', '..kbbbbbbk..', '..kkkkkkkk..', '............', '............'] }; }
@@ -11237,7 +11240,7 @@ function reibTon() { if (!TON.an || !TON.ctx || !TON.haupt) return; var c = TON.
 function reibenWeiter(dt) {
   var e = reibsteinNah(); KAMMER_OBJ.forEach(function (q) { if (q.st.a !== 'reibstein') return; var l = q.o.getObjectByName('laeufer'); if (l) { var an = REIB.bis > P.t && q === e; l.position.x = an ? Math.sin(P.t * 9) * 0.07 : 0; l.position.z = an ? Math.cos(P.t * 9) * 0.05 : 0; }
     var hf = q.o.getObjectByName('haeufchen'); if (hf) { var w = reibWas(); hf.visible = !!w; if (w) hf.material.color.set(PIGMENTE[w][1]); } });
-  if (!e || MALBRETT || EIN.an) return; var F = farb(), halten = maus.links || taste.q;
+  if (!e || MALBRETT || EIN.an || arbeitNaechste() !== 'reibstein') return; var F = farb(), halten = maus.links || taste.q;
   if (halten && !AUFTRAG.rede && !INVENTAR && P.t >= REIB.naechster) {
     var id = reibWas(); REIB.naechster = P.t + 0.45;
     if (!id) { melden('KEIN FARBSTOFF · RÖTEL UND KALK GIBT ES BEI MEISTER HANS, OCKER BEI MARTIN, GRÜNERDE UND BLAU BEIM KRÄMER', 3); REIB.naechster = P.t + 1.5; return; }
@@ -11266,7 +11269,7 @@ addEventListener('message', function (ev) {
   else if (d.wzf === 'rosette' && /^data:image\/jpeg;base64,/.test(d.bild || '')) {
     var id = 'r' + Date.now(); try { localStorage.setItem(SPEICHER + '_rosette_' + id, d.bild); } catch (e) { malbrettZu('KEIN PLATZ MEHR IM SPEICHER'); return; }
     Object.keys(d.toepfe || {}).forEach(function (k) { if (F.toepfe[k]) F.toepfe[k] = Math.max(0, F.toepfe[k] - d.toepfe[k]); });
-    F.rosetten.push(id); F.gemalt = (F.gemalt || 0) + 1; farbSpeichern(); KINHALT.beutel.push('rosette'); kinhaltSpeichern(); tagNotiz('rosette', 1);
+    F.rosetten.push(id); F.gemalt = (F.gemalt || 0) + 1; farbSpeichern(); KINHALT.beutel.push('rosette'); kinhaltSpeichern(); tagNotiz('rosette', 1); fertDazu('malen', 1);
     malbrettZu('DEINE ROSETTE IST FERTIG (' + d.felder + ' FELDER) · RECHTSKLICK: AN DIE WAND HÄNGEN');
   }
 });
@@ -11287,9 +11290,75 @@ function reibsteinBau() {                        // Holzklotz, Steinplatte, Läu
 function farbGegenstaende(l) {                   // für die Tasche
   var F = farb(); farbIkonen();
   Object.keys(PIGMENTE).forEach(function (id) { if (F.roh[id] > 0) l.push({ ikon: 'roh_' + id, n: F.roh[id], name: PIGMENTE[id][0], text: PIGMENTE[id][2] + ' Klick: als Nächstes reiben.', tun: function () { F.wahl = id; farbSpeichern(); melden(PIGMENTE[id][0].toUpperCase() + ' LIEGT BEREIT AM REIBSTEIN', 2); } }); });
+  var ZT = zh(); if (ZT.tuch > 0) l.push({ ikon: 'tuch', n: ZT.tuch, name: 'Tuch', text: 'Selbst gewebt. Der Weber zahlt ' + TUCH_LOHN + ' Heller. Klick: einen Wandbehang daraus machen (für die Kammer).', tun: function () { ZT.tuch--; zhSpeichern(); KINHALT.beutel.push('wandbehang'); kinhaltSpeichern(); melden('EIN WANDBEHANG FÜR DIE KAMMER · TASTE R ZUM AUFHÄNGEN', 3); } });
   if (F.eier > 0) l.push({ ikon: 'ei', n: F.eier, name: 'Eier', text: 'Vom Krämer. Das Eigelb bindet die Farbe – ein Ei je Töpfchen.' });
   Object.keys(PIGMENTE).forEach(function (id) { if (F.toepfe[id] > 0) l.push({ ikon: 'topf_' + id, n: F.toepfe[id], name: PIGMENTE[id][0] + ' (Töpfchen)', text: 'Fertig gerieben. Reicht für ' + FARB_JE_TOPF + ' Felder. Rechtsklick am Reibstein: malen.' }); });
 }
+// ---- Zuhause (15.10., Andreas: „eine Sozialkontaktsache zuhause … mit der Frau reden, malen, weben, schlafen gehen, essen kochen … und man kann ein
+// besserer Ehemann werden, die Frau erzählt keinen Schitt über einen … jedes Mal, wenn man malt oder webt, steigen die Balken … und man kann dort Meister werden“) ----
+// ZUNEIGUNG (0–100) zur Frau: einmal am Tag reden +6 (abends 18–22 Uhr +10), abends mit Essen in der Tasche kocht sie, ihr esst zusammen (+5, satt),
+// neben ihr schlafen +3. Wer zwei Tage und länger nicht heimkommt, verliert 5 je Tag. Unter 25 redet sie am Brunnen über dich (Ruf −1, höchstens alle 3 Tage),
+// ab 80 lobt sie dich (Ruf +1, höchstens alle 7 Tage). FERTIGKEITEN Malen (Rosetten), Spinnen (Spulen), Weben (Tücher am eigenen Webrahmen):
+// Anfänger → Lehrling → Geselle → Meister, jeder Schritt mit Balken; Meister bringt Ruf. Zahlen, Stufen-Schwellen: ERFUNDEN (Spieltempo).
+var STUFEN = ['ANFÄNGER', 'LEHRLING', 'GESELLE', 'MEISTER'], FERTIGKEIT = { malen: ['MALEN', 'Rosette', [0, 3, 8, 15]], spinnen: ['SPINNEN', 'Spule', [0, 10, 30, 60]], weben: ['WEBEN', 'Tuch', [0, 3, 8, 15]] };
+var ZH = null, FERT_ZEIGEN = { id: null, bis: 0 }, WEB = { schuss: 0, naechster: 0, bis: 0 }, WEB_SCHUESSE = 16, WEB_GARN = 3, TUCH_LOHN = 8;
+function zh() { if (ZH) return ZH; ZH = null; if (!/[?&]auftrag=neu/.test(Q)) try { ZH = JSON.parse(localStorage.getItem(SPEICHER + '_zuhause') || 'null'); } catch (e) {}
+  if (!ZH) ZH = { ehe: AUFTRAG.verheiratet ? 60 : 50, redeTag: holzTagNr(), tag: holzTagNr(), fert: {}, tuch: 0 }; ZH.fert = ZH.fert || {}; return ZH; }
+function zhSpeichern() { try { localStorage.setItem(SPEICHER + '_zuhause', JSON.stringify(zh())); } catch (e) {} }
+function fertStufe(id) { var n = zh().fert[id] || 0, s = FERTIGKEIT[id][2], st = 0; for (var i = 0; i < s.length; i++) if (n >= s[i]) st = i; return st; }
+function fertText(id) { var n = zh().fert[id] || 0, st = fertStufe(id), s = FERTIGKEIT[id][2]; return STUFEN[st] + (st < 3 ? ' (' + n + '/' + s[st + 1] + ')' : ' (' + n + ')'); }
+function fertDazu(id, n) { var Z = zh(), vor = fertStufe(id); Z.fert[id] = (Z.fert[id] || 0) + (n || 1); var nach = fertStufe(id); zhSpeichern(); FERT_ZEIGEN = { id: id, bis: P.t + 5 };
+  if (nach > vor) { AUFTRAG.ruf = (AUFTRAG.ruf || 0) + (nach === 3 ? 2 : 0); speichern(); muenzTon && muenzTon();
+    setTimeout(function () { melden(FERTIGKEIT[id][0] + ': ' + (nach === 3 ? 'DU BIST MEISTER! DIE LEUTE SPRECHEN DAVON · RUF +2' : 'JETZT ' + STUFEN[nach]), 6); }, 2500); } }
+function zuhauseDa() { return EPOCHE === 1400 && AUFTRAG.verheiratet && AUFTRAG.frau && HAUSSTAND && HAUSSTAND.g.visible && P.drinnen === kammerWelt(); }
+function eheText(e) { return e >= 80 ? 'SIE LIEBT DICH' : e >= 60 ? 'ZUFRIEDEN' : e >= 40 ? 'GEHT SO' : e >= 25 ? 'VERSTIMMT' : 'SIE IST ENTTÄUSCHT'; }
+function zuhauseGespraech() {                   // nach jedem Gespräch mit der Frau (hausstandReden): Zuneigung, Abendessen
+  if (!AUFTRAG.verheiratet || !AUFTRAG.rede) return; var Z = zh(), heute = holzTagNr(), h = stunde(), abend = h >= 18 && h < 22, fn = hausstandName(), z = AUFTRAG.rede.zeilen.slice(), plus = 0;
+  if (Z.ehe < 25) z.unshift('Wo warst du die ganze Zeit? Ich sitze hier allein mit allem. Die Leute fragen schon.');
+  if (Z.redeTag !== heute) { Z.redeTag = heute; plus += abend ? 10 : 6; }
+  if (abend && Z.essenTag !== heute) { var gut = ['fleisch', 'fisch', 'belegt', 'salzfisch', 'sauerkraut', 'brot', 'kohl', 'aepfel'].filter(function (g) { return AUFTRAG[g] > 0; })[0];
+    if (gut) { Z.essenTag = heute; AUFTRAG[gut]--; if (SPIELER) AUFTRAG.hunger = Math.max(0, AUFTRAG.hunger - 30); plus += 5; var nm = gut === 'kohl' ? 'Kohl' : SPIELER && SPIELER.essen[gut] ? SPIELER.essen[gut].name : gut;
+      z.push('(' + fn + ' kocht, was du mitgebracht hast – ' + nm + '. Ihr esst zusammen am Tisch, das Kind schläft.)', ['Das war gut. So soll ein Abend sein.', 'Erzähl mir von deinem Tag.', 'Weißt du noch, unsere Hochzeit? Die Spielleute?'][heute % 3]); speichern(); }
+    else z.push('Hast du nichts zu essen mitgebracht? Dann gibt es eben Brei. Morgen bringst du was mit, ja?'); }
+  Z.ehe = Math.max(0, Math.min(100, Z.ehe + plus)); zhSpeichern();
+  if (Z.ehe >= 80 && plus) z.push(['Ich bin froh, dass ich dich hab.', '(' + fn + ' lehnt sich an deine Schulter.)'][heute % 2]);
+  AUFTRAG.rede.zeilen = z; if (plus) setTimeout(function () { melden(AUFTRAG.frau + ' · ZUNEIGUNG ' + Z.ehe + ' (+' + plus + ') · ' + eheText(Z.ehe), 4); }, 400); }
+function zuhauseSchlafen() { if (!AUFTRAG.verheiratet || !AUFTRAG.frau || !HAUSSTAND) return ''; var Z = zh(); Z.ehe = Math.min(100, Z.ehe + 3); zhSpeichern(); return ' · ' + hausstandName().toUpperCase() + ' SCHLÄFT NEBEN DIR'; }
+function zuhauseWeiter() {                       // einmal je neuem Spieltag: Abwesenheit, Klatsch und Lob am Brunnen
+  if (EPOCHE !== 1400 || !AUFTRAG.verheiratet || !AUFTRAG.frau) return; var Z = zh(), heute = holzTagNr(); if (Z.tag === heute) return; Z.tag = heute;
+  if (heute - (Z.redeTag || heute) >= 2) Z.ehe = Math.max(0, Z.ehe - 5);
+  if (Z.ehe < 25 && heute - (Z.klatschTag || -99) >= 3) { Z.klatschTag = heute; AUFTRAG.ruf = Math.max(0, (AUFTRAG.ruf || 0) - 1); speichern(); setTimeout(function () { melden('AM BRUNNEN ERZÄHLT ' + AUFTRAG.frau + ', DASS DU NIE ZUHAUSE BIST · RUF −1 · GEH HEIM UND REDE MIT IHR', 7); }, 3000); }
+  else if (Z.ehe >= 80 && heute - (Z.lobTag || -99) >= 7) { Z.lobTag = heute; AUFTRAG.ruf = (AUFTRAG.ruf || 0) + 1; speichern(); setTimeout(function () { melden('AM BRUNNEN LOBT ' + AUFTRAG.frau + ' IHREN MANN · RUF +1', 6); }, 3000); }
+  zhSpeichern(); }
+function balken(x, y, w, anteil, farbe) { hud.fillStyle = 'rgba(0,0,0,.55)'; hud.fillRect(x, y, w, 5); hud.fillStyle = farbe; hud.fillRect(x + 1, y + 1, Math.round((w - 2) * Math.max(0, Math.min(1, anteil))), 3); }
+function zuhauseMalen(W, H) {                    // links unter Auftrag/Ziel: Zuneigung zuhause, Fortschritt beim Arbeiten
+  var y = 96, Z = zh();   /* unter der Meldungszeile, links */
+  if (zuhauseDa()) { text(AUFTRAG.frau + ' ♥ ' + eheText(Z.ehe), 6, y, 8, '#ffb0b0', 'left'); balken(6, y + 3, 110, Z.ehe / 100, '#e0607a'); y += 16; }
+  if (FERT_ZEIGEN.id && FERT_ZEIGEN.bis > P.t) { var id = FERT_ZEIGEN.id, n = Z.fert[id] || 0, st = fertStufe(id), s = FERTIGKEIT[id][2], a = st < 3 ? (n - s[st]) / (s[st + 1] - s[st]) : 1;
+    text(FERTIGKEIT[id][0] + ' · ' + fertText(id), 6, y, 8, '#ffe9a8', 'left'); balken(6, y + 3, 110, a, '#ffd040'); } }
+// Webrahmen (Möbel, beim Zimmermann oder Drechsler): Garn → Tuch. Linke Maus halten am Rahmen, 16 Schüsse und 3 Spulen Garn = 1 Tuch.
+// Der Weber kauft Tücher (8 Heller), oder man macht in der Tasche einen Wandbehang draus. Kleine Webrahmen im Haus: BELEGT (Bandweben, Brettchen); Zahlen ERFUNDEN.
+function webrahmenBau() { var g = new THREE.Group(), holz = new THREE.MeshLambertMaterial({ color: 0x6b4426 }), faden = new THREE.MeshLambertMaterial({ color: 0xe8dcc0 });
+  [-0.42, 0.42].forEach(function (x) { var p = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.3, 0.06), holz); p.position.set(x, 0.65, 0); g.add(p); var f = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.5), holz); f.position.set(x, 0.03, 0); g.add(f); });
+  [0.35, 1.2].forEach(function (y) { var b = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.06, 0.06), holz); b.position.set(0, y, 0); g.add(b); });
+  for (var i = 0; i < 15; i++) { var k = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.85, 0.008), faden); k.position.set(-0.35 + i * 0.05, 0.775, 0); g.add(k); }
+  var gw = new THREE.Mesh(new THREE.BoxGeometry(0.76, 1, 0.02), new THREE.MeshLambertMaterial({ color: 0x8a3a2a })); gw.name = 'gewebe'; gw.scale.y = 0.05; gw.position.set(0, 0.38, 0); g.add(gw); return g; }
+function arbeitNaechste() {                     // 15.10.: stehen Spinnrad, Webrahmen und Reibstein nah beieinander, arbeitet nur das nächste
+  var best = null, bd = 9; [['spinnrad', spinnradNah()], ['webrahmen', webNahRoh()], ['reibstein', reibsteinNah()]].forEach(function (q) { if (!q[1]) return; var d = Math.hypot(q[1].st.x - P.x, q[1].st.y - P.y); if (d < bd) { bd = d; best = q[0]; } }); return best; }
+function webNahRoh() { if (EPOCHE !== 1400 || !kammerGemietet() || P.drinnen !== kammerWelt() || EIN.an) return null; var b = null, bd = 1.5; KAMMER_OBJ.forEach(function (e) { if (e.st.a !== 'webrahmen') return; var d = Math.hypot(e.st.x - P.x, e.st.y - P.y); if (d < bd) { bd = d; b = e; } }); return b; }
+function webNah() { return webNahRoh(); }
+function webenWeiter(dt) {
+  var e = webNah(); if (e && arbeitNaechste() !== 'webrahmen') e = null; KAMMER_OBJ.forEach(function (q) { if (q.st.a !== 'webrahmen') return; var gw = q.o.getObjectByName('gewebe'); if (gw) { gw.scale.y = 0.05 + 0.75 * (q === e ? WEB.schuss / WEB_SCHUESSE : 0); gw.position.y = 0.36 + gw.scale.y * 0.5; } });
+  if (!e || MALBRETT) return; var halten = maus.links || taste.q;
+  if (halten && !AUFTRAG.rede && !INVENTAR && P.t >= WEB.naechster) { WEB.naechster = P.t + 0.5;
+    if (WEB.schuss === 0 && (AUFTRAG.garn || 0) < WEB_GARN) { melden('FÜR EIN TUCH BRAUCHST DU ' + WEB_GARN + ' SPULEN GARN · DU HAST ' + (AUFTRAG.garn || 0) + ' · SPINNEN ODER BEIM WEBER', 3); WEB.naechster = P.t + 1.5; return; }
+    P.blick = Math.atan2(e.st.x - P.x, e.st.y - P.y); WEB.bis = P.t + 0.6; HOLZ.zeigeBis = P.t + 2; WEB.schuss++; if (TON.an && TON.ctx) spinnTon(); FERT_ZEIGEN = { id: 'weben', bis: P.t + 3 };
+    if (WEB.schuss >= WEB_SCHUESSE) { WEB.schuss = 0; AUFTRAG.garn -= WEB_GARN; var Z = zh(); Z.tuch = (Z.tuch || 0) + 1; zhSpeichern(); speichern(); tagNotiz('tuch', 1); fertDazu('weben', 1);
+      melden('EIN TUCH IST FERTIG (' + Z.tuch + ') · DER WEBER ZAHLT ' + TUCH_LOHN + ' HELLER · ODER IN DER TASCHE: WANDBEHANG DRAUS MACHEN', 5); }
+    else if (P.t > (AUFTRAG.meldungBis || 0) - 0.1) melden('WEBEN … ' + WEB.schuss + ' / ' + WEB_SCHUESSE + ' · GARN ' + (AUFTRAG.garn || 0), 0.6);
+  } else if (!halten && P.t > (AUFTRAG.meldungBis || 0)) melden('LINKE MAUS HALTEN (ODER Q): WEBEN · ' + WEB_GARN + ' GARN JE TUCH · DU HAST ' + (AUFTRAG.garn || 0), 0.4); }
+function tuchVerkaufen() { var Z = zh(); if (!(Z.tuch > 0)) return false; var n = Z.tuch; Z.tuch = 0; zhSpeichern(); AUFTRAG.heller += n * TUCH_LOHN; tagNotiz('heller', n * TUCH_LOHN); speichern(); muenzTon();
+  melden('DER WEBER BEFÜHLT DEIN TUCH · „SAUBER GESCHLAGEN.“ · ' + n + ' TUCH · +' + n * TUCH_LOHN + ' HELLER', 5); return true; }
 // ---- Das nächste Ziel (11.10., Grind: „das Ziel setzt man sich selbst“) – eine Leiter, die zeigt, wofür man arbeitet ----
 // Immer nur EIN Ziel, das nächste nicht erreichte; Fortschritt in Hellern. Die Reihenfolge ist ein Vorschlag, nichts ist Pflicht.
 function naechstesZiel() {                     // [Text, Preis] oder null
@@ -12203,7 +12272,7 @@ if (/[?&]probe=1/.test(location.search) && /[?&]meister=1/.test(location.search)
   AUFTRAG.einf = 9; AUFTRAG.kleid = Math.max(AUFTRAG.kleid || 0, 3); AUFTRAG.lehre = 3; AUFTRAG.lehrePaare = Math.max(AUFTRAG.lehrePaare || 0, 24); AUFTRAG.buergerrecht = 1; AUFTRAG.ladenVorrat = 6; AUFTRAG.heller = Math.max(AUFTRAG.heller || 0, 30); AUFTRAG.meisterTest = true; }
 (function () { var neu = /[?&]auftrag=neu/.test(Q), da = null; try { da = localStorage.getItem(SPEICHER); } catch (e) {}
   if (neu || !da) AUFTRAG.einf = 1; else if (!AUFTRAG.einf) AUFTRAG.einf = 9;
-  if (neu) try { ['_kammer', '_kammerinhalt', '_gang', '_gruft', '_hund', '_erbhaus', '_farben'].forEach(function (k) { localStorage.removeItem(SPEICHER + k); }); Object.keys(localStorage).forEach(function (k) { if (k.indexOf(SPEICHER + '_rosette_') === 0) localStorage.removeItem(k); }); } catch (e) {}   // ein neues Leben: keine alte Kammer, kein bekanntes Geheimnis
+  if (neu) try { ['_kammer', '_kammerinhalt', '_gang', '_gruft', '_hund', '_erbhaus', '_farben', '_zuhause'].forEach(function (k) { localStorage.removeItem(SPEICHER + k); }); Object.keys(localStorage).forEach(function (k) { if (k.indexOf(SPEICHER + '_rosette_') === 0) localStorage.removeItem(k); }); } catch (e) {}   // ein neues Leben: keine alte Kammer, kein bekanntes Geheimnis
   if (neu && history.replaceState) history.replaceState(null, '', location.pathname + location.search.replace(/[?&]auftrag=neu/, '').replace(/^&/, '?') + location.hash); })();   // ein Neuladen fängt nicht nochmal von vorn an
 function speichern() { try { var o = ({ stufe: AUFTRAG.stufe, einf: AUFTRAG.einf || 0, joergRunde: AUFTRAG.joergRunde || 0, onkelLehrTipp: AUFTRAG.onkelLehrTipp || 0, imke: AUFTRAG.imke || 0, imkeTag: AUFTRAG.imkeTag || 0, tammo: AUFTRAG.tammo || 0, verheiratet: AUFTRAG.verheiratet || 0, nachname: AUFTRAG.nachname || '', frau: AUFTRAG.frau || '', werben: AUFTRAG.werben || {}, kramWeg: AUFTRAG.kramWeg || {}, dieb: AUFTRAG.dieb || 0, pelzkragen: AUFTRAG.pelzkragen || 0, pelzmuetze: AUFTRAG.pelzmuetze || 0, hochzeitTag: AUFTRAG.hochzeitTag || 0, hochzeitPlan: AUFTRAG.hochzeitPlan || null, kind: AUFTRAG.kind || null, kindGemeldet: AUFTRAG.kindGemeldet || 0, lehre: AUFTRAG.lehre || 0, buergerrecht: AUFTRAG.buergerrecht || 0, ladenVorrat: AUFTRAG.ladenVorrat || 0, ladenLetzt: AUFTRAG.ladenLetzt || 0, ladenVerkauft: AUFTRAG.ladenVerkauft || 0, lehrePaare: AUFTRAG.lehrePaare || 0, lehreGang: AUFTRAG.lehreGang || 0, lehreSchlaege: AUFTRAG.lehreSchlaege || 0, lehreTag: AUFTRAG.lehreTag || 0, lehreHeute: AUFTRAG.lehreHeute || 0, lehreStueck: AUFTRAG.lehreStueck || 0, scheite: AUFTRAG.scheite || 0, beil: AUFTRAG.beil || 0, holzErklaert: AUFTRAG.holzErklaert || 0, wolle: AUFTRAG.wolle || 0, garn: AUFTRAG.garn || 0, garnHeute: AUFTRAG.garnHeute || 0, garnTag: AUFTRAG.garnTag || 0, steineGesamt: AUFTRAG.steineGesamt || 0, steineHeute: AUFTRAG.steineHeute || 0, steineTag: AUFTRAG.steineTag || 0, steinRest: AUFTRAG.steinRest || 0, karren: AUFTRAG.karren || 0, leseHeute: AUFTRAG.leseHeute || 0, leseTag: AUFTRAG.leseTag || 0, holzHeute: AUFTRAG.holzHeute || 0, holzTag: AUFTRAG.holzTag || 0, heller: AUFTRAG.heller, aepfel: AUFTRAG.aepfel, brot: AUFTRAG.brot, fleisch: AUFTRAG.fleisch, wein: AUFTRAG.wein, messer: AUFTRAG.messer, kleid: AUFTRAG.kleid, hunger: Math.round(AUFTRAG.hunger), beutel: AUFTRAG.beutel, garderobe: AUFTRAG.garderobe, zehnt: AUFTRAG.zehnt || 0, zehntFahrten: AUFTRAG.zehntFahrten || 0, amt: AUFTRAG.amt || 0, tour: AUFTRAG.tour || {}, ruf: AUFTRAG.ruf || 0, schmuggel: AUFTRAG.schmuggel || 0, schmuggelTag: AUFTRAG.schmuggelTag || 0, schmuggelZahl: AUFTRAG.schmuggelZahl || 0, brief: AUFTRAG.brief || 0, briefTag: AUFTRAG.briefTag || 0, briefZahl: AUFTRAG.briefZahl || 0 });
   Object.keys(AUFTRAG).forEach(function (k) { if (k in o || spielstandFluechtig(k)) return; var w = AUFTRAG[k]; if (w === undefined || typeof w === 'function') return; if (w && typeof w === 'object') { try { JSON.stringify(w); } catch (e) { return; } } o[k] = w; });   // auch Felder, die (noch) in keiner Liste stehen
@@ -14697,7 +14766,7 @@ function kammerSchlafen() {                      // E am Bett der Kammer: mieten
     melden('DEINE KAMMER · NOCH ' + Math.floor(rest) + ' TAGE GEMIETET · SCHLAFEN KANNST DU AB DEM ABEND', 3); return true; }
   var bis = (hh >= 19 ? 24 - hh : 0) + 6 - (hh >= 19 ? 0 : hh); abblenden(true);
   var echtesBett = KAMMER && KAMMER.bett && KAMMER.bett !== KAMMER.strohsack || (KAMMER && KAMMER.zweck !== 'kammer');
-  setTimeout(function () { UHR.t += bis * 3600e3; HUNGERUHR = UHR.t; if (SPIELER) AUFTRAG.hunger = Math.min(100, AUFTRAG.hunger + (echtesBett ? 6 : 10)); AUSDAUER = 100; speichern(); abblenden(false); melden(echtesBett ? 'AUSGESCHLAFEN IN DEINEM EIGENEN BETT · SO WEICH WAR ES NOCH NIE' : 'AUSGESCHLAFEN IN DEINER KAMMER · DER STROHSACK PIEKST · EIN BETT WÄRE SCHÖN', 5); tagesbilanz(); }, 1300);
+  setTimeout(function () { UHR.t += bis * 3600e3; HUNGERUHR = UHR.t; if (SPIELER) AUFTRAG.hunger = Math.min(100, AUFTRAG.hunger + (echtesBett ? 6 : 10)); AUSDAUER = 100; speichern(); abblenden(false); melden((echtesBett ? 'AUSGESCHLAFEN IN DEINEM EIGENEN BETT · SO WEICH WAR ES NOCH NIE' : 'AUSGESCHLAFEN IN DEINER KAMMER · DER STROHSACK PIEKST · EIN BETT WÄRE SCHÖN') + zuhauseSchlafen(), 5); tagesbilanz(); }, 1300);
   return true;
 }
 
@@ -15532,6 +15601,7 @@ function hausstandReden() { var H = HAUSSTAND, k = kammerWelt(); if (!H || !H.g.
   if (kind) z = [['Pst – ' + kn + ' schläft gerade.', 'Bring heute Abend Brot mit, ja?'], [kn + ' hat heute zum ersten Mal gelacht. Über die Katze vom Nachbarn.', 'Jörg war da. Er sagt, ' + kn + ' hat deine Nase.'], ['Wenn ' + kn + ' groß ist, lernt ' + (kind.art === 'sohn' ? 'er' : 'sie') + ' ein Handwerk. Wie du.', 'Geh nur, ich hab hier alles.']][Math.floor(hash(heute() * 1.3 + Math.floor(P.t / 30)) * 3)];
   else z = h >= 21 || h < 6 ? ['Komm ins Bett, es ist spät.'] : [['Schön, dass du da bist, Mann.', 'Die Kammer ist eng, aber sie ist unser.'], ['Ich hab die Wäsche am Main gewaschen. Die Weiber dort reden über dich – nur Gutes, keine Sorge.'], ['(' + fn + ' lächelt.) Ich glaube, wir werden bald zu dritt sein.']][Math.min(2, Math.max(0, heute() - (AUFTRAG.hochzeitTag || heute())))];
   AUFTRAG.rede = { wer: { x: fp.x, y: -fp.z }, name: (AUFTRAG.frau || AUFTRAG.mutter || '') + ' ' + (AUFTRAG.nachname || '') + (AUFTRAG.verheiratet ? ' · DEINE FRAU' : ' · DEINE MUTTER'), zeilen: z, i: 0 }; return true; }
+var hausstandRedenOhneZuhause = hausstandReden; hausstandReden = function () { var r = hausstandRedenOhneZuhause.apply(this, arguments); if (r) zuhauseGespraech(); return r; };   // 15.10. Zuhause: Zuneigung, Abendessen
 function familieReden() {                         // mit einer Tochter vor dem Haus reden – werben, fünf Tage lang
   if (AUFTRAG.rede) return false; var t = FAM_TOECHTER.filter(function (q) { return q.aktiv && Math.hypot(P.x - q.f.platz[0], P.y - q.f.platz[1]) < 2.4; })[0]; if (!t) return false;
   var f = t.f, k = f.kopf.nr, W = AUFTRAG.werben || (AUFTRAG.werben = {}), n = W[k] || 0, tn = f.tochter.name.charAt(0) + f.tochter.name.slice(1).toLowerCase(), vn = f.kopf.name.split(/[ ,]/)[0], vater = vn.charAt(0) + vn.slice(1).toLowerCase(), z, danach = null;
@@ -16803,7 +16873,7 @@ function wegNameWeiter() {                       // betritt man einen benannten 
   WEGNAME.auf = auf; }
 function leuteBewegen(dt) {
   try { blWeiter(); } catch (e) { schleifeFehler('bauleiter', e); }
-  tagesablaufWeiter(dt); if (!BURGWEG.gebaut) try { burgwegBauen(); } catch (e) { schleifeFehler('burgweg', e); } try { erbWeiter(); } catch (e) { schleifeFehler('erbhaus', e); } try { winterWeiter(dt); } catch (e) { schleifeFehler('winter', e); } try { if (window.Winter) maineisWeiter(dt); } catch (e) { schleifeFehler('maineis', e); } if (SCHNEEBAELLE.length) try { schneeballWeiter(dt); } catch (e) { schleifeFehler('schneeball', e); } abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); junkerWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); kindWeiter(dt); generationWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); try { reibenWeiter(dt); } catch (e) { schleifeFehler('farben', e); } steinWeiter(dt); kaiWeiter(dt); treppeWeiter(); gsWeiter(); sprungWeiter(); lageWeiter(); flutWeiter(); ereignisWeiter(dt); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
+  tagesablaufWeiter(dt); if (!BURGWEG.gebaut) try { burgwegBauen(); } catch (e) { schleifeFehler('burgweg', e); } try { erbWeiter(); } catch (e) { schleifeFehler('erbhaus', e); } try { winterWeiter(dt); } catch (e) { schleifeFehler('winter', e); } try { if (window.Winter) maineisWeiter(dt); } catch (e) { schleifeFehler('maineis', e); } if (SCHNEEBAELLE.length) try { schneeballWeiter(dt); } catch (e) { schleifeFehler('schneeball', e); } abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); junkerWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); kindWeiter(dt); generationWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); try { reibenWeiter(dt); } catch (e) { schleifeFehler('farben', e); } try { webenWeiter(dt); zuhauseWeiter(); } catch (e) { schleifeFehler('zuhause', e); } steinWeiter(dt); kaiWeiter(dt); treppeWeiter(); gsWeiter(); sprungWeiter(); lageWeiter(); flutWeiter(); ereignisWeiter(dt); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
   kamera.updateMatrixWorld(); SICHT.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse); SICHT.kegel.setFromProjectionMatrix(SICHT.m);
   SICHT.takt += dt; var neuPruefen = SICHT.takt > 0.05; if (neuPruefen) SICHT.takt = 0; var tick = Math.floor(P.t * 20);
   SICHT.stat.voll = 0; SICHT.stat.einfach = 0;
@@ -17104,7 +17174,7 @@ function handhaben() {
   var vs = versteckNah(); if (vs && (JAGD || AUFTRAG.schmuggel === 1 || !naechsteePerson())) { versteckRein(vs); return true; }
   return reitenHandhaben() || karrenHandhaben() || angelHandhaben() || haselSchneiden() || schmiedHaken() || lehreSchlafen() || leseAbgeben() || kaiAbgeben() || kaiNehmen() || steinAbgeben() || steinNehmen() || kramZurueck() || kramNehmen() || moebelKaufen() || strohsack() || erbHandhaben() || reibsteinRechts() || kammerSchlafen() || grabHohl() || schmiedBeil() || weberHandel() || kircheSitzen() || hundAnfassen() || sammeln() || steinAblegen() || handBenutzen();   // 12.10.: der Karren steht oben (Andreas: „sitzen konnte ich nicht“ – Aufheben/Sammeln kamen ihm zuvor)
 }
-weltCv.addEventListener('mousedown', function (e) { if (document.pointerLockElement !== weltCv) return; if (BL.an) { blKlick(e.button); return; } if (EIN.an) { if (e.button === 0) einLinks(); else if (e.button === 2) einRechts(); return; } if (e.button === 0) { if (PLATZ) { hinstellenJetzt(); return; } if (!AUFTRAG.rede && angelLinks()) return; if ((holzNah() || spinnradNah() || reibsteinNah() || (leseStock() >= 0 && leseZeit())) && !AUFTRAG.rede) { maus.links = true; return; } if (!reden() && !handhaben() && !schneeballWerfen() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } else if (e.button === 2) { if (PLATZ) { hinstellenAbbrechen(); melden('ZURÜCK IN DEN BEUTEL', 1.5); return; } if (!handhaben()) { maus.rechts = true; if (!P.klettert) springenJetzt(); } } });
+weltCv.addEventListener('mousedown', function (e) { if (document.pointerLockElement !== weltCv) return; if (BL.an) { blKlick(e.button); return; } if (EIN.an) { if (e.button === 0) einLinks(); else if (e.button === 2) einRechts(); return; } if (e.button === 0) { if (PLATZ) { hinstellenJetzt(); return; } if (!AUFTRAG.rede && angelLinks()) return; if ((holzNah() || spinnradNah() || reibsteinNah() || webNah() || (leseStock() >= 0 && leseZeit())) && !AUFTRAG.rede) { maus.links = true; return; } if (!reden() && !handhaben() && !schneeballWerfen() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } else if (e.button === 2) { if (PLATZ) { hinstellenAbbrechen(); melden('ZURÜCK IN DEN BEUTEL', 1.5); return; } if (!handhaben()) { maus.rechts = true; if (!P.klettert) springenJetzt(); } } });
 addEventListener('mouseup', function (e) { if (e.button === 2) maus.rechts = false; if (e.button === 0) maus.links = false; });
 weltCv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 function fingerRechnen(e) {
@@ -17312,7 +17382,7 @@ function fadenkreuz(W, H) {
   hud.fillStyle = gold ? '#ffd75e' : 'rgba(255,255,255,.9)'; hud.fillRect(x - 5, y, 4, 1); hud.fillRect(x + 2, y, 4, 1); hud.fillRect(x, y - 5, 1, 4); hud.fillRect(x, y + 2, 1, 4); hud.fillRect(x, y, 1, 1); }
 function hudMalen() {
   var W = PIXEL.b, H = PIXEL.h; hud.setTransform(HUD_SKALA, 0, 0, HUD_SKALA, 0, 0); hud.imageSmoothingEnabled = false; hud.clearRect(0, 0, W, H);   // Pixelbilder bleiben Pixel, Schrift wird scharf
-  fadenkreuz(W, H);
+  fadenkreuz(W, H); if (EPOCHE === 1400 && !INVENTAR && !QUESTBUCH && KARTE !== 2) try { zuhauseMalen(W, H); } catch (e) {}
   if (P.drinnen) text(P.drinnen.anzeige, W / 2, 40, 11, '#ffd75e');
   else if (BLICKNAME) { hud.globalAlpha = Math.min(1, (P.t - NAMEZEIT) * 3); text(BLICKNAME.toUpperCase(), W / 2, 47, 10, '#ffd75e'); hud.globalAlpha = 1; }   // 11.10.: unter Auftrag und Ziel, nicht mehr darüber
   text(Math.round(gel(P.x, P.y)) + ' M Ü. NN', 6, H - 8, 9, '#f2ecdc', 'left');
@@ -17406,6 +17476,8 @@ function questListe() {
   if (A.verheiratet) { var fn2 = (A.frau || '').charAt(0) + (A.frau || '').slice(1).toLowerCase(); neben.unshift(['Dein Hausstand', !kammerGemietet() ? 'Miete eine Kammer – dann zieht ' + fn2 + ' zu dir' : A.kind ? fn2 + ' und ' + (A.kind.art === 'sohn' ? 'dein Sohn ' : 'deine Tochter ') + A.kind.name.charAt(0) + A.kind.name.slice(1).toLowerCase() + ' wohnen bei dir in der Kammer' : fn2 + ' wohnt bei dir in der Kammer']); }
   if (REITEN.pferd && A.einf >= 9 && !REITEN.auf) neben.push(['Ein Pferd', UHR.t < REITEN.bis ? 'Dein Mietpferd wartet – Rechtsklick zum Aufsitzen' : 'Am Gasthof leiht der Stallknecht ein Pferd: 3 Heller bis zum Abend. W Schritt, SHIFT Trab und Galopp']);
   var geh = (A.beutel || []).filter(function (b) { return SPIELER && SPIELER.geheimnisse.some(function (g) { return g.id === b.id; }); }).length; if (geh) neben.push(['Geheimnisse der Stadt', geh + ' gehört']);
+  try { var Zq = zh(); if (A.verheiratet && A.frau) neben.push(['Deine Frau ' + A.frau.charAt(0) + A.frau.slice(1).toLowerCase(), 'Zuneigung ' + Zq.ehe + '/100 · ' + eheText(Zq.ehe).toLowerCase() + ' · reden, abends essen, neben ihr schlafen']);
+    var ft = Object.keys(FERTIGKEIT).filter(function (id) { return Zq.fert[id] > 0; }).map(function (id) { return FERTIGKEIT[id][0].charAt(0) + FERTIGKEIT[id][0].slice(1).toLowerCase() + ': ' + fertText(id).toLowerCase(); }); if (ft.length) neben.push(['Fertigkeiten zuhause', ft.join(' · ')]); } catch (e) {}   // 15.10. Zuhause
   return { jetzt: j, weg: weg, neben: neben };
 }
 function bauleiterMalen(W, H) {                   // Tastentafel rechts, solange der Bauleiter an ist
@@ -17717,7 +17789,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = 'e590b819', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = 'cfd7f7bd', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
