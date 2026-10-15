@@ -12,14 +12,20 @@
   body{background:radial-gradient(circle at 50% 35%,#FFF6EA 0%,var(--apricot) 55%,#F6D9BC 100%);color:var(--text);font:17px/1.55 -apple-system,"Helvetica Neue",Arial,sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px 16px 28px;-webkit-font-smoothing:antialiased}
   h1{margin:4px 0 2px;color:var(--bronze);font-size:clamp(24px,4.5vw,32px);font-weight:600;letter-spacing:.01em}
   .leise{margin:0 0 14px;color:#6E6152;text-align:center;max-width:46ch;transition:opacity 1.2s}
-  .buehne{position:relative;width:min(560px,92vw);aspect-ratio:1}
+  .aussen{position:relative;width:min(720px,96vw);aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+  .buehne{position:relative;width:76%;aspect-ratio:1}
+  .topf{position:absolute;width:11%;aspect-ratio:1;margin:-5.5% 0 0 -5.5%;border:0;background:none;padding:0;cursor:pointer;transition:transform .35s cubic-bezier(.2,.8,.2,1),filter .35s}
+  .topf svg{width:100%;height:100%;filter:drop-shadow(0 3px 5px rgba(80,50,20,.25));cursor:pointer}
+  .topf:hover{transform:scale(1.1) rotate(-4deg)}
+  .topf[aria-pressed="true"]{transform:scale(1.22) translateY(-4%)}
+  .topf[aria-pressed="true"] svg{filter:drop-shadow(0 0 8px rgba(253,201,122,.95)) drop-shadow(0 3px 5px rgba(80,50,20,.25))}
+  .modus{display:flex;gap:6px;margin:10px 0 4px}
+  .modus button{font:inherit;font-size:14.5px;border:1px solid #E1CDB4;background:var(--creme);color:var(--text);border-radius:999px;padding:6px 14px;cursor:pointer}
+  .modus button[aria-pressed="true"]{background:var(--salbei);color:#fff;border-color:var(--salbei)}
   .buehne::before{content:"";position:absolute;inset:-6%;border-radius:50%;background:radial-gradient(circle,rgba(253,201,122,.55),rgba(253,201,122,0) 68%);animation:atem 8s ease-in-out infinite;pointer-events:none}
   @keyframes atem{0%,100%{transform:scale(.96);opacity:.6}50%{transform:scale(1.03);opacity:1}}
   svg{position:relative;width:100%;height:100%;touch-action:none;cursor:crosshair;filter:drop-shadow(0 10px 24px rgba(168,90,46,.15))}
   svg path,svg circle{transition:fill .9s ease}
-  .farben{display:flex;gap:12px;margin:18px 0 10px;flex-wrap:wrap;justify-content:center}
-  .farbe{width:44px;height:44px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.12);cursor:pointer;transition:transform .3s}
-  .farbe[aria-pressed="true"]{transform:scale(1.18);box-shadow:0 0 0 3px var(--bronze),0 4px 12px rgba(0,0,0,.15)}
   .knoepfe{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
   button.k{font:inherit;font-size:15px;font-weight:600;border:2px solid var(--button);background:transparent;color:var(--button);border-radius:999px;padding:8px 16px;cursor:pointer}
   button.k.voll{background:var(--button);color:#fff}
@@ -29,9 +35,9 @@
 </head>
 <body>
   <h1>Mandala con Cuore</h1>
-  <p class="leise" id="hinweis">Atme ein. Wähle eine Farbe – und fahr einfach mit dem Finger oder der Maus über das Mandala. Den Rest macht es von selbst.</p>
-  <div class="buehne"><svg id="m" viewBox="-300 -300 600 600" role="img" aria-label="Mandala zum Ausmalen"></svg></div>
-  <div class="farben" id="farben"></div>
+  <p class="leise" id="hinweis">Atme ein. Tauch den Pinsel in einen Farbtopf – und mal einfach drauflos, Feld für Feld oder mit einem Strich über viele.</p>
+  <div class="aussen" id="aussen"><div class="buehne"><svg id="m" viewBox="-300 -300 600 600" role="img" aria-label="Mandala zum Ausmalen"></svg></div></div>
+  <div class="modus" id="modus"><button type="button" data-m="einzeln" aria-pressed="true">✎ einzeln</button><button type="button" data-m="kreis" aria-pressed="false">✿ im Kreis</button></div>
   <div class="knoepfe">
     <button class="k" type="button" id="neu">✿ Neues Mandala</button>
     <button class="k" type="button" id="leer">Von vorn</button>
@@ -44,7 +50,7 @@
 var FARBEN = ['#F5BC86', '#D1864E', '#BF8B15', '#829761', '#ACB99C', '#F8DCC0', '#A85A2E', '#FBF6EF'];
 var LINIE = '#9C7A3C', LEER = '#FFFDF9';
 var svg = document.getElementById('m'), NS = 'http://www.w3.org/2000/svg';
-var farbe = FARBEN[0], seed = Date.now() % 100000;
+var farbe = FARBEN[0], seed = Date.now() % 100000, modus = 'einzeln';
 
 function zufall(s) { return function () { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; }
 function pt(r, w) { return [r * Math.cos(w), r * Math.sin(w)]; }
@@ -85,7 +91,9 @@ function bauen() {
 var malt = false, zuletzt = null;
 function anmalen(x, y) {
   var t = document.elementFromPoint(x, y); if (!t || !t.getAttribute || t.getAttribute('data-g') == null) return;
-  var g = t.getAttribute('data-g'), c = farbe; if (g === zuletzt && t.getAttribute('fill') === c) return; zuletzt = g;
+  var g = t.getAttribute('data-g'), c = farbe;
+  if (modus === 'einzeln') { if (t.getAttribute('fill') !== c) t.setAttribute('fill', c); leiser(); return; }
+  if (g === zuletzt && t.getAttribute('fill') === c) return; zuletzt = g;
   svg.querySelectorAll('[data-g="' + g + '"]').forEach(function (e, i) { setTimeout(function () { e.setAttribute('fill', c); }, i * 35); });   // läuft einmal im Kreis herum
   leiser();
 }
@@ -94,13 +102,33 @@ svg.addEventListener('pointermove', function (e) { if (malt || e.pointerType ===
 addEventListener('pointerup', function () { malt = false; });
 var leise = false; function leiser() { if (leise) return; leise = true; setTimeout(function () { document.getElementById('hinweis').style.opacity = '.35'; }, 4000); }
 
-// Farbwahl
-var fb = document.getElementById('farben');
+// Farbtöpfe rund um das Mandala
+function topfSvg(c) {
+  return '<svg viewBox="0 0 64 64"><ellipse cx="32" cy="54" rx="21" ry="5" fill="rgba(80,50,20,.12)"/>' +
+    '<path d="M12 22 L15 50 Q32 58 49 50 L52 22 Z" fill="#F4EBDD" stroke="#9C7A3C" stroke-width="1.6"/>' +
+    '<path d="M14 30 Q32 36 50 30" fill="none" stroke="#E2D2BC" stroke-width="1.4"/>' +
+    '<ellipse cx="32" cy="22" rx="20" ry="7" fill="' + c + '" stroke="#9C7A3C" stroke-width="1.6"/>' +
+    '<ellipse cx="26" cy="20.5" rx="7" ry="2" fill="rgba(255,255,255,.35)"/>' +
+    '<path d="M44 24 Q45 31 43 35 Q41.5 37 41 33 Q41 28 42 24 Z" fill="' + c + '" stroke="#9C7A3C" stroke-width="1"/></svg>';
+}
+function pinsel(c) {   // Mauszeiger: Pinsel, Spitze unten links in der gewählten Farbe
+  var s = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">' +
+    '<path d="M38 2 L22 18" stroke="#7A5230" stroke-width="5" stroke-linecap="round"/>' +
+    '<path d="M24 16 L18 22" stroke="#B8B2A7" stroke-width="7" stroke-linecap="butt"/>' +
+    '<path d="M19 21 Q13 21 8 28 Q4 34 2 38 Q6 36 12 32 Q19 27 19 21 Z" fill="' + c + '" stroke="#5E4426" stroke-width="1.2"/></svg>';
+  return 'url("data:image/svg+xml;utf8,' + encodeURIComponent(s) + '") 2 38, crosshair';
+}
+var aussen = document.getElementById('aussen'), toepfe = [];
 FARBEN.forEach(function (c, i) {
-  var b = document.createElement('button'); b.className = 'farbe'; b.type = 'button'; b.style.background = c; b.setAttribute('aria-label', 'Farbe ' + (i + 1)); b.setAttribute('aria-pressed', String(i === 0));
-  b.onclick = function () { farbe = c; fb.querySelectorAll('.farbe').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); };
-  fb.appendChild(b);
+  var w = -Math.PI / 2 + i * 2 * Math.PI / FARBEN.length, rad = 45;
+  var b = document.createElement('button'); b.className = 'topf'; b.type = 'button'; b.innerHTML = topfSvg(c);
+  b.style.left = (50 + rad * Math.cos(w)) + '%'; b.style.top = (50 + rad * Math.sin(w)) + '%';
+  b.setAttribute('aria-label', 'Farbtopf ' + (i + 1)); b.setAttribute('aria-pressed', String(i === 0));
+  b.onclick = function () { farbe = c; svg.style.cursor = pinsel(c); toepfe.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); };
+  toepfe.push(b); aussen.appendChild(b);
 });
+svg.style.cursor = pinsel(farbe);
+document.querySelectorAll('#modus button').forEach(function (b) { b.onclick = function () { modus = b.getAttribute('data-m'); document.querySelectorAll('#modus button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); }; });
 document.getElementById('neu').onclick = function () { seed = (seed * 7 + 13) % 100000 + 1; bauen(); };
 document.getElementById('leer').onclick = function () { svg.querySelectorAll('[data-g]').forEach(function (e) { e.setAttribute('fill', LEER); }); };
 
