@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Ambiente con Cuore – dein Arbeitsplatz</title>
+<style>
+  :root{--creme:#FBF6EF;--apricot:#FCE9D6;--sand:#F1E6D8;--text:#2E2418;--bronze:#77570D;--button:#A85A2E;--salbei:#556640;--gold:#BF8B15;--terra:#D1864E;--salbei-hell:#829761;--grau:#6E6152;--linie:#E6D9C8}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--creme);color:var(--text);font:17px/1.6 -apple-system,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .innen{max-width:900px;margin:0 auto;padding:0 16px}
+  header{background:var(--apricot);border-bottom:1px solid var(--linie)}
+  header .innen{padding-top:22px;padding-bottom:16px}
+  .von{font-size:13px;color:var(--bronze);letter-spacing:.08em;text-transform:uppercase}
+  h1{margin:4px 0 8px;font-size:clamp(26px,4.5vw,36px);line-height:1.15;color:var(--bronze)}
+  .einleitung{margin:0;max-width:64ch}
+  nav{display:flex;gap:6px;flex-wrap:wrap;margin-top:18px}
+  nav button{font:inherit;font-size:15px;font-weight:600;border:1px solid var(--linie);background:var(--creme);color:var(--text);padding:9px 14px;border-radius:999px;cursor:pointer}
+  nav button[aria-selected="true"]{background:var(--button);color:#fff;border-color:var(--button)}
+  main{padding:26px 0 70px}
+  section[hidden]{display:none!important}
+  h2{font-size:24px;margin:0 0 4px;color:var(--bronze)}
+  h3{margin:0 0 6px;font-size:19px}
+  .hilfe{color:var(--grau);margin:0 0 20px;max-width:64ch}
+  .karte{background:#fff;border:1px solid var(--linie);border-radius:16px;padding:18px;margin-bottom:16px}
+  .karte p{margin:0 0 10px}
+  .karte.gross{border:2px solid var(--terra);box-shadow:0 10px 30px rgba(168,90,46,.10)}
+  .band{display:inline-block;background:var(--salbei);color:#fff;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:999px;margin-bottom:8px}
+  .knopf{display:inline-block;font:inherit;font-weight:700;font-size:15.5px;border:0;border-radius:999px;padding:11px 18px;cursor:pointer;text-decoration:none}
+  .knopf.voll{background:var(--button);color:#fff}.knopf.leer{background:transparent;border:2px solid var(--button);color:var(--button)}
+  .knopf.klein{font-size:14px;padding:7px 14px}
+  .reihe{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .wahl button{font:inherit;font-size:15px;border:1px solid var(--linie);background:var(--creme);border-radius:999px;padding:8px 14px;cursor:pointer;color:var(--text)}
+  .wahl button[aria-pressed="true"]{background:var(--salbei);color:#fff;border-color:var(--salbei)}
+  label{display:block;font-weight:600;font-size:15px;margin:14px 0 4px}
+  textarea,input[type=text],input[type=email],input[type=tel],select{width:100%;font:inherit;font-size:16px;border:1px solid #D9C9B4;border-radius:12px;padding:10px 12px;background:#fff;color:var(--text)}
+  ::placeholder{color:#B5A895}
+  textarea{min-height:80px;resize:vertical}
+  .bisher{font-size:14px;color:var(--grau);margin:2px 0 0}
+  .gespeichert{color:var(--salbei);font-weight:700;font-size:14px}
+  .fehler{color:#B3261E;font-weight:700;font-size:14px}
+  .vorschlag{background:var(--sand);border-radius:12px;padding:12px 14px;margin:8px 0 10px}
+  .vorschlag b{color:var(--salbei)}
+  .warum{font-size:14.5px;color:var(--grau);margin:0 0 6px}
+  .farben{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin:10px 0}
+  .farben div{border-radius:12px;overflow:hidden;border:1px solid var(--linie);background:#fff;font-size:13px;line-height:1.35}
+  .farben i{display:block;height:54px}
+  .farben span{display:block;padding:6px 8px}
+  .vorschau{display:grid;grid-template-columns:200px 1fr;gap:18px;align-items:center}
+  .vorschau img{width:100%;border-radius:50%;display:block}
+  @media (max-width:600px){.vorschau{grid-template-columns:1fr}.vorschau img{width:60%;margin:0 auto}}
+  .liste{margin:6px 0 0;padding-left:20px}.liste li{margin:4px 0}
+  .kreuze label{display:flex;gap:8px;align-items:flex-start;font-weight:500;margin:6px 0}
+  .kreuze input{margin-top:5px;accent-color:var(--salbei);width:18px;height:18px}
+  .gitter2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}@media (max-width:600px){.gitter2{grid-template-columns:1fr}}
+  .ablage{border:2px dashed #D9C7B0;border-radius:16px;padding:24px;text-align:center;background:#fff}
+  .ablage.drueber{border-color:var(--terra);background:var(--apricot)}
+  .bilder{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:14px}
+  .bilder figure{margin:0;background:#fff;border:1px solid var(--linie);border-radius:12px;overflow:hidden}
+  .bilder img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+  .bilder figcaption{font-size:13px;padding:6px 8px;color:var(--grau)}
+  .verlauf{list-style:none;margin:0;padding:0}
+  .verlauf li{background:#fff;border:1px solid var(--linie);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:15px}
+  .verlauf .kopf{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--grau);margin-bottom:4px}
+  .marke{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--sand)}
+  .marke.neu{background:var(--apricot);color:var(--button)}.marke.übernommen,.marke.erledigt{background:#E3EBD8;color:var(--salbei)}
+  .verlauf pre{white-space:pre-wrap;font:inherit;margin:0}
+  .zugang{max-width:520px;margin:60px auto;text-align:center}
+  .warten{opacity:.6;pointer-events:none}
+  .weiter{margin-top:26px;text-align:right}
+</style>
+</head>
+<body>
+
+<div id="ohneZugang" class="zugang innen" hidden>
+  <h1>Kein Zugang</h1>
+  <p class="einleitung">Diese Seite öffnet sich nur über deinen persönlichen Link.</p>
+</div>
+
+<div id="app" hidden>
+<header><div class="innen">
+  <div class="von">Ambiente con Cuore · dein Arbeitsplatz</div>
+  <h1 id="gruss">Hallo Stefania – hier entsteht deine Webseite. 🌿</h1>
+  <p class="einleitung" id="einleitung">Wir haben aus deinem Skript schon einen ersten Entwurf gebaut, in den Farben deines Logos. Schau ihn dir in Ruhe an. Wo wir etwas vorschlagen, reicht ein Klick auf „Passt so“ – und wo nur du die Antwort weißt, trägst du sie einfach ein. Alles wird sofort gespeichert, du kannst jederzeit aufhören und später weitermachen.</p>
+  <nav role="tablist">
+    <button role="tab" data-reiter="entwurf" aria-selected="true">1 · Dein Entwurf</button>
+    <button role="tab" data-reiter="vorschlaege">2 · Unsere Vorschläge</button>
+    <button role="tab" data-reiter="fakten">3 · Das weißt nur du</button>
+    <button role="tab" data-reiter="bilder">4 · Bilder</button>
+    <button role="tab" data-reiter="verlauf">Verlauf</button>
+  </nav>
+</div></header>
+
+<main><div class="innen">
+
+<!-- 1 ENTWURF -->
+<section data-seite="entwurf">
+  <div class="karte gross">
+    <div class="vorschau">
+      <img src="logo.jpg" alt="Dein Logo">
+      <div>
+        <span class="band">Erster Entwurf</span>
+        <h2>Deine Startseite</h2>
+        <p>Alle deine Texte, alle Pakete und Boxen mit Preisen, dazu „Über mich“ mit deinem Foto. Am Handy und am Computer.</p>
+        <div class="reihe"><button class="knopf voll" type="button" id="entwurfOeffnen">Entwurf ansehen ↗</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="karte">
+    <h3>Deine Farben – aus dem Logo</h3>
+    <p class="warum">Wir haben die Farben direkt aus deinem Logo ausgelesen. Als Hintergrund wechseln sich Cremeweiß, helles Apricot und Sand ab – so wie du es dir gewünscht hast, alle drei.</p>
+    <div class="farben">
+      <div><i style="background:#FBF6EF"></i><span><b>Cremeweiß</b><br>Grundfläche</span></div>
+      <div><i style="background:#FCE9D6"></i><span><b>Helles Apricot</b><br>Kopf, jeder 2. Abschnitt</span></div>
+      <div><i style="background:#F1E6D8"></i><span><b>Sand</b><br>Pakete &amp; Boxen</span></div>
+      <div><i style="background:#77570D"></i><span><b>Bronze</b><br>Überschriften</span></div>
+      <div><i style="background:#A85A2E"></i><span><b>Terrakotta</b><br>Knöpfe</span></div>
+      <div><i style="background:#556640"></i><span><b>Salbeigrün</b><br>Feng Shui</span></div>
+      <div><i style="background:#BF8B15"></i><span><b>Gold</b><br>Numerologie</span></div>
+    </div>
+    <p class="warum">Die Logofarben selbst sind sehr zart. Für Schrift und Knöpfe nehmen wir deshalb einen Hauch dunklere Töne derselben Farbe – sonst wäre der Text am Handy in der Sonne schwer zu lesen.</p>
+  </div>
+
+  <div class="karte">
+    <h3>Wie gefällt dir der Entwurf?</h3>
+    <div class="reihe wahl" id="entwurfWahl"></div>
+    <textarea id="entwurfText" placeholder="Was gefällt dir, was würdest du ändern? Ein paar Stichworte reichen."></textarea>
+    <div class="reihe"><button class="knopf voll klein" type="button" id="entwurfSenden">Senden</button><span id="entwurfMeldung"></span></div>
+    <p class="bisher" id="entwurfBisher"></p>
+  </div>
+
+  <div class="karte">
+    <h3>Was wir an deinen Texten angepasst haben</h3>
+    <p class="warum">Deine Texte stehen fast genau so im Entwurf, wie du sie geschrieben hast. An ein paar Stellen haben wir behutsam etwas geändert – die Gründe findest du unter „Unsere Vorschläge“.</p>
+    <ul class="liste">
+      <li>„Energieausgleich“ heißt im Entwurf <b>„Eröffnungspreis“</b> bzw. „Preis“.</li>
+      <li>„jahrtausendealte Wissenschaft“ heißt <b>„jahrtausendealte, überlieferte Lehre“</b>.</li>
+      <li>Bei der Numerologie und den Business-Boxen haben wir ein paar sehr feste Versprechen weicher formuliert (z. B. „kann viel in Bewegung bringen“ statt „bewirkt tiefe Veränderungen“).</li>
+      <li>Unten auf jeder Seite steht ein kurzer Hinweis: <i>„… ersetzt keine ärztliche Beratung – und auch nicht den gesunden Menschenverstand.“</i></li>
+      <li>Die Knöpfe heißen „bestellen“ (Paket 1 und alle Boxen) bzw. „anfragen“ (Paket 2–4, Großprojekte).</li>
+    </ul>
+  </div>
+  <div class="weiter"><button class="knopf leer" type="button" data-gehe="vorschlaege">Weiter zu „Unsere Vorschläge“ →</button></div>
+</section>
+
+<!-- 2 VORSCHLÄGE -->
+<section data-seite="vorschlaege" hidden>
+  <h2>Unsere Vorschläge</h2>
+  <p class="hilfe">Hier haben wir uns schon Gedanken gemacht. Wenn es für dich passt, reicht ein Klick auf „Passt so“. Wenn nicht, schreib kurz, wie du es lieber hättest.</p>
+  <div id="vorschlagListe"></div>
+  <div class="weiter"><button class="knopf leer" type="button" data-gehe="fakten">Weiter zu „Das weißt nur du“ →</button></div>
+</section>
+
+<!-- 3 FAKTEN -->
+<section data-seite="fakten" hidden>
+  <h2>Das weißt nur du</h2>
+  <p class="hilfe">Diese Angaben brauchen wir für Kontakt, Bestellung und Impressum. Die grauen Beispiele sind nur Beispiele – bitte trag ein, was bei dir stimmt. Lücken sind kein Problem, dann fragen wir später nach.</p>
+  <form id="faktForm">
+    <div class="karte">
+      <h3>📬 Kontakt auf der Webseite</h3>
+      <div class="gitter2">
+        <div><label for="f-mail">E-Mail für Kundenanfragen</label><input type="email" id="f-mail" name="mail" placeholder="z. B. hallo@deine-domain.de"></div>
+        <div><label for="f-tel">Telefon (oder leer lassen)</label><input type="tel" id="f-tel" name="telefon" placeholder="z. B. 0171 …"></div>
+      </div>
+      <label for="f-social">Instagram, Facebook o. Ä.</label><input type="text" id="f-social" name="social" placeholder="z. B. instagram.com/ambienteconcuore">
+      <label for="f-region">Wo bietest du Vor-Ort-Termine an?</label><input type="text" id="f-region" name="region" placeholder="z. B. 50 km um Wertheim, darüber per Live-Call">
+      <label for="f-anfahrt">Kostet die Anfahrt extra?</label><input type="text" id="f-anfahrt" name="anfahrt" placeholder="z. B. bis 30 km inklusive, danach 0,50 € je km">
+    </div>
+    <div class="karte">
+      <h3>🛒 Bestellen und bezahlen</h3>
+      <label>Wie sollen deine Kunden bezahlen können? (mehrere möglich)</label>
+      <div class="kreuze">
+        <label><input type="checkbox" name="zahlung" value="Überweisung / Vorkasse"> Überweisung / Vorkasse</label>
+        <label><input type="checkbox" name="zahlung" value="Rechnung"> Rechnung (nach Lieferung)</label>
+        <label><input type="checkbox" name="zahlung" value="PayPal"> PayPal</label>
+        <label><input type="checkbox" name="zahlung" value="Karte"> Kreditkarte</label>
+        <label><input type="checkbox" name="zahlung" value="weiß noch nicht"> Weiß ich noch nicht – berätst du mich?</label>
+      </div>
+      <label for="f-liefer">Wie lange dauert es ungefähr, bis eine PDF-Mappe beim Kunden ist?</label><input type="text" id="f-liefer" name="lieferzeit" placeholder="z. B. innerhalb von 7 Tagen nach Zahlungseingang">
+      <label>Wirst du Kleinunternehmerin (ohne Umsatzsteuer)?</label>
+      <div class="kreuze">
+        <label><input type="radio" name="kleinunternehmer" value="ja"> Ja</label>
+        <label><input type="radio" name="kleinunternehmer" value="nein"> Nein, mit Umsatzsteuer</label>
+        <label><input type="radio" name="kleinunternehmer" value="weiß noch nicht"> Weiß ich noch nicht – kläre ich bei der Gewerbeanmeldung</label>
+      </div>
+      <p class="warum">Warum wir das fragen: Bei Online-Bestellungen muss an jedem Preis stehen, ob Umsatzsteuer drin ist, und wann die Ware kommt.</p>
+    </div>
+    <div class="karte">
+      <h3>🌐 Deine Webadresse</h3>
+      <label for="f-domain">Hast du schon eine Wunsch-Adresse? (gern auch zwei, drei zur Auswahl)</label><input type="text" id="f-domain" name="domain" placeholder="z. B. ambiente-con-cuore.de">
+    </div>
+    <div class="karte">
+      <h3>🎨 Logo und Schrift</h3>
+      <label for="f-schrift">Weißt du, welche Schrift in deinem Logo steckt? (z. B. aus Canva)</label><input type="text" id="f-schrift" name="schrift" placeholder="z. B. „Montserrat“ – oder einfach „weiß ich nicht“">
+      <label for="f-logodatei">Hast du dein Logo auch als SVG oder mit durchsichtigem Hintergrund?</label><input type="text" id="f-logodatei" name="logodatei" placeholder="z. B. „ja, schicke ich per Mail“ oder „nein“">
+      <p class="warum">Das brauchen wir für die schmale Kopfleiste und das kleine Bildchen im Browser-Tab. Die Datei selbst schickst du am einfachsten als Antwort auf unsere Mail.</p>
+    </div>
+    <div class="karte">
+      <h3>💬 Was du uns sonst noch sagen möchtest</h3>
+      <textarea name="frei" placeholder="Wünsche, Ideen, Seiten, die dir gefallen …"></textarea>
+    </div>
+    <div class="reihe"><button class="knopf voll" type="submit">Speichern</button><span id="faktMeldung"></span></div>
+    <p class="bisher" id="faktBisher"></p>
+  </form>
+</section>
+
+<!-- 4 BILDER -->
+<section data-seite="bilder" hidden>
+  <h2>Bilder</h2>
+  <p class="hilfe">Hast du weitere Fotos – von schönen Räumen, von dir bei der Arbeit, Stimmungsbilder? Hier hochladen und kurz sagen, wofür. Die Bilder werden vor dem Senden verkleinert.</p>
+  <div class="karte">
+    <label for="bildZweck" style="margin-top:0">Wofür ist das Bild?</label>
+    <select id="bildZweck"><option>Startseite</option><option>Feng Shui</option><option>Numerologie</option><option>Über mich</option><option>Sonstiges</option></select>
+    <label for="bildText">Dazu sagen</label>
+    <input type="text" id="bildText" placeholder="z. B. mein Wohnzimmer nach der Umgestaltung">
+    <div class="ablage" id="ablage" style="margin-top:14px">
+      <p style="margin:0 0 10px"><b>Bilder hierher ziehen</b> oder</p>
+      <label class="knopf voll" style="display:inline-block;margin:0">Fotos auswählen<input type="file" id="bildDatei" accept="image/*" multiple hidden></label>
+      <p id="bildMeldung"></p>
+    </div>
+  </div>
+  <div class="bilder" id="bilderListe"></div>
+</section>
+
+<!-- VERLAUF -->
+<section data-seite="verlauf" hidden>
+  <h2 id="verlaufTitel">Was du schon geschickt hast</h2>
+  <p class="hilfe" id="verlaufHilfe">Alles, was hier ankommt, sieht Andreas. „übernommen“ heißt: ist eingebaut.</p>
+  <ul class="verlauf" id="verlaufListe"></ul>
+</section>
+
+</div></main>
+</div>
+
+<script>
+var API = 'https://cuore-portal.a-pelczer.workers.dev';
+
+// Unsere Vorschläge: Geschmack und Aufbau. Ein Klick „Passt so“, sonst eigener Text.
+var VORSCHLAEGE = [
+  { id: 'aufbau', titel: 'Aufbau der Webseite', vorschlag: 'Eine lange Startseite, auf der man von oben nach unten alles findet (Feng Shui, Pakete, Numerologie, Boxen, Kontakt) – und „Über mich“ als eigene Unterseite. Oben ein Menü, das direkt zu den Abschnitten springt.', warum: 'So steht es in deinem Skript, und es ist am Handy am angenehmsten: einfach weiterscrollen.' },
+  { id: 'preis-wort', titel: '„Eröffnungspreis“ statt „Energieausgleich“', vorschlag: 'An den Paketen und Boxen steht „Eröffnungspreis“, in der Bestellübersicht „Preis“ und „Gesamtpreis“.', warum: 'Bei Bestellungen im Internet schreibt das Gesetz vor, dass klar „Preis“ dasteht und der Knopf „zahlungspflichtig bestellen“ heißt. Sonst drohen teure Abmahnungen – das wollen wir dir ersparen. In deinen Texten und Gesprächen kannst du natürlich weiter vom Energieausgleich sprechen.' },
+  { id: 'hinweis', titel: 'Kleiner Hinweis unten auf jeder Seite', vorschlag: '„Meine Beratungen ersetzen keine ärztliche, psychologische, rechtliche oder finanzielle Beratung – und auch nicht den gesunden Menschenverstand. 🌿“', warum: 'Deine Texte sprechen von Schlaf, Erschöpfung und Finanzen. Mit diesem Satz bist du auf der sicheren Seite – und er klingt nach dir, nicht nach Juristendeutsch.' },
+  { id: 'wortwahl', titel: 'Behutsame Wortwahl', vorschlag: '„überlieferte Lehre“ statt „Wissenschaft“, und bei Business und Finanzen eher „Impulse“ und „Tendenzen“ statt fester Zusagen.', warum: 'In der Werbung darf man nur „wissenschaftlich“ oder „garantiert“ schreiben, wenn man es belegen kann. Weichere Worte schützen dich, ohne dass dein Angebot an Wirkung verliert.' },
+  { id: 'fs-frist', titel: 'Eröffnungspreise bei Feng Shui', vorschlag: 'Die Eröffnungspreise für die Feng-Shui-Pakete und alle Upgrades gelten wie bei der Numerologie bis zum 30.11.2026.', warum: 'Im Skript steht das Datum nur bei der Numerologie. Ein gemeinsames Datum ist für Kunden am einfachsten.' },
+  { id: 'farben', titel: 'Die Farben', vorschlag: 'Cremeweiß, helles Apricot und Sand im Wechsel als Hintergrund; Terrakotta für die Knöpfe, Salbeigrün für Feng Shui, Gold für Numerologie (siehe „Dein Entwurf“).', warum: 'Alles direkt aus deinem Logo ausgelesen.' },
+  { id: 'felder-1c', titel: 'Bestellung Box 1c (Jahres-Kompass)', vorschlag: 'Zusätzliches Feld: Auswahl „aktuelles Lebensjahr“ oder „kommendes Lebensjahr“.', warum: 'Damit du weißt, welches Jahr du berechnen sollst.' },
+  { id: 'felder-5b', titel: 'Bestellung Box 5b (Gründung)', vorschlag: 'Zusätzliche Felder: Wunsch-Firmenname(n) – bis zu drei – und der geplante Zeitraum der Gründung.', warum: 'Deine Box prüft Firmennamen und Gründungsdatum – dafür brauchst du diese Angaben.' },
+  { id: 'felder-5c', titel: 'Bestellung Box 5c (Geldfluss-Timer)', vorschlag: 'Zusätzliche Felder: Name der Firma und Gründungsdatum der Firma.', warum: 'Für die Zahlen-Schwingung des Geschäfts.' },
+  { id: 'felder-tiere', titel: 'Bestellung Box 3 (Haustiere)', vorschlag: 'Felder je Tier: Name, Tierart, Geburts- oder Einzugsdatum. Mit einem Knopf „weiteres Tier hinzufügen“, falls jemand mehrere hat (Harmonie im Rudel).', warum: 'Deine Box spricht vom Rudel – da kommen oft mehrere Tiere zusammen.' },
+  { id: 'felder-upgrades', titel: 'Felder bei den Upgrades', vorschlag: 'Wunschdatum: Feld für das geplante Datum oder einen Zeitraum. Reisen: Feld für Reiseziele und Zeitraum. Startdatum: Feld für den geplanten Termin.', warum: 'Damit du alles auf einen Blick hast und nicht nachfragen musst.' },
+  { id: 'anfrage-felder', titel: 'Anfrageformular (Paket 2–4, Großprojekte)', vorschlag: 'Name, E-Mail, Telefon, „Rückruf“ oder „Antwort per E-Mail“, Upgrades zum Ankreuzen – und zusätzlich: Wohnort, ungefähre Quadratmeter und Anzahl der Bewohner (für Paket 3).', warum: 'Mit Quadratmetern und Bewohnern kannst du gleich sehen, ob die 120 qm passen und wie viele Kua-Zahlen du brauchst.' }
+];
+
+// ---- Zugang ----
+var h = new URLSearchParams(location.hash.slice(1)), SCHLUESSEL = h.get('k') || h.get('a') || '';
+try { if (SCHLUESSEL) sessionStorage.setItem('cuorePortal', SCHLUESSEL); else SCHLUESSEL = sessionStorage.getItem('cuorePortal') || ''; } catch (e) {}
+if (SCHLUESSEL && history.replaceState) history.replaceState(null, '', location.pathname);
+var ROLLE = null, EINTRAEGE = [];
+function api(pfad, daten) {
+  return fetch(API + pfad, { method: daten ? 'POST' : 'GET', headers: Object.assign({ 'x-schluessel': SCHLUESSEL }, daten ? { 'content-type': 'application/json' } : {}), body: daten ? JSON.stringify(daten) : undefined })
+    .then(function (r) { if (r.status === 401) throw new Error('kein Zugang'); return r.json().then(function (j) { if (!r.ok) throw new Error(j.fehler || ('Fehler ' + r.status)); return j; }); });
+}
+function el(t, a, kinder) { var e = document.createElement(t); if (a) for (var k in a) { if (k === 'text') e.textContent = a[k]; else if (k === 'html') e.innerHTML = a[k]; else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), a[k]); else e.setAttribute(k, a[k]); } (kinder || []).forEach(function (c) { if (c) e.appendChild(c); }); return e; }
+function melde(ziel, ok, text) { ziel.textContent = text; ziel.className = ok ? 'gespeichert' : 'fehler'; if (ok) setTimeout(function () { if (ziel.textContent === text) ziel.textContent = ''; }, 4000); }
+function senden(eintrag, meldung, knopf) {
+  if (knopf) knopf.classList.add('warten');
+  return api('/eintrag', eintrag).then(function () { melde(meldung, true, '✓ Gespeichert'); return laden(); })
+    .catch(function (e) { melde(meldung, false, 'Nicht gespeichert: ' + e.message + ' – bitte später noch einmal'); throw e; })
+    .then(function () { if (knopf) knopf.classList.remove('warten'); }, function (e) { if (knopf) knopf.classList.remove('warten'); throw e; });
+}
+function letzter(bereich, schluessel) { for (var i = 0; i < EINTRAEGE.length; i++) if (EINTRAEGE[i].bereich === bereich && EINTRAEGE[i].schluessel === schluessel) return EINTRAEGE[i]; return null; }
+function datum(z) { return z.slice(8, 10) + '.' + z.slice(5, 7) + '.'; }
+
+// ---- Reiter ----
+function reiter(name) {
+  document.querySelectorAll('nav button').forEach(function (x) { x.setAttribute('aria-selected', x.getAttribute('data-reiter') === name ? 'true' : 'false'); });
+  document.querySelectorAll('section[data-seite]').forEach(function (s) { s.hidden = s.getAttribute('data-seite') !== name; });
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('nav button').forEach(function (b) { b.addEventListener('click', function () { reiter(b.getAttribute('data-reiter')); }); });
+document.querySelectorAll('[data-gehe]').forEach(function (b) { b.addEventListener('click', function () { reiter(b.getAttribute('data-gehe')); }); });
+
+// ---- Entwurf: geschützte Seite vom Worker, als neuer Tab ----
+document.getElementById('entwurfOeffnen').addEventListener('click', function () {
+  var fenster = window.open('', '_blank');
+  fetch(API + '/seite?name=startseite', { headers: { 'x-schluessel': SCHLUESSEL } })
+    .then(function (r) { if (!r.ok) throw new Error('Fehler ' + r.status); return r.text(); })
+    .then(function (html) { var u = URL.createObjectURL(new Blob([html], { type: 'text/html' })); if (fenster) fenster.location = u; else location.href = u; })
+    .catch(function (e) { if (fenster) fenster.close(); melde(document.getElementById('entwurfMeldung'), false, 'Der Entwurf lässt sich gerade nicht öffnen (' + e.message + ')'); });
+});
+var urteil = null;
+[['gefällt mir', '😍 Gefällt mir'], ['fast', '🙂 Fast – mit Änderungen'], ['eher nicht', '🤔 Eher nicht']].forEach(function (o) {
+  var w = document.getElementById('entwurfWahl');
+  var b = el('button', { type: 'button', 'aria-pressed': 'false', text: o[1], onclick: function () { urteil = o[0]; w.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); } }); w.appendChild(b);
+});
+document.getElementById('entwurfSenden').addEventListener('click', function () {
+  var t = document.getElementById('entwurfText'), m = document.getElementById('entwurfMeldung');
+  if (!urteil && !t.value.trim()) return melde(m, false, 'Bitte erst einen Knopf wählen oder etwas schreiben');
+  senden({ bereich: 'entwurf', schluessel: 'startseite', inhalt: (urteil ? '[' + urteil + '] ' : '') + t.value.trim() }, m, this).then(function () { t.value = ''; }, function () {});
+});
+function entwurfBisher() { var v = letzter('entwurf', 'startseite'); document.getElementById('entwurfBisher').textContent = v ? 'Zuletzt von dir (' + datum(v.zeit) + '): ' + v.inhalt : ''; }
+
+// ---- Vorschläge ----
+function vorschlaegeZeigen() {
+  var liste = document.getElementById('vorschlagListe'); liste.innerHTML = '';
+  VORSCHLAEGE.forEach(function (v) {
+    var vorher = letzter('vorschlag', v.id), j = null; if (vorher) { try { j = JSON.parse(vorher.inhalt); } catch (e) {} }
+    var meldung = el('span'), feld = el('textarea', { placeholder: 'Wie hättest du es lieber?' }), anders = el('div', {}, [feld]);
+    anders.hidden = !(j && j.wahl === 'anders'); if (j && j.text) feld.value = j.text;
+    var wahl = el('div', { class: 'reihe wahl' });
+    var passt = el('button', { type: 'button', 'aria-pressed': String(!!j && j.wahl === 'passt'), text: '✓ Passt so', onclick: function () {
+      passt.setAttribute('aria-pressed', 'true'); lieber.setAttribute('aria-pressed', 'false'); anders.hidden = true;
+      senden({ bereich: 'vorschlag', schluessel: v.id, inhalt: JSON.stringify({ wahl: 'passt' }) }, meldung, null).catch(function () {}); } });
+    var lieber = el('button', { type: 'button', 'aria-pressed': String(!!j && j.wahl === 'anders'), text: '✏️ Lieber anders', onclick: function () {
+      lieber.setAttribute('aria-pressed', 'true'); passt.setAttribute('aria-pressed', 'false'); anders.hidden = false; feld.focus(); } });
+    wahl.appendChild(passt); wahl.appendChild(lieber);
+    var speichern = el('button', { class: 'knopf voll klein', type: 'button', text: 'Speichern', onclick: function () {
+      if (!feld.value.trim()) return melde(meldung, false, 'Bitte kurz schreiben, wie du es lieber hättest');
+      senden({ bereich: 'vorschlag', schluessel: v.id, inhalt: JSON.stringify({ wahl: 'anders', text: feld.value.trim() }) }, meldung, speichern).catch(function () {}); } });
+    anders.appendChild(el('div', { class: 'reihe' }, [speichern]));
+    liste.appendChild(el('div', { class: 'karte' }, [el('h3', { text: v.titel }),
+      el('div', { class: 'vorschlag' }, [el('b', { text: 'Unser Vorschlag: ' }), document.createTextNode(v.vorschlag)]),
+      el('p', { class: 'warum', text: 'Warum: ' + v.warum }), wahl, anders, meldung]));
+  });
+}
+
+// ---- Fakten ----
+var FAKT_FELDER = ['mail', 'telefon', 'social', 'region', 'anfahrt', 'lieferzeit', 'domain', 'schrift', 'logodatei', 'frei'];
+document.getElementById('faktForm').addEventListener('submit', function (ev) { ev.preventDefault();
+  var f = ev.target, d = {};
+  FAKT_FELDER.forEach(function (n) { d[n] = f.elements[n].value.trim(); });
+  d.zahlung = [].slice.call(f.querySelectorAll('input[name=zahlung]:checked')).map(function (x) { return x.value; });
+  var ku = f.querySelector('input[name=kleinunternehmer]:checked'); d.kleinunternehmer = ku ? ku.value : '';
+  senden({ bereich: 'fakt', schluessel: 'angaben', inhalt: JSON.stringify(d) }, document.getElementById('faktMeldung'), f.querySelector('button[type=submit]')).catch(function () {}); });
+function faktenVorbelegen() { var v = letzter('fakt', 'angaben'); if (!v) return; try { var d = JSON.parse(v.inhalt), f = document.getElementById('faktForm');
+  FAKT_FELDER.forEach(function (n) { if (d[n] != null) f.elements[n].value = d[n]; });
+  f.querySelectorAll('input[name=zahlung]').forEach(function (x) { x.checked = (d.zahlung || []).indexOf(x.value) >= 0; });
+  f.querySelectorAll('input[name=kleinunternehmer]').forEach(function (x) { x.checked = x.value === d.kleinunternehmer; });
+  } catch (e) {} faktBisher(); }
+function faktBisher() { var v = letzter('fakt', 'angaben'); document.getElementById('faktBisher').textContent = v ? 'Zuletzt gespeichert am ' + datum(v.zeit) + ' · ' + v.status : ''; }
+
+// ---- Bilder ----
+function verkleinern(datei) { return new Promise(function (ok, fehl) {
+  var r = new FileReader(); r.onerror = fehl; r.onload = function () { var i = new Image(); i.onerror = function () { fehl(new Error('kein Bild')); }; i.onload = function () {
+    var m = 1600, s = Math.min(1, m / Math.max(i.width, i.height)), c = document.createElement('canvas'); c.width = Math.round(i.width * s); c.height = Math.round(i.height * s);
+    c.getContext('2d').drawImage(i, 0, 0, c.width, c.height); var q = 0.85, d = c.toDataURL('image/jpeg', q); while (d.length > 850000 && q > 0.4) { q -= 0.1; d = c.toDataURL('image/jpeg', q); } ok(d); }; i.src = r.result; }; r.readAsDataURL(datei); }); }
+function bilderSenden(dateien) {
+  var meldung = document.getElementById('bildMeldung'), zweck = document.getElementById('bildZweck').value, dazu = document.getElementById('bildText').value.trim(), n = 0;
+  dateien = [].slice.call(dateien).filter(function (f) { return /^image\//.test(f.type); }); if (!dateien.length) return;
+  meldung.className = ''; meldung.textContent = 'Wird gesendet …';
+  dateien.reduce(function (p, f) { return p.then(function () { return verkleinern(f).then(function (d) { return api('/eintrag', { bereich: 'bild', schluessel: zweck, inhalt: dazu || f.name || '', bild: d }); }).then(function () { n++; }); }); }, Promise.resolve())
+    .then(function () { melde(meldung, true, '✓ ' + n + (n === 1 ? ' Bild' : ' Bilder') + ' gesendet'); document.getElementById('bildText').value = ''; laden(); })
+    .catch(function (e) { melde(meldung, false, (n ? n + ' gesendet, dann ' : '') + 'Fehler: ' + e.message); laden(); });
+}
+document.getElementById('bildDatei').addEventListener('change', function (e) { bilderSenden(e.target.files); e.target.value = ''; });
+var ablage = document.getElementById('ablage');
+['dragenter', 'dragover'].forEach(function (t) { ablage.addEventListener(t, function (e) { e.preventDefault(); ablage.classList.add('drueber'); }); });
+['dragleave', 'drop'].forEach(function (t) { ablage.addEventListener(t, function (e) { e.preventDefault(); ablage.classList.remove('drueber'); }); });
+ablage.addEventListener('drop', function (e) { bilderSenden(e.dataTransfer.files); });
+var BILDURL = {};
+function bildLaden(id, img) { if (BILDURL[id]) { img.src = BILDURL[id]; return; } fetch(API + '/bild?id=' + id, { headers: { 'x-schluessel': SCHLUESSEL } }).then(function (r) { return r.blob(); }).then(function (b) { BILDURL[id] = URL.createObjectURL(b); img.src = BILDURL[id]; }).catch(function () {}); }
+function bilderZeigen() { var l = document.getElementById('bilderListe'); l.innerHTML = ''; EINTRAEGE.filter(function (e) { return e.bereich === 'bild' && e.hat_bild; }).forEach(function (e) { var img = el('img', { alt: e.inhalt }); bildLaden(e.id, img); l.appendChild(el('figure', {}, [img, el('figcaption', { text: e.schluessel + (e.inhalt ? ' · ' + e.inhalt : '') })])); }); }
+
+// ---- Verlauf (für Andreas: Eingang mit Abhaken) ----
+var NAMEN = { entwurf: 'Entwurf', vorschlag: 'Vorschlag', fakt: 'Angaben', bild: 'Bild', notiz: 'Notiz' };
+var VTITEL = {}; VORSCHLAEGE.forEach(function (v) { VTITEL[v.id] = v.titel; });
+function lesbar(e) {
+  if (e.bereich === 'vorschlag') { try { var j = JSON.parse(e.inhalt); return j.wahl === 'passt' ? '✓ passt so' : '✏️ lieber anders: ' + j.text; } catch (x) {} }
+  if (e.bereich === 'fakt') { try { var d = JSON.parse(e.inhalt), z = []; for (var k in d) { var w = Array.isArray(d[k]) ? d[k].join(', ') : d[k]; if (w) z.push(k + ': ' + w); } return z.join('\n') || '(leer)'; } catch (x) {} }
+  return e.inhalt; }
+function verlaufZeigen() {
+  var l = document.getElementById('verlaufListe'); l.innerHTML = '';
+  if (!EINTRAEGE.length) { l.appendChild(el('li', { text: 'Noch nichts geschickt.' })); return; }
+  EINTRAEGE.forEach(function (e) {
+    var kopf = el('div', { class: 'kopf' }, [el('span', { class: 'marke ' + e.status, text: e.status }), el('span', { text: NAMEN[e.bereich] + ' · ' + (VTITEL[e.schluessel] || e.schluessel) }), el('span', { text: datum(e.zeit) + ' ' + e.zeit.slice(11, 16) + ' UTC' })]);
+    var kinder = [kopf, el('pre', { text: lesbar(e) })];
+    if (e.hat_bild) { var img = el('img', { style: 'max-width:180px;border-radius:8px;margin-top:6px;display:block', alt: '' }); bildLaden(e.id, img); kinder.push(img); }
+    if (ROLLE === 'admin' && e.status === 'neu') kinder.push(el('div', { class: 'reihe' }, [el('button', { class: 'knopf leer klein', type: 'button', text: '✓ übernommen', onclick: function () { api('/status', { id: e.id, status: 'übernommen' }).then(laden); } })]));
+    l.appendChild(el('li', {}, kinder));
+  });
+}
+
+function laden() { return api('/eintraege').then(function (j) { EINTRAEGE = j.eintraege || []; bilderZeigen(); verlaufZeigen(); entwurfBisher(); faktBisher();
+  var neu = EINTRAEGE.filter(function (e) { return e.status === 'neu'; }).length; var b = document.querySelector('nav button[data-reiter="verlauf"]'); b.textContent = ROLLE === 'admin' ? 'Eingang' + (neu ? ' (' + neu + ' neu)' : '') : 'Verlauf'; }); }
+function start() {
+  if (!SCHLUESSEL) { document.getElementById('ohneZugang').hidden = false; return; }
+  api('/wer').then(function (j) { ROLLE = j.rolle; document.getElementById('app').hidden = false;
+    if (ROLLE === 'admin') { document.getElementById('gruss').textContent = 'Eingang – was Stefania geschickt hat'; document.getElementById('verlaufTitel').textContent = 'Eingang'; document.getElementById('verlaufHilfe').textContent = 'Neu = noch nicht eingebaut. Nach dem Einbau abhaken.'; document.getElementById('einleitung').textContent = 'Du siehst alles wie Stefania – plus den Eingang. Was eingebaut ist, abhaken: dann sieht sie „übernommen“.'; }
+    return laden(); }).then(function () { vorschlaegeZeigen(); faktenVorbelegen();
+    if (ROLLE === 'admin') reiter('verlauf'); })
+    .catch(function (e) { document.getElementById('app').hidden = true; document.getElementById('ohneZugang').hidden = false; document.querySelector('#ohneZugang p').textContent = e.message === 'kein Zugang' ? 'Der Link ist nicht (mehr) gültig. Bitte bei Andreas melden.' : 'Gerade nicht erreichbar (' + e.message + '). Bitte später noch einmal.'; });
+}
+window.addEventListener('hashchange', function () { if (/[#&](k|a)=/.test(location.hash)) location.reload(); });
+start();
+</script>
+</body>
+</html>
