@@ -10345,8 +10345,8 @@ function codexTuerE() {                           // E an einer Tür
   kling(q.t.offen < 0.5 ? 'tuer_knarren' : 'tuer_zu', 0.35, { saat: n.h.cx | 0 }); q.t.umschalten(); q.auto = false; q.manuell = { plan: tuerPlan(n.h) }; return true; }   // der Handgriff gilt, bis Tag oder Nacht wechselt
 function codexWeiter(dt) {
   if (!CODEX_HAEUSER.length || EPOCHE !== 1400) return; var tn = codexTuerNah(); hauslebenWeiter(dt);
-  var et = !tn && EPOCHE === 1400 && !AUFTRAG.rede ? eigeneTuerNah() : null; if (et && P.t > (AUFTRAG.meldungBis || 0) - 0.05 && (!AUFTRAG.meldung || /^RECHTSKLICK: TÜR/.test(AUFTRAG.meldung) || P.t > AUFTRAG.meldungBis)) melden((et.tuerAuf || 0) > 0.5 ? 'RECHTSKLICK: TÜR SCHLIESSEN' : 'RECHTSKLICK: TÜR ÖFFNEN', 0.3);
-  if (tn && !AUFTRAG.rede && GANG && !GANG.drin) { var nh = tn.q.t.offen < 0.5 ? 'RECHTSKLICK: TÜR ÖFFNEN' : 'RECHTSKLICK: TÜR SCHLIESSEN'; if (P.t > (AUFTRAG.meldungBis || 0) - 0.05 && (!AUFTRAG.meldung || /^RECHTSKLICK: TÜR/.test(AUFTRAG.meldung) || P.t > AUFTRAG.meldungBis)) melden(nh, 0.3); }
+  var et = !tn && EPOCHE === 1400 && !AUFTRAG.rede && !(typeof ZIELSTUECK !== 'undefined' && ZIELSTUECK.e) ? eigeneTuerNah() : null; if (et && P.t > (AUFTRAG.meldungBis || 0) - 0.05 && (!AUFTRAG.meldung || /^RECHTSKLICK: TÜR/.test(AUFTRAG.meldung) || P.t > AUFTRAG.meldungBis)) melden((et.tuerAuf || 0) > 0.5 ? 'RECHTSKLICK: TÜR SCHLIESSEN' : 'RECHTSKLICK: TÜR ÖFFNEN', 0.3);
+  if (tn && !AUFTRAG.rede && GANG && !GANG.drin && !(typeof ZIELSTUECK !== 'undefined' && ZIELSTUECK.e)) {   /* 15.10.: zielt man auf ein Möbelstück, schweigt die Tür */ var nh = tn.q.t.offen < 0.5 ? 'RECHTSKLICK: TÜR ÖFFNEN' : 'RECHTSKLICK: TÜR SCHLIESSEN'; if (P.t > (AUFTRAG.meldungBis || 0) - 0.05 && (!AUFTRAG.meldung || /^RECHTSKLICK: TÜR/.test(AUFTRAG.meldung) || P.t > AUFTRAG.meldungBis)) melden(nh, 0.3); }
   CODEX_HAEUSER.forEach(function (h) { var dp = Math.hypot(h.cx - P.x, h.cy - P.y); h.codex.haus.gruppe.visible = dp < 30;   // 11.10.: ferne Innenräume nicht zeichnen (1.490 Teile)
     if (dp > 35 || h.leben) return;   // Hausleben bewegt Türen und Läden selbst (README: nicht zusätzlich haus.bewegen)
     h.codexTueren.forEach(function (q) {           // Bewohner öffnen die Tür von selbst und schließen sie hinter sich
@@ -11067,8 +11067,10 @@ function hinstellenStart() {
 }
 function hinstellenWeiter() {
   var k = kammerWelt(); if (!k) return; var sichtbar = EPOCHE === 1400; KAMMER_OBJ.forEach(function (e) { e.o.visible = sichtbar; }); kammerLichtWeiter();
-  if (!PLATZ) { if (kammerGemietet() && P.drinnen === k && KINHALT.beutel.length && P.t > (AUFTRAG.meldungBis || 0) && !AUFTRAG.rede) melden('RECHTSKLICK: ' + MOEBEL_KATALOG[KINHALT.beutel[0]].n.toUpperCase() + ' HINSTELLEN' + (KINHALT.beutel.length > 1 ? ' (' + KINHALT.beutel.length + ' IM BEUTEL)' : ''), 0.4); return; }
-  if (P.drinnen !== k) { hinstellenAbbrechen(); return; }
+  if (!PLATZ) { var ziel = P.drinnen === k && !AUFTRAG.rede && !INVENTAR ? aufhebenZiel() : null; zielMarkieren(ziel);
+    if (ziel && P.t > (AUFTRAG.meldungBis || 0) - 0.05 && (!AUFTRAG.meldung || /^(RECHTSKLICK|DU SIEHST)/.test(AUFTRAG.meldung) || P.t > AUFTRAG.meldungBis)) melden('DU SIEHST: ' + MOEBEL_KATALOG[ziel.st.a].n.toUpperCase() + ' · RECHTSKLICK: AUFHEBEN' + (ziel.st.a === 'reibstein' ? ' (MIT FARBE: MALEN)' : ''), 0.3);
+    else if (!ziel && kammerGemietet() && P.drinnen === k && KINHALT.beutel.length && P.t > (AUFTRAG.meldungBis || 0) && !AUFTRAG.rede) melden('RECHTSKLICK: ' + MOEBEL_KATALOG[KINHALT.beutel[0]].n.toUpperCase() + ' HINSTELLEN' + (KINHALT.beutel.length > 1 ? ' (' + KINHALT.beutel.length + ' IM BEUTEL)' : ''), 0.4); return; }
+  zielMarkieren(null); if (P.drinnen !== k) { hinstellenAbbrechen(); return; }
   var m = MOEBEL_KATALOG[PLATZ.art], x = P.x + Math.sin(P.blick) * (1.2 + m.r), y = P.y + Math.cos(P.blick) * (1.2 + m.r); x = Math.round(x * 4) / 4; y = Math.round(y * 4) / 4;   // im Viertelmeter-Raster
   PLATZ.h = 0; var wo = m.lage === 'wand' ? schmuckAnWand(k, m) : m.lage === 'tisch' ? schmuckAufTisch(x, y) : null;
   if (wo) { x = wo.x; y = wo.y; PLATZ.h = wo.h; if (wo.d !== undefined) PLATZ.d = wo.d; }
@@ -11111,10 +11113,24 @@ function hinstellenJetzt() {
   var st = { a: PLATZ.art, x: PLATZ.x, y: PLATZ.y, d: PLATZ.d }; if (PLATZ.h) st.h = PLATZ.h; if (st.a === 'rosette') { st.bild = farb().rosetten.shift(); farbSpeichern(); } KINHALT.beutel.shift(); KINHALT.stuecke.push(st); kinhaltSpeichern(); hinstellenAbbrechen(); moebelBauen(st);
   melden(MOEBEL_KATALOG[st.a].n.toUpperCase() + ' STEHT · DEINE KAMMER WIRD WOHNLICH', 3); return true;
 }
+var ZIEL_STRAHL = null;
+function aufhebenZiel() {                        // worauf man in der Kammer zielt (dasselbe für Rechtsklick und Leuchten)
+  // 15.10.: ein Sichtstrahl genau durch das Fadenkreuz – trifft auch Wandschmuck oben und Dinge unten am Boden. Vorher zählte nur die waagerechte
+  // Blickrichtung mit festem Abstand, darum ließen sich Wandbehang und Rosette in einer vollen Kammer kaum anzielen.
+  var k = kammerWelt(); if (!k || P.drinnen !== k || PLATZ || !KAMMER_OBJ.length) return null;
+  if (!ZIEL_STRAHL) ZIEL_STRAHL = new THREE.Raycaster(); kamera.updateMatrixWorld(); ZIEL_STRAHL.setFromCamera({ x: 0, y: 0 }, kamera); ZIEL_STRAHL.far = 9;
+  var treffer = ZIEL_STRAHL.intersectObjects(KAMMER_OBJ.map(function (e) { return e.o; }), true);
+  for (var i = 0; i < treffer.length; i++) { var o = treffer[i].object; while (o && !KAMMER_OBJ.some(function (e) { return e.o === o; })) o = o.parent; if (!o) continue;
+    var e = KAMMER_OBJ.filter(function (q) { return q.o === o; })[0], pt = treffer[i].point; if (Math.hypot(pt.x - P.x, -pt.z - P.y) > 3.2) return null; return e; }   // nur, was man mit dem Arm erreicht
+  return null; }
+// 15.10. (Andreas: „ohne zu wissen, was man aufnimmt, ist es sehr schwer zu dekorieren“): das Ziel leuchtet warm auf, die Meldung nennt es
+var ZIELSTUECK = { e: null, alt: [] };
+function zielMarkieren(e) {
+  if (ZIELSTUECK.e === e) return; ZIELSTUECK.alt.forEach(function (q) { if (q.m.emissive) q.m.emissive.setHex(q.h); }); ZIELSTUECK.alt = []; ZIELSTUECK.e = e; if (!e) return;
+  e.o.traverse(function (q) { if (!q.isMesh) return; (Array.isArray(q.material) ? q.material : [q.material]).forEach(function (m) { if (m && m.emissive) { ZIELSTUECK.alt.push({ m: m, h: m.emissive.getHex() }); m.emissive.setHex(0x4a3410); } }); }); }
 function aufheben() {                            // Rechtsklick auf ein hingestelltes Stück: zurück in den Beutel
-  var k = kammerWelt(); if (!k || P.drinnen !== k || PLATZ) return false; var fx = Math.sin(P.blick), fy = Math.cos(P.blick), best = null, bd = 1e9;
-  KAMMER_OBJ.forEach(function (e) { var dx = e.st.x - P.x, dy = e.st.y - P.y, d = Math.hypot(dx, dy), quer = Math.abs(dx * fy - dy * fx); if (d < 2.2 && dx * fx + dy * fy > 0 && quer < e.kreis[2] + 0.15 && d < bd) { bd = d; best = e; } });   // nur, worauf man wirklich zielt
-  if (!best) return false; szene.remove(best.o); var i = k.moebel.indexOf(best.kreis); if (i >= 0) k.moebel.splice(i, 1); KAMMER_OBJ.splice(KAMMER_OBJ.indexOf(best), 1);
+  var k = kammerWelt(), best = aufhebenZiel();
+  if (!best) return false; zielMarkieren(null); szene.remove(best.o); var i = k.moebel.indexOf(best.kreis); if (i >= 0) k.moebel.splice(i, 1); KAMMER_OBJ.splice(KAMMER_OBJ.indexOf(best), 1);
   KINHALT.stuecke.splice(KINHALT.stuecke.indexOf(best.st), 1); KINHALT.beutel.unshift(best.st.a); if (best.st.a === 'rosette' && best.st.bild) { farb().rosetten.unshift(best.st.bild); farbSpeichern(); } kinhaltSpeichern(); kammerBettPruefen(); melden(MOEBEL_KATALOG[best.st.a].n.toUpperCase() + ' AUFGEHOBEN · RECHTSKLICK: WIEDER HINSTELLEN', 3); return true;
 }
 addEventListener('wheel', function (e) { if (BL.an) { BL.r = Math.max(1, Math.min(8, BL.r + (e.deltaY < 0 ? 0.5 : -0.5))); e.preventDefault(); return; } if (KARTE === 2 && !PLATZ) { KARTE_ZOOM = Math.max(0, Math.min(2, KARTE_ZOOM + (e.deltaY < 0 ? 1 : -1))); e.preventDefault(); return; } if (!PLATZ) { if (EPOCHE === 1400 && SPIELER && !INVENTAR && !QUESTBUCH && (document.pointerLockElement === weltCv || 'ontouchstart' in window === false)) { handRad(e.deltaY > 0 ? 1 : -1); e.preventDefault(); } return; } PLATZ.d += (e.deltaY > 0 ? 1 : -1) * Math.PI / 8; e.preventDefault(); }, { passive: false });
@@ -11207,7 +11223,7 @@ function reibenWeiter(dt) {
     melden((w ? 'LINKE MAUS HALTEN: ' + PIGMENTE[w][0].toUpperCase() + ' REIBEN' : 'REIBSTEIN · KEIN FARBSTOFF') + (tp ? ' · RECHTSKLICK: MALEN (' + tp + ' TÖPFCHEN)' : ''), 0.4); }
 }
 function reibsteinRechts() {                     // Rechtsklick am Reibstein: das Malbrett, wenn es Farbe gibt (sonst darf man ihn aufheben)
-  if (!reibsteinNah() || PLATZ) return false; var F = farb(), t = Object.keys(F.toepfe).filter(function (k) { return F.toepfe[k] > 0; }); if (!t.length) return false;
+  if (!reibsteinNah() || PLATZ) return false; var zz = aufhebenZiel(); if (zz && zz.st.a !== 'reibstein') return false; var F = farb(), t = Object.keys(F.toepfe).filter(function (k) { return F.toepfe[k] > 0; }); if (!t.length) return false;
   malbrettOeffnen(); return true; }
 function malbrettOeffnen() {
   if (MALBRETT) return; var f = document.createElement('iframe'); f.src = 'malbrett.html'; f.title = 'Malbrett';
@@ -11520,7 +11536,7 @@ function flutVersteckt(l) { if (FLUT.z === null) return false; if (FLUT.flucht &
 // Ein Übergang wie an der Tür, kein freies Treppenlaufen. Oben: Codex' Betten und Treppenkopf, dazu (bis Codex Auftrag 34 echte Böden liefert) ein schlichter Dielenboden.
 // Bei Hochwasser sitzen oben die, die hier Zuflucht gefunden haben (bis 6 Figuren).
 function treppeOrt(h) { var hs = h && h.codex && h.codex.haus; if (!hs || !hs.treppen || !hs.treppen.length || !hs.geschossHoehe) return null; var t = hs.treppen[0]; return h.codex.welt(t.x, t.z); }
-function treppeNah() { var h = P.oben ? P.oben.h : P.drinnen; if (!h || !h.codex) return null; var w = treppeOrt(h); return w && Math.hypot(P.x - w[0], P.y - w[1]) < 1.7 ? { h: h, w: w } : null; }
+function treppeNah() { var h = P.oben ? P.oben.h : P.drinnen; if (!h || !h.codex) return null; var w = treppeOrt(h); return w && Math.hypot(P.x - w[0], P.y - w[1]) < 2.2 ? { h: h, w: w } : null; }   /* 15.10.: 2,2 statt 1,7 m */
 function obenGruppen(h, an) { var hs = h.codex.haus; if (hs.geschossZeigen) { try { hs.geschossZeigen(an ? 1 : 0, { decke: !!an }); } catch (e) {} return; }   // 12.10.: Codex 34 – echte Dielen, Wände, Stube oben
   hs.gruppe.children.forEach(function (c) { if (Math.abs(c.position.y - hs.geschossHoehe) < 0.02 && c !== h.__diele) c.visible = an; }); }
 function obenDiele(h) { if (h.__diele) return h.__diele; if (h.codex.haus.geschossZeigen) return null; var hs = h.codex.haus, g = hs.grundriss || []; if (g.length < 3) return null; var sh = new THREE.Shape(); g.forEach(function (p, i) { if (i) sh.lineTo(p[0], -p[1]); else sh.moveTo(p[0], -p[1]); });
@@ -11539,7 +11555,12 @@ function treppeHandhaben() { var T = treppeNah(); if (!T) return false; var h = 
   var ziel = null; for (var r = 0.6; r <= 2.6 && !ziel; r += 0.2) for (var an = 0; an < 6.28; an += 0.4) { var qx = T.w[0] + Math.cos(an) * r, qy = T.w[1] + Math.sin(an) * r; if (frei(qx, qy) && hausInnen(qx, qy) === h) { ziel = [qx, qy]; break; } }   // neben der Treppe, nicht darauf (sie ist ein Möbelstück)
   if (ziel) { P.x = ziel[0]; P.y = ziel[1]; } return true; }
 function treppeWeiter() { if (P.oben && (EPOCHE !== 1400 || !hausInnen(P.x, P.y))) { var h = P.oben.h; obenLeute(h, false); obenGruppen(h, false); if (h.__diele) h.__diele.visible = false; P.oben = null; }
-  if (P.t > (AUFTRAG.meldungBis || 0) && !AUFTRAG.rede && treppeNah()) melden(P.oben ? 'RECHTSKLICK: DIE TREPPE HINUNTER' : 'RECHTSKLICK: DIE TREPPE HINAUF', 0.4); }
+  if (P.t > (AUFTRAG.meldungBis || 0) && !AUFTRAG.rede && treppeNah()) melden(P.oben ? 'RECHTSKLICK: DIE TREPPE HINUNTER' : 'RECHTSKLICK: DIE TREPPE HINAUF', 0.4);
+  else if (P.t > (AUFTRAG.meldungBis || 0) && !AUFTRAG.rede && EPOCHE === 1400) {   // 15.10. (Andreas: „ich habe keine Treppe nach oben“): im eigenen Haus sagen, wo sie ist
+    var mein = erbHaus(), h = P.oben ? P.oben.h : P.drinnen; if (!mein || h !== mein) return; var w = treppeOrt(h); if (!w) return;
+    var d = Math.hypot(w[0] - P.x, w[1] - P.y), wi = Math.atan2(w[0] - P.x, w[1] - P.y) - P.blick; wi = Math.atan2(Math.sin(wi), Math.cos(wi));
+    var ri = Math.abs(wi) < 0.5 ? 'VOR DIR' : Math.abs(wi) > 2.4 ? 'HINTER DIR' : wi > 0 ? 'RECHTS' : 'LINKS';
+    melden((P.oben ? 'DIE TREPPE HINUNTER: ' : 'DIE TREPPE NACH OBEN (WOHNUNG, BETT): ') + Math.round(d) + ' M ' + ri + ' · DORT RECHTSKLICK', 0.4); } }
 // ---- Generationswechsel (12.10., Stufe 4; Codex Auftrag 33: Altern bis 80, Schlüsselübergabe, Bank, Wanderstock, Grabkreuz) ----
 // Die Figur altert mit der Spielzeit (Ankunft mit 16). Ist das Kind 16, bietet der Morgen „6 als <Kind> weiterspielen“: Übergabe mit Schlüssel,
 // man spielt als das Kind weiter (erbt Heller, Stand, Kammer); der Vater sitzt als Großvater mit Stock auf der Bank vor dem Haus, die Mutter bleibt.
@@ -17051,6 +17072,7 @@ function handhaben() {
   if (ereignisHandhaben()) return true;
   if (wirtAnkauf()) return true;
   if (essenKaufen()) return true;
+  var zs = aufhebenZiel(); if (zs) { var hz = new Date(himmelsZeit()).getHours(); if (!(zs.st.a === 'bett' && (hz >= 19 || hz < 5))) return reibsteinRechts() || aufheben(); }   // 15.10.: zielt man auf ein Stück, gewinnt das Stück (vorher kam „Kammer schlafen“ zuerst, das Bett steht in einer vollen Kammer immer in Reichweite) – nur abends schläft man auf dem Bett
   var sc = schatzNah(); if (sc) { sc.weg = true; sc.m.visible = false; inBeutel(sc.d); return true; }
   var vs = versteckNah(); if (vs && (JAGD || AUFTRAG.schmuggel === 1 || !naechsteePerson())) { versteckRein(vs); return true; }
   return reitenHandhaben() || karrenHandhaben() || angelHandhaben() || haselSchneiden() || schmiedHaken() || lehreSchlafen() || leseAbgeben() || kaiAbgeben() || kaiNehmen() || steinAbgeben() || steinNehmen() || kramZurueck() || kramNehmen() || moebelKaufen() || strohsack() || erbHandhaben() || kammerSchlafen() || reibsteinRechts() || aufheben() || hinstellenStart() || grabHohl() || schmiedBeil() || weberHandel() || kircheSitzen() || hundAnfassen() || sammeln() || steinAblegen() || handBenutzen();   // 12.10.: der Karren steht oben (Andreas: „sitzen konnte ich nicht“ – Aufheben/Sammeln kamen ihm zuvor)
@@ -17255,8 +17277,15 @@ function buchsatz(t) { t = String(t); if (/[a-zäöüß]/.test(t)) return t;
   return t.replace(/(^|· |: |\(|„)([a-zäöü])/g, function (m, a, b) { return a + b.toUpperCase(); }).replace(/(\d) M\b/g, '$1 m'); }   // 138 M → 138 m
 function text(t, x, y, gr, farbe, ausr) { t = buchsatz(t); hud.font = (gr * 1.3) + 'px ' + SCHRIFT_ZEILE; hud.textAlign = ausr || 'center'; hud.textBaseline = 'alphabetic'; hud.fillStyle = 'rgba(0,0,0,.85)'; hud.fillText(t, x + 0.45, y + 0.45); hud.fillStyle = farbe || '#fff'; hud.fillText(t, x, y); }
 var bodenBildHud = null;
+// 15.10. (Andreas: „es fehlt dieses Kreuz, damit ich weiß, was ich ansehe“): kleines Fadenkreuz in der Bildmitte. Golden, wenn es auf ein Stück zielt, das man aufheben kann.
+function fadenkreuz(W, H) {
+  if (PAUSE || INVENTAR || QUESTBUCH || KARTE === 2 || MALBRETT || STARTSCHIRM || AUFTRAG.rede || PLATZ) return;
+  var x = Math.round(W / 2), y = Math.round(H / 2), gold = !!(ZIELSTUECK && ZIELSTUECK.e);
+  hud.fillStyle = 'rgba(0,0,0,.55)'; hud.fillRect(x - 6, y - 1, 13, 3); hud.fillRect(x - 1, y - 6, 3, 13);
+  hud.fillStyle = gold ? '#ffd75e' : 'rgba(255,255,255,.9)'; hud.fillRect(x - 5, y, 4, 1); hud.fillRect(x + 2, y, 4, 1); hud.fillRect(x, y - 5, 1, 4); hud.fillRect(x, y + 2, 1, 4); hud.fillRect(x, y, 1, 1); }
 function hudMalen() {
   var W = PIXEL.b, H = PIXEL.h; hud.setTransform(HUD_SKALA, 0, 0, HUD_SKALA, 0, 0); hud.imageSmoothingEnabled = false; hud.clearRect(0, 0, W, H);   // Pixelbilder bleiben Pixel, Schrift wird scharf
+  fadenkreuz(W, H);
   if (P.drinnen) text(P.drinnen.anzeige, W / 2, 40, 11, '#ffd75e');
   else if (BLICKNAME) { hud.globalAlpha = Math.min(1, (P.t - NAMEZEIT) * 3); text(BLICKNAME.toUpperCase(), W / 2, 47, 10, '#ffd75e'); hud.globalAlpha = 1; }   // 11.10.: unter Auftrag und Ziel, nicht mehr darüber
   text(Math.round(gel(P.x, P.y)) + ' M Ü. NN', 6, H - 8, 9, '#f2ecdc', 'left');
@@ -17661,7 +17690,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = 'c043ac9f', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = 'ce6d540f', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
