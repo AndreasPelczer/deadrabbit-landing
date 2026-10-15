@@ -69,6 +69,20 @@
   .zugang{max-width:520px;margin:60px auto;text-align:center}
   .warten{opacity:.6;pointer-events:none}
   .weiter{margin-top:26px;text-align:right}
+  @font-face{font-family:'Cormorant Garamond';font-weight:600;src:url(schriften/cormorant-600.woff2) format('woff2')}
+  @font-face{font-family:'Lato';font-weight:400;src:url(schriften/lato-400.woff2) format('woff2')}
+  @font-face{font-family:'Poppins';font-weight:400;src:url(schriften/poppins-400.woff2) format('woff2')}
+  @font-face{font-family:'Poppins';font-weight:600;src:url(schriften/poppins-600.woff2) format('woff2')}
+  @font-face{font-family:'Playfair Display';font-weight:600;src:url(schriften/playfair-600.woff2) format('woff2')}
+  @font-face{font-family:'Source Sans 3';font-weight:400;src:url(schriften/sourcesans-400.woff2) format('woff2')}
+  .optionen{display:grid;gap:10px;margin:10px 0}
+  .option{font:inherit;text-align:left;border:2px solid var(--linie);background:var(--creme);border-radius:14px;padding:12px 14px;cursor:pointer;color:var(--text)}
+  .option[aria-pressed="true"]{border-color:var(--salbei);background:#EEF2E6}
+  .option b{display:block;font-size:17px}
+  .option .warum{display:block;margin:2px 0 0}
+  .option .band{margin-bottom:6px}
+  .probe1{font-size:26px;line-height:1.2;color:var(--bronze);margin:6px 0 2px}
+  .probe2{font-size:16px}
 </style>
 </head>
 <body>
@@ -82,7 +96,7 @@
 <header><div class="innen">
   <div class="von">Ambiente con Cuore · dein Arbeitsplatz</div>
   <h1 id="gruss">Hallo Stefania – hier entsteht deine Webseite. 🌿</h1>
-  <p class="einleitung" id="einleitung">Wir haben aus deinem Skript schon einen ersten Entwurf gebaut, in den Farben deines Logos. Schau ihn dir in Ruhe an. Wo wir etwas vorschlagen, reicht ein Klick auf „Passt so“ – und wo nur du die Antwort weißt, trägst du sie einfach ein. Alles wird sofort gespeichert, du kannst jederzeit aufhören und später weitermachen.</p>
+  <p class="einleitung" id="einleitung">Wir haben aus deinem Skript schon einen ersten Entwurf gebaut, in den Farben deines Logos. Schau ihn dir in Ruhe an. Wo wir etwas vorschlagen, reicht ein Klick – und die paar Dinge, die nur du weißt, trägst du einfach ein. Alles wird sofort gespeichert, du kannst jederzeit aufhören und später weitermachen.</p>
   <nav role="tablist">
     <button role="tab" data-reiter="entwurf" aria-selected="true">1 · Dein Entwurf</button>
     <button role="tab" data-reiter="vorschlaege">2 · Unsere Vorschläge</button>
@@ -148,7 +162,7 @@
 <!-- 2 VORSCHLÄGE -->
 <section data-seite="vorschlaege" hidden>
   <h2>Unsere Vorschläge</h2>
-  <p class="hilfe">Hier haben wir uns schon Gedanken gemacht. Wenn es für dich passt, reicht ein Klick auf „Passt so“. Wenn nicht, schreib kurz, wie du es lieber hättest.</p>
+  <p class="hilfe">Hier haben wir uns schon Gedanken gemacht. Wenn es für dich passt, reicht ein Klick auf „Passt so“ oder auf die Auswahl mit „Unser Vorschlag“. Wenn nicht, schreib kurz, wie du es lieber hättest.</p>
   <div id="vorschlagListe"></div>
   <div class="weiter"><button class="knopf leer" type="button" data-gehe="fakten">Weiter zu „Das weißt nur du“ →</button></div>
 </section>
@@ -156,14 +170,11 @@
 <!-- 3 FAKTEN -->
 <section data-seite="fakten" hidden>
   <h2>Das weißt nur du</h2>
-  <p class="hilfe">Diese Angaben brauchen wir für Kontakt, Bestellung und Impressum. Die grauen Beispiele sind nur Beispiele – bitte trag ein, was bei dir stimmt. Lücken sind kein Problem, dann fragen wir später nach.</p>
+  <p class="hilfe">Diese Angaben brauchen wir für Kontakt und Bestellung. Die grauen Beispiele sind nur Beispiele – bitte trag ein, was bei dir stimmt. Lücken sind kein Problem, dann fragen wir später nach.</p>
   <form id="faktForm">
     <div class="karte">
       <h3>📬 Kontakt auf der Webseite</h3>
-      <div class="gitter2">
-        <div><label for="f-mail">E-Mail für Kundenanfragen</label><input type="email" id="f-mail" name="mail" placeholder="z. B. hallo@deine-domain.de"></div>
-        <div><label for="f-tel">Telefon (oder leer lassen)</label><input type="tel" id="f-tel" name="telefon" placeholder="z. B. 0171 …"></div>
-      </div>
+      <label for="f-tel" style="margin-top:0">Telefon für Kunden (oder leer lassen, dann nur E-Mail)</label><input type="tel" id="f-tel" name="telefon" placeholder="z. B. 0171 …">
       <label for="f-social">Instagram, Facebook o. Ä.</label><input type="text" id="f-social" name="social" placeholder="z. B. instagram.com/ambienteconcuore">
       <label for="f-region">Wo bietest du Vor-Ort-Termine an?</label><input type="text" id="f-region" name="region" placeholder="z. B. 50 km um Wertheim, darüber per Live-Call">
       <label for="f-anfahrt">Kostet die Anfahrt extra?</label><input type="text" id="f-anfahrt" name="anfahrt" placeholder="z. B. bis 30 km inklusive, danach 0,50 € je km">
@@ -186,16 +197,6 @@
         <label><input type="radio" name="kleinunternehmer" value="weiß noch nicht"> Weiß ich noch nicht – kläre ich bei der Gewerbeanmeldung</label>
       </div>
       <p class="warum">Warum wir das fragen: Bei Online-Bestellungen muss an jedem Preis stehen, ob Umsatzsteuer drin ist, und wann die Ware kommt.</p>
-    </div>
-    <div class="karte">
-      <h3>🌐 Deine Webadresse</h3>
-      <label for="f-domain">Hast du schon eine Wunsch-Adresse? (gern auch zwei, drei zur Auswahl)</label><input type="text" id="f-domain" name="domain" placeholder="z. B. ambiente-con-cuore.de">
-    </div>
-    <div class="karte">
-      <h3>🎨 Logo und Schrift</h3>
-      <label for="f-schrift">Weißt du, welche Schrift in deinem Logo steckt? (z. B. aus Canva)</label><input type="text" id="f-schrift" name="schrift" placeholder="z. B. „Montserrat“ – oder einfach „weiß ich nicht“">
-      <label for="f-logodatei">Hast du dein Logo auch als SVG oder mit durchsichtigem Hintergrund?</label><input type="text" id="f-logodatei" name="logodatei" placeholder="z. B. „ja, schicke ich per Mail“ oder „nein“">
-      <p class="warum">Das brauchen wir für die schmale Kopfleiste und das kleine Bildchen im Browser-Tab. Die Datei selbst schickst du am einfachsten als Antwort auf unsere Mail.</p>
     </div>
     <div class="karte">
       <h3>💬 Was du uns sonst noch sagen möchtest</h3>
@@ -240,6 +241,18 @@ var API = 'https://cuore-portal.a-pelczer.workers.dev';
 // Unsere Vorschläge: Geschmack und Aufbau. Ein Klick „Passt so“, sonst eigener Text.
 var VORSCHLAEGE = [
   { id: 'aufbau', titel: 'Aufbau der Webseite', vorschlag: 'Eine lange Startseite, auf der man von oben nach unten alles findet (Feng Shui, Pakete, Numerologie, Boxen, Kontakt) – und „Über mich“ als eigene Unterseite. Oben ein Menü, das direkt zu den Abschnitten springt.', warum: 'So steht es in deinem Skript, und es ist am Handy am angenehmsten: einfach weiterscrollen.' },
+  { id: 'domain', titel: 'Deine Webadresse', warum: 'Alle drei Adressen sind heute (15.10.) noch frei. Wir sichern die gewählte für dich, sobald du dich entschieden hast.', optionen: [
+    { wert: 'ambiente-con-cuore.de', empfohlen: true, text: 'Genau wie dein Name und gut lesbar. Die Schreibweise ohne Striche (ambienteconcuore.de) sichern wir gleich mit und leiten sie weiter – so landet jeder bei dir, egal wie er tippt.' },
+    { wert: 'ambienteconcuore.de', text: 'Ohne Bindestriche: am Telefon leichter zu sagen, geschrieben etwas schwerer zu lesen.' },
+    { wert: 'stefania-varasano.de', text: 'Mit deinem Namen – passt, wenn du später auch noch anderes anbietest.' } ] },
+  { id: 'mail', titel: 'Deine E-Mail-Adresse für Kunden', warum: 'Eine Adresse mit deiner eigenen Webadresse wirkt professionell, und deine private web.de-Adresse bleibt privat. Lesen kannst du sie auf dem Handy wie jetzt auch. (Der Teil hinter dem @ ist die Adresse, die du oben wählst.)', optionen: [
+    { wert: 'hallo@ambiente-con-cuore.de', empfohlen: true, text: 'Herzlich und persönlich – passt zum „du“ auf deiner Seite.' },
+    { wert: 'stefania@ambiente-con-cuore.de', text: 'Ganz persönlich: Deine Kunden schreiben direkt dir.' },
+    { wert: 'info@ambiente-con-cuore.de', text: 'Klassisch und sachlich.' } ] },
+  { id: 'schrift', titel: 'Die Schrift für Überschriften und Texte', warum: 'Dein Logo bleibt, wie es ist – hier geht es um die Schrift auf der Seite. So sähe deine Überschrift aus:', optionen: [
+    { wert: 'Mediterran-elegant (Cormorant Garamond + Lato)', empfohlen: true, text: 'Feine Überschriften mit italienischer Eleganz, dazu ein ruhiger, gut lesbarer Text.', html: '<div class="probe1" style="font-family:\'Cormorant Garamond\',serif;font-weight:600;font-size:30px">Harmonie für dein Außen.</div><div class="probe2" style="font-family:Lato,sans-serif">Ganzheitliche Raumberatung &amp; Numerologie mit Herz.</div>' },
+    { wert: 'Nah am Logo (Poppins)', text: 'Kräftig und rund – so ähnlich wie die Schrift in deinem Logo.', html: '<div class="probe1" style="font-family:Poppins,sans-serif;font-weight:600">Harmonie für dein Außen.</div><div class="probe2" style="font-family:Poppins,sans-serif">Ganzheitliche Raumberatung &amp; Numerologie mit Herz.</div>' },
+    { wert: 'Klassisch-warm (Playfair Display + Source Sans)', text: 'Ausdrucksstarke Überschriften, wie aus einem schönen Magazin.', html: '<div class="probe1" style="font-family:\'Playfair Display\',serif;font-weight:600">Harmonie für dein Außen.</div><div class="probe2" style="font-family:\'Source Sans 3\',sans-serif">Ganzheitliche Raumberatung &amp; Numerologie mit Herz.</div>' } ] },
   { id: 'preis-wort', titel: '„Eröffnungspreis“ statt „Energieausgleich“', vorschlag: 'An den Paketen und Boxen steht „Eröffnungspreis“, in der Bestellübersicht „Preis“ und „Gesamtpreis“.', warum: 'Bei Bestellungen im Internet schreibt das Gesetz vor, dass klar „Preis“ dasteht und der Knopf „zahlungspflichtig bestellen“ heißt. Sonst drohen teure Abmahnungen – das wollen wir dir ersparen. In deinen Texten und Gesprächen kannst du natürlich weiter vom Energieausgleich sprechen.' },
   { id: 'hinweis', titel: 'Kleiner Hinweis unten auf jeder Seite', vorschlag: '„Meine Beratungen verstehen sich als Impuls und Begleitung. Sie ersetzen keine ärztliche, psychologische, rechtliche oder finanzielle Beratung.“', warum: 'Deine Texte sprechen von Schlaf, Erschöpfung und Finanzen. Mit diesem Satz bist du auf der sicheren Seite. Er ist kurz und freundlich und sagt nur, wofür deine Beratung da ist.' },
   { id: 'wortwahl', titel: 'Behutsame Wortwahl', vorschlag: '„überlieferte Lehre“ statt „Wissenschaft“, und bei Business und Finanzen eher „Impulse“ und „Tendenzen“ statt fester Zusagen.', warum: 'In der Werbung darf man nur „wissenschaftlich“ oder „garantiert“ schreiben, wenn man es belegen kann. Weichere Worte schützen dich, ohne dass dein Angebot an Wirkung verliert.' },
@@ -307,27 +320,42 @@ function vorschlaegeZeigen() {
   var liste = document.getElementById('vorschlagListe'); liste.innerHTML = '';
   VORSCHLAEGE.forEach(function (v) {
     var vorher = letzter('vorschlag', v.id), j = null; if (vorher) { try { j = JSON.parse(vorher.inhalt); } catch (e) {} }
-    var meldung = el('span'), feld = el('textarea', { placeholder: 'Wie hättest du es lieber?' }), anders = el('div', {}, [feld]);
-    anders.hidden = !(j && j.wahl === 'anders'); if (j && j.text) feld.value = j.text;
-    var wahl = el('div', { class: 'reihe wahl' });
-    var passt = el('button', { type: 'button', 'aria-pressed': String(!!j && j.wahl === 'passt'), text: '✓ Passt so', onclick: function () {
-      passt.setAttribute('aria-pressed', 'true'); lieber.setAttribute('aria-pressed', 'false'); anders.hidden = true;
-      senden({ bereich: 'vorschlag', schluessel: v.id, inhalt: JSON.stringify({ wahl: 'passt' }) }, meldung, null).catch(function () {}); } });
-    var lieber = el('button', { type: 'button', 'aria-pressed': String(!!j && j.wahl === 'anders'), text: '✏️ Lieber anders', onclick: function () {
-      lieber.setAttribute('aria-pressed', 'true'); passt.setAttribute('aria-pressed', 'false'); anders.hidden = false; feld.focus(); } });
-    wahl.appendChild(passt); wahl.appendChild(lieber);
+    var meldung = el('span'), feld = el('textarea', { placeholder: v.optionen ? 'Deine eigene Idee …' : 'Wie hättest du es lieber?' }), anders = el('div', {}, [feld]);
+    anders.hidden = !(j && j.wahl === 'anders'); if (j && j.wahl === 'anders') feld.value = j.text || '';
+    var knoepfe = [];
+    function waehle(b) { knoepfe.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); }
+    var oben = null, wahl = el('div', { class: 'reihe wahl' });
+    if (v.optionen) {
+      oben = el('div', { class: 'optionen' });
+      v.optionen.forEach(function (o) {
+        var b = el('button', { type: 'button', class: 'option', 'aria-pressed': String(!!j && j.wahl === 'option' && j.text === o.wert) }, [
+          o.empfohlen ? el('span', { class: 'band', text: 'Unser Vorschlag' }) : null, el('b', { text: o.wert }),
+          o.html ? el('div', { html: o.html }) : null, el('span', { class: 'warum', text: o.text })]);
+        b.addEventListener('click', function () { waehle(b); anders.hidden = true;
+          senden({ bereich: 'vorschlag', schluessel: v.id, inhalt: JSON.stringify({ wahl: 'option', text: o.wert }) }, meldung, null).catch(function () {}); });
+        knoepfe.push(b); oben.appendChild(b); });
+    } else {
+      oben = el('div', { class: 'vorschlag' }, [el('b', { text: 'Unser Vorschlag: ' }), document.createTextNode(v.vorschlag)]);
+      var passt = el('button', { type: 'button', 'aria-pressed': String(!!j && j.wahl === 'passt'), text: '✓ Passt so' });
+      passt.addEventListener('click', function () { waehle(passt); anders.hidden = true;
+        senden({ bereich: 'vorschlag', schluessel: v.id, inhalt: JSON.stringify({ wahl: 'passt' }) }, meldung, null).catch(function () {}); });
+      knoepfe.push(passt); wahl.appendChild(passt);
+    }
+    var lieber = el('button', { type: 'button', 'aria-pressed': String(!!j && j.wahl === 'anders'), text: v.optionen ? '✏️ Eigene Idee' : '✏️ Lieber anders' });
+    lieber.addEventListener('click', function () { waehle(lieber); anders.hidden = false; feld.focus(); });
+    knoepfe.push(lieber); wahl.appendChild(lieber);
     var speichern = el('button', { class: 'knopf voll klein', type: 'button', text: 'Speichern', onclick: function () {
       if (!feld.value.trim()) return melde(meldung, false, 'Bitte kurz schreiben, wie du es lieber hättest');
       senden({ bereich: 'vorschlag', schluessel: v.id, inhalt: JSON.stringify({ wahl: 'anders', text: feld.value.trim() }) }, meldung, speichern).catch(function () {}); } });
     anders.appendChild(el('div', { class: 'reihe' }, [speichern]));
     liste.appendChild(el('div', { class: 'karte' }, [el('h3', { text: v.titel }),
-      el('div', { class: 'vorschlag' }, [el('b', { text: 'Unser Vorschlag: ' }), document.createTextNode(v.vorschlag)]),
-      el('p', { class: 'warum', text: 'Warum: ' + v.warum }), wahl, anders, meldung]));
+      v.optionen ? el('p', { class: 'warum', text: v.warum }) : null, oben,
+      v.optionen ? null : el('p', { class: 'warum', text: 'Warum: ' + v.warum }), wahl, anders, meldung]));
   });
 }
 
 // ---- Fakten ----
-var FAKT_FELDER = ['mail', 'telefon', 'social', 'region', 'anfahrt', 'lieferzeit', 'domain', 'schrift', 'logodatei', 'frei'];
+var FAKT_FELDER = ['telefon', 'social', 'region', 'anfahrt', 'lieferzeit', 'frei'];
 document.getElementById('faktForm').addEventListener('submit', function (ev) { ev.preventDefault();
   var f = ev.target, d = {};
   FAKT_FELDER.forEach(function (n) { d[n] = f.elements[n].value.trim(); });
@@ -367,7 +395,7 @@ function bilderZeigen() { var l = document.getElementById('bilderListe'); l.inne
 var NAMEN = { entwurf: 'Entwurf', vorschlag: 'Vorschlag', fakt: 'Angaben', bild: 'Bild', notiz: 'Notiz' };
 var VTITEL = {}; VORSCHLAEGE.forEach(function (v) { VTITEL[v.id] = v.titel; });
 function lesbar(e) {
-  if (e.bereich === 'vorschlag') { try { var j = JSON.parse(e.inhalt); return j.wahl === 'passt' ? '✓ passt so' : '✏️ lieber anders: ' + j.text; } catch (x) {} }
+  if (e.bereich === 'vorschlag') { try { var j = JSON.parse(e.inhalt); return j.wahl === 'passt' ? '✓ passt so' : j.wahl === 'option' ? '✓ gewählt: ' + j.text : '✏️ lieber anders: ' + j.text; } catch (x) {} }
   if (e.bereich === 'fakt') { try { var d = JSON.parse(e.inhalt), z = []; for (var k in d) { var w = Array.isArray(d[k]) ? d[k].join(', ') : d[k]; if (w) z.push(k + ': ' + w); } return z.join('\n') || '(leer)'; } catch (x) {} }
   return e.inhalt; }
 function verlaufZeigen() {
