@@ -11391,6 +11391,7 @@ function kindLerntMit(id) {                      // aus fertDazu: arbeitet man z
 var KIND_SUENDEN = [['aepfel', 3, 1, 'hat beim Marktmann Äpfel geklaut. Du zahlst den Schaden.'], ['fenster', 6, 1, 'hat beim Bader ein Fenster eingeworfen. Du zahlst die Butzenscheibe.'], ['pruegel', 0, 1, 'hat sich in der Gasse mit dem Sohn vom Gerber geprügelt. Die Leute reden.'], ['huehner', 2, 0, 'hat die Hühner der Nachbarin aufgescheucht. Du entschuldigst dich und zahlst für die Eier.']];
 function kindSuende() {                          // eine Jugendsünde: [Text] (zahlen + Ruf) – oder die Wache
   var K = kz(), kn = kindName(); K.suenden = (K.suenden || 0) + 1;
+  var nb = dorfFaengtKind(); if (nb) return nb;   // ein Nachbar hat es erwischt
   if (K.wert < 35 && !K.haft && Math.random() < 0.45) { K.haft = { tag: holzTagNr() }; zhSpeichern(); haftZeigen(); return ['Die Stadtwache hat ' + kn + ' erwischt – beim Klettern über die Mauer am Kirchhof.', 'Ein Wächter hält ' + kn + ' am Markt fest. Geh hin: zahlen oder für ' + (AUFTRAG.kind.art === 'sohn' ? 'ihn' : 'sie') + ' bürgen. Sonst kommt ' + kn + ' über Nacht in den Turm.']; }
   var s = KIND_SUENDEN[Math.floor(Math.random() * KIND_SUENDEN.length)], k = Math.min(AUFTRAG.heller, s[1]); AUFTRAG.heller -= k; AUFTRAG.ruf = Math.max(0, (AUFTRAG.ruf || 0) - s[2]); speichern(); zhSpeichern();
   return [kn + ' ' + s[3] + (k ? ' −' + k + ' Heller.' : '') + (s[2] ? ' Ruf −' + s[2] + '.' : ''), K.wert < 35 ? 'Wenn du dich nicht mehr kümmerst, wird es schlimmer.' : 'Ein Lausbub eben. Aber kümmer dich.']; }
@@ -11431,6 +11432,70 @@ function kindErbe() {                            // beim Generationswechsel: Gel
   else if (K.wert < 35) { AUFTRAG.ruf = Math.max(0, Math.round((AUFTRAG.ruf || 0) * 0.3) - 3); t.push('Die Wachen kennen dich noch von früher. „Ach, der ' + (AUFTRAG.nachname || '').charAt(0) + (AUFTRAG.nachname || '').slice(1).toLowerCase() + '-Junge …“ Ruf ' + AUFTRAG.ruf + '.'); }
   else { AUFTRAG.ruf = Math.round((AUFTRAG.ruf || 0) * 0.5); t.push('Ein Name wie jeder andere – den Ruf musst du dir selbst verdienen. Ruf ' + AUFTRAG.ruf + '.'); }
   Z.kind = null; Z.ehe = 50; zhSpeichern(); speichern(); return t; }
+// ---- Das Dorf erzieht (15.10., Andreas: „es braucht zwei Menschen, ein Kind zu zeugen, aber eine ganze Stadt, es zu erziehen – war doch früher so.
+// Erwischt = erzogen. Ab und zu Sachen beobachten und entscheiden, ob wir wegsehen, einschreiten oder abwarten und dann reden … dann erziehen wir die
+// anderen Kinder mit, und die Stadtbewohner mein Kind. Abends im Wirtshaus wird dann geredet – wie in echt“) ----
+// STREICH: draußen, tagsüber, etwa einmal je Spielstunde macht ein Gassenkind in deiner Nähe Unfug („!“ über dem Kopf). E = einschreiten (Eltern meist dankbar,
+// Ruf +1 höchstens einmal am Tag; manchmal beleidigt), G = wegsehen (das Kind wird frecher, dein eigenes Kind schaut es sich ab), gar nichts = abwarten →
+// „Rede heute mit den Eltern“: wer das tut, bekommt am meisten (Ruf +1, Vertrauen +2). VERTRAUEN der Stadt in dich als Vater/Mutter: je höher, desto eher
+// erwischt ein Nachbar dein eigenes Kind bei einem Streich, zieht ihm die Ohren lang und bringt es heim – das kostet dich nichts und macht es braver.
+// WIRTSHAUS: abends (18–23 Uhr) in einer Kneipe hört man vom Nebentisch, was die Stadt redet. Streiche, Namen der Eltern, Reaktionen: ERFUNDEN (plausibler Alltag).
+var STREICH_ARTEN = [['klaut einen Apfel vom Marktstand', 'hat beim Marktstand einen Apfel geklaut'], ['ärgert einen Hund mit einem Stock', 'hat den Hund vom Metzger mit dem Stock geärgert'], ['wirft mit Steinen nach den Tauben', 'hat mit Steinen nach den Tauben geworfen'],
+  ['klettert auf die Mauer am Kirchhof', 'ist auf die Kirchhofmauer geklettert'], ['malt mit Kohle an eine Hauswand', 'hat mit Kohle an die Hauswand gemalt'], ['schubst ein kleineres Kind in den Dreck', 'hat ein kleines Kind in den Dreck geschubst']];
+var STREICH = null, STREICH_NAECHST = 0;
+function dorf() { var Z = zh(); if (!Z.dorf) Z.dorf = { vertrauen: 0, ein: 0, weg: 0, reden: 0, gerede: [], offen: null, rufTag: -1 }; return Z.dorf; }
+function dorfGerede(t) { var D = dorf(); D.gerede.unshift({ tag: holzTagNr(), t: t }); D.gerede = D.gerede.slice(0, 12); zhSpeichern(); }
+function kurzName(n) { var s = (n || '').split(',')[0]; return s.charAt(0) + s.slice(1).toLowerCase().replace(/ (\w)/g, function (m, c) { return ' ' + c.toUpperCase(); }); }
+function elternName(l) { var e = l && l.eltern; if (!e || !e.name) return 'seinen Eltern'; var teil = e.name.split(', '); return kurzName(teil[0]) + (teil[1] ? ', ' + teil[1].toLowerCase().split(' ').map(function (w) { return w === 'der' || w === 'die' ? w : w.charAt(0).toUpperCase() + w.slice(1); }).join(' ') : ''); }   /* „Peter, der Krämer“ */
+function streichSuchen() {                      // ein Gassenkind in Sichtweite, das gerade frei herumläuft
+  var fx = Math.sin(P.blick), fy = Math.cos(P.blick), best = null, bd = 99;
+  TAGESLEUTE.forEach(function (l) { if (l.rolle !== 'kind' || !l.ankunft || !l.puppe || !l.puppe.gruppe.visible || hausInnen(l.x, l.y) || (AUFTRAG.rede && AUFTRAG.rede.wer === l)) return;
+    var dx = l.x - P.x, dy = l.y - P.y, d = Math.hypot(dx, dy); if (d < 5 || d > 24 || (dx * fx + dy * fy) / d < 0.7) return;   /* nur, was man wirklich im Bild hat */ if (d < bd) { bd = d; best = l; } }); return best; }
+function dorfWeiter(dt) {
+  if (EPOCHE !== 1400 || !SPIELER || (AUFTRAG.einf && AUFTRAG.einf < 9)) return; var D = dorf();
+  if (STREICH) { var l = STREICH.l, d = Math.hypot(l.x - P.x, l.y - P.y);
+    if (P.t > STREICH.bis || d > 35) { D.offen = { kind: l.name, eltern: l.eltern ? l.eltern.name : null, art: STREICH.art[1], tag: holzTagNr() }; zhSpeichern(); STREICH = null;
+      melden('DU HAST ZUGESEHEN · REDE HEUTE MIT ' + (l.eltern ? kurzName(l.eltern.name).toUpperCase() : 'DEN ELTERN') + ' DARÜBER (KLICK)', 6); }
+    return; }
+  if (P.t < STREICH_NAECHST || P.drinnen || AUFTRAG.rede || PAUSE || JAGD) return; var h = stunde(); if (h < 8 || h > 19) { STREICH_NAECHST = P.t + 30; return; }
+  var l2 = streichSuchen(); if (!l2) { STREICH_NAECHST = P.t + 20; return; }
+  STREICH = { l: l2, art: STREICH_ARTEN[Math.floor(Math.random() * STREICH_ARTEN.length)], bis: P.t + 14 }; STREICH_NAECHST = P.t + 240 + Math.random() * 240;
+  melden('DU SIEHST: ' + kurzName(l2.name).toUpperCase() + ' ' + STREICH.art[0].toUpperCase(), 6); }
+function streichEntscheiden(art) {              // E = einschreiten, G = wegsehen
+  if (!STREICH || AUFTRAG.rede) return false; var l = STREICH.l, sa = STREICH.art, D = dorf(), kn = kurzName(l.name), en = elternName(l), heute = holzTagNr(); STREICH = null;
+  if (art === 'ein') { D.ein++; D.vertrauen = Math.min(20, D.vertrauen + 1);
+    var dank = Math.random() < 0.75; if (dank && D.rufTag !== heute) { D.rufTag = heute; AUFTRAG.ruf = (AUFTRAG.ruf || 0) + 1; speichern(); }
+    AUFTRAG.rede = { wer: l, name: kn.toUpperCase(), zeilen: ['(Du packst ' + kn + ' am Kragen.) „Schluss jetzt. Das macht man nicht.“', '(' + kn + ' reißt sich los und rennt davon.)', dank ? 'Später kommt ' + en + ' vorbei: „Danke, dass du hingeschaut hast.“' + (D.rufTag === heute ? ' Ruf +1.' : '') : en + ' ist beleidigt: „Was mischst du dich in meine Kinder ein?“'], i: 0 };
+    dorfGerede(dank ? spielerRufName() + ' hat ' + kn + ' am Kragen gepackt – ' + kn + ' ' + sa[1] + '. Recht so.' : en + ' schimpft, ' + spielerRufName() + ' soll sich um seine eigenen Kinder kümmern.'); }
+  else { D.weg++; D.vertrauen = Math.max(-10, D.vertrauen - 1); if (AUFTRAG.kind && kindAlter() >= 7) { var K = kz(); K.wert = Math.max(0, K.wert - 2); }
+    melden('DU SIEHST WEG · ' + kn.toUpperCase() + ' MACHT WEITER' + (AUFTRAG.kind && kindAlter() >= 7 ? ' · ' + kindName().toUpperCase() + ' HAT ES AUCH GESEHEN' : ''), 4);
+    dorfGerede(kn + ' ' + sa[1] + ', und keiner hat was gesagt. Wo sind die Väter in dieser Stadt?'); }
+  zhSpeichern(); return true; }
+function spielerRufName() { var n = AUFTRAG.vorname ? kurzName(AUFTRAG.vorname) + ' ' : ''; return n + (AUFTRAG.nachname ? kurzName(AUFTRAG.nachname) : 'der Neue'); }
+function dorfElternReden(l) {                    // abgewartet, dann mit den Eltern geredet: das bringt am meisten
+  var D = dorf(); if (!l || !D.offen || !D.offen.eltern || l.name !== D.offen.eltern || D.offen.tag < holzTagNr() - 1 || AUFTRAG.rede) return false; var o = D.offen; D.offen = null;
+  D.reden++; D.vertrauen = Math.min(20, D.vertrauen + 2); AUFTRAG.ruf = (AUFTRAG.ruf || 0) + 1; speichern(); zhSpeichern(); var kn = kurzName(o.kind);
+  AUFTRAG.rede = { wer: l, name: l.name, zeilen: ['Du erzählst ruhig, was du gesehen hast: ' + kn + ' ' + o.art + '.', '„Danke, dass du zu mir kommst und nicht gleich herumbrüllst. Ich red mit ' + (/^DIE |GRETEL|BÄRBEL|ANNELE|KÄTHE|LIESL|DORLE|URSEL|MARGRETLE/.test(o.kind) ? 'ihr' : 'ihm') + '.“', '(Am nächsten Tag grüßt dich ' + kn + ' brav auf der Gasse.) Ruf +1.'], i: 0 };
+  dorfGerede(spielerRufName() + ' ist zu ' + kurzName(l.name) + ' gegangen und hat in Ruhe über ' + kn + ' geredet. So macht man das.'); return true; }
+function dorfFaengtKind() {                       // aus kindSuende: ein Nachbar erwischt das eigene Kind – erwischt = erzogen
+  var D = dorf(), p = Math.min(0.6, 0.12 + Math.max(0, D.vertrauen) * 0.04 + Math.max(0, AUFTRAG.ruf || 0) * 0.005); if (Math.random() > p) return null;
+  var wer = ['der Bäcker', 'die Witwe vom Kirchgässchen', 'der Schmied', 'der Nachtwächter', 'die Marktfrau', 'der Pfarrer'][Math.floor(Math.random() * 6)], kn = kindName(), K = kz();
+  K.wert = Math.min(100, K.wert + 3); zhSpeichern(); dorfGerede(wer.charAt(0).toUpperCase() + wer.slice(1) + ' hat ' + kn + ' beim Unfug erwischt und heimgebracht. Der hat seine Lektion.');
+  return [wer.charAt(0).toUpperCase() + wer.slice(1) + ' hat ' + kn + ' beim Unfug erwischt, ' + (AUFTRAG.kind.art === 'sohn' ? 'ihm' : 'ihr') + ' die Ohren langgezogen und ' + (AUFTRAG.kind.art === 'sohn' ? 'ihn' : 'sie') + ' heimgebracht.', '„Ich kenn deinen Vater, der ist ein anständiger Mann.“ Es kostet dich nichts – und ' + kn + ' ist danach ganz still. (Erwischt = erzogen.)']; }
+var WIRTSHAUS_T = 0;
+function wirtshausWeiter() {                     // abends in der Kneipe: was die Stadt redet
+  var w = P.drinnen && (P.drinnen.zweck === 'wirt' || P.drinnen.zweck === 'gasthaus'), h = stunde(); if (!w || h < 18 || h > 23 || AUFTRAG.rede || P.t < WIRTSHAUS_T) return;
+  WIRTSHAUS_T = P.t + 16; var D = dorf(), heute = holzTagNr(), L = D.gerede.filter(function (g) { return heute - g.tag <= 3; }).map(function (g) { return g.t; });
+  if (AUFTRAG.kind && kindAlter() >= 7) { var K = kz(), kn = kindName(); L.push(K.wert >= 70 ? 'Der kleine ' + kn + ' von ' + spielerRufName() + ' – ein anständiges Kind. Der wird mal was.' : K.wert < 35 ? 'Dieser ' + kn + '! Der Vater ist nie da, das sieht man.' : kn + '? Ein Lausbub wie alle. Hauptsache, die Eltern schauen hin.'); }
+  if (D.vertrauen >= 6) L.push(spielerRufName() + ' schaut hin, wenn die Kinder Unfug treiben. Auf den kann man sich verlassen.'); else if (D.vertrauen <= -3) L.push(spielerRufName() + '? Der sieht weg. Der sieht immer weg.');
+  if (AUFTRAG.verheiratet && zh().ehe < 25) L.push('Die ' + kurzName(AUFTRAG.frau) + ' sitzt jeden Abend allein. Man hört so einiges …'); if (!L.length) L.push(['Das Bier ist auch schon mal besser gewesen.', 'Der Main steht hoch dieses Jahr.', 'Der Graf will schon wieder mehr Zehnt.'][Math.floor(Math.random() * 3)]);
+  GRUSS = { wer: 'AM NACHBARTISCH', text: L[Math.floor(Math.random() * L.length)], bis: P.t + 8 }; }
+function streichMalen(W, H) {                    // „!“ über dem Kind und die Wahl unten
+  if (!STREICH || AUFTRAG.rede) return; var l = STREICH.l, v = V(l.x, l.y, (l.puppe ? bodenHoehe(l.x, l.y) : 0) + 1.6), p = new THREE.Vector3(v[0], v[1], v[2]).project(kamera);
+  var farbe = Math.floor(P.t * 4) % 2 ? '#ff6a4a' : '#ffd75e';
+  if (p.z < 1 && Math.abs(p.x) < 0.97 && Math.abs(p.y) < 1) { var sx = (p.x + 1) / 2 * W, sy = (1 - p.y) / 2 * H; text('!', sx, sy, 16, farbe); }
+  else { var re = p.z < 1 ? p.x > 0 : p.x < 0; text(re ? '! ►' : '◄ !', re ? W - 22 : 22, H / 2, 14, farbe); }   /* außerhalb des Bildes: Pfeil am Rand */
+  text('E: EINSCHREITEN   ·   G: WEGSEHEN   ·   NICHTS TUN = ABWARTEN, SPÄTER MIT DEN ELTERN REDEN', W / 2, H - 56, 8, '#ffd75e'); }
 // ---- Das nächste Ziel (11.10., Grind: „das Ziel setzt man sich selbst“) – eine Leiter, die zeigt, wofür man arbeitet ----
 // Immer nur EIN Ziel, das nächste nicht erreichte; Fortschritt in Hellern. Die Reihenfolge ist ein Vorschlag, nichts ist Pflicht.
 function naechstesZiel() {                     // [Text, Preis] oder null
@@ -13996,7 +14061,7 @@ addEventListener('keydown', function (e) { var k = e.key.toLowerCase(); if (STAR
   if (k === 'escape' && PAUSE) pauseWeiter(); else if (k === 'escape' && !document.pointerLockElement && !INVENTAR && performance.now() > PAUSE_RUHE) pauseZeigen(true); if (AUFTRAG.hundWahl && !AUFTRAG.rede) { if (k === 'g') hundWahlTreffen('vergeben'); if (k === 'r') hundWahlTreffen('rache'); } if (k === 'h') himmelEcht(!HIMMEL_ECHT); if (k === 'l') tonAnAus(); if (k === 'k') { STERNBILDER_AN = !STERNBILDER_AN; melden(STERNBILDER_AN ? 'STERNBILDER AN' : 'STERNBILDER AUS', 2); }
   if (k === 'f') { FACKEL.an = !FACKEL.an; melden(FACKEL.an ? 'DU ZÜNDEST DEINE FACKEL AN' : 'FACKEL AUS', 2); }
   if (k === 'j') STADTBUCH = !STADTBUCH; if (k === 'x' && STADTBUCH && STADT) { STADT.unglueck('missernte'); lieferungenRechnen(); stadtSpeichern(); melden('HAGEL! DAS KORN IST VERDORBEN.', 4); }
-  if (k === 'u') zeitmaschine(); if (k === 'v') ANSICHT = ANSICHT === 'ich' ? 'figur' : 'ich'; if (k === ' ' && !e.repeat) { if (!flugTaste() && !FLUG.an) springenJetzt(); } if (k === 'e' && haftHandhaben(true)) return; if (k === 'e') { if (!reden() && !strohsack() && !erbHandhaben() && !kammerSchlafen() && !grabHohl() && !kircheSitzen() && !hundAnfassen() && !sammeln() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } if (k === 'b' && BF) zumBergfried('tuer', true); if (k === 'p') { scharf = !scharf; groesse(); try { localStorage.setItem('wzf_scharf', scharf ? '1' : '0'); } catch (e2) {} melden(scharf ? 'SCHARF' : 'PIXEL-LOOK', 1.5); } if (k === 'z') { EPOCHE = EPOCHE === 1400 ? 2026 : 1400; if (window.__mittel) window.__mittel.visible = EPOCHE === 1400; if (window.__heute) window.__heute.visible = EPOCHE !== 1400; if (window.__aussen) window.__aussen.visible = EPOCHE !== 1400; } });
+  if (k === 'u') zeitmaschine(); if (k === 'v') ANSICHT = ANSICHT === 'ich' ? 'figur' : 'ich'; if (k === ' ' && !e.repeat) { if (!flugTaste() && !FLUG.an) springenJetzt(); } if ((k === 'e' || k === 'g') && STREICH && !AUFTRAG.rede) { streichEntscheiden(k === 'e' ? 'ein' : 'weg'); return; } if (k === 'e' && haftHandhaben(true)) return; if (k === 'e') { if (!reden() && !strohsack() && !erbHandhaben() && !kammerSchlafen() && !grabHohl() && !kircheSitzen() && !hundAnfassen() && !sammeln() && PUPPE) PUPPE.winkenBis = P.t + 2.5; } if (k === 'b' && BF) zumBergfried('tuer', true); if (k === 'p') { scharf = !scharf; groesse(); try { localStorage.setItem('wzf_scharf', scharf ? '1' : '0'); } catch (e2) {} melden(scharf ? 'SCHARF' : 'PIXEL-LOOK', 1.5); } if (k === 'z') { EPOCHE = EPOCHE === 1400 ? 2026 : 1400; if (window.__mittel) window.__mittel.visible = EPOCHE === 1400; if (window.__heute) window.__heute.visible = EPOCHE !== 1400; if (window.__aussen) window.__aussen.visible = EPOCHE !== 1400; } });
 addEventListener('keyup', function (e) { taste[e.key.toLowerCase()] = false; if (e.key === 'Meta') tastenLoslassen(); });
 // 11.10. (Andreas: „die Steuerung beginnt zu spinnen … als wären Achsen vertauscht“): hängende Tasten. Das Spiel lässt eine Taste erst
 // beim keyup los – der kommt aber nie, wenn das Fenster währenddessen den Fokus verliert (Cmd+Tab, Mitteilung, das Kartenfenster mit O)
@@ -16952,7 +17017,7 @@ function wegNameWeiter() {                       // betritt man einen benannten 
   WEGNAME.auf = auf; }
 function leuteBewegen(dt) {
   try { blWeiter(); } catch (e) { schleifeFehler('bauleiter', e); }
-  tagesablaufWeiter(dt); if (!BURGWEG.gebaut) try { burgwegBauen(); } catch (e) { schleifeFehler('burgweg', e); } try { erbWeiter(); } catch (e) { schleifeFehler('erbhaus', e); } try { winterWeiter(dt); } catch (e) { schleifeFehler('winter', e); } try { if (window.Winter) maineisWeiter(dt); } catch (e) { schleifeFehler('maineis', e); } if (SCHNEEBAELLE.length) try { schneeballWeiter(dt); } catch (e) { schleifeFehler('schneeball', e); } abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); junkerWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); kindWeiter(dt); generationWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); try { reibenWeiter(dt); } catch (e) { schleifeFehler('farben', e); } try { webenWeiter(dt); zuhauseWeiter(); haftWeiter(dt); } catch (e) { schleifeFehler('zuhause', e); } steinWeiter(dt); kaiWeiter(dt); treppeWeiter(); gsWeiter(); sprungWeiter(); lageWeiter(); flutWeiter(); ereignisWeiter(dt); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
+  tagesablaufWeiter(dt); if (!BURGWEG.gebaut) try { burgwegBauen(); } catch (e) { schleifeFehler('burgweg', e); } try { erbWeiter(); } catch (e) { schleifeFehler('erbhaus', e); } try { winterWeiter(dt); } catch (e) { schleifeFehler('winter', e); } try { if (window.Winter) maineisWeiter(dt); } catch (e) { schleifeFehler('maineis', e); } if (SCHNEEBAELLE.length) try { schneeballWeiter(dt); } catch (e) { schleifeFehler('schneeball', e); } abstandHalten(); fxWeiter(dt); wegNameWeiter(); wegweiserWeiter(dt); torfeuerWeiter(); rauchWeiter(dt); schlotSichtWeiter(); reitenWeiter(dt); junkerWeiter(dt); hufschmiedWeiter(dt); boteWeiter(dt); angelnWeiter(dt); waldKachelnWeiter(); KARREN_NAH = TAGESLEUTE.filter(function (q) { return q.karrenXY && P.t - q.karrenXY[2] < 0.5 && q.weg && !q.ankunft; }).map(function (q) { return q.karrenXY; }); hausstandWeiter(dt); kindWeiter(dt); generationWeiter(dt); spielleuteWeiter(dt); klopfWeiter(dt); hochzeitWeiter(dt); laendeLebenWeiter(dt); familienWeiter(dt); stadtbuchWeiter(dt); lehreWeiter(dt); kammerHinweisWeiter(); essenAngebotWeiter(); aushaengerWeiter(); marktWeiter(dt); schiffeWeiter(dt); onkelWeiter(); einfWeiter(dt); gangWeiter(); codexWeiter(dt); holzWeiter(dt); hinstellenWeiter(); spinnWeiter(dt); try { reibenWeiter(dt); } catch (e) { schleifeFehler('farben', e); } try { webenWeiter(dt); zuhauseWeiter(); haftWeiter(dt); dorfWeiter(dt); wirtshausWeiter(); } catch (e) { schleifeFehler('zuhause', e); } steinWeiter(dt); kaiWeiter(dt); treppeWeiter(); gsWeiter(); sprungWeiter(); lageWeiter(); flutWeiter(); ereignisWeiter(dt); leseWeiter(dt); berufeWeiter(dt); rumtreiberWeiter(dt); brunnenZeigen(); gaertenZeigen(); grasZeigen(); garkuecheWeiter(dt); zehntWeiter(dt); jagdWeiter(dt); dachRufe(); briefWeiter(); nassWeiter(dt); schornsteinRauch(dt); faehreWeiter(dt); tonWeiter(dt); tuerenUndLaeden(dt); tiereBewegen(dt); hungerWeiter(); schaetzeZeigen(); kinderSpielen(dt);
   kamera.updateMatrixWorld(); SICHT.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse); SICHT.kegel.setFromProjectionMatrix(SICHT.m);
   SICHT.takt += dt; var neuPruefen = SICHT.takt > 0.05; if (neuPruefen) SICHT.takt = 0; var tick = Math.floor(P.t * 20);
   SICHT.stat.voll = 0; SICHT.stat.einfach = 0;
@@ -17239,7 +17304,8 @@ function essenKaufen() {
 function essenAngebotWeiter() {
   var a = AUFTRAG.angebotEssen; if (!a || AUFTRAG.rede || a.bis < P.t || Math.hypot(P.x - a.l.x, P.y - a.l.y) > 3.5) return;
   if (P.t > (AUFTRAG.meldungBis || 0) - 0.05 && (!AUFTRAG.meldung || /^RECHTSKLICK: /.test(AUFTRAG.meldung) || P.t > AUFTRAG.meldungBis)) var pr = a.kauf ? a.preisFn() : Math.ceil(STADT.preis(a.gut) - 1e-9), lb = a.kauf ? a.label : SPIELER.essen[a.gut].name.toUpperCase() + ' KAUFEN'; melden('RECHTSKLICK: ' + lb + (pr && !/HELLER/.test(lb) ? ' (' + pr + ' HELLER)' : ''), 0.3); }
-var redenOhneEssen = reden; reden = function () { var r = redenOhneEssen.apply(this, arguments); essenNachReden(); return r; };   // jedes Gespräch: Verkäufer nennen den Preis
+var redenOhneEssen = reden; reden = function () { var r = redenOhneEssen.apply(this, arguments); essenNachReden(); return r; };
+var redenOhneDorf = reden; reden = function () { if (dorfElternReden(naechsteePerson())) return true; return redenOhneDorf.apply(this, arguments); };   // 15.10. Dorf: abgewartet, dann mit den Eltern reden   // jedes Gespräch: Verkäufer nennen den Preis
 function handhaben() {
   if (AUFTRAG.rede) return false;
   if (ladenHandhaben()) return true;
@@ -17462,7 +17528,7 @@ function fadenkreuz(W, H) {
   hud.fillStyle = gold ? '#ffd75e' : 'rgba(255,255,255,.9)'; hud.fillRect(x - 5, y, 4, 1); hud.fillRect(x + 2, y, 4, 1); hud.fillRect(x, y - 5, 1, 4); hud.fillRect(x, y + 2, 1, 4); hud.fillRect(x, y, 1, 1); }
 function hudMalen() {
   var W = PIXEL.b, H = PIXEL.h; hud.setTransform(HUD_SKALA, 0, 0, HUD_SKALA, 0, 0); hud.imageSmoothingEnabled = false; hud.clearRect(0, 0, W, H);   // Pixelbilder bleiben Pixel, Schrift wird scharf
-  fadenkreuz(W, H); if (EPOCHE === 1400 && !INVENTAR && !QUESTBUCH && KARTE !== 2) try { zuhauseMalen(W, H); } catch (e) {}
+  fadenkreuz(W, H); if (EPOCHE === 1400 && !INVENTAR && !QUESTBUCH && KARTE !== 2) try { zuhauseMalen(W, H); streichMalen(W, H); } catch (e) {}
   if (P.drinnen) text(P.drinnen.anzeige, W / 2, 40, 11, '#ffd75e');
   else if (BLICKNAME) { hud.globalAlpha = Math.min(1, (P.t - NAMEZEIT) * 3); text(BLICKNAME.toUpperCase(), W / 2, 47, 10, '#ffd75e'); hud.globalAlpha = 1; }   // 11.10.: unter Auftrag und Ziel, nicht mehr darüber
   text(Math.round(gel(P.x, P.y)) + ' M Ü. NN', 6, H - 8, 9, '#f2ecdc', 'left');
@@ -17559,7 +17625,9 @@ function questListe() {
   try { var Zq = zh(); if (A.verheiratet && A.frau) neben.push(['Deine Frau ' + A.frau.charAt(0) + A.frau.slice(1).toLowerCase(), 'Zuneigung ' + Zq.ehe + '/100 · ' + eheText(Zq.ehe).toLowerCase() + ' · reden, abends essen, neben ihr schlafen']);
     var ft = Object.keys(FERTIGKEIT).filter(function (id) { return Zq.fert[id] > 0; }).map(function (id) { return FERTIGKEIT[id][0].charAt(0) + FERTIGKEIT[id][0].slice(1).toLowerCase() + ': ' + fertText(id).toLowerCase(); }); if (ft.length) neben.push(['Fertigkeiten zuhause', ft.join(' · ')]);
     if (A.kind && kindAlter() >= 1) { var Kq = kz(), kf = Object.keys(Kq.fert || {}).filter(function (id) { return Kq.fert[id] > 0; }).map(function (id) { return FERTIGKEIT[id][0].toLowerCase() + ' ' + Kq.fert[id]; });
-      neben.push(['Dein Kind ' + kindName(), Kq.haft ? 'Bei der Wache am Markt! Auslösen (10 Heller) oder bürgen – bis morgen früh' : kindWertTextT(Kq.wert).toLowerCase() + ' (' + Kq.wert + '/100) · ' + (kindAlter() < 7 ? 'spiel mit ' + (A.kind.art === 'sohn' ? 'ihm' : 'ihr') + ' (Klick)' : 'red mit ' + (A.kind.art === 'sohn' ? 'ihm' : 'ihr') + ', arbeite zuhause, dann lernt ' + (A.kind.art === 'sohn' ? 'er' : 'sie') + ' mit') + (kf.length ? ' · kann: ' + kf.join(', ') : '')]); } } catch (e) {}   // 15.10. Zuhause + Erziehung
+      neben.push(['Dein Kind ' + kindName(), Kq.haft ? 'Bei der Wache am Markt! Auslösen (10 Heller) oder bürgen – bis morgen früh' : kindWertTextT(Kq.wert).toLowerCase() + ' (' + Kq.wert + '/100) · ' + (kindAlter() < 7 ? 'spiel mit ' + (A.kind.art === 'sohn' ? 'ihm' : 'ihr') + ' (Klick)' : 'red mit ' + (A.kind.art === 'sohn' ? 'ihm' : 'ihr') + ', arbeite zuhause, dann lernt ' + (A.kind.art === 'sohn' ? 'er' : 'sie') + ' mit') + (kf.length ? ' · kann: ' + kf.join(', ') : '')]); }
+    var Dq = dorf(); if (Dq.offen && Dq.offen.eltern && Dq.offen.tag >= holzTagNr() - 1) neben.unshift(['Mit den Eltern reden', kurzName(Dq.offen.kind) + ' ' + Dq.offen.art + ' – geh zu ' + kurzName(Dq.offen.eltern) + ' und red in Ruhe darüber (Klick)']);
+    if (Dq.ein + Dq.weg + Dq.reden > 0) neben.push(['Die Stadt über dich', (Dq.vertrauen >= 6 ? 'man verlässt sich auf dich' : Dq.vertrauen <= -3 ? 'du siehst weg, sagen die Leute' : 'man kennt dich noch nicht so') + ' · eingeschritten ' + Dq.ein + ', mit Eltern geredet ' + Dq.reden + ', weggesehen ' + Dq.weg]); } catch (e) {}   // 15.10. Zuhause + Erziehung + Dorf
   return { jetzt: j, weg: weg, neben: neben };
 }
 function bauleiterMalen(W, H) {                   // Tastentafel rechts, solange der Bauleiter an ist
@@ -17871,7 +17939,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = 'f10673e9', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = '3f810f4f', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
