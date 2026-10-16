@@ -477,6 +477,8 @@ document.getElementById('booking').addEventListener('click',async(e)=>{
   }
 });
 document.getElementById('download').addEventListener('click',()=>downloadReportImage().catch(()=>{}));
+// Für die Buchungsseite: Bild auch ohne "In Buchung übernehmen" holen können (Bilder-Link, 16.10.2026).
+window.rentusBild=buildReportImage;
 const shareBtn=document.getElementById('share');
 if(navigator.share){ shareBtn.hidden=false; shareBtn.addEventListener('click',()=>shareAutoCheck().catch(()=>{})); }
 document.getElementById('undo').addEventListener('click',()=>{ const m=marks.pop(); if(m){scene.remove(m.sprite); refreshSpriteNumbers();} render(); });

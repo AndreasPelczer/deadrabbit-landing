@@ -255,7 +255,8 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
 (function () {
   const wiz = document.getElementById('wizard');
   if (!wiz) return;
-  const state = { typ: null, faktor: 1, paket: null, preis: 0, sonder: [], step: 1 };
+  const state = { typ: null, faktor: 1, paket: null, preis: 0, sonder: [], step: 1, bildLink: null };
+  let bildArbeit = null; // laufender Upload der Zustandsbilder (siehe bilderHochladen)
   const steps = wiz.querySelectorAll('.wstep');
   const dots = wiz.querySelectorAll('.wdot');
   const prev = document.getElementById('wPrev');
@@ -267,7 +268,7 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     dots.forEach(d => d.classList.toggle('on', +d.dataset.d <= state.step));
     prev.disabled = state.step === 1;
     next.style.visibility = state.step === 4 ? 'hidden' : 'visible';
-    if (state.step === 4) { summary(); links(); }
+    if (state.step === 4) { summary(); links(); setTimeout(bilderHochladen, 0); }
     updateNext();
   }
   // Weiter-Button in Schritt 2 (Leistung) nur aktiv, wenn genau ein Paket gewählt ist.
@@ -292,7 +293,7 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
   wiz.querySelectorAll('[data-typ]').forEach(b => b.addEventListener('click', () => {
     // Frische Buchung: alte Check-Daten löschen, sonst schleppt sich ein alter Check mit.
     try { localStorage.removeItem('rentusAutoCheck'); localStorage.removeItem('rentusInnenCheck'); } catch (e) {}
-    checkImgAussen = null; checkImgInnen = null;
+    checkImgAussen = null; checkImgInnen = null; state.bildLink = null; bildArbeit = null;
     const cs = document.getElementById('checkStatus'); if (cs) cs.textContent = '';
     selectTypButton(b);
     showZustand(b.dataset.typ);
@@ -302,9 +303,9 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     const fa = document.getElementById('frameAussen');
     const fi = document.getElementById('frameInnen');
     if (!panel || !fa || !fi) return;
-    const wantA = '/3d-check/?embed=1&cb=31&typ=' + encodeURIComponent(typ);
+    const wantA = '/3d-check/?embed=1&cb=32&typ=' + encodeURIComponent(typ);
     if (fa.getAttribute('src') !== wantA) fa.setAttribute('src', wantA);
-    if (!fi.getAttribute('src')) fi.setAttribute('src', '/3d-check/innen.html?embed=1&cb=31');
+    if (!fi.getAttribute('src')) fi.setAttribute('src', '/3d-check/innen.html?embed=1&cb=32');
     panel.hidden = false;
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -417,6 +418,7 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
       + (document.getElementById('wMsg').value ? '– Hinweise: ' + document.getElementById('wMsg').value + '\n' : '')
       + checkZeilen('rentusAutoCheck', 'Zustand außen (Lack)')
       + checkZeilen('rentusInnenCheck', 'Zustand innen')
+      + (state.bildLink ? '📷 Zustandsbilder mit Markierungen: ' + state.bildLink + '\n' : '')
       + (kal ? '\n📅 Termin eintragen: ' + kal + '\n' : '');
   }
   function links() {
@@ -484,6 +486,7 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     if (!e.data || (e.data.rentusCheck !== 'done' && e.data.rentusCheck !== 'innen')) return;
     if (e.data.rentusCheck === 'done' && e.data.img) checkImgAussen = e.data.img;
     if (e.data.rentusCheck === 'innen' && e.data.img) checkImgInnen = e.data.img;
+    state.bildLink = null; bildArbeit = null; // neue Markierungen -> neues Bild hochladen
     let ext = null;
     try { ext = JSON.parse(localStorage.getItem('rentusAutoCheck') || 'null'); } catch (err) {}
     const nameEl = document.getElementById('wName');
@@ -513,6 +516,54 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
     let y = 0;
     imgs.forEach((im, i) => { ctx.drawImage(im, 0, y, w, scaledH[i]); y += scaledH[i] + gap; });
     return await new Promise(r => cv.toBlob(r, 'image/png'));
+  }
+  // Zustandsbilder hochladen und als Link in die Nachricht schreiben.
+  // Grund (Mike, 16.10.2026): Bestellungen kamen als Text ohne die markierten Bilder. Ein
+  // wa.me-Link trägt nur Text; das Bild ging nur mit, wenn am Handy das Teilen klappte. Am
+  // Rechner, in Instagram/Facebook und bei abgelaufener Teilen-Freigabe am iPhone fiel es weg.
+  // Jetzt liegt es bei tools/bilder-worker, und die Nachricht trägt den Link — auf jedem Gerät.
+  const BILDER_API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname)
+    ? 'http://localhost:8790' : 'https://rentus-bilder.a-pelczer.workers.dev';
+  function zahl(k) { try { const c = JSON.parse(localStorage.getItem(k) || 'null'); return (c && c.lines) ? c.lines.length : 0; } catch (e) { return 0; } }
+  // Bild direkt aus dem Check-Rahmen holen, falls der Kunde "In Buchung übernehmen" nicht gedrückt hat.
+  async function rahmenBild(id, fn) {
+    try { const w = document.getElementById(id).contentWindow; return (w && typeof w[fn] === 'function') ? await w[fn]() : null; }
+    catch (e) { return null; }
+  }
+  // Fingerabdruck der Markierungen: ändern sie sich, muss ein neues Bild hoch.
+  function bildStand() {
+    try { return (localStorage.getItem('rentusAutoCheck') || '') + '|' + (localStorage.getItem('rentusInnenCheck') || '')
+      + '|' + !!checkImgAussen + !!checkImgInnen; } catch (e) { return ''; }
+  }
+  let bildFuer = null;
+  function bilderHochladen() {
+    const stand = bildStand();
+    if (stand !== bildFuer) { state.bildLink = null; bildArbeit = null; }
+    if (state.bildLink) return Promise.resolve(state.bildLink);
+    if (bildArbeit) return bildArbeit;
+    if (!zahl('rentusAutoCheck') && !zahl('rentusInnenCheck')) return Promise.resolve(null);
+    bildFuer = stand;
+    bildArbeit = (async () => {
+      const aussen = checkImgAussen || (zahl('rentusAutoCheck') ? await rahmenBild('frameAussen', 'rentusBild') : null);
+      const innen = checkImgInnen || (zahl('rentusInnenCheck') ? await rahmenBild('frameInnen', 'makeReport') : null);
+      const png = await stackBlobs([aussen, innen]);
+      if (!png) { bildArbeit = null; bildFuer = null; return null; }
+      // Als JPEG verschicken: PNG ist ~2 MB, JPEG ~1/5 davon — zählt am Handy im Mobilnetz.
+      const blob = await new Promise(res => {
+        const im = new Image();
+        im.onload = () => { const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height;
+          const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, cv.width, cv.height); c.drawImage(im, 0, 0);
+          cv.toBlob(b => res(b || png), 'image/jpeg', 0.85); };
+        im.onerror = () => res(png);
+        im.src = URL.createObjectURL(png);
+      });
+      const r = await fetch(BILDER_API + '/bild', { method: 'POST', headers: { 'Content-Type': blob.type || 'image/png' }, body: blob });
+      if (!r.ok) throw new Error('Upload ' + r.status);
+      state.bildLink = (await r.json()).url;
+      links(); summary();
+      return state.bildLink;
+    })().catch((err) => { console.warn("[bilder]", err); bildArbeit = null; bildFuer = null; return null; });
+    return bildArbeit;
   }
   // Buchungsdaten als "Deckblatt"-Bild rendern. Grund: iOS-WhatsApp verwirft beim Teilen von
   // Text + Bild den Text — darum muss die komplette Anfrage INS Bild, damit nichts verloren geht.
@@ -555,6 +606,24 @@ document.querySelectorAll('[data-ba]').forEach((ba) => {
   // Sonst (Desktop, oder gar kein Check): wa.me-Textlink über href (Mikes Nummer vorausgefüllt).
   document.getElementById('wSend').addEventListener('click', async (e) => {
     const isTouch = window.matchMedia('(pointer: coarse)').matches;
+    // Gibt es Markierungen, geht das Bild als Link mit (siehe bilderHochladen). Ist der Upload
+    // noch unterwegs, kurz warten und dann WhatsApp mit Mikes Nummer und Link öffnen.
+    if (zahl('rentusAutoCheck') || zahl('rentusInnenCheck')) {
+      if (!state.bildLink || bildStand() !== bildFuer) {
+        e.preventDefault();
+        await Promise.race([bilderHochladen(), new Promise(r => setTimeout(r, 8000))]);
+        if (state.bildLink) {
+          const ziel = document.getElementById('wSend').href;
+          // Kein 'noopener' als Option: damit liefert window.open immer null, und es ginge doppelt auf.
+          const w = window.open(ziel, '_blank');
+          if (w) w.opener = null; else location.href = ziel;
+          return;
+        }
+        // Upload gescheitert: weiter mit dem alten Weg (Bild teilen bzw. herunterladen).
+      } else {
+        return; // href trägt Text + Link, der Standard-Link öffnet WhatsApp bei Mike
+      }
+    }
     // IMMER ein Bild bauen: Deckblatt (alle Buchungsdaten) + Außen-/Innen-Report, falls vorhanden.
     // Grund: iOS-WhatsApp verwirft beim Teilen von Text+Bild den Text -> alles muss INS Bild.
     // So gibt es auch OHNE Zustand-Check ein Bild (nur das Deckblatt).
