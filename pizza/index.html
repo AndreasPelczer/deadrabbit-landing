@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Pizza-Schmiede Unterfranken – dein Arbeitsplatz</title>
+<style>
+  @font-face{font-family:'Alfa Slab One';font-weight:400;src:url(schriften/alfa-slab-one-latin-400-normal.woff2) format('woff2');font-display:swap}
+  @font-face{font-family:'Source Sans 3';font-weight:400;src:url(schriften/source-sans-3-latin-400-normal.woff2) format('woff2');font-display:swap}
+  @font-face{font-family:'Source Sans 3';font-weight:600;src:url(schriften/source-sans-3-latin-600-normal.woff2) format('woff2');font-display:swap}
+  @font-face{font-family:'Source Sans 3';font-weight:700;src:url(schriften/source-sans-3-latin-700-normal.woff2) format('woff2');font-display:swap}
+  :root{--creme:#FBF5EC;--mehl:#F4E7D4;--sand:#EFE2CF;--text:#2A1D14;--ofen:#2B211B;--glut:#C9561A;--glut-hell:#EE7A26;--oliv:#5B6B2B;--grau:#6E6152;--linie:#E5D6C1;--rot:#B3261E}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--creme);color:var(--text);font:17px/1.6 'Source Sans 3',-apple-system,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .innen{max-width:900px;margin:0 auto;padding:0 16px}
+  header{background:var(--ofen);color:#F4EAD9}
+  header .innen{padding-top:22px;padding-bottom:16px}
+  .von{font-size:13px;color:var(--glut-hell);letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+  h1,h2{font-family:'Alfa Slab One',Georgia,serif;font-weight:400;letter-spacing:.01em}
+  h1{margin:6px 0 10px;font-size:clamp(26px,4.5vw,36px);line-height:1.15}
+  .einleitung{margin:0;max-width:66ch;color:#E3D5BF}
+  nav{display:flex;gap:6px;flex-wrap:wrap;margin-top:18px}
+  nav button{font:inherit;font-size:15px;font-weight:700;border:1px solid rgba(244,234,217,.25);background:transparent;color:#F4EAD9;padding:9px 14px;border-radius:999px;cursor:pointer}
+  nav button[aria-selected="true"]{background:var(--glut-hell);color:#1b0f05;border-color:var(--glut-hell)}
+  main{padding:26px 0 70px}
+  section[hidden]{display:none!important}
+  h2{font-size:24px;margin:0 0 6px;color:var(--ofen)}
+  h3{margin:0 0 6px;font-size:19px}
+  .hilfe{color:var(--grau);margin:0 0 20px;max-width:66ch}
+  .karte{background:#fff;border:1px solid var(--linie);border-radius:16px;padding:18px;margin-bottom:16px}
+  .karte p{margin:0 0 10px}
+  .karte.gross{border:2px solid var(--glut-hell);box-shadow:0 10px 30px rgba(201,86,26,.10)}
+  .band{display:inline-block;background:var(--oliv);color:#fff;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:999px;margin-bottom:8px}
+  .knopf{display:inline-block;font:inherit;font-weight:700;font-size:15.5px;border:0;border-radius:999px;padding:11px 18px;cursor:pointer;text-decoration:none}
+  .knopf.voll{background:var(--glut);color:#fff}.knopf.leer{background:transparent;border:2px solid var(--glut);color:var(--glut)}
+  .knopf.klein{font-size:14px;padding:7px 14px}
+  .reihe{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .wahl button{font:inherit;font-size:15px;border:1px solid var(--linie);background:var(--creme);border-radius:999px;padding:8px 14px;cursor:pointer;color:var(--text)}
+  .wahl button[aria-pressed="true"]{background:var(--oliv);color:#fff;border-color:var(--oliv)}
+  .wahl button.nein[aria-pressed="true"]{background:var(--grau);border-color:var(--grau)}
+  label{display:block;font-weight:600;font-size:15px;margin:14px 0 4px}
+  textarea,input[type=text],input[type=email],input[type=tel],select{width:100%;font:inherit;font-size:16px;border:1px solid #D9C9B4;border-radius:12px;padding:10px 12px;background:#fff;color:var(--text)}
+  ::placeholder{color:#B5A895}
+  textarea{min-height:80px;resize:vertical}
+  .bisher{font-size:14px;color:var(--grau);margin:2px 0 0}
+  .gespeichert{color:var(--oliv);font-weight:700;font-size:14px}
+  .fehler{color:var(--rot);font-weight:700;font-size:14px}
+  .vorschlag{background:var(--sand);border-radius:12px;padding:12px 14px;margin:8px 0 10px}
+  .vorschlag b{color:var(--oliv)}
+  .warum{font-size:14.5px;color:var(--grau);margin:0 0 6px}
+  .vorschau{display:grid;grid-template-columns:200px 1fr;gap:18px;align-items:center}
+  .vorschau img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:50%;display:block}
+  @media (max-width:600px){.vorschau{grid-template-columns:1fr}.vorschau img{width:55%;margin:0 auto}}
+  .liste{margin:6px 0 0;padding-left:20px}.liste li{margin:4px 0}
+  .kreuze label{display:flex;gap:8px;align-items:flex-start;font-weight:500;margin:6px 0}
+  .kreuze input{margin-top:5px;accent-color:var(--oliv);width:18px;height:18px}
+  .gitter2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}@media (max-width:600px){.gitter2{grid-template-columns:1fr}}
+  .ablage{border:2px dashed #D9C7B0;border-radius:16px;padding:24px;text-align:center;background:#fff}
+  .ablage.drueber{border-color:var(--glut-hell);background:var(--mehl)}
+  .bilder{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:14px}
+  .bilder figure{margin:0;background:#fff;border:1px solid var(--linie);border-radius:12px;overflow:hidden}
+  .bilder img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+  .bilder figcaption{font-size:13px;padding:6px 8px;color:var(--grau)}
+  .verlauf{list-style:none;margin:0;padding:0}
+  .verlauf li{background:#fff;border:1px solid var(--linie);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:15px}
+  .verlauf .kopf{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--grau);margin-bottom:4px}
+  .marke{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--sand)}
+  .marke.neu{background:#FBE3D0;color:var(--glut)}.marke.übernommen,.marke.erledigt{background:#E6EBD5;color:var(--oliv)}
+  .verlauf pre{white-space:pre-wrap;font:inherit;margin:0}
+  .zugang{max-width:520px;margin:60px auto;text-align:center}
+  .warten{opacity:.6;pointer-events:none}
+  .reihe.unten{position:sticky;bottom:0;z-index:5;background:var(--creme);margin:0;padding:12px 0;border-top:1px solid var(--linie)}
+  .weiter{margin-top:26px;text-align:right}
+  .optionen{display:grid;gap:10px;margin:10px 0}
+  .option{font:inherit;text-align:left;border:2px solid var(--linie);background:var(--creme);border-radius:14px;padding:12px 14px;cursor:pointer;color:var(--text)}
+  .option[aria-pressed="true"]{border-color:var(--oliv);background:#EEF1E2}
+  .option b{display:block;font-size:17px}
+  .option .warum{display:block;margin:2px 0 0}
+  .option .band{margin-bottom:6px}
+  .danke{background:var(--sand);border-radius:12px;padding:12px 14px;margin-top:10px}
+  .pflicht{color:var(--glut);font-weight:700}
+</style>
+</head>
+<body>
+
+<div id="ohneZugang" class="zugang innen" hidden>
+  <h1 style="color:var(--ofen)">Kein Zugang</h1>
+  <p>Diese Seite öffnet sich nur über deinen persönlichen Link.</p>
+</div>
+
+<div id="app" hidden>
+<header><div class="innen">
+  <div class="von">Pizza-Schmiede Unterfranken · dein Arbeitsplatz</div>
+  <h1 id="gruss">Servus! Hier entsteht eure Webseite. 🍕</h1>
+  <p class="einleitung" id="einleitung">Aus eurem Instagram und eurem Flyer haben wir schon einen Entwurf gebaut. Das Ziel: Wer bei Google „Pizza Catering“ oder „Holzofenpizza für die Feier“ in der Gegend sucht, soll euch finden. Schau ihn dir in Ruhe an. Wo wir etwas vorschlagen, reicht ein Klick, und die paar Dinge, die nur du weißt, trägst du ein. Alles wird sofort gespeichert. Und wenn du das Ganze gar nicht willst, ist das völlig okay: ein Klick auf „Nein danke“ reicht.</p>
+  <nav role="tablist">
+    <button role="tab" data-reiter="entwurf" aria-selected="true">1 · Dein Entwurf</button>
+    <button role="tab" data-reiter="vorschlaege">2 · Unsere Vorschläge</button>
+    <button role="tab" data-reiter="fakten">3 · Das weißt nur du</button>
+    <button role="tab" data-reiter="bilder">4 · Bilder</button>
+    <button role="tab" data-reiter="verlauf">Verlauf</button>
+  </nav>
+</div></header>
+
+<main><div class="innen">
+
+<!-- 1 ENTWURF -->
+<section data-seite="entwurf">
+  <div class="karte gross">
+    <div class="vorschau">
+      <img src="logo.jpg" alt="Euer Holzofen">
+      <div>
+        <span class="band">Erster Entwurf</span>
+        <h2>Eure Webseite</h2>
+        <p>Eine Seite mit allem Wichtigen: was ihr macht, für welche Anlässe, wo ihr hinfahrt, eure Fotos und ein großer WhatsApp-Knopf. Am Handy und am Computer.</p>
+        <div class="reihe"><button class="knopf voll" type="button" id="entwurfOeffnen">Entwurf ansehen ↗</button></div>
+        <p class="warum" style="margin-top:6px">Der Entwurf ist noch nicht öffentlich. Nur du siehst ihn über diesen Link.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="karte">
+    <h3>Wie gefällt dir der Entwurf?</h3>
+    <div class="reihe wahl" id="entwurfWahl"></div>
+    <textarea id="entwurfText" placeholder="Was gefällt dir, was würdest du ändern? Ein paar Stichworte reichen."></textarea>
+    <div class="reihe"><button class="knopf voll klein" type="button" id="entwurfSenden">Senden</button><span id="entwurfMeldung"></span></div>
+    <div class="danke" id="neinDanke" hidden>Alles gut, dann lassen wir es. Danke fürs Anschauen, und viel Erfolg mit dem Ofen! Falls du es dir anders überlegst: Der Link bleibt offen.</div>
+    <p class="bisher" id="entwurfBisher"></p>
+  </div>
+
+  <div class="karte">
+    <h3>Warum eine Webseite, wenn es Instagram gibt?</h3>
+    <p class="warum">Wer eine Feier plant, fragt meistens Google, nicht Instagram. Google zeigt bei Suchen wie „Pizza Catering Marktheidenfeld“ zuerst Firmen mit Webseite und Google-Eintrag. Die Seite ist dafür da, dass Google euch kennt. Instagram bleibt euer Schaufenster und wird auf der Seite verlinkt.</p>
+  </div>
+
+  <div class="karte">
+    <h3>Was im Entwurf steht und woher es kommt</h3>
+    <ul class="liste">
+      <li><b>Texte:</b> aus eurer Instagram-Beschreibung und eurem Flyer („Original italienische Pizza aus unserem Holzofenanhänger“, Geburtstage, Firmenfeiern, Hochzeiten, Straßenfeste).</li>
+      <li><b>Fotos:</b> eure Bilder von Instagram. Bessere oder neue Fotos kannst du unter „Bilder“ hochladen.</li>
+      <li><b>Kontakt:</b> eure WhatsApp-Nummer vom Flyer. Ein Formular gibt es nicht, das hält es einfach.</li>
+      <li><b>Was noch fehlt:</b> Name und Adresse fürs Impressum. Das trägst du unter „Das weißt nur du“ ein. Ohne Impressum darf die Seite nicht online.</li>
+    </ul>
+  </div>
+  <div class="weiter"><button class="knopf leer" type="button" data-gehe="vorschlaege">Weiter zu „Unsere Vorschläge“ →</button></div>
+</section>
+
+<!-- 2 VORSCHLÄGE -->
+<section data-seite="vorschlaege" hidden>
+  <h2>Unsere Vorschläge</h2>
+  <p class="hilfe">Hier haben wir uns schon Gedanken gemacht. Wenn es passt, reicht ein Klick auf „Passt so“ oder auf die Auswahl mit „Unser Vorschlag“. Wenn nicht, schreib kurz, wie du es lieber hättest.</p>
+  <div id="vorschlagListe"></div>
+  <div class="weiter"><button class="knopf leer" type="button" data-gehe="fakten">Weiter zu „Das weißt nur du“ →</button></div>
+</section>
+
+<!-- 3 FAKTEN -->
+<section data-seite="fakten" hidden>
+  <h2>Das weißt nur du</h2>
+  <p class="hilfe">Die grauen Beispiele sind nur Beispiele. Bitte trag ein, was bei euch stimmt. Lücken sind kein Problem, dann fragen wir später nach. Der Knopf „Alles speichern“ läuft unten immer mit.</p>
+  <form id="faktForm">
+    <div class="karte">
+      <h3>📜 Fürs Impressum <span class="pflicht">(Pflicht)</span></h3>
+      <p class="warum">Das Gesetz (§ 5 DDG) verlangt auf jeder geschäftlichen Webseite den vollen Namen, eine echte Anschrift und eine E-Mail-Adresse. Telefon allein reicht nicht.</p>
+      <div class="gitter2">
+        <div><label for="f-vorname">Vorname des Inhabers</label><input type="text" id="f-vorname" name="vorname" autocomplete="given-name" placeholder="z. B. Max"></div>
+        <div><label for="f-nachname">Nachname</label><input type="text" id="f-nachname" name="nachname" autocomplete="family-name" placeholder="z. B. Mustermann"></div>
+      </div>
+      <label for="f-strasse">Straße und Hausnummer (kein Postfach)</label><input type="text" id="f-strasse" name="strasse" placeholder="Im Telefonbuch steht „Weinbergweg 1“ – stimmt das?">
+      <label for="f-ort">PLZ und Ort</label><input type="text" id="f-ort" name="ort" placeholder="z. B. 97907 Hasloch">
+      <div class="gitter2">
+        <div><label for="f-mail">E-Mail-Adresse</label><input type="email" id="f-mail" name="email" placeholder="z. B. pizza@beispiel.de"></div>
+        <div><label for="f-tel">Telefon / WhatsApp für Kunden</label><input type="tel" id="f-tel" name="telefon" placeholder="z. B. 0151 …"></div>
+      </div>
+      <label>Seid ihr Kleinunternehmer (ohne Umsatzsteuer)?</label>
+      <div class="kreuze">
+        <label><input type="radio" name="kleinunternehmer" value="ja"> Ja, Kleinunternehmer</label>
+        <label><input type="radio" name="kleinunternehmer" value="nein"> Nein, mit Umsatzsteuer</label>
+        <label><input type="radio" name="kleinunternehmer" value="weiß nicht"> Weiß ich nicht genau</label>
+      </div>
+      <label for="f-ust">USt-IdNr. (nur falls vorhanden)</label><input type="text" id="f-ust" name="ustid" placeholder="z. B. DE123456789">
+      <label for="f-hr">Handelsregister (nur falls eingetragen, z. B. „e.K.“)</label><input type="text" id="f-hr" name="handelsregister" placeholder="z. B. Amtsgericht Würzburg, HRA 1234">
+    </div>
+    <div class="karte">
+      <h3>📍 Wo und wie ihr kommt</h3>
+      <p class="warum">Die Orte schreiben wir als Text auf die Seite, denn genau danach sucht Google.</p>
+      <label for="f-umkreis">Wie weit fahrt ihr? Welche Orte sollen genannt werden?</label><textarea id="f-umkreis" name="umkreis" placeholder="z. B. bis 50 km um Hasloch: Wertheim, Marktheidenfeld, Lohr, Miltenberg, Würzburg …"></textarea>
+      <label for="f-vorort">Was braucht ihr vor Ort?</label><input type="text" id="f-vorort" name="vorort" placeholder="z. B. Stellfläche 3 × 6 m, Strom 230 V, kein Wasser nötig">
+      <label for="f-menge">Für wie viele Gäste lohnt es sich? Wie viele Pizzen schafft der Ofen ungefähr pro Stunde?</label><input type="text" id="f-menge" name="menge" placeholder="z. B. ab 30 Gästen, ca. 60 Pizzen pro Stunde">
+    </div>
+    <div class="karte">
+      <h3>🍕 Pizza und Preise</h3>
+      <label for="f-sorten">Welche Sorten gibt es? Auch vegetarisch, vegan, glutenfrei?</label><textarea id="f-sorten" name="sorten" placeholder="z. B. Margherita, Salami, Schinken, Gemüse (vegetarisch) …"></textarea>
+      <label for="f-preise">Preise auf der Seite? (freiwillig)</label><input type="text" id="f-preise" name="preise" placeholder="z. B. „ab 15 € pro Person“, oder „lieber nur auf Anfrage“">
+    </div>
+    <div class="karte">
+      <h3>👋 Wer steckt dahinter? (freiwillig)</h3>
+      <p class="warum">Ein, zwei Sätze über euch machen die Seite persönlich. Leer lassen geht auch.</p>
+      <textarea name="ueberuns" placeholder="z. B. Wir sind Tom und Lisa aus Hasloch. Seit April 2026 fahren wir mit unserem Holzofen …"></textarea>
+    </div>
+    <div class="karte">
+      <h3>💬 Was du uns sonst noch sagen möchtest</h3>
+      <textarea name="frei" placeholder="Wünsche, Ideen, Seiten, die dir gefallen …"></textarea>
+    </div>
+    <div class="reihe unten"><button class="knopf voll" type="submit">Alles speichern</button><span id="faktMeldung"></span></div>
+    <p class="bisher" id="faktBisher"></p>
+  </form>
+</section>
+
+<!-- 4 BILDER -->
+<section data-seite="bilder" hidden>
+  <h2>Bilder</h2>
+  <p class="hilfe">Am meisten hilft uns euer <b>Logo als Originaldatei</b>, also die Datei vom Flyer-Grafiker. Dazu gern Fotos vom Anhänger von außen, von euch am Ofen und von vollen Festen. Die Bilder werden vor dem Senden verkleinert.</p>
+  <div class="karte">
+    <label for="bildZweck" style="margin-top:0">Wofür ist das Bild?</label>
+    <select id="bildZweck"><option>Logo</option><option>Großes Bild oben</option><option>Galerie</option><option>Über uns</option><option>Sonstiges</option></select>
+    <label for="bildText">Dazu sagen</label>
+    <input type="text" id="bildText" placeholder="z. B. Hochzeit in Kreuzwertheim, Juni">
+    <div class="ablage" id="ablage" style="margin-top:14px">
+      <p style="margin:0 0 10px"><b>Bilder hierher ziehen</b> oder</p>
+      <label class="knopf voll" style="display:inline-block;margin:0">Fotos auswählen<input type="file" id="bildDatei" accept="image/*" multiple hidden></label>
+      <p id="bildMeldung"></p>
+    </div>
+  </div>
+  <div class="bilder" id="bilderListe"></div>
+</section>
+
+<!-- VERLAUF -->
+<section data-seite="verlauf" hidden>
+  <h2 id="verlaufTitel">Was du schon geschickt hast</h2>
+  <p class="hilfe" id="verlaufHilfe">Alles, was hier ankommt, sieht Andreas. „übernommen“ heißt: ist eingebaut.</p>
+  <ul class="verlauf" id="verlaufListe"></ul>
+</section>
+
+</div></main>
+</div>
+
+<script>
+var API = 'https://pizza-portal.a-pelczer.workers.dev';
+
+// Unsere Vorschläge. Ein Klick „Passt so“, sonst eigener Text. Fakten (Name, Adresse, Preise) stehen NICHT hier, die sind nie vorbelegt.
+var VORSCHLAEGE = [
+  { id: 'aufbau', titel: 'Aufbau der Webseite', vorschlag: 'Eine einzige Seite zum Durchscrollen: großes Ofen-Bild mit WhatsApp-Knopf, so läuft eine Buchung ab, eure Anlässe, der Anhänger, Fotos, wo ihr hinfahrt, häufige Fragen, Kontakt.', warum: 'Für einen Foodtruck reicht eine Seite. Am Handy ist sie am angenehmsten, und Google findet alles an einer Stelle.' },
+  { id: 'domain', titel: 'Eure Webadresse', warum: 'Ob die Adresse noch frei ist, prüfen wir, sobald du gewählt hast. Dann sichern wir sie für euch.', optionen: [
+    { wert: 'pizzaschmiede-unterfranken.de', empfohlen: true, text: 'Genau wie euer Name auf Instagram. Gut lesbar, und „Unterfranken“ hilft bei Google.' },
+    { wert: 'pizza-schmiede-unterfranken.de', text: 'Mit Bindestrich wie im Logo. Geschrieben am klarsten, am Telefon etwas länger.' },
+    { wert: 'pizzaschmiede-main.de', text: 'Kürzer, aber ohne „Unterfranken“.' } ] },
+  { id: 'mail', titel: 'Eure E-Mail-Adresse für Kunden', warum: 'Eine Adresse mit eurer eigenen Webadresse wirkt professionell. Lesen könnt ihr sie auf dem Handy wie jede andere. (Hinter dem @ steht die Adresse, die ihr oben wählt.)', optionen: [
+    { wert: 'info@pizzaschmiede-unterfranken.de', empfohlen: true, text: 'Klassisch, jeder versteht es sofort.' },
+    { wert: 'anfrage@pizzaschmiede-unterfranken.de', text: 'Sagt gleich, wofür die Adresse da ist.' },
+    { wert: 'Unsere bisherige Adresse behalten', text: 'Geht auch. Dann tragt ihr sie unter „Das weißt nur du“ ein.' } ] },
+  { id: 'kontakt', titel: 'Kontakt per WhatsApp und Anruf', vorschlag: 'Oben und unten auf der Seite ein großer WhatsApp-Knopf und ein Anrufen-Knopf. Kein Kontaktformular.', warum: 'Ihr seid schon per WhatsApp erreichbar, das ist der kürzeste Weg. Ohne Formular gibt es weniger Datenschutz-Aufwand und nichts, was kaputtgehen kann.' },
+  { id: 'google', titel: 'Euer Eintrag bei Google Maps', warum: 'Das ist der wichtigste Teil, um gefunden zu werden: Mit einem Google-Unternehmensprofil erscheint ihr auf der Karte und bei „Pizza Catering in der Nähe“. Die Webseite und das Profil verweisen aufeinander.', optionen: [
+    { wert: 'Bitte zusammen mit mir anlegen', empfohlen: true, text: 'Wir machen es gemeinsam, dauert etwa 20 Minuten. Google schickt dafür einen Bestätigungscode.' },
+    { wert: 'Haben wir schon', text: 'Dann verknüpfen wir es nur und schauen, ob alles stimmt.' },
+    { wert: 'Will ich nicht', text: 'Geht auch, dann wird es mit dem Gefundenwerden aber deutlich schwerer.' } ] },
+  { id: 'orte', titel: 'Orte auf der Seite', vorschlag: 'Ein Abschnitt „Hier sind wir unterwegs“: Main-Spessart und Umland, mit Orten wie Hasloch, Kreuzwertheim, Wertheim, Marktheidenfeld, Lohr am Main, Karlstadt und Neustadt am Main.', warum: 'Google ordnet Seiten über Ortsnamen zu. Stimmen die Orte nicht, korrigier sie einfach (oder trag den Umkreis unter „Das weißt nur du“ ein).' },
+  { id: 'faq', titel: 'Häufige Fragen', vorschlag: 'Kurze Antworten auf: Wie buche ich? Für welche Anlässe? Wird vor Ort gebacken? Gibt es vegetarische Pizza? Was braucht ihr vor Ort? Wie weit fahrt ihr?', warum: 'Genau solche Fragen tippen Leute bei Google ein. Die Antworten kommen aus dem, was du unter „Das weißt nur du“ einträgst.' },
+  { id: 'farben', titel: 'Farben und Stil', vorschlag: 'Dunkel wie der Ofen, mit Glut-Orange und Creme, wie auf eurem Flyer.', warum: 'So passt die Seite zu Flyer, Logo und Instagram, und man erkennt euch sofort wieder.' },
+  { id: 'instagram', titel: 'Instagram auf der Seite', vorschlag: 'Ein Link „Mehr Bilder auf Instagram“ statt eingebetteter Beiträge.', warum: 'Eingebettete Instagram-Beiträge laden Daten von Meta und brauchen dann eine Cookie-Abfrage. Ein einfacher Link ist schneller und datenschutzfreundlich.' }
+];
+
+// ---- Zugang ----
+var h = new URLSearchParams(location.hash.slice(1)), SCHLUESSEL = h.get('k') || h.get('a') || '';
+try { if (SCHLUESSEL) sessionStorage.setItem('pizzaPortal', SCHLUESSEL); else SCHLUESSEL = sessionStorage.getItem('pizzaPortal') || ''; } catch (e) {}
+if (SCHLUESSEL && history.replaceState) history.replaceState(null, '', location.pathname);
+var ROLLE = null, EINTRAEGE = [];
+function api(pfad, daten) {
+  return fetch(API + pfad, { method: daten ? 'POST' : 'GET', headers: Object.assign({ 'x-schluessel': SCHLUESSEL }, daten ? { 'content-type': 'application/json' } : {}), body: daten ? JSON.stringify(daten) : undefined })
+    .then(function (r) { if (r.status === 401) throw new Error('kein Zugang'); return r.json().then(function (j) { if (!r.ok) throw new Error(j.fehler || ('Fehler ' + r.status)); return j; }); });
+}
+function el(t, a, kinder) { var e = document.createElement(t); if (a) for (var k in a) { if (k === 'text') e.textContent = a[k]; else if (k === 'html') e.innerHTML = a[k]; else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), a[k]); else e.setAttribute(k, a[k]); } (kinder || []).forEach(function (c) { if (c) e.appendChild(c); }); return e; }
+function melde(ziel, ok, text) { ziel.textContent = text; ziel.className = ok ? 'gespeichert' : 'fehler'; if (ok) setTimeout(function () { if (ziel.textContent === text) ziel.textContent = ''; }, 4000); }
+function senden(eintrag, meldung, knopf) {
+  if (knopf) knopf.classList.add('warten');
+  return api('/eintrag', eintrag).then(function () { melde(meldung, true, '✓ Gespeichert'); return laden(); })
+    .catch(function (e) { melde(meldung, false, 'Nicht gespeichert: ' + e.message + ' – bitte später noch einmal'); throw e; })
+    .then(function () { if (knopf) knopf.classList.remove('warten'); }, function (e) { if (knopf) knopf.classList.remove('warten'); throw e; });
+}
+function letzter(bereich, schluessel) { for (var i = 0; i < EINTRAEGE.length; i++) if (EINTRAEGE[i].bereich === bereich && EINTRAEGE[i].schluessel === schluessel) return EINTRAEGE[i]; return null; }
+function datum(z) { return z.slice(8, 10) + '.' + z.slice(5, 7) + '.'; }
+
+// ---- Reiter ----
+function reiter(name) {
+  document.querySelectorAll('nav button').forEach(function (x) { x.setAttribute('aria-selected', x.getAttribute('data-reiter') === name ? 'true' : 'false'); });
+  document.querySelectorAll('section[data-seite]').forEach(function (s) { s.hidden = s.getAttribute('data-seite') !== name; });
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('nav button').forEach(function (b) { b.addEventListener('click', function () { reiter(b.getAttribute('data-reiter')); }); });
+document.querySelectorAll('[data-gehe]').forEach(function (b) { b.addEventListener('click', function () { reiter(b.getAttribute('data-gehe')); }); });
+
+// ---- Entwurf: geschützte Seite vom Worker, als neuer Tab ----
+document.getElementById('entwurfOeffnen').addEventListener('click', function () {
+  var fenster = window.open('', '_blank');
+  fetch(API + '/seite?name=startseite', { headers: { 'x-schluessel': SCHLUESSEL } })
+    .then(function (r) { if (!r.ok) throw new Error('Fehler ' + r.status); return r.text(); })
+    .then(function (html) { var u = URL.createObjectURL(new Blob([html], { type: 'text/html' })); if (fenster) fenster.location = u; else location.href = u; })
+    .catch(function (e) { if (fenster) fenster.close(); melde(document.getElementById('entwurfMeldung'), false, 'Der Entwurf lässt sich gerade nicht öffnen (' + e.message + ')'); });
+});
+var urteil = null;
+[['passt', '😍 Passt – so kann sie online'], ['fast', '🙂 Fast – mit Änderungen'], ['nein danke', '🙅 Nein danke, brauche ich nicht']].forEach(function (o) {
+  var w = document.getElementById('entwurfWahl');
+  var b = el('button', { type: 'button', class: o[0] === 'nein danke' ? 'nein' : '', 'aria-pressed': 'false', text: o[1], onclick: function () { urteil = o[0]; document.getElementById('entwurfText').placeholder = urteil === 'nein danke' ? 'Magst du kurz sagen, warum? (freiwillig)' : 'Was gefällt dir, was würdest du ändern? Ein paar Stichworte reichen.'; w.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); } }); w.appendChild(b);
+});
+document.getElementById('entwurfSenden').addEventListener('click', function () {
+  var t = document.getElementById('entwurfText'), m = document.getElementById('entwurfMeldung');
+  if (!urteil && !t.value.trim()) return melde(m, false, 'Bitte erst einen Knopf wählen oder etwas schreiben');
+  senden({ bereich: 'entwurf', schluessel: 'startseite', inhalt: (urteil ? '[' + urteil + '] ' : '') + t.value.trim() }, m, this).then(function () { t.value = ''; }, function () {});
+});
+function entwurfBisher() { var v = letzter('entwurf', 'startseite'); document.getElementById('entwurfBisher').textContent = v ? 'Zuletzt von dir (' + datum(v.zeit) + '): ' + v.inhalt : ''; document.getElementById('neinDanke').hidden = !(v && v.inhalt.indexOf('[nein danke]') === 0); }
+
+// ---- Vorschläge ----
+function vorschlaegeZeigen() {
+  var liste = document.getElementById('vorschlagListe'); liste.innerHTML = '';
+  VORSCHLAEGE.forEach(function (v) {
+    var vorher = letzter('vorschlag', v.id), j = null; if (vorher) { try { j = JSON.parse(vorher.inhalt); } catch (e) {} }
+    var meldung = el('span'), feld = el('textarea', { placeholder: v.optionen ? 'Deine eigene Idee …' : 'Wie hättest du es lieber?' }), anders = el('div', {}, [feld]);
+    anders.hidden = !(j && j.wahl === 'anders'); if (j && j.wahl === 'anders') feld.value = j.text || '';
+    var knoepfe = [];
+    function waehle(b) { knoepfe.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); }
+    var oben = null, wahl = el('div', { class: 'reihe wahl' });
+    if (v.optionen) {
+      oben = el('div', { class: 'optionen' });
+      v.optionen.forEach(function (o) {
+        var b = el('button', { type: 'button', class: 'option', 'aria-pressed': String(!!j && j.wahl === 'option' && j.text === o.wert) }, [
+          o.empfohlen ? el('span', { class: 'band', text: 'Unser Vorschlag' }) : null, el('b', { text: o.wert }),
+          o.html ? el('div', { html: o.html }) : null, el('span', { class: 'warum', text: o.text })]);
+        b.addEventListener('click', function () { waehle(b); anders.hidden = true;
+          senden({ bereich: 'vorschlag', schluessel: v.id, inhalt: JSON.stringify({ wahl: 'option', text: o.wert }) }, meldung, null).catch(function () {}); });
+        knoepfe.push(b); oben.appendChild(b); });
+    } else {
+      oben = el('div', { class: 'vorschlag' }, [el('b', { text: 'Unser Vorschlag: ' }), document.createTextNode(v.vorschlag)]);
+      var passt = el('button', { type: 'button', 'aria-pressed': String(!!j && j.wahl === 'passt'), text: '✓ Passt so' });
+      passt.addEventListener('click', function () { waehle(passt); anders.hidden = true;
+        senden({ bereich: 'vorschlag', schluessel: v.id, inhalt: JSON.stringify({ wahl: 'passt' }) }, meldung, null).catch(function () {}); });
+      knoepfe.push(passt); wahl.appendChild(passt);
+    }
+    var lieber = el('button', { type: 'button', 'aria-pressed': String(!!j && j.wahl === 'anders'), text: v.optionen ? '✏️ Eigene Idee' : '✏️ Lieber anders' });
+    lieber.addEventListener('click', function () { waehle(lieber); anders.hidden = false; feld.focus(); });
+    knoepfe.push(lieber); wahl.appendChild(lieber);
+    var speichern = el('button', { class: 'knopf voll klein', type: 'button', text: 'Speichern', onclick: function () {
+      if (!feld.value.trim()) return melde(meldung, false, 'Bitte kurz schreiben, wie du es lieber hättest');
+      senden({ bereich: 'vorschlag', schluessel: v.id, inhalt: JSON.stringify({ wahl: 'anders', text: feld.value.trim() }) }, meldung, speichern).catch(function () {}); } });
+    anders.appendChild(el('div', { class: 'reihe' }, [speichern]));
+    liste.appendChild(el('div', { class: 'karte' }, [el('h3', { text: v.titel }),
+      v.optionen ? el('p', { class: 'warum', text: v.warum }) : null, oben,
+      v.optionen ? null : el('p', { class: 'warum', text: 'Warum: ' + v.warum }), wahl, anders, meldung]));
+  });
+}
+
+// ---- Fakten: alle benannten Felder des Formulars, nie vorbelegt ----
+var FAKT_ENTWURF = 'pizza_fakt_entwurf';
+function faktDaten(f) { var d = {};
+  [].forEach.call(f.elements, function (x) { if (!x.name) return; if (x.type === 'radio') { if (x.checked) d[x.name] = x.value; else if (!(x.name in d)) d[x.name] = ''; } else if (x.type === 'checkbox') { d[x.name] = d[x.name] || []; if (x.checked) d[x.name].push(x.value); } else d[x.name] = x.value.trim(); });
+  return d; }
+function faktSetzen(d) { var f = document.getElementById('faktForm');
+  [].forEach.call(f.elements, function (x) { if (!x.name || d[x.name] == null) return; if (x.type === 'radio') x.checked = x.value === d[x.name]; else if (x.type === 'checkbox') x.checked = (d[x.name] || []).indexOf(x.value) >= 0; else x.value = d[x.name]; }); }
+/* Getipptes bleibt im Browser liegen, bis es gespeichert ist – so geht nichts verloren */
+document.getElementById('faktForm').addEventListener('input', function (ev) { try { localStorage.setItem(FAKT_ENTWURF, JSON.stringify(faktDaten(ev.currentTarget))); } catch (e) {} });
+document.getElementById('faktForm').addEventListener('change', function (ev) { try { localStorage.setItem(FAKT_ENTWURF, JSON.stringify(faktDaten(ev.currentTarget))); } catch (e) {} });
+document.getElementById('faktForm').addEventListener('submit', function (ev) { ev.preventDefault();
+  var f = ev.target, d = faktDaten(f);
+  senden({ bereich: 'fakt', schluessel: 'angaben', inhalt: JSON.stringify(d) }, document.getElementById('faktMeldung'), f.querySelector('button[type=submit]'))
+    .then(function () { try { localStorage.removeItem(FAKT_ENTWURF); } catch (e) {} }).catch(function () {}); });
+function faktenVorbelegen() { var v = letzter('fakt', 'angaben');
+  if (v) { try { faktSetzen(JSON.parse(v.inhalt)); } catch (e) {} }
+  try { var lokal = localStorage.getItem(FAKT_ENTWURF); if (lokal) { faktSetzen(JSON.parse(lokal)); melde(document.getElementById('faktMeldung'), false, 'Noch nicht gespeichert – bitte „Alles speichern“ drücken'); } } catch (e) {}
+  faktBisher(); }
+function faktBisher() { var v = letzter('fakt', 'angaben'); document.getElementById('faktBisher').textContent = v ? 'Zuletzt gespeichert am ' + datum(v.zeit) + ' · ' + v.status : ''; }
+
+// ---- Bilder ----
+function verkleinern(datei) { return new Promise(function (ok, fehl) {
+  var r = new FileReader(); r.onerror = fehl; r.onload = function () { var i = new Image(); i.onerror = function () { fehl(new Error('kein Bild')); }; i.onload = function () {
+    var m = 1600, s = Math.min(1, m / Math.max(i.width, i.height)), c = document.createElement('canvas'); c.width = Math.round(i.width * s); c.height = Math.round(i.height * s);
+    c.getContext('2d').drawImage(i, 0, 0, c.width, c.height); var q = 0.85, d = c.toDataURL('image/jpeg', q); while (d.length > 850000 && q > 0.4) { q -= 0.1; d = c.toDataURL('image/jpeg', q); } ok(d); }; i.src = r.result; }; r.readAsDataURL(datei); }); }
+function bilderSenden(dateien) {
+  var meldung = document.getElementById('bildMeldung'), zweck = document.getElementById('bildZweck').value, dazu = document.getElementById('bildText').value.trim(), n = 0;
+  dateien = [].slice.call(dateien).filter(function (f) { return /^image\//.test(f.type); }); if (!dateien.length) return;
+  meldung.className = ''; meldung.textContent = 'Wird gesendet …';
+  dateien.reduce(function (p, f) { return p.then(function () { return verkleinern(f).then(function (d) { return api('/eintrag', { bereich: 'bild', schluessel: zweck, inhalt: dazu || f.name || '', bild: d }); }).then(function () { n++; }); }); }, Promise.resolve())
+    .then(function () { melde(meldung, true, '✓ ' + n + (n === 1 ? ' Bild' : ' Bilder') + ' gesendet'); document.getElementById('bildText').value = ''; laden(); })
+    .catch(function (e) { melde(meldung, false, (n ? n + ' gesendet, dann ' : '') + 'Fehler: ' + e.message); laden(); });
+}
+document.getElementById('bildDatei').addEventListener('change', function (e) { bilderSenden(e.target.files); e.target.value = ''; });
+var ablage = document.getElementById('ablage');
+['dragenter', 'dragover'].forEach(function (t) { ablage.addEventListener(t, function (e) { e.preventDefault(); ablage.classList.add('drueber'); }); });
+['dragleave', 'drop'].forEach(function (t) { ablage.addEventListener(t, function (e) { e.preventDefault(); ablage.classList.remove('drueber'); }); });
+ablage.addEventListener('drop', function (e) { bilderSenden(e.dataTransfer.files); });
+var BILDURL = {};
+function bildLaden(id, img) { if (BILDURL[id]) { img.src = BILDURL[id]; return; } fetch(API + '/bild?id=' + id, { headers: { 'x-schluessel': SCHLUESSEL } }).then(function (r) { return r.blob(); }).then(function (b) { BILDURL[id] = URL.createObjectURL(b); img.src = BILDURL[id]; }).catch(function () {}); }
+function bilderZeigen() { var l = document.getElementById('bilderListe'); l.innerHTML = ''; EINTRAEGE.filter(function (e) { return e.bereich === 'bild' && e.hat_bild; }).forEach(function (e) { var img = el('img', { alt: e.inhalt }); bildLaden(e.id, img); l.appendChild(el('figure', {}, [img, el('figcaption', { text: e.schluessel + (e.inhalt ? ' · ' + e.inhalt : '') })])); }); }
+
+// ---- Verlauf (für Andreas: Eingang mit Abhaken) ----
+var NAMEN = { entwurf: 'Entwurf', vorschlag: 'Vorschlag', fakt: 'Angaben', bild: 'Bild', notiz: 'Notiz' };
+var VTITEL = {}; VORSCHLAEGE.forEach(function (v) { VTITEL[v.id] = v.titel; });
+function lesbar(e) {
+  if (e.bereich === 'vorschlag') { try { var j = JSON.parse(e.inhalt); return j.wahl === 'passt' ? '✓ passt so' : j.wahl === 'option' ? '✓ gewählt: ' + j.text : '✏️ lieber anders: ' + j.text; } catch (x) {} }
+  if (e.bereich === 'fakt') { try { var d = JSON.parse(e.inhalt), z = []; for (var k in d) { var w = Array.isArray(d[k]) ? d[k].join(', ') : d[k]; if (w) z.push(k + ': ' + w); } return z.join('\n') || '(leer)'; } catch (x) {} }
+  return e.inhalt; }
+function verlaufZeigen() {
+  var l = document.getElementById('verlaufListe'); l.innerHTML = '';
+  if (!EINTRAEGE.length) { l.appendChild(el('li', { text: 'Noch nichts geschickt.' })); return; }
+  EINTRAEGE.forEach(function (e) {
+    var kopf = el('div', { class: 'kopf' }, [el('span', { class: 'marke ' + e.status, text: e.status }), el('span', { text: NAMEN[e.bereich] + ' · ' + (VTITEL[e.schluessel] || e.schluessel) }), el('span', { text: datum(e.zeit) + ' ' + e.zeit.slice(11, 16) + ' UTC' })]);
+    var kinder = [kopf, el('pre', { text: lesbar(e) })];
+    if (e.hat_bild) { var img = el('img', { style: 'max-width:180px;border-radius:8px;margin-top:6px;display:block', alt: '' }); bildLaden(e.id, img); kinder.push(img); }
+    if (ROLLE === 'admin' && e.status === 'neu') kinder.push(el('div', { class: 'reihe' }, [el('button', { class: 'knopf leer klein', type: 'button', text: '✓ übernommen', onclick: function () { api('/status', { id: e.id, status: 'übernommen' }).then(laden); } })]));
+    l.appendChild(el('li', {}, kinder));
+  });
+}
+
+function laden() { return api('/eintraege').then(function (j) { EINTRAEGE = j.eintraege || []; bilderZeigen(); verlaufZeigen(); entwurfBisher(); faktBisher();
+  var neu = EINTRAEGE.filter(function (e) { return e.status === 'neu'; }).length; var b = document.querySelector('nav button[data-reiter="verlauf"]'); b.textContent = ROLLE === 'admin' ? 'Eingang' + (neu ? ' (' + neu + ' neu)' : '') : 'Verlauf'; }); }
+function start() {
+  if (!SCHLUESSEL) { document.getElementById('ohneZugang').hidden = false; return; }
+  api('/wer').then(function (j) { ROLLE = j.rolle; document.getElementById('app').hidden = false;
+    if (ROLLE === 'admin') { document.getElementById('gruss').textContent = 'Eingang – was die Pizza-Schmiede geschickt hat'; document.getElementById('verlaufTitel').textContent = 'Eingang'; document.getElementById('verlaufHilfe').textContent = 'Neu = noch nicht eingebaut. Nach dem Einbau abhaken.'; document.getElementById('einleitung').textContent = 'Du siehst alles wie der Kunde – plus den Eingang. Was eingebaut ist, abhaken: dann sieht er „übernommen“.'; }
+    return laden(); }).then(function () { vorschlaegeZeigen(); faktenVorbelegen();
+    if (ROLLE === 'admin') reiter('verlauf'); })
+    .catch(function (e) { document.getElementById('app').hidden = true; document.getElementById('ohneZugang').hidden = false; document.querySelector('#ohneZugang p').textContent = e.message === 'kein Zugang' ? 'Der Link ist nicht (mehr) gültig. Bitte bei Andreas melden.' : 'Gerade nicht erreichbar (' + e.message + '). Bitte später noch einmal.'; });
+}
+window.addEventListener('hashchange', function () { if (/[#&](k|a)=/.test(location.hash)) location.reload(); });
+start();
+</script>
+</body>
+</html>
