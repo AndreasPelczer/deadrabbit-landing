@@ -47,7 +47,8 @@
     <button class="k" type="button" id="leer">Von vorn</button>
     <button class="k voll" type="button" id="speichern">Als Bild speichern</button>
   </div>
-  <p class="fuss">Ein kleines Geschenk für Stefania – in den Farben von Ambiente con Cuore.</p>
+  <p class="fuss" id="fuss">Ein kleines Geschenk für Stefania – in den Farben von Ambiente con Cuore.</p>
+<script>if (/(^|[?&])fuer=dich(&|$)/.test(location.search.slice(1))) { document.getElementById('fuss').textContent = 'Ein kleines Geschenk für dich – in den Farben von Ambiente con Cuore. 🌿'; document.title = 'Mandala con Cuore – zum Ausmalen'; }</script>
 
 <script>
 // Mandala als Linienbild + Farbeimer: Linien werden gezeichnet, jede umschlossene Fläche (auch jede Überschneidung) ist ein Feld.
