@@ -45,6 +45,8 @@
     { id: 'mampf',    name: 'HÜTTENMAMPF', unter: 'POMMES-PANIK IM SUMPF',        url: 'mampf/index.html',     liste: 'sumpf-mampf' },
     { id: 'sprung',   name: 'HÜTTENLAUF',  unter: 'DER WEG ZUR HÜTTE',          url: 'sprung/index.html',    liste: 'sumpf-sprung' },
     { id: 'snake',    name: 'RINGELNATTER', unter: 'SNAKE VOM MAIN',  url: 'snake/index.html',     liste: 'sumpf-snake' },
+    { id: 'wurm',     name: 'SUMPFWURM',   unter: 'DIE BRAUNE SUMPFWURM-INVASION', url: 'wurm/index.html', liste: 'sumpf-wurm' },
+    { id: 'vespa',    name: 'VESPANER',    unter: 'MIT DER VESPA NACH SACHSENHAUSEN', url: 'vespa/index.html', liste: 'sumpf-vespa' },
     { id: 'rennen',   name: 'AUTORENNEN',  unter: 'KOMMT AN EINEM LANGWEILIGEN SONNTAG', gesperrt: true }
   ];
   var GRUESSE = '+++ SUMPF-ARCADE +++ DER AUTOMAT AUS DER HÜTTE BEI WERDÖ A MOH +++ EINEN JOYSTICK, ZWEI KNÖPFE, KEINE AUSREDEN +++ KARTOFFELN WURDEN BEI DER HERSTELLUNG VERLETZT +++ ŞEREFE +++ ¡VAMOS! +++          ';
@@ -118,7 +120,7 @@
   }
 
   // ---------- Das Menü ----------
-  var ZEILE0 = 66, ZEILE_H = 26;
+  var ZEILE0 = 64, ZEILE_H = 20;   // 8 Spiele passen über die Laufschrift
   function symbol(id, px, py) {      // kleine Bildchen je Spiel, alles aus dem Fundus
     var r = Math.round;
     if (id === 'urphaed') { x.drawImage(A.dorfSprite(1, 0, false), px - 6, py - 10, 12, 20); }
@@ -126,6 +128,8 @@
     else if (id === 'mampf') { x.fillStyle = '#ffd25a'; for (var p = 0; p < 4; p++) x.fillRect(px - 8 + p * 3, py - 6 + (p % 2) * 2, 2, 9); x.fillStyle = '#c8302a'; x.fillRect(px - 9, py + 2, 13, 5); }
     else if (id === 'sprung') { x.drawImage(A.figurBild('kumpel', 1, 'kumpel', false), px - 6, py - 12, 12, 20); x.fillStyle = '#6b4a2c'; x.fillRect(px + 4, py + 6, 6, 3); }
     else if (id === 'snake') { x.fillStyle = '#7fd06a'; for (var k = 0; k < 6; k++) x.fillRect(px - 9 + k * 3, r(py + Math.sin(k + zeit / 200) * 3), 3, 3); x.fillStyle = '#ffd25a'; x.fillRect(px + 9, r(py + Math.sin(6 + zeit / 200) * 3), 3, 3); }
+    else if (id === 'wurm') { for (var w = 4; w >= 0; w--) { x.fillStyle = w ? '#7a4a22' : '#a8703a'; x.fillRect(px - 9 + w * 0 + (4 - w) * 4, r(py - 2 + Math.sin(w + zeit / 180) * 2), 4, 4); } x.fillStyle = '#fff'; x.fillRect(px + 8, r(py - 2 + Math.sin(zeit / 180) * 2), 1, 1); x.fillStyle = '#d02a8a'; x.fillRect(px - 10, py + 4, 5, 2); x.fillStyle = '#efe6cf'; x.fillRect(px - 8, py + 6, 1, 2); }
+    else if (id === 'vespa') { x.fillStyle = '#efe6cf'; x.fillRect(px - 7, py - 1, 12, 5); x.fillRect(px + 3, py - 6, 2, 6); x.fillRect(px + 1, py - 7, 6, 2); x.fillStyle = '#111'; x.fillRect(px - 8, py + 4, 5, 4); x.fillRect(px + 3, py + 4, 5, 4); x.fillStyle = '#e2553a'; x.fillRect(px - 8, py, 2, 2); }
     else if (id === 'rennen') { x.fillStyle = '#6b6f78'; x.fillRect(px - 5, py - 1, 10, 8); x.strokeStyle = '#6b6f78'; x.lineWidth = 2; x.beginPath(); x.arc(px, py - 2, 4, Math.PI, 0); x.stroke(); x.lineWidth = 1; }
   }
   function menueZeichnen() {
@@ -140,7 +144,7 @@
       symbol(s.id, 46 + wack, y);
       text(s.name, 64 + wack, y - 4, 11, s.gesperrt ? COL.grau : aktiv ? COL.feuer : COL.hell, 'left');
       text(s.unter, 64 + wack, y + 6, 6, s.gesperrt ? COL.grau : '#a9aeb6', 'left');
-      if (!s.gesperrt) { var l = A.liste(s.liste, s.id === 'urphaed' ? [{ n: 'AND', p: 3000 }] : null).lesen()[0]; if (l) text(l.n + ' ' + l.p, 284 + wack, y, 7, aktiv ? COL.rosa : COL.grau, 'right'); }
+      if (!s.gesperrt) { var l = A.liste(s.liste, s.id === 'urphaed' ? [{ n: 'AND', p: 3000 }] : s.id === 'vespa' ? [{ n: 'TOR', p: 6343 }] : null).lesen()[0]; if (l) text(l.n + ' ' + l.p, 284 + wack, y, 7, aktiv ? COL.rosa : COL.grau, 'right'); }
       if (aktiv && Math.floor(zeit / 400) % 2) text('▶', 24, y, 9, COL.feuer);
     });
     A.laufschrift(GRUESSE, 230);
