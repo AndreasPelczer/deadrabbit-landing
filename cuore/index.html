@@ -66,6 +66,24 @@
   .marke{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--sand)}
   .marke.neu{background:var(--apricot);color:var(--button)}.marke.übernommen,.marke.erledigt{background:#E3EBD8;color:var(--salbei)}
   .verlauf pre{white-space:pre-wrap;font:inherit;margin:0}
+  .filter{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+  .filter button{font:inherit;font-size:14.5px;border:1px solid var(--linie);background:#fff;border-radius:999px;padding:6px 12px;cursor:pointer;color:var(--text)}
+  .filter button[aria-pressed="true"]{background:var(--salbei);color:#fff;border-color:var(--salbei)}
+  .filter label{display:flex;gap:6px;align-items:center;font-weight:500;font-size:14px;margin:0 0 0 auto}
+  .best{background:#fff;border:1px solid var(--linie);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+  .best.fertig{opacity:.62}
+  .best .kopf{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+  .best .nr{font-weight:800;color:var(--bronze)}
+  .best .wer{color:var(--grau);font-size:14.5px}
+  .best .betrag{margin-left:auto;font-weight:700}
+  .best .marken{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+  .marke.test{background:#EEE;color:#555}.marke.anfrage{background:#E8E2F4;color:#4B3D79}.marke.offen{background:var(--apricot);color:var(--button)}.marke.ok{background:#E3EBD8;color:var(--salbei)}.marke.warten{background:#FFF4D6;color:#7A5B00}
+  .best details{margin-top:6px}.best summary{cursor:pointer;color:var(--bronze);font-weight:600;font-size:14.5px}
+  .best dl{margin:6px 0 0;display:grid;grid-template-columns:minmax(120px,38%) 1fr;gap:2px 12px;font-size:14.5px}
+  .best dt{color:var(--grau)}.best dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+  .best dt.abschn{grid-column:1/-1;color:var(--salbei);font-weight:700;margin-top:8px}
+  .best .anh{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.best .anh a{display:block;width:96px;font-size:12px;color:var(--grau);text-decoration:none;overflow-wrap:anywhere}.best .anh img{width:96px;height:96px;object-fit:cover;border-radius:8px;display:block;background:var(--sand)}
+  .widerruf{background:#FBE9E7;border:1px solid #E5B8B0;border-radius:14px;padding:12px 14px;margin-bottom:12px}
   .zugang{max-width:520px;margin:60px auto;text-align:center}
   .warten{opacity:.6;pointer-events:none}
   .reihe.unten{position:sticky;bottom:0;z-index:5;background:var(--creme);margin:0;padding:12px 0;border-top:1px solid var(--linie)}
@@ -103,6 +121,7 @@
     <button role="tab" data-reiter="vorschlaege">2 · Unsere Vorschläge</button>
     <button role="tab" data-reiter="fakten">3 · Das weißt nur du</button>
     <button role="tab" data-reiter="bilder">4 · Bilder</button>
+    <button role="tab" data-reiter="bestellungen">🛍 Bestellungen</button>
     <button role="tab" data-reiter="verlauf">Verlauf</button>
   </nav>
 </div></header>
@@ -233,6 +252,18 @@
 </section>
 
 <!-- VERLAUF -->
+<section data-seite="bestellungen" hidden>
+  <h2>Deine Bestellungen</h2>
+  <p class="hilfe">Jede Bestellung und Anfrage von deiner Webseite landet hier und zusätzlich als E-Mail bei dir. Wenn das Geld da ist, hakst du „Zahlung ist da“ ab. PayPal und Karte hakt das System selbst ab. Wenn die Analyse raus ist, hakst du „Erledigt“ ab.</p>
+  <div class="filter" id="bestFilter">
+    <button type="button" data-f="offen" aria-pressed="true">Offen</button><button type="button" data-f="erledigt" aria-pressed="false">Erledigt</button><button type="button" data-f="alle" aria-pressed="false">Alle</button>
+    <label><input type="checkbox" id="bestTest" checked> Testbestellungen zeigen</label>
+  </div>
+  <div id="bestWiderrufe"></div>
+  <div id="bestListe"><p class="bisher">Wird geladen …</p></div>
+  <p class="bisher" id="bestMeldung"></p>
+</section>
+
 <section data-seite="verlauf" hidden>
   <h2 id="verlaufTitel">Was du schon geschickt hast</h2>
   <p class="hilfe" id="verlaufHilfe">Alles, was hier ankommt, sieht Andreas. „übernommen“ heißt: ist eingebaut.</p>
@@ -425,13 +456,66 @@ function verlaufZeigen() {
   });
 }
 
+// ---- Bestellungen (von der Webseite) ----
+var BESTELLUNGEN = [], WIDERRUFE = [], BFILTER = 'offen';
+function euro(n) { return (n || 0).toFixed(2).replace('.', ',') + ' €'; }
+function tagDe(z, plus) { var d = new Date(z.replace(' ', 'T') + 'Z'); if (plus) d.setDate(d.getDate() + plus); return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Berlin' }); }
+function zeitDe(z) { return tagDe(z) + ', ' + new Date(z.replace(' ', 'T') + 'Z').toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' }) + ' Uhr'; }
+function bestNr(id) { return 'ACC-' + String(id).padStart(4, '0'); }
+function bestLaden() { return api('/bestellungen').then(function (j) { BESTELLUNGEN = j.bestellungen || []; WIDERRUFE = j.widerrufe || []; bestZeigen(); }).catch(function (e) { document.getElementById('bestListe').innerHTML = ''; melde(document.getElementById('bestMeldung'), false, 'Bestellungen gerade nicht ladbar: ' + e.message); }); }
+function haken(b, feld, an, knopf) { knopf.classList.add('warten'); api('/bestellung/haken', { id: b.id, feld: feld, an: an }).then(bestLaden).catch(function (e) { knopf.classList.remove('warten'); melde(document.getElementById('bestMeldung'), false, 'Nicht gespeichert: ' + e.message); }); }
+function anhangLaden(id, a, img) { fetch(API + '/bestellbild?id=' + id, { headers: { 'x-schluessel': SCHLUESSEL } }).then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (bl) { var u = URL.createObjectURL(bl); a.href = u; if (/^image\//.test(bl.type)) img.src = u; else img.alt = 'PDF'; }).catch(function () {}); }
+function bestZeigen() {
+  var test = document.getElementById('bestTest').checked, l = document.getElementById('bestListe'), w = document.getElementById('bestWiderrufe');
+  w.innerHTML = '';
+  WIDERRUFE.filter(function (x) { return test || !x.test; }).forEach(function (x) {
+    w.appendChild(el('div', { class: 'widerruf' }, [el('b', { text: '⚠️ Widerruf' + (x.test ? ' (Test)' : '') + ': ' + (x.bestellnr || 'ohne Nummer') + ' · ' + x.name }), el('div', { class: 'bisher', text: zeitDe(x.zeit) + ' · ' + x.email + (x.text ? ' · „' + x.text + '“' : '') + ' – bereits gezahltes Geld innerhalb von 14 Tagen zurückzahlen.' })]));
+  });
+  var liste = BESTELLUNGEN.filter(function (b) { return (test || !b.test) && (BFILTER === 'alle' || (BFILTER === 'erledigt') === !!b.erledigt_am); });
+  var offen = BESTELLUNGEN.filter(function (b) { return !b.erledigt_am && !b.test; }).length;
+  document.querySelector('nav button[data-reiter="bestellungen"]').textContent = '🛍 Bestellungen' + (offen ? ' (' + offen + ')' : '');
+  l.innerHTML = '';
+  if (!liste.length) { l.appendChild(el('p', { class: 'bisher', text: BFILTER === 'offen' ? 'Keine offenen Bestellungen.' : 'Noch nichts da.' })); return; }
+  liste.forEach(function (b) {
+    var inh = {}; try { inh = JSON.parse(b.inhalt); } catch (e) {}
+    var anfrage = b.art === 'anfrage', marken = [];
+    if (b.test) marken.push(el('span', { class: 'marke test', text: 'Test' }));
+    if (anfrage) marken.push(el('span', { class: 'marke anfrage', text: 'Anfrage' }));
+    else {
+      marken.push(b.bezahlt_am ? el('span', { class: 'marke ok', text: '✓ bezahlt ' + tagDe(b.bezahlt_am) + (b.paypal_zahlung ? ' (PayPal)' : '') }) : el('span', { class: 'marke offen', text: 'Zahlung offen · ' + (b.zahlart === 'paypal' ? 'PayPal/Karte' : 'Überweisung') }));
+      marken.push(b.verzicht ? el('span', { class: 'marke ok', text: 'sofort beginnen' }) : el('span', { class: 'marke warten', text: 'erst ab ' + tagDe(b.zeit, 15) + ' beginnen' }));
+    }
+    if (b.erledigt_am) marken.push(el('span', { class: 'marke ok', text: '✓ erledigt ' + tagDe(b.erledigt_am) }));
+    var dl = el('dl'), ab = null;
+    (inh.felder || []).forEach(function (f) { if (f[0] !== ab) { ab = f[0]; dl.appendChild(el('dt', { class: 'abschn', text: ab })); } dl.appendChild(el('dt', { text: f[1] })); dl.appendChild(el('dd', { text: f[2] })); });
+    (inh.zeilen || []).forEach(function (z, i) { if (!i) dl.appendChild(el('dt', { class: 'abschn', text: 'Preis' })); dl.appendChild(el('dt', { text: z[0] })); dl.appendChild(el('dd', { text: euro(z[1]) })); });
+    if (b.lieferzeit) { dl.appendChild(el('dt', { text: 'Lieferzeit' })); dl.appendChild(el('dd', { text: b.lieferzeit })); }
+    var mails = el('p', { class: 'bisher', text: 'Mail an dich: ' + (b.mail_stefania || '–') + ' · Bestätigung an Kundin: ' + (b.mail_kunde || '–') });
+    var anh = el('div', { class: 'anh' });
+    (b.bilder ? b.bilder.split(',') : []).forEach(function (x) { var i = x.indexOf(':'), id = x.slice(0, i), name = x.slice(i + 1), img = el('img', { alt: '' }), a = el('a', { href: '#', target: '_blank', rel: 'noopener' }, [img, el('span', { text: name })]); anhangLaden(id, a, img); anh.appendChild(a); });
+    var knoepfe = el('div', { class: 'reihe' });
+    if (!anfrage) { var kz = el('button', { class: 'knopf ' + (b.bezahlt_am ? 'leer' : 'voll') + ' klein', type: 'button', text: b.bezahlt_am ? 'Zahlung doch nicht da' : '✓ Zahlung ist da', onclick: function () { haken(b, 'bezahlt', !b.bezahlt_am, kz); } }); knoepfe.appendChild(kz); }
+    var ke = el('button', { class: 'knopf ' + (b.erledigt_am ? 'leer' : anfrage || b.bezahlt_am ? 'voll' : 'leer') + ' klein', type: 'button', text: b.erledigt_am ? 'Wieder öffnen' : '✓ Erledigt', onclick: function () { haken(b, 'erledigt', !b.erledigt_am, ke); } }); knoepfe.appendChild(ke);
+    knoepfe.appendChild(el('a', { class: 'knopf leer klein', href: 'mailto:' + b.email + '?subject=' + encodeURIComponent((anfrage ? 'Deine Anfrage ' : 'Deine Bestellung ') + bestNr(b.id)), text: '✉ Antworten' }));
+    l.appendChild(el('div', { class: 'best' + (b.erledigt_am ? ' fertig' : '') }, [
+      el('div', { class: 'kopf' }, [el('span', { class: 'nr', text: bestNr(b.id) }), el('span', { text: b.paket }), el('span', { class: 'betrag', text: anfrage ? '' : euro(b.summe) })]),
+      el('div', { class: 'wer', text: b.name + ' · ' + b.email + ' · ' + zeitDe(b.zeit) }),
+      el('div', { class: 'marken' }, marken),
+      el('details', {}, [el('summary', { text: 'Alle Angaben' + (b.bilder ? ' und Anhänge' : '') }), dl, anh, mails]),
+      knoepfe]));
+  });
+}
+document.querySelectorAll('#bestFilter button').forEach(function (b) { b.addEventListener('click', function () { BFILTER = b.dataset.f; document.querySelectorAll('#bestFilter button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); bestZeigen(); }); });
+document.getElementById('bestTest').addEventListener('change', bestZeigen);
+document.querySelector('nav button[data-reiter="bestellungen"]').addEventListener('click', bestLaden);
+
 function laden() { return api('/eintraege').then(function (j) { EINTRAEGE = j.eintraege || []; bilderZeigen(); verlaufZeigen(); entwurfBisher(); faktBisher();
   var neu = EINTRAEGE.filter(function (e) { return e.status === 'neu'; }).length; var b = document.querySelector('nav button[data-reiter="verlauf"]'); b.textContent = ROLLE === 'admin' ? 'Eingang' + (neu ? ' (' + neu + ' neu)' : '') : 'Verlauf'; }); }
 function start() {
   if (!SCHLUESSEL) { document.getElementById('ohneZugang').hidden = false; return; }
   api('/wer').then(function (j) { ROLLE = j.rolle; document.getElementById('app').hidden = false;
     if (ROLLE === 'admin') { document.getElementById('gruss').textContent = 'Eingang – was Stefania geschickt hat'; document.getElementById('verlaufTitel').textContent = 'Eingang'; document.getElementById('verlaufHilfe').textContent = 'Neu = noch nicht eingebaut. Nach dem Einbau abhaken.'; document.getElementById('einleitung').textContent = 'Du siehst alles wie Stefania – plus den Eingang. Was eingebaut ist, abhaken: dann sieht sie „übernommen“.'; }
-    return laden(); }).then(function () { vorschlaegeZeigen(); faktenVorbelegen();
+    bestLaden(); return laden(); }).then(function () { vorschlaegeZeigen(); faktenVorbelegen();
     if (ROLLE === 'admin') reiter('verlauf'); })
     .catch(function (e) { document.getElementById('app').hidden = true; document.getElementById('ohneZugang').hidden = false; document.querySelector('#ohneZugang p').textContent = e.message === 'kein Zugang' ? 'Der Link ist nicht (mehr) gültig. Bitte bei Andreas melden.' : 'Gerade nicht erreichbar (' + e.message + '). Bitte später noch einmal.'; });
 }
