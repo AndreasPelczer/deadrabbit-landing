@@ -32,6 +32,11 @@ NOTIZ = {
     'cuore/mandala.html': 'für Geschenke: …/mandala.html?fuer=dich',
     'arcade/index.html': 'Kurzadresse pelczer.de/arcade → Sumpf-Automat',
 }
+# Kundenseiten mit eigener Domain (eigenes Repo, nicht auf pelczer.de) – Pfad = Thema-Schlüssel, Datum aus deren git
+EXTERN = [
+    dict(pfad='cuore/', adresse='ambiente-con-cuore.de', titel='Ambiente con Cuore – die echte Seite (eigene Domain)',
+         repo=Path.home() / 'XcodeProjects/ambiente-con-cuore-seite', notiz='live seit 22.10. · gebaut aus portal/bauen.py --oeffentlich'),
+]
 
 
 def seiten():
@@ -49,6 +54,11 @@ def seiten():
         yield dict(pfad=pfad, url=url, titel=titel, datum=datum,
                    versteckt='noindex' in text.lower(),
                    start=pfad in verlinkt or url in verlinkt or url.rstrip('/') in verlinkt)
+    for x in EXTERN:
+        index = (x['repo'] / 'index.html').read_text(errors='ignore') if (x['repo'] / 'index.html').exists() else ''
+        datum = subprocess.run(['git', 'log', '-1', '--format=%cs'], cwd=x['repo'], capture_output=True, text=True).stdout.strip()
+        yield dict(pfad=x['pfad'] + '!' + x['adresse'], url='https://' + x['adresse'] + '/', titel=x['titel'], datum=datum,
+                   versteckt='noindex' in index.lower(), start=False, notiz=x['notiz'], anzeige=x['adresse'])
 
 
 def thema(pfad):
@@ -76,16 +86,18 @@ def bauen():
             if s['start']:
                 marken.append('<span class="m start">auf Startseite</span>')
             marken.append('<span class="m vers">nicht bei Google</span>' if s['versteckt'] else '<span class="m oeff">bei Google</span>')
-            notiz = f'<div class="notiz">{e(NOTIZ[s["pfad"]])}</div>' if s['pfad'] in NOTIZ else ''
+            n = s.get('notiz') or NOTIZ.get(s['pfad'])
+            notiz = f'<div class="notiz">{e(n)}</div>' if n else ''
+            href = s['url'] if s['url'].startswith('https://') else '/' + s['url']
             zeilen.append(
                 f'<li data-such="{e((s["titel"] + " " + s["pfad"]).lower())}">'
-                f'<a href="/{e(s["url"])}" target="_blank" rel="noopener"><span class="t">{e(s["titel"])}</span>'
-                f'<span class="p">pelczer.de/{e(s["url"])}</span></a>'
+                f'<a href="{e(href)}" target="_blank" rel="noopener"><span class="t">{e(s["titel"])}</span>'
+                f'<span class="p">{e(s.get("anzeige") or "pelczer.de/" + s["url"])}</span></a>'
                 f'<div class="r"><span class="d">{e(s["datum"])}</span>{"".join(marken)}</div>{notiz}</li>')
         abschnitte.append(f'<section><h2>{e(name)} <small>{len(liste)}</small></h2><ul>{"".join(zeilen)}</ul></section>')
 
     neu = sorted(alle, key=lambda s: s['datum'], reverse=True)[:8]
-    neu_html = ''.join(f'<li><a href="/{e(s["url"])}" target="_blank" rel="noopener">{e(s["titel"])}</a> <span class="d">{e(s["datum"])}</span></li>' for s in neu)
+    neu_html = ''.join(f'<li><a href="{e(s["url"] if s["url"].startswith("https://") else "/" + s["url"])}" target="_blank" rel="noopener">{e(s["titel"])}</a> <span class="d">{e(s["datum"])}</span></li>' for s in neu)
     stand = os_('git', 'log', '-1', '--format=%cs').strip()
 
     seite = VORLAGE.replace('{{ANZAHL}}', str(len(alle))).replace('{{STAND}}', stand) \
