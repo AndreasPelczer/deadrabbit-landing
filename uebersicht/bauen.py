@@ -19,6 +19,7 @@ THEMEN = [
     ('Kunden: Pizza-Schmiede', ('pizza/',)),
     ('Kunden: weitere', ('ronny/', 'tattoo-opening', 'goldschmitt-bau', 'weetech/')),
     ('Spiele & Arcade', ('arcade/', 'huette/', 'altstadt/', 'dorf/')),
+    ('Mopsinho (Pflege-App, eigene Domains)', ('mopsinho/',)),
     ('Mops / iMOPS / baumops', ('imops', 'gastro-grid', 'baumops-logikplan/', 'construction-grid-logikplan/', 'scrummops')),
     ('Bücher & Leseproben', ('books/', 'leseprobe-')),
     ('Apps (App Store)', ('apps/', 'fuer-schulen', 'wattwandern')),
@@ -36,6 +37,12 @@ NOTIZ = {
 EXTERN = [
     dict(pfad='cuore/', adresse='ambiente-con-cuore.de', titel='Ambiente con Cuore – die echte Seite (eigene Domain)',
          repo=Path.home() / 'XcodeProjects/ambiente-con-cuore-seite', notiz='live seit 22.10. · gebaut aus portal/bauen.py --oeffentlich'),
+    dict(pfad='mopsinho/', adresse='mopsinho.de', titel='Mopsinho – die Seite zur App (PT/DE)',
+         repo=Path.home() / 'AndroidStudioProjects/mopsinho-site',
+         notiz='gekauft 23.10. bei Strato · noch nicht online (Parkseite) · Seite liegt lokal in mopsinho-site'),
+    dict(pfad='mopsinho/', adresse='mopsinho.com', titel='Mopsinho – .com, für später nach Brasilien',
+         repo=Path.home() / 'AndroidStudioProjects/mopsinho-site',
+         notiz='gekauft 23.10. bei Strato · noch nicht online (Parkseite) · .com.br noch offen'),
 ]
 
 
