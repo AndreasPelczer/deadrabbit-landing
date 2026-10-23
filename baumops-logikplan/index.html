@@ -202,11 +202,11 @@
 <section class="hero">
   <a href="https://pelczer.de" class="back-link">&larr; Zurück zu pelczer.de</a>
   <h1>baumops — <span>Logikpläne</span></h1>
-  <p class="tagline">Lokale Baustellenintelligenz für Nachweise, Lieferketten und Abläufe, die nicht jeden Morgen neu zusammengeflickt werden müssen. Die Box steht auf der Baustelle — die Daten bleiben dort.</p>
+  <p class="tagline">Lokale Baustellenintelligenz für Nachweise, Lieferketten und Abläufe, die nicht jeden Morgen neu zusammengeflickt werden müssen. Die Box steht im eigenen Betrieb, nicht in einem fremden Rechenzentrum — die Daten bleiben im Haus.</p>
   <div class="stats-row">
-    <div class="stat"><span class="stat-num">3</span><span class="stat-label">Bausteine</span></div>
+    <div class="stat"><span class="stat-num">5</span><span class="stat-label">Bausteine</span></div>
     <div class="stat"><span class="stat-num">2</span><span class="stat-label">Köpfe · Mops &amp; Prof</span></div>
-    <div class="stat"><span class="stat-num">~85</span><span class="stat-label">Wissens-Lemmas</span></div>
+    <div class="stat"><span class="stat-num">1.513</span><span class="stat-label">Wissens-Abschnitte</span></div>
     <div class="stat"><span class="stat-num">0</span><span class="stat-label">Pflicht-Cloud</span></div>
   </div>
   <div class="badge-row">
@@ -221,6 +221,7 @@
 
 <div class="tab-nav" id="tabs">
   <button class="active" onclick="show('overview')">Übersicht</button>
+  <button onclick="show('buero')">Im Büro: Zeichnung → BauSu</button>
   <button onclick="show('komponenten')">Komponenten</button>
   <button onclick="show('offline')">Offline &amp; Datensouveränität</button>
   <button onclick="show('gehirn')">Mops &amp; Prof</button>
@@ -232,18 +233,18 @@
 <div id="overview" class="lp-section">
   <div class="container">
     <h2>System-Übersicht</h2>
-    <p>baumops ist kein Cloud-Dienst, der zufällig auf der Baustelle läuft. Es ist ein lokales System: eine Box im Baustellennetz, die Geräte daneben, die Außenwelt nur, wenn nötig.</p>
+    <p>baumops ist kein Cloud-Dienst, der zufällig auf der Baustelle läuft. Es ist ein lokales System: eine Box im eigenen Betrieb, Büro, Zeichner und Baustelle hängen über ein privates Netz daran — die Außenwelt nur, wenn nötig.</p>
 
     <div class="info-grid">
       <div class="info-card">
         <h4>Prinzip</h4>
         <div class="number" style="font-size:1.3rem">Lokal&nbsp;zuerst</div>
-        <div class="label">Verarbeitung &amp; Daten bleiben auf der Baustelle</div>
+        <div class="label">Verarbeitung &amp; Daten bleiben im Betrieb</div>
       </div>
       <div class="info-card">
         <h4>Box</h4>
-        <div class="number" style="font-size:1.3rem">CPU-only</div>
-        <div class="label">Ein normaler Rechner, kein Rechenzentrum</div>
+        <div class="number" style="font-size:1.3rem">32&nbsp;GB&nbsp;+&nbsp;GPU</div>
+        <div class="label">Ein normaler Rechner mit alter Grafikkarte, kein Rechenzentrum</div>
       </div>
       <div class="info-card">
         <h4>Zweck</h4>
@@ -261,34 +262,84 @@
       <h3>Die Topologie — wer steht wo</h3>
       <div class="mermaid">
 graph TB
-  subgraph SITE["Baustelle (eigenes Netz)"]
-    BOX["Mops-Box<br/><i>lokaler Server, CPU-only</i>"]
-    D1["iPad — Polier"]
-    D2["iPhone — Bauleiter"]
-    D3["weitere Geräte"]
-    D1 --- BOX
-    D2 --- BOX
-    D3 --- BOX
+  subgraph HAUS["Im Betrieb"]
+    BOX["Mops-Box<br/><i>eigener Server · 32 GB · GPU</i>"]
+    BUERO["Büro-Rechner<br/><i>Büromops im Browser</i>"]
+    BUERO --- BOX
   end
+  subgraph NETZ["privates Netz (Tailscale) — Büro, Zuhause, unterwegs"]
+    MAC["Zeichner-Mac<br/><i>SketchUp + Malmops</i>"]
+    D1["iPad / iPhone<br/><i>Construction Grid</i>"]
+  end
+  MAC -->|"Mengen je Bauteil"| BOX
+  D1 --- BOX
+  ZENTRALE["Zentrale<br/><i>Sicherung, anderer Ort</i>"]
+  MAC -.->|"Zeichnungen alle 15 Min."| ZENTRALE
   subgraph OUT["Außenwelt (nur bei Bedarf)"]
-    CLOUD["mops.baumops.com<br/><i>Cloud</i>"]
-    OFFICE["Büro / Kalkulation"]
-    AUTH["Behörde / Auftraggeber"]
+    BAUSU["Kalkulation<br/><i>BauSu, per GAEB-Datei</i>"]
+    PROF["Prof<br/><i>Sprachmodell in der Cloud</i>"]
     SUP["Lieferant"]
   end
-  BOX -.->|"Sync, wenn Netz da ist"| CLOUD
-  BOX -->|"Nachweise &amp; Exporte"| OFFICE
-  OFFICE --> AUTH
-  BOX -->|"Lieferketten"| SUP
+  BUERO -->|"GAEB .X83 / .X84"| BAUSU
+  BOX -.->|"schwere Fachfrage"| PROF
+  BUERO -->|"Bestellliste"| SUP
   style BOX fill:#1f4f4e,stroke:#2dd4bf,color:#fff
+  style BUERO fill:#4f3a1f,stroke:#d29922,color:#fff
+  style MAC fill:#1f3a5f,stroke:#58a6ff,color:#fff
   style D1 fill:#1f3a5f,stroke:#58a6ff,color:#fff
-  style D2 fill:#1f3a5f,stroke:#58a6ff,color:#fff
-  style D3 fill:#1f3a5f,stroke:#58a6ff,color:#fff
-  style CLOUD fill:#30363d,stroke:#8b949e,color:#c9d1d9
-  style OFFICE fill:#4f3a1f,stroke:#d29922,color:#fff
-  style AUTH fill:#3b1f5e,stroke:#bc8cff,color:#fff
+  style ZENTRALE fill:#30363d,stroke:#8b949e,color:#c9d1d9
+  style BAUSU fill:#3b1f5e,stroke:#bc8cff,color:#fff
+  style PROF fill:#5f3a1f,stroke:#f0883e,color:#fff
   style SUP fill:#1f4f3a,stroke:#56d364,color:#fff
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== IM BÜRO ===== -->
+<div id="buero" class="lp-section">
+  <div class="container">
+    <h2>Im Büro: Zeichnung → Mops → BauSu</h2>
+    <p>Hier arbeitet baumops jeden Tag: Der Zeichner zeichnet in SketchUp, der Mops zählt mit, und im Büro fragt man auf Deutsch — „Steinliste“, „Abgleich“, „Kalkulation“, „Angebot“. Was dabei herauskommt, geht als GAEB-Datei in die Kalkulationssoftware, in der das Angebot fertig wird.</p>
+
+    <div class="info-grid">
+      <div class="info-card"><h4>Zeichnen</h4><div class="number" style="font-size:1.2rem">Malmops</div><div class="label">SketchUp-Erweiterung · schickt Mengen je Bauteil</div></div>
+      <div class="info-card"><h4>Fragen</h4><div class="number" style="font-size:1.2rem">Büromops</div><div class="label">im Browser · Fragen auf Deutsch · Vorauswahl beim Tippen</div></div>
+      <div class="info-card"><h4>Rechnen</h4><div class="number" style="font-size:1.2rem">Kalkulation</div><div class="label">Mengen aus der Zeichnung · Preise aus den eigenen Listen</div></div>
+      <div class="info-card"><h4>Übergeben</h4><div class="number" style="font-size:1.2rem">GAEB</div><div class="label">.X83 ohne / .X84 mit Preisen · Excel-Angebotsentwurf</div></div>
+    </div>
+
+    <div class="diagram-card">
+      <h3>Die Kette — von der Zeichnung zum Angebot</h3>
+      <div class="mermaid">
+flowchart LR
+  Z["Zeichnen<br/><i>SketchUp</i>"] -->|"speichern"| MM["Malmops<br/><i>zählt Stück, m³, m²</i>"]
+  MM --> BOX["Mops-Box<br/><i>merkt sich jedes Modell</i>"]
+  BOX --> BM["Büromops"]
+  BM --> SL["Stück- &amp; Bestellliste"]
+  BM --> AB["Abgleich<br/><i>Zeichnung ↔ Statik &amp; Pläne</i>"]
+  BM --> KA["Kalkulation<br/><i>Herkunft an jeder Zeile</i>"]
+  KA --> AE["Angebotsentwurf<br/><i>Excel</i>"]
+  KA --> GA["GAEB .X83 / .X84"]
+  GA --> BS["BauSu<br/><i>Zuschläge, Druck</i>"]
+  style MM fill:#1f3a5f,stroke:#58a6ff,color:#fff
+  style BOX fill:#1f4f4e,stroke:#2dd4bf,color:#fff
+  style BM fill:#4f3a1f,stroke:#d29922,color:#fff
+  style KA fill:#1f4f3a,stroke:#56d364,color:#fff
+  style GA fill:#3b1f5e,stroke:#bc8cff,color:#fff
+  style BS fill:#3b1f5e,stroke:#bc8cff,color:#fff
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-card"><h4>Regel 1</h4><div class="number" style="font-size:1.1rem">Herkunft</div><div class="label">Jede Menge, jeder Preis sagt, woher er kommt — Zeichnung, Liste, Angebot oder „angenommen“</div></div>
+      <div class="info-card"><h4>Regel 2</h4><div class="number" style="font-size:1.1rem">Nicht raten</div><div class="label">Fehlt ein Preis, bleibt die Zeile leer und steht unter „fehlt“ — der Mops sagt „weiß ich nicht“</div></div>
+      <div class="info-card"><h4>Regel 3</h4><div class="number" style="font-size:1.1rem">Mensch setzt</div><div class="label">Lohn, Wagnis, Gewinn und Zuschläge kommen nie vom Mops</div></div>
+      <div class="info-card"><h4>Regel 4</h4><div class="number" style="font-size:1.1rem">Bleibt im Haus</div><div class="label">Kundendaten und Preise verlassen den Betrieb nicht</div></div>
+    </div>
+
+    <div class="prose-note">
+      <strong>Meilenstein 23.10.2026:</strong> das erste Angebot ganz durch — gezeichnet in SketchUp, gerechnet vom Mops, als GAEB-Datei in BauSu eingelesen. Ohne einen Wert abzutippen.
     </div>
   </div>
 </div>
@@ -297,12 +348,14 @@ graph TB
 <div id="komponenten" class="lp-section">
   <div class="container">
     <h2>Komponenten</h2>
-    <p>baumops besteht aus drei Bausteinen, die zusammenspielen — und einem Backend, das in der Box wohnt.</p>
+    <p>baumops besteht aus fünf Bausteinen, die zusammenspielen — und einem Backend, das in der Box wohnt.</p>
 
     <div class="info-grid">
-      <div class="info-card"><h4>Baustein 1</h4><div class="number" style="font-size:1.2rem">Mops-Box</div><div class="label">Hardware im Baustellennetz · Ubuntu · :8080</div></div>
-      <div class="info-card"><h4>Baustein 2</h4><div class="number" style="font-size:1.1rem">Construction&nbsp;Grid</div><div class="label">iOS-App · Offline-First · Core Data</div></div>
-      <div class="info-card"><h4>Baustein 3</h4><div class="number" style="font-size:1.1rem">mops.baumops</div><div class="label">Cloud · optionaler Sync</div></div>
+      <div class="info-card"><h4>Baustein 1</h4><div class="number" style="font-size:1.2rem">Mops-Box</div><div class="label">eigener Server im Betrieb · Ubuntu · :8080 · von außen über mops.baumops.com</div></div>
+      <div class="info-card"><h4>Baustein 2</h4><div class="number" style="font-size:1.2rem">Büromops</div><div class="label">Browser · Fragen auf Deutsch · Listen, Abgleich, Kalkulation, GAEB</div></div>
+      <div class="info-card"><h4>Baustein 3</h4><div class="number" style="font-size:1.2rem">Malmops</div><div class="label">SketchUp-Erweiterung · Mengen aus der Zeichnung</div></div>
+      <div class="info-card"><h4>Baustein 4</h4><div class="number" style="font-size:1.1rem">Construction&nbsp;Grid</div><div class="label">iOS-App · Offline-First · Core Data</div></div>
+      <div class="info-card"><h4>Baustein 5</h4><div class="number" style="font-size:1.2rem">Zentrale</div><div class="label">Sicherung an einem zweiten Ort · Zeichnungen alle 15 Min.</div></div>
       <div class="info-card"><h4>In der Box</h4><div class="number" style="font-size:1.2rem">mops-api</div><div class="label">FastAPI · RAG · Mops &amp; Prof</div></div>
     </div>
 
@@ -313,22 +366,25 @@ graph LR
   subgraph B["Mops-Box"]
     API["mops-api<br/><i>FastAPI</i>"]
     M["Mops<br/><i>llama3.2 · lokal</i>"]
-    P["Prof<br/><i>Claude Sonnet · Eskalation</i>"]
+    P["Prof<br/><i>gpt-4.1 · Eskalation</i>"]
     Q[("Qdrant<br/>Wissensbasis")]
     API --- M
     API --- P
     API --- Q
   end
   APP["Construction Grid<br/><i>iOS-App</i>"]
-  CLOUD["mops.baumops.com"]
+  BM["Büromops<br/><i>Browser im Büro</i>"]
+  MM["Malmops<br/><i>SketchUp</i>"]
   APP -->|"Fragen, Klassifikation,<br/>Geländeberechnung"| API
-  API -.->|"Sync optional"| CLOUD
+  MM -->|"Modelle &amp; Mengen"| API
+  BM -->|"Listen, Abgleich, Kalkulation"| API
   style API fill:#1f4f4e,stroke:#2dd4bf,color:#fff
   style M fill:#1f4f3a,stroke:#56d364,color:#fff
   style P fill:#5f3a1f,stroke:#f0883e,color:#fff
   style Q fill:#1f3a4f,stroke:#79c0ff,color:#fff
   style APP fill:#1f3a5f,stroke:#58a6ff,color:#fff
-  style CLOUD fill:#30363d,stroke:#8b949e,color:#c9d1d9
+  style BM fill:#4f3a1f,stroke:#d29922,color:#fff
+  style MM fill:#1f3a5f,stroke:#58a6ff,color:#fff
       </div>
     </div>
 
@@ -336,14 +392,17 @@ graph LR
       <h3>Die Mops-Box von innen</h3>
       <div class="mermaid">
 graph TB
-  HW["Rechner<br/>Ubuntu 24.04 · i5 · 16 GB · CPU-only"]
+  HW["Rechner<br/>Ubuntu 24.04 · i5 · 32 GB · GTX 780"]
   HW --> Uvicorn["uvicorn :8080"]
   Uvicorn --> Endpoints["mops-api Endpoints"]
   Endpoints --> Health["/health · /health/detailed"]
   Endpoints --> Chat["/chat"]
   Endpoints --> Classify["/classify<br/><i>File-Klassifikation</i>"]
-  Endpoints --> Admin["/admin-ui<br/><i>Echo-Freigabe</i>"]
-  Uvicorn --> Ollama["Ollama<br/>llama3.2:3b"]
+  Endpoints --> Admin["/admin<br/><i>Echo-Freigabe</i>"]
+  Endpoints --> Sketch["/sketchup<br/><i>Modelle vom Malmops</i>"]
+  Endpoints --> Extract["/extract-plan · /extract-doc<br/><i>Statik &amp; Unterlagen lesen</i>"]
+  Endpoints --> Bericht["/bericht<br/><i>Bautagesbericht</i>"]
+  Uvicorn --> Ollama["Ollama<br/>llama3.2:3b auf der GPU"]
   Uvicorn --> Qdrant["Qdrant<br/>Vektor-DB"]
   style HW fill:#1f4f4e,stroke:#2dd4bf,color:#fff
   style Endpoints fill:#1f3a5f,stroke:#58a6ff,color:#fff
@@ -358,7 +417,7 @@ graph TB
 <div id="offline" class="lp-section">
   <div class="container">
     <h2>Offline &amp; Datensouveränität</h2>
-    <p>Der Keller hat kein Netz, der Rohbau erst recht nicht. baumops ist nicht „auch offline" — es ist <em>zuerst</em> offline. Die Cloud ist Kür, nicht Pflicht.</p>
+    <p>Der Keller hat kein Netz, der Rohbau erst recht nicht. baumops ist nicht „auch offline" — es ist <em>zuerst</em> offline. Fremde Rechenzentren sind Kür, nicht Pflicht.</p>
 
     <div class="diagram-card">
       <h3>Was passiert, wenn das Internet weg ist?</h3>
@@ -366,8 +425,8 @@ graph TB
 flowchart TD
   Work["Arbeit auf der Baustelle"] --> App["Construction Grid<br/>schreibt lokal (Core Data)"]
   App --> Net{"Internet da?"}
-  Net -->|"Nein"| Local["Alles läuft weiter<br/>App + Mops-Box im eigenen Netz"]
-  Net -->|"Ja"| Sync["zusätzlich: Sync zur Cloud"]
+  Net -->|"Nein"| Local["Alles läuft weiter<br/>die App schreibt lokal"]
+  Net -->|"Ja"| Sync["zusätzlich: Abgleich mit der Mops-Box"]
   Local --> Later["sobald Netz da ist"]
   Later --> Sync
   Sync --> Done["Stand abgeglichen"]
@@ -381,15 +440,15 @@ flowchart TD
       <h3>Wo die Daten liegen — und wo nicht</h3>
       <div class="mermaid">
 flowchart LR
-  subgraph Drin["bleibt auf der Baustelle"]
+  subgraph Drin["bleibt im Betrieb"]
     G1["Pläne &amp; Aufmaße"]
     G2["Kalkulation &amp; Preise"]
     G3["Bau-Fragen an Mops"]
   end
   subgraph Raus["verlässt sie nur bewusst"]
     R1["Nachweise als Export"]
-    R2["Rechnung (XRechnung)"]
-    R3["Cloud-Sync (optional)"]
+    R2["GAEB-Datei an die Kalkulation"]
+    R3["Fachfrage an Prof (nur bei Bedarf)"]
   end
   Drin -->|"Entscheidung des Nutzers"| Raus
   style Drin fill:#1f4f4e,stroke:#2dd4bf,color:#fff
@@ -407,9 +466,9 @@ flowchart LR
 
     <div class="info-grid">
       <div class="info-card"><h4>Mops</h4><div class="number" style="font-size:1.2rem">llama3.2</div><div class="label">lokal · Maurermeister-Persona · Standard</div></div>
-      <div class="info-card"><h4>Prof</h4><div class="number" style="font-size:1.2rem">Sonnet</div><div class="label">Claude · via /prof · für die harten Fragen</div></div>
+      <div class="info-card"><h4>Prof</h4><div class="number" style="font-size:1.2rem">gpt-4.1</div><div class="label">OpenAI · via /prof · für die harten Fragen</div></div>
       <div class="info-card"><h4>Memory</h4><div class="number" style="font-size:1.2rem">Echos</div><div class="label">Prof-Antworten als pending Echos</div></div>
-      <div class="info-card"><h4>Freigabe</h4><div class="number" style="font-size:1.2rem">Admin</div><div class="label">approve → ins lokale Wissen</div></div>
+      <div class="info-card"><h4>Freigabe</h4><div class="number" style="font-size:1.2rem">Admin</div><div class="label">approve → ins lokale Wissen · 79 freigegeben</div></div>
     </div>
 
     <div class="diagram-card">
@@ -418,7 +477,7 @@ flowchart LR
 flowchart TD
   Frage["Bau-Frage"] --> Wer{"/prof Prefix?"}
   Wer -->|"Nein"| Mops["Mops antwortet lokal<br/><i>llama3.2 + RAG</i>"]
-  Wer -->|"Ja"| Prof["Prof antwortet<br/><i>Claude Sonnet</i>"]
+  Wer -->|"Ja"| Prof["Prof antwortet<br/><i>gpt-4.1</i>"]
   Mops --> User["Antwort auf der Baustelle"]
   Prof --> User
   Prof --> Echo["Antwort als pending Echo<br/>in Qdrant gespeichert"]
@@ -477,7 +536,7 @@ flowchart TD
     </div>
 
     <div class="prose-note">
-      <strong>Der Effekt:</strong> Chunks mit exakten Begriffen — DIN-Nummern, Material-Codes, Festigkeitsklassen — ranken höher, ohne dass rein semantische Treffer verloren gehen. Die Wissensbasis: rund 85 Lemmas, CC-BY-SA aus Wikipedia (Welle 1).
+      <strong>Der Effekt:</strong> Chunks mit exakten Begriffen — DIN-Nummern, Material-Codes, Festigkeitsklassen — ranken höher, ohne dass rein semantische Treffer verloren gehen. Die Wissensbasis heute: 1.513 Abschnitte (Stand 23.10.2026) — angefangen mit rund 85 Wikipedia-Lemmas (CC-BY-SA), dazu 79 freigegebene Prof-Antworten.
     </div>
   </div>
 </div>
@@ -496,7 +555,7 @@ flowchart LR
   Erfass --> Box["Mops-Box<br/>verarbeitet &amp; legt ab"]
   Box --> Nachweis["Nachweis<br/>Bautagesbericht, Mangel, Aufmaß"]
   Box --> Kette["Lieferkette<br/>nachvollziehbar"]
-  Nachweis --> Export["Export:<br/>PDF · GAEB · XRechnung"]
+  Nachweis --> Export["Export:<br/>PDF · Excel · GAEB"]
   Export --> Aussen["Büro · Auftraggeber · Behörde"]
   style Erfass fill:#1f3a5f,stroke:#58a6ff,color:#fff
   style Box fill:#1f4f4e,stroke:#2dd4bf,color:#fff
@@ -506,7 +565,7 @@ flowchart LR
     </div>
 
     <div class="prose-note">
-      <strong>Bitte prüfen:</strong> Diese Seite beschreibt baumops als Gesamtsystem aus dem Stand der öffentlichen Repos und baumops.com. Wo das Produkt schon weiter ist als die Repos (z. B. konkrete Lieferketten-Funktionen, die „5 Regeln, damit die Baustelle läuft"), sag mir Bescheid — das baue ich gern als eigenen Reiter ein.
+      <strong>Stand 23.10.2026.</strong> Zahlen auf dieser Seite sind auf der Box nachgemessen, nicht geschätzt. Was im Büro schon täglich läuft, steht unter „Im Büro: Zeichnung → BauSu“.
     </div>
   </div>
 </div>
