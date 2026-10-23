@@ -66,6 +66,13 @@
   .fragen{background:#FFF8D6; border-top:3px solid #FFE45C}
   .fragen ol{margin:10px 0 0; padding-left:22px}
   .fragen li{margin:7px 0}
+  .annahme{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .annahme h4{margin:0 0 8px; font-size:14px; text-transform:uppercase; letter-spacing:.08em}
+  .annahme ul{margin:0; padding:0; list-style:none; display:grid; gap:6px}
+  .annahme li{border-radius:9px; padding:8px 11px; font-size:15px}
+  .annahme.dunkel li{background:rgba(255,255,255,.08)}
+  .annahme.hell li{background:var(--grund)}
+  @media (max-width:420px){ .annahme{grid-template-columns:1fr} }
 
 
   .hero{background:var(--pink); color:#fff; position:relative; overflow:hidden}
@@ -164,16 +171,17 @@
 
 <section id="container"><div class="innen">
   <h2>Container &amp; Preise</h2>
-  <p class="vorspann">Größe wählen, anrufen oder anfragen – fertig. Der Preis gilt für Stellen, Abholen und Entsorgen der genannten Abfallart.</p>
+  <p class="vorspann">Größe wählen, anrufen oder anfragen – Sie bekommen umgehend ein unverbindliches Angebot. Der Preis gilt für Stellen, Abholen und Entsorgen der genannten Abfallart.</p>
   <div class="beispiel"><span class="offen">Beispielpreise</span> &nbsp;Die Zahlen werden noch mit Romina abgestimmt – hier steht absichtlich noch kein echter Preis. Auch die Größen-Staffel ist ein Vorschlag.</div>
   <div class="preise">
-    <div class="preis"><div class="art">Absetzcontainer</div><div class="groesse">5 <small>m³</small></div><div class="fuer">Badumbau, Gartenaktion, Bauschutt in kleinen Mengen</div><div class="betrag">ab <b>___ €</b></div></div>
+    <div class="preis"><div class="art">Absetzcontainer</div><div class="groesse">5 <small>m³</small></div><div class="fuer">offen, mit Klapptür oder Stahldeckel – Bauschutt, Sperrmüll</div><div class="betrag">ab <b>___ €</b></div></div>
     <div class="preis"><div class="art">Absetzcontainer</div><div class="groesse">7 <small>m³</small></div><div class="fuer">Renovierung, Sperrmüll, Kellerräumung</div><div class="betrag">ab <b>___ €</b></div></div>
     <div class="preis"><div class="art">Absetzcontainer</div><div class="groesse">10 <small>m³</small></div><div class="fuer">Umbau, Dachboden, Holz und Gewerbemüll</div><div class="betrag">ab <b>___ €</b></div></div>
-    <div class="preis gross"><div class="art">Abrollcontainer</div><div class="groesse">bis 30 <small>m³</small></div><div class="fuer">Abbruch, große Baustellen, Gewerbe</div><div class="betrag">ab <b>___ €</b></div></div>
+    <div class="preis"><div class="art">Absetzcontainer</div><div class="groesse">15 <small>m³</small></div><div class="fuer">Ausräumen in Eigenregie, Hausmüll, Papier</div><div class="betrag">ab <b>___ €</b></div></div>
+    <div class="preis gross"><div class="art">Abrollcontainer</div><div class="groesse">bis 30 <small>m³</small></div><div class="fuer">mit Klapp-/Flügeltüren – Bauschutt, Schotter, Altholz, Gewerbe</div><div class="betrag">ab <b>___ €</b></div></div>
   </div>
   <div class="material">
-    <span>Bauschutt</span><span>Hausmüll</span><span>Gewerbemüll</span><span>Sperrmüll</span><span>Holz</span><span>Papier</span><span>Schrott &amp; Metall</span><span>Grünschnitt</span>
+    <span>Bauschutt</span><span>Schotter</span><span>Baumischabfälle</span><span>Hausmüll</span><span>Gewerbemüll</span><span>Sperrmüll</span><span>Holz / Altholz</span><span>Papier</span><span>Schrott, Eisenspäne, Metall</span>
   </div>
   <p style="margin:26px 0 0"><a class="knopf voll" href="#kontakt">Diesen Container anfragen →</a></p>
 </div></section>
@@ -183,22 +191,24 @@
     <h2>Unser Wertstoffhof</h2>
     <p class="vorspann">Kleine Mengen selbst vorbeibringen – ohne Container, ohne Termin.</p>
     <div class="tag">Jeden <em>1. Samstag</em><br>im Monat, 8–12 Uhr</div>
-    <p style="margin:18px 0 0;color:#CFC8D4">Bahnhofstraße 11, 97828 Marktheidenfeld</p>
+    <p style="margin:18px 0 0;color:#CFC8D4">und Termine nach Vereinbarung unter <a href="tel:+491726617017">0172 6617017</a><br>Bahnhofstraße 11, 97828 Marktheidenfeld</p>
   </div>
   <div>
-    <h3 style="margin:6px 0 12px">Was wir annehmen <span class="offen">Liste von Romina</span></h3>
-    <ul><li>Bauschutt</li><li>Holz</li><li>Schrott &amp; Metall</li><li>Papier &amp; Pappe</li><li>Sperrmüll</li><li>Grünschnitt</li></ul>
-    <p style="margin:14px 0 0;font-size:14px;color:#CFC8D4">Beispiel – die echte Annahmeliste und ob es etwas kostet, sagt uns Romina.</p>
+    <h3 style="margin:6px 0 14px">Was wir annehmen</h3>
+    <div class="annahme dunkel">
+  <div><h4>Kostenlos</h4><ul><li>Altkleider</li><li>Metall, Töpfe (Metallschrott)</li><li>Papier</li><li>Pappe</li><li>Schuhe</li></ul></div>
+  <div><h4>Gegen Gebühr</h4><ul><li>Autoreifen</li><li>Gewerbemüll</li><li>Hausmüll</li><li>Holz</li><li>Möbel</li><li>Restmüll</li><li>Tapeten</li><li>Teppiche</li></ul></div>
+</div>
   </div>
 </div></section>
 
-<section id="entruempelung"><div class="innen zwei">
+<section id="entruempelung"><div class="innen" style="max-width:820px">
   <div>
-    <h2>Entrümpelung &amp; Auflösungen</h2>
-    <p class="vorspann" style="margin-bottom:16px">Wohnung, Haus, Keller oder Dachboden: Wir räumen aus, sortieren und entsorgen – mit Container und Leuten, zum Festpreis nach Besichtigung.</p>
-    <p style="margin:0"><span class="offen">Entscheidung</span> Entrümpelung: selbst anbieten oder auf die Funk Entrümpelung GmbH (Dominik) verweisen? Beides ist vorbereitet – heute steht der eigene Text drin.</p>
+    <h2>Entrümpelung?</h2>
+    <p class="vorspann" style="margin-bottom:16px">Containerdienst Funk bietet selbst keine Entrümpelungen mehr an. Wohnungs- und Haushaltsauflösungen übernimmt die <b>Funk Entrümpelung GmbH</b> – ein eigener Betrieb mit eigenem Team.</p>
+    <p style="margin:0 0 18px"><a class="knopf voll" href="https://funk-entruempelung.de/" target="_blank" rel="noopener">Zur Funk Entrümpelung →</a></p>
+    <p style="margin:0">Sie räumen selbst aus und brauchen dafür einen Container? Dafür sind wir da: <a href="tel:+491726617017" style="color:var(--pink);font-weight:700">0172 6617017</a></p>
   </div>
-  <div class="platzhalter" style="aspect-ratio:4/3">Platzhalter-Foto<br>z. B. geräumter Keller oder Container vor einem Haus<br><span class="offen" style="margin-top:8px">Foto fehlt</span></div>
 </div></section>
 
 <section id="fragen" style="padding-top:0"><div class="innen">
@@ -217,7 +227,7 @@
     <form onsubmit="event.preventDefault(); this.querySelector('.formhinweis').innerHTML='<b>Vorschau:</b> Das Formular schickt noch nichts ab. Auf der echten Seite landet die Anfrage bei info@container-funk.de.';">
   <label>Name<input name="name" autocomplete="name" placeholder="Vor- und Nachname"></label>
   <label>Telefon oder E-Mail<input name="kontakt" placeholder="Wie erreichen wir Sie?"></label>
-  <label>Container<select name="groesse"><option value="">Bitte wählen …</option><option>Absetzcontainer 5 m³</option><option>Absetzcontainer 7 m³</option><option>Absetzcontainer 10 m³</option><option>Abrollcontainer bis 30 m³</option><option>Weiß ich nicht – bitte beraten</option></select></label>
+  <label>Container<select name="groesse"><option value="">Bitte wählen …</option><option>Absetzcontainer 5 m³</option><option>Absetzcontainer 7 m³</option><option>Absetzcontainer 10 m³</option><option>Absetzcontainer 15 m³</option><option>Abrollcontainer bis 30 m³</option><option>Weiß ich nicht – bitte beraten</option></select></label>
   <label>Wunschtermin<input name="termin" type="date"></label>
   <label class="breit">Was soll weg, und wohin soll der Container?<textarea name="nachricht" placeholder="z. B. Bauschutt aus dem Badumbau, Hofeinfahrt in Marktheidenfeld"></textarea></label>
   <div class="breit" style="display:flex;flex-wrap:wrap;gap:14px;align-items:center">
@@ -243,10 +253,7 @@
 <section class="fragen"><div class="innen">
   <h2 style="font-size:24px">Was Romina noch füllen oder entscheiden muss</h2>
   <ol>
-    <li><b>Preise:</b> vier Beispielfelder „___ €“ – welche Größen, welcher Preis, inklusive was?</li>
-    <li><b>Wertstoffhof:</b> die echte Annahmeliste, und ob Anliefern etwas kostet.</li>
-    <li><b>Entrümpelung:</b> Entrümpelung: selbst anbieten oder auf die Funk Entrümpelung GmbH (Dominik) verweisen? Beides ist vorbereitet – heute steht der eigene Text drin.</li>
-    <li><b>Foto</b> für die Entrümpelung (heute Platzhalter).</li>
+    <li><b>Preise:</b> fünf Beispielfelder „___ €“ – welche Größen, welcher Preis, inklusive was?</li>
     <li><b>FAQ:</b> übliche Lieferzeit und der Weg zur Stellgenehmigung.</li>
   </ol>
 </div></section>
