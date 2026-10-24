@@ -12276,7 +12276,7 @@ function frei(x, y) {
   var hoch = FUSS_FREI !== null && !NAVMODUS && FUSS_FREI > bodenHoehe(x, y) + 2.2;   // höher als jeder Sprung (1,55 m): sonst rutscht man im Sprung in den Wandabstand und steckt fest   // 09.10.: wer oben auf einem Dach steht, darf über die Kante hinaus (vorher hielt der Wandabstand ihn oben fest)
   if (FUSS_FREI !== null && !NAVMODUS && FUSS_FREI > bodenHoehe(x, y) + 1.2) { var dh = dachHoehe(x, y); if (dh !== null && FUSS_FREI >= dh - 0.7) return true; }   // oben auf Dach oder Mauer (steile Dächer: 0,7 m Schrittweite)
   if (EPOCHE === 1400 && !NAVMODUS && P.t > 0.3 && !erlaubt(x, y)) { AUFTRAG.grenzeBis = P.t + 2.5; return false; }   // Torwache
-  if (EPOCHE === 1400 && !NAVMODUS) for (var li = 0; li < LEUTE.length; li++) if (!LEUTE[li].weg && !istVersteckt(LEUTE[li]) && Math.hypot(x - LEUTE[li].x, y - LEUTE[li].y) < 0.6) return false;
+  if (EPOCHE === 1400 && !NAVMODUS) for (var li = 0; li < LEUTE.length; li++) if (!LEUTE[li].weg && !istVersteckt(LEUTE[li]) && Math.hypot(x - LEUTE[li].x, y - LEUTE[li].y) < 0.6 && Math.hypot(x - LEUTE[li].x, y - LEUTE[li].y) <= Math.hypot(P.x - LEUTE[li].x, P.y - LEUTE[li].y)) return false;   /* 24.10.: weg von einer Person geht immer – sonst klebt man fest, wenn sie einem zu nah kommt (Torwache bei der Ankunft) */
   if (EPOCHE === 1400 && STAND) { var sx_ = x - STAND.x, sy_ = y - STAND.y, ca = Math.cos(STAND.dreh), sa = Math.sin(STAND.dreh), quer = sx_ * -sa + sy_ * ca, tief = sx_ * ca + sy_ * sa; if (Math.abs(quer) < 1.3 + R && Math.abs(tief) < 0.5 + R) return false; }
   if (EPOCHE === 1400 && MARKT) for (var mi_ = 0; mi_ < MARKT.length; mi_++) { var mq = MARKT[mi_], mx_ = x - mq.x, my_ = y - mq.y, mc = Math.cos(mq.dreh), ms = Math.sin(mq.dreh); if (Math.abs(mx_ * -ms + my_ * mc) < 1.1 + R && Math.abs(mx_ * mc + my_ * ms) < 0.45 + R) return false; }   // Marktstände
   if (GARKUECHE && EPOCHE === 1400 && Math.hypot(x - GARKUECHE.x, y - GARKUECHE.y) < 0.85 + R) return false;   // Feuer + Kessel
@@ -14202,7 +14202,8 @@ function zumBergfried(wo, drehen) {             // Sprungmarken: B-Taste und ?be
   if (drehen) P.blick = Math.atan2(-(t[0] * BF.u[0] + t[1] * BF.v[0]), -(t[0] * BF.u[1] + t[1] * BF.v[1]));
   if (drehen && wo === 'tuer' && EPOCHE === 1400 && BF.treppe) { var T2 = BF.treppe, w0 = T2.welt(BF.BAND / 2, T2.r * 0.5); P.blick = Math.atan2(w0[0] - P.x, w0[1] - P.y); }   // zur Treppe schauen
 }
-function naechsteePerson() { var best = null, bd = 2.8; if (EPOCHE !== 1400) return null; LEUTE.forEach(function (l) { if (istVersteckt(l)) return; var d = Math.hypot(P.x - l.x, P.y - l.y); if (d < bd) { bd = d; best = l; } }); return best; }
+function naechsteePerson() { var best = null, bd = 2.8; if (EPOCHE !== 1400) return null; if (AUFTRAG.einf === 1 && ONKEL && ONKEL.l && !istVersteckt(ONKEL.l) && Math.hypot(P.x - ONKEL.l.x, P.y - ONKEL.l.y) < bd) return ONKEL.l;   /* 24.10.: bei der Ankunft hat Jörg Vorrang – sonst antwortet im Wirtshaus immer die Wirtin */
+  LEUTE.forEach(function (l) { if (istVersteckt(l)) return; var d = Math.hypot(P.x - l.x, P.y - l.y); if (d < bd) { bd = d; best = l; } }); return best; }
 function reden() {                             // E: Gespräch beginnen oder weiterblättern – true = es wurde geredet
   if (AUFTRAG.karrenWahl) { karrenWahlTreffen('selbst'); return true; }
   if (AUFTRAG.wahl) { wahlTreffen('voll'); return true; }
@@ -15895,7 +15896,7 @@ function wegBeschreiben(zx, zy) {                // Richtung und Weite in Worten
   var markt = STAND && Math.hypot(zx - STAND.x, zy - STAND.y) < 45 ? ', am Markt' : ''; return d < 6 ? 'gleich hier' + markt : wo + ', ' + weit + markt; }
 function nachJoergFragen(l) {                    // während der Ankunft: jeder kennt Jörg, den Steinmetz
   var o = ONKEL.l, zuHaus = AUFTRAG.einf === 2, t = ONKEL.haus.tuer, zx = zuHaus || !o ? t.mitte[0] : o.x, zy = zuHaus || !o ? t.mitte[1] : o.y;
-  var anf = l.rolle === 'kind' ? 'Den Jörg? Den mit den großen Händen!' : l.rolle === 'trunkenbold' ? 'Der Jörg? Hicks … der Einzige in der Stadt, der mal eine Runde zahlt! Die Steinmetzen kriegen ihr Dünnbier ja kannenweise zum Lohn – zehn Liter am Tag, sagt man. Macht satt und müde, da schläft man trotz Rückenweh.' : ['Jörg, den Steinmetzmeister? Den kennt jeder.', 'Ah, zum Jörg willst du.', 'Der Jörg? Der haut die Steine für die Mauer.'][l.nr % 3];
+  var anf = l.rolle === 'kind' ? 'Den Jörg? Den mit den großen Händen!' : l.rolle === 'trunkenbold' ? 'Der Jörg? Hicks … der Einzige in der Stadt, der mal eine Runde zahlt! Die Steinmetzen kriegen ihr Dünnbier ja kannenweise zum Lohn – zehn Liter am Tag, sagt man. Macht satt und müde, da schläft man trotz Rückenweh.' : ['Jörg, den Steinmetzmeister? Den kennt jeder.', 'Ah, zum Jörg willst du.', 'Der Jörg? Der haut die Steine für die Mauer.'][(l.nr || 0) % 3];   /* 24.10.: die Torwache hat keine nr – sonst „undefined Ich hab ihn …“ */
   if (zuHaus) return [anf + ' Sein Haus ist ' + wegBeschreiben(zx, zy) + '. Die Tür steht offen, sagst du? Dann geh nur hinein – unter der Treppe schläft man warm.'];
   if (o && o.ort === 'wirtshaus') return [anf + ' Um die Zeit sitzt der im Wirtshaus – ' + wegBeschreiben(zx, zy) + '.'];
   return [anf + ' Ich hab ihn eben noch gesehen – ' + wegBeschreiben(zx, zy) + '.']; }
@@ -16227,7 +16228,7 @@ function einfWecken() {                          // die erste Nacht ist vorbei: 
     if (!drin(x, y, h.pts) || (h.moebel || []).some(function (m) { return Math.hypot(m[0] - x, m[1] - y) < m[2] + 0.35; })) continue; NAVMODUS = true; var fr = frei(x, y); NAVMODUS = false; if (fr) { ox = x; oy = y; break; } }
   if (ox === null) { var ux = h.cx - sx, uy = h.cy - sy, ul = Math.hypot(ux, uy) || 1; ox = sx + ux / ul; oy = sy + uy / ul; }
   o.x = ox; o.y = oy; o.ziel = null; P.blick = Math.atan2(ox - P.x, oy - P.y);
-  AUFTRAG.rede = { wer: o, name: o.name, zeilen: ['Auf, du Faulpelz! Die Sonne ist längst über dem Main.', 'Bei mir wird nicht umsonst gegessen. Am Maintor sucht Kilian, der Schiffer, immer Hände. Oder du hackst Konrad, dem Bäcker, das Holz für seinen Ofen.', 'Und komm mir nicht ohne Heller zurück.'], i: 0,
+  AUFTRAG.rede = { wer: o, name: o.name, zeilen: [sonnenstand(himmelsZeit()).hoehe > 0 ? 'Auf, du Faulpelz! Die Sonne ist längst über dem Main.' : 'Auf, du Faulpelz! Die Hähne krähen schon – bis es hell wird, bist du längst bei der Arbeit.', 'Bei mir wird nicht umsonst gegessen. Am Maintor sucht Kilian, der Schiffer, immer Hände. Oder du hackst Konrad, dem Bäcker, das Holz für seinen Ofen.', 'Und komm mir nicht ohne Heller zurück.'], i: 0,
     danach: function () { AUFTRAG.einf = 9; speichern(); melden('DEIN ERSTER TAG IN WERTHEIM · GEH ZUM SCHIFFER AM MAINTOR', 6); } };
 }
 // ---- Der Onkel (09.10., Andreas: „ein Lager unter der Treppe, kein Bett – das müssen wir uns erarbeiten“) ----
@@ -17352,7 +17353,8 @@ function wegweiserWeiter(dt) {
   var W_ = WEGWEISER, z = W_.an && !AUFTRAG.rede && !GANG.drin ? aktuellesZiel() : null, dz = z ? Math.hypot(z.x - P.x, z.y - P.y) : 0;
   if (!z || dz < 4) { W_.pool.forEach(function (m) { m.visible = false; }); W_.weg = null; return; }
   W_.t -= dt; var neu = !W_.weg || W_.t <= 0 || !W_.ziel || Math.hypot(W_.ziel[0] - z.x, W_.ziel[1] - z.y) > 2 || Math.hypot(W_.von[0] - P.x, W_.von[1] - P.y) > 3;
-  if (neu) { W_.t = 1.5; W_.von = [P.x, P.y]; W_.ziel = [z.x, z.y]; try { W_.weg = routeBauen({ x: P.x, y: P.y }, [z.x, z.y]); } catch (e) { W_.weg = null; } }
+  if (neu) { W_.t = 1.5; W_.von = [P.x, P.y]; W_.ziel = [z.x, z.y]; var zr = [z.x, z.y]; if (AUFTRAG.einf && AUFTRAG.einf < 9 && EINF.tor && EINF.raus && !innerhalbMauer(P.x, P.y)) zr = [EINF.tor[0] - EINF.raus[0] * 6, EINF.tor[1] - EINF.raus[1] * 6];   /* 24.10.: bei der Ankunft erst durchs eigene Tor – sonst führten die Pfeile außen an der Mauer entlang zur nächsten Wache */
+    try { W_.weg = routeBauen({ x: P.x, y: P.y }, zr); } catch (e) { W_.weg = null; } }
   var weg = W_.weg; if (!weg || weg.length < 2) { W_.pool.forEach(function (m) { m.visible = false; }); return; }
   if (!W_.geo) { var sh = new THREE.Shape(); sh.moveTo(0, 0.28); sh.lineTo(0.32, -0.1); sh.lineTo(0.2, -0.18); sh.lineTo(0, 0.08); sh.lineTo(-0.2, -0.18); sh.lineTo(-0.32, -0.1); sh.lineTo(0, 0.28);
     W_.geo = new THREE.ShapeGeometry(sh); W_.geo.rotateX(-Math.PI / 2); W_.mat = new THREE.MeshBasicMaterial({ color: 0xffd36a, transparent: true, opacity: 0.32, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }); }
@@ -17548,7 +17550,7 @@ function essenKaufen() {
   return true; }
 function essenAngebotWeiter() {
   var a = AUFTRAG.angebotEssen; if (!a || AUFTRAG.rede || a.bis < P.t || Math.hypot(P.x - a.l.x, P.y - a.l.y) > 3.5) return;
-  if (P.t > (AUFTRAG.meldungBis || 0) - 0.05 && (!AUFTRAG.meldung || /^RECHTSKLICK: /.test(AUFTRAG.meldung) || P.t > AUFTRAG.meldungBis)) var pr = a.kauf ? a.preisFn() : Math.ceil(STADT.preis(a.gut) - 1e-9), lb = a.kauf ? a.label : SPIELER.essen[a.gut].name.toUpperCase() + ' KAUFEN'; melden('RECHTSKLICK: ' + lb + (pr && !/HELLER/.test(lb) ? ' (' + pr + ' HELLER)' : ''), 0.3); }
+  if (P.t > (AUFTRAG.meldungBis || 0) - 0.05 && (!AUFTRAG.meldung || /^RECHTSKLICK: /.test(AUFTRAG.meldung) || P.t > AUFTRAG.meldungBis)) { var pr = a.kauf ? a.preisFn() : Math.ceil(STADT.preis(a.gut) - 1e-9), lb = a.kauf ? a.label : SPIELER.essen[a.gut].name.toUpperCase() + ' KAUFEN'; melden('RECHTSKLICK: ' + lb + (pr && !/HELLER/.test(lb) ? ' (' + pr + ' HELLER)' : ''), 0.3); } }   /* 24.10.: Klammer – vorher kam „RECHTSKLICK: undefined“, wenn eine andere Meldung lief */
 var redenOhneEssen = reden; reden = function () { var r = redenOhneEssen.apply(this, arguments); essenNachReden(); return r; };
 var redenOhneDorf = reden; reden = function () { if (dorfElternReden(naechsteePerson())) return true; return redenOhneDorf.apply(this, arguments); };   // 15.10. Dorf: abgewartet, dann mit den Eltern reden   // jedes Gespräch: Verkäufer nennen den Preis
 function handhaben() { if (geistWahl('behalten')) return true;   // Wettenburg: Rechtsklick/✋ bei der blassen Frau = behalten
@@ -18295,7 +18297,7 @@ var SCHLEIFE_FEHLER = {};   // 12.10.: ein Fehler in einem Teil darf das Spiel n
 // Gold mit Nummer = laufende Quest (gleiche Nummer wie auf der Karte und den Tasten 1–4), Silber mit „!“ = eine Geschichte wartet. Aus der Nähe wird es blass, im Gespräch ist es weg.
 // ---- Koop Stufe 1 (12.10. Nachtschicht, Codex Auftrag 36 Schritt 0+1): mit ?koop=1 treten Tabs auf diesem Rechner einem Raum bei und sehen einander ----
 // Noch ohne gemeinsame Uhr und Welt (Stufe 2/3). Die Mitspieler-Figur baut vorerst das Spiel (Gliederpuppe + Namensschild), bis Codex' Koop.figur kommt.
-var BAUSTAND = '4a071590', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
+var BAUSTAND = '8021502f', KOOP = { raum: null, figuren: {}, an: /[?&]koop=1/.test(location.search) };
 var KOOP_FARBEN = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x8e44ad];
 function koopNamensschild(name, farbe) { var c = document.createElement('canvas'); c.width = 128; c.height = 24; var g = c.getContext('2d'); g.fillStyle = 'rgba(20,14,10,.75)'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#' + ('00000' + farbe.toString(16)).slice(-6); g.fillRect(0, 20, 128, 4);
   g.fillStyle = '#fff'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(name).toUpperCase().slice(0, 14), 64, 11); var t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter;
