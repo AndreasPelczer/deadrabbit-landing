@@ -90,7 +90,7 @@
   /* Stefania 25.10.: Wasserzeichen – ganz blass rechts neben dem Text, hinter dem Text */
   .hat-wz{position:relative;z-index:0}
   .wasserzeichen{position:absolute;z-index:-1;right:2%;top:70px;width:270px;height:270px;opacity:.18;pointer-events:none;color:var(--bronze)}
-  .wasserzeichen img{width:100%;height:100%;object-fit:contain}
+  .wasserzeichen img{width:100%;height:100%;object-fit:contain}.wasserzeichen svg{width:100%;height:100%}
   @media (max-width:760px){.wasserzeichen{width:170px;height:170px;right:0;top:40px;opacity:.1}}
   .karte{background:var(--sand);border-radius:16px;padding:24px;border-top:6px solid var(--salbei-hell);display:flex;flex-direction:column}
   .karte.num{border-top-color:var(--gold)}
@@ -697,11 +697,12 @@ karten('numPrivat', NUM_PRIVAT, true); ups('numUpPrivat', NUM_UP_PRIVAT); karten
   if (V === 'B') return;
   document.querySelectorAll('.bereiche.num>div').forEach(function (d, i) { d.insertBefore(img('num-0' + (i + 1)), d.firstChild); });
   document.querySelectorAll('#fengshui .bereiche>div').forEach(function (d, i) { d.insertBefore(img('fs-0' + (i + 1)), d.firstChild); });
-  if (V === 'W') {   // Stefania 25.10.: statt großer Bilder blasse Wasserzeichen – Kompass bei Feng Shui, Sonnen-Schriftrolle bei Numerologie (GPT, Andy 26.10.)
-    [['#fengshui .w', 'wz-kompass'], ['#numerologie .w', 'wz-rolle']].forEach(function (p) {
-      var w = document.querySelector(p[0]); if (!w || !Z[p[1]]) return;
+  if (V === 'W') {   // Stefania 25.10.: statt großer Bilder blasse Wasserzeichen – Kompassrose bei Feng Shui, Sonnen-Schriftrolle bei Numerologie (Andy 26.10.)
+    var KOMPASS = '<svg style="color:#986D18" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter" stroke-linecap="round"><circle cx="100" cy="100" r="66"/><circle cx="100" cy="100" r="76" stroke-width="1"/><circle cx="100" cy="100" r="40" stroke-width="1"/><path d="M100.0 34.0L100.0 26.0M111.5 35.0L112.2 31.1M122.6 38.0L123.9 34.2M133.0 42.8L137.0 35.9M142.4 49.4L145.0 46.4M150.6 57.6L153.6 55.0M157.2 67.0L164.1 63.0M162.0 77.4L165.8 76.1M165.0 88.5L168.9 87.8M166.0 100.0L174.0 100.0M165.0 111.5L168.9 112.2M162.0 122.6L165.8 123.9M157.2 133.0L164.1 137.0M150.6 142.4L153.6 145.0M142.4 150.6L145.0 153.6M133.0 157.2L137.0 164.1M122.6 162.0L123.9 165.8M111.5 165.0L112.2 168.9M100.0 166.0L100.0 174.0M88.5 165.0L87.8 168.9M77.4 162.0L76.1 165.8M67.0 157.2L63.0 164.1M57.6 150.6L55.0 153.6M49.4 142.4L46.4 145.0M42.8 133.0L35.9 137.0M38.0 122.6L34.2 123.9M35.0 111.5L31.1 112.2M34.0 100.0L26.0 100.0M35.0 88.5L31.1 87.8M38.0 77.4L34.2 76.1M42.8 67.0L35.9 63.0M49.4 57.6L46.4 55.0M57.6 49.4L55.0 46.4M67.0 42.8L63.0 35.9M77.4 38.0L76.1 34.2M88.5 35.0L87.8 31.1" stroke-width="1"/><path d="M100.0 4.0L115.6 84.4L100 100ZM196.0 100.0L115.6 115.6L100 100ZM100.0 196.0L84.4 115.6L100 100ZM4.0 100.0L84.4 84.4L100 100ZM143.8 56.2L116.0 100.0L100 100ZM143.8 143.8L100.0 116.0L100 100ZM56.2 143.8L84.0 100.0L100 100ZM56.2 56.2L100.0 84.0L100 100Z" fill="currentColor" fill-opacity=".25" stroke="none"/><path d="M143.8 56.2L116.0 100.0L100 100L100.0 84.0Z M143.8 56.2L100 100 M143.8 143.8L100.0 116.0L100 100L116.0 100.0Z M143.8 143.8L100 100 M56.2 143.8L84.0 100.0L100 100L100.0 116.0Z M56.2 143.8L100 100 M56.2 56.2L100.0 84.0L100 100L84.0 100.0Z M56.2 56.2L100 100"/><path d="M100.0 4.0L115.6 84.4L100 100L84.4 84.4Z M100.0 4.0L100 100 M196.0 100.0L115.6 115.6L100 100L115.6 84.4Z M196.0 100.0L100 100 M100.0 196.0L84.4 115.6L100 100L115.6 115.6Z M100.0 196.0L100 100 M4.0 100.0L84.4 84.4L100 100L84.4 115.6Z M4.0 100.0L100 100"/><circle cx="100" cy="100" r="3.5"/></svg>';   // Kompassrose ohne Blätter, wie Stefanias Foto (Andy 26.10., von Hand)
+    [['#fengshui .w', KOMPASS], ['#numerologie .w', 'wz-rolle']].forEach(function (p) {
+      var w = document.querySelector(p[0]); if (!w || (p[1].charAt(0) !== '<' && !Z[p[1]])) return;
       var d = document.createElement('div'); d.className = 'wasserzeichen'; d.setAttribute('aria-hidden', 'true');
-      var i = img(p[1]); i.className = ''; d.appendChild(i);
+      if (p[1].charAt(0) === '<') d.innerHTML = p[1]; else { var i = img(p[1]); i.className = ''; d.appendChild(i); }
       w.classList.add('hat-wz'); w.insertBefore(d, w.firstChild);
     });
     return;
